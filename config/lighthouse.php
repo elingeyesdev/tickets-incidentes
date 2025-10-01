@@ -201,16 +201,42 @@ return [
     */
 
     'namespaces' => [
-        'models' => ['App', 'App\\Models'],
-        'queries' => 'App\\GraphQL\\Queries',
-        'mutations' => 'App\\GraphQL\\Mutations',
+        'models' => [
+            'App',
+            'App\\Models',
+            'App\\Features\\UserManagement\\Models',
+            'App\\Features\\CompanyManagement\\Models',
+            'App\\Features\\Authentication\\Models',
+        ],
+        'queries' => [
+            'App\\Shared\\GraphQL\\Queries',
+            'App\\Features\\Authentication\\GraphQL\\Queries',
+            'App\\Features\\UserManagement\\GraphQL\\Queries',
+            'App\\Features\\CompanyManagement\\GraphQL\\Queries',
+            'App\\GraphQL\\Queries',
+        ],
+        'mutations' => [
+            'App\\Shared\\GraphQL\\Mutations',
+            'App\\Features\\Authentication\\GraphQL\\Mutations',
+            'App\\Features\\UserManagement\\GraphQL\\Mutations',
+            'App\\Features\\CompanyManagement\\GraphQL\\Mutations',
+            'App\\GraphQL\\Mutations',
+        ],
         'subscriptions' => 'App\\GraphQL\\Subscriptions',
-        'types' => 'App\\GraphQL\\Types',
-        'interfaces' => 'App\\GraphQL\\Interfaces',
-        'unions' => 'App\\GraphQL\\Unions',
+        'types' => [
+            'App\\Shared\\GraphQL\\Types',
+            'App\\Features\\Authentication\\GraphQL\\Types',
+            'App\\Features\\UserManagement\\GraphQL\\Types',
+            'App\\Features\\CompanyManagement\\GraphQL\\Types',
+            'App\\GraphQL\\Types',
+        ],
+        'interfaces' => ['App\\Shared\\GraphQL\\Interfaces', 'App\\GraphQL\\Interfaces'],
+        'unions' => ['App\\Shared\\GraphQL\\Unions', 'App\\GraphQL\\Unions'],
         'scalars' => ['App\\Shared\\GraphQL\\Scalars', 'App\\GraphQL\\Scalars'],
         'directives' => ['App\\Shared\\GraphQL\\Directives', 'App\\GraphQL\\Directives'],
         'validators' => 'App\\GraphQL\\Validators',
+        // DataLoaders se resuelven automáticamente por clase completa en contexto
+        'dataLoaders' => ['App\\Shared\\GraphQL\\DataLoaders'],
     ],
 
     /*
