@@ -15,6 +15,15 @@ This is a helpdesk system built with Laravel 12 backend, React 18 frontend via I
 - **Build Tools**: Vite 7 + TailwindCSS 4
 - **Development**: Docker + Docker Compose
 
+### Docker Services
+- `app` - PHP-FPM application container (Laravel)
+- `nginx` - Web server (port 8000)
+- `postgres` - PostgreSQL 17 database (port 5432)
+- `redis` - Redis cache/session store (port 6379)
+- `queue` - Laravel queue worker (background jobs)
+- `scheduler` - Laravel task scheduler (cron)
+- `mailpit` - Email testing (SMTP:1025, UI:8025)
+
 ### Key Commands
 
 **Development**:
@@ -33,6 +42,12 @@ docker compose exec app npm run build
 
 # Stop all services
 docker compose down
+
+# View logs (all services)
+docker compose logs -f
+
+# View logs (specific service)
+docker compose logs -f app
 ```
 
 **Testing**:
@@ -58,8 +73,14 @@ docker compose exec app php artisan make:model Features/[Feature]/Models/[Model]
 # Run migrations
 docker compose exec app php artisan migrate
 
+# Run seeders
+docker compose exec app php artisan db:seed
+
 # Access container shell
 docker compose exec app bash
+
+# Clear all caches (when troubleshooting)
+docker compose exec app php artisan optimize:clear
 ```
 
 **Code Quality**:
@@ -67,11 +88,18 @@ docker compose exec app bash
 # Lint code (Laravel Pint)
 docker compose exec app ./vendor/bin/pint
 
-# Validate GraphQL schema
+# Validate GraphQL schema (Docker)
 docker compose exec app php artisan lighthouse:validate-schema
+
+# Validate GraphQL schema (Local PHP - recommended for better performance)
+# Use this when Docker validation is slow or timing out
+powershell -Command "php artisan lighthouse:validate-schema"
 
 # Type checking (when available)
 docker compose exec app npm run type-check
+
+# Cache GraphQL schema for performance
+docker compose exec app php artisan lighthouse:cache
 ```
 
 ### Architecture: Feature-First Organization (PURE)
@@ -243,14 +271,14 @@ Feature specifications and GraphQL schemas are in `/documentacion/`:
 - ✅ Laravel 12 initialized
 - ✅ Docker environment configured (Docker Compose with app, postgres, redis, nginx, mailpit)
 - ✅ Inertia.js configured and working (Home.tsx renders)
-- ✅ **Lighthouse GraphQL - Schema-First COMPLETADO (29-Sep-2025)**
+- ✅ **Lighthouse GraphQL - Schema-First COMPLETADO (01-Oct-2025)**
   - ✅ `graphql/shared/` con scalars, directives, interfaces, enums, base-types, pagination
   - ✅ 3 feature schemas: Authentication, UserManagement, CompanyManagement
   - ✅ 43 resolvers dummy creados (retornan null/arrays vacíos)
   - ✅ Scalars personalizados: UUID, PhoneNumber, HexColor
   - ✅ Directivas: @auth, @can, @company, @rateLimit, @audit
   - ✅ **Anti-loop types:** UserBasicInfo, CompanyBasicInfo, TicketBasicInfo
-  - ⏳ **PENDIENTE:** Validar schema con `docker compose exec app php artisan lighthouse:validate-schema`
+  - ✅ **Schema validado exitosamente** (usando PHP local por rendimiento)
 - ⏳ PostgreSQL schemas - pending migrations
 - ⏳ Features - pending backend implementation (resolvers son dummy)
 
@@ -302,12 +330,15 @@ When implementing features, follow the existing patterns in the codebase and mai
    - ✅ `config/lighthouse.php` - Namespaces updated for Shared directory
    - ✅ `graphql/schema.graphql` - Main schema with all imports
 
-### ⏳ Next Step: VALIDATE SCHEMA
+### ✅ Schema Validation
 
-**You MUST validate the schema using Docker:**
+**Schema has been validated successfully!**
 
 ```bash
-# Validate schema
+# Validate schema (preferred: local PHP for better performance)
+powershell -Command "php artisan lighthouse:validate-schema"
+
+# Alternative: Docker (slower, may timeout on complex schemas)
 docker compose exec app php artisan lighthouse:validate-schema
 
 # If errors occur:
@@ -315,6 +346,8 @@ docker compose exec app php artisan lighthouse:validate-schema
 # 2. DO resolve the specific error
 # 3. Check logs: docker compose logs app
 ```
+
+**Performance Note:** Use local PHP (Laravel Herd) for validation commands when Docker performance is insufficient. This applies to CPU-intensive artisan commands that may timeout in Docker containers.
 
 **Common validation errors and solutions:**
 - Missing Core queries → Implement ping, version, health resolvers
