@@ -176,14 +176,14 @@ Para producción, actualiza `docker/nginx/default.prod.conf` con tu dominio y co
 ```
 helpdesk/
 ├── app/
-│   ├── Core/              # Código compartido entre features
+│   ├── Shared/              # Código compartido entre features # GraphQL Scalars, Directives, Queries
 │   │   ├── Services/
 │   │   └── GraphQL/
 │   ├── Features/          # Organización feature-first
-│   │   ├── Authentication/
-│   │   ├── UserManagement/
-│   │   └── CompanyManagement/
-│   └── Shared/            # GraphQL Scalars, Directives, Queries
+│       ├── Authentication/
+│       ├── UserManagement/
+│       └── CompanyManagement/
+│   
 │
 ├── resources/
 │   └── js/
@@ -423,9 +423,9 @@ docker compose exec app php artisan lighthouse:clear-cache
 
 ## 📧 Contacto
 
-Tu Nombre - [@tuusuario](https://twitter.com/tuusuario) - email@ejemplo.com
+Tu Nombre - [@Luke] - lukqs05 @gmail.com
 
-Project Link: [https://github.com/tu-usuario/helpdesk](https://github.com/tu-usuario/helpdesk)
+Project Link: Proyecto-de-ultimo-minuto.online
 
 ---
 
