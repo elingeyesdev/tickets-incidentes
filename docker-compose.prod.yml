@@ -1,0 +1,223 @@
+# =============================================================================
+# HELPDESK SYSTEM - DOCKER COMPOSE (PRODUCTION)
+# =============================================================================
+# Production environment with security hardening, no debug tools, minimal ports
+#
+# USAGE:
+#   docker-compose -f docker-compose.prod.yml up -d --build
+#
+# IMPORTANT:
+#   - Use .env.production file for production environment variables
+#   - Database and Redis data persists in Docker volumes
+#   - No ports exposed except nginx (80/443)
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PHP-FPM Application Container
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: production  # Multi-stage build target (optimized, no dev deps)
+    container_name: helpdesk_app_prod
+    restart: always
+    working_dir: /var/www
+    volumes:
+      # Only mount storage directory for uploads/logs
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    environment:
+      - APP_ENV=production
+      - DB_HOST=postgres
+      - DB_CONNECTION=pgsql
+      - REDIS_HOST=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - helpdesk
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # Nginx Web Server
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: helpdesk_nginx_prod
+    restart: always
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS (configure SSL in nginx config)
+    volumes:
+      - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf
+      - ./storage/app/public:/var/www/storage/app/public:ro
+      # For SSL certificates (if using Let's Encrypt)
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - helpdesk
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 17 Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: helpdesk_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-helpdesk}
+      POSTGRES_USER: ${DB_USERNAME:-helpdesk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # MUST be set in .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./docker/postgres/create-multiple-databases.sh:/docker-entrypoint-initdb.d/02-create-multiple-databases.sh
+      # Backups directory (mount from host)
+      - ./backups/postgres:/backups
+    # NO EXTERNAL PORT EXPOSED (only accessible within Docker network)
+    networks:
+      - helpdesk
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-helpdesk} -d ${DB_DATABASE:-helpdesk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache & Session Store
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:8-alpine
+    container_name: helpdesk_redis_prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    # NO EXTERNAL PORT EXPOSED
+    networks:
+      - helpdesk
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Queue Worker (Laravel Jobs)
+  # ---------------------------------------------------------------------------
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: production
+    container_name: helpdesk_queue_prod
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    environment:
+      - APP_ENV=production
+      - DB_HOST=postgres
+      - DB_CONNECTION=pgsql
+      - REDIS_HOST=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    networks:
+      - helpdesk
+
+  # ---------------------------------------------------------------------------
+  # Task Scheduler (Laravel Cron)
+  # ---------------------------------------------------------------------------
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: production
+    container_name: helpdesk_scheduler_prod
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    environment:
+      - APP_ENV=production
+      - DB_HOST=postgres
+      - DB_CONNECTION=pgsql
+      - REDIS_HOST=redis
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    command: >
+      sh -c "while true; do
+        php artisan schedule:run >> /var/www/storage/logs/scheduler.log 2>&1
+        sleep 60
+      done"
+    networks:
+      - helpdesk
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  helpdesk:
+    driver: bridge
+
+# =============================================================================
+# VOLUMES (Persistent Data - CRITICAL FOR PRODUCTION)
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    # For production, consider using named volume with backup strategy
+    # driver_opts:
+    #   type: none
+    #   device: /mnt/data/helpdesk/postgres
+    #   o: bind
+
+  redis_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   device: /mnt/data/helpdesk/redis
+    #   o: bind

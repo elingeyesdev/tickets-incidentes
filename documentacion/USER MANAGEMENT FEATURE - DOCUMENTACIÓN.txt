@@ -1,0 +1,1296 @@
+# 📚 USER MANAGEMENT FEATURE - DOCUMENTACIÓN COMPLETA
+
+## 🎯 OVERVIEW DEL FEATURE
+
+El **UserManagement Feature** es responsable de la gestión completa de usuarios, perfiles y roles en el sistema Helpdesk. Proporciona operaciones CRUD para usuarios, gestión de perfiles personales, asignación de roles y administración de permisos.
+
+### 🏗️ ARQUITECTURA DEL FEATURE
+
+```
+UserManagement/
+├── Services/           # Lógica de negocio
+├── GraphQL/           # API Layer
+├── Models/            # Entidades de dominio
+├── Events/            # Comunicación entre features
+├── Tests/             # Tests específicos
+└── Database/          # Persistencia
+```
+
+### 🎭 TIPOS DE USUARIOS
+
+1. **Usuario Final (USER)**: Crea tickets, gestiona su perfil
+2. **Agente (AGENT)**: Responde tickets de su empresa
+3. **Admin Empresa (COMPANY_ADMIN)**: Gestiona usuarios de su empresa
+4. **Admin Plataforma (PLATFORM_ADMIN)**: Gestión completa del sistema
+
+---
+
+## 📖 QUERIES - OPERACIONES DE LECTURA
+
+### 1. ME - Usuario Autenticado Completo
+
+**Descripción**: Obtiene información completa del usuario autenticado incluyendo perfil, roles y estadísticas.
+
+```graphql
+query Me {
+    me {
+        # Identificadores
+        id
+        userCode
+
+        # Datos básicos
+        email
+        emailVerified
+        emailVerifiedAt
+        status
+        authProvider
+
+        # Perfil completo
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+            lastActivityAt
+            createdAt
+            updatedAt
+        }
+
+        # Roles y permisos
+        roles {
+            id
+            roleCode
+            roleInfo {
+                code
+                name
+                description
+                requiresCompany
+                defaultDashboard
+            }
+            companyId
+            companyInfo {
+                id
+                companyCode
+                name
+                logoUrl
+                primaryColor
+                status
+            }
+            isActive
+            assignedAt
+        }
+
+        activeRoles {
+            id
+            roleCode
+            companyId
+            isActive
+        }
+
+        # Estados calculados
+        isAdmin
+        canCreateTickets
+
+        # Empresas relacionadas
+        companies {
+            id
+            companyCode
+            name
+            logoUrl
+            primaryColor
+            status
+        }
+
+        # Actividad y seguridad
+        lastLoginAt
+        lastLoginIp
+        lastActivityAt
+        termsAccepted
+        termsAcceptedAt
+        termsVersion
+
+        # Estadísticas
+        ticketsCount
+        resolvedTicketsCount
+        averageRating
+
+        # Auditoría
+        createdAt
+        updatedAt
+        deletedAt
+    }
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "me": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "userCode": "USR-2025-00123",
+            "email": "maria.garcia@empresa.com",
+            "emailVerified": true,
+            "emailVerifiedAt": "2025-01-15T09:30:00Z",
+            "status": "ACTIVE",
+            "authProvider": "local",
+            "profile": {
+                "firstName": "María",
+                "lastName": "García",
+                "displayName": "María García",
+                "phoneNumber": "+591 70123456",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+                "theme": "dark",
+                "language": "es",
+                "timezone": "America/La_Paz",
+                "pushWebNotifications": true,
+                "notificationsTickets": false,
+                "lastActivityAt": "2025-09-21T15:30:00Z",
+                "createdAt": "2025-01-15T08:00:00Z",
+                "updatedAt": "2025-09-20T14:22:00Z"
+            },
+            "roles": [
+                {
+                    "id": "role-001",
+                    "roleCode": "USER",
+                    "roleInfo": {
+                        "code": "USER",
+                        "name": "Cliente",
+                        "description": "Usuario que crea y gestiona tickets",
+                        "requiresCompany": false,
+                        "defaultDashboard": "/tickets"
+                    },
+                    "companyId": null,
+                    "companyInfo": null,
+                    "isActive": true,
+                    "assignedAt": "2025-01-15T08:00:00Z"
+                },
+                {
+                    "id": "role-002",
+                    "roleCode": "AGENT",
+                    "roleInfo": {
+                        "code": "AGENT",
+                        "name": "Agente de Soporte",
+                        "description": "Agente que responde tickets de una empresa",
+                        "requiresCompany": true,
+                        "defaultDashboard": "/agent/dashboard"
+                    },
+                    "companyId": "cmp-001",
+                    "companyInfo": {
+                        "id": "cmp-001",
+                        "companyCode": "CMP-2025-00001",
+                        "name": "Universidad del Valle",
+                        "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png",
+                        "primaryColor": "#007bff",
+                        "status": "ACTIVE"
+                    },
+                    "isActive": true,
+                    "assignedAt": "2025-03-10T10:15:00Z"
+                }
+            ],
+            "activeRoles": [
+                {
+                    "id": "role-001",
+                    "roleCode": "USER",
+                    "companyId": null,
+                    "isActive": true
+                },
+                {
+                    "id": "role-002",
+                    "roleCode": "AGENT",
+                    "companyId": "cmp-001",
+                    "isActive": true
+                }
+            ],
+            "isAdmin": false,
+            "canCreateTickets": true,
+            "companies": [
+                {
+                    "id": "cmp-001",
+                    "companyCode": "CMP-2025-00001",
+                    "name": "Universidad del Valle",
+                    "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png",
+                    "primaryColor": "#007bff",
+                    "status": "ACTIVE"
+                }
+            ],
+            "lastLoginAt": "2025-09-21T14:45:00Z",
+            "lastLoginIp": "192.168.1.100",
+            "lastActivityAt": "2025-09-21T15:30:00Z",
+            "termsAccepted": true,
+            "termsAcceptedAt": "2025-01-15T08:00:00Z",
+            "termsVersion": "v2.1",
+            "ticketsCount": 47,
+            "resolvedTicketsCount": 23,
+            "averageRating": 4.3,
+            "createdAt": "2025-01-15T08:00:00Z",
+            "updatedAt": "2025-09-20T14:22:00Z",
+            "deletedAt": null
+        }
+    }
+}
+```
+
+**Casos de Uso**:
+- Header de usuario en interfaz
+- Página completa de perfil
+- Validación de permisos
+- Selector de roles/empresas
+- Dashboard personalizado
+
+---
+
+### 2. MY_PROFILE - Perfil Personal
+
+**Descripción**: Obtiene únicamente la información del perfil del usuario autenticado.
+
+```graphql
+query MyProfile {
+    myProfile {
+        firstName
+        lastName
+        displayName
+        phoneNumber
+        avatarUrl
+        theme
+        language
+        timezone
+        pushWebNotifications
+        notificationsTickets
+        lastActivityAt
+        createdAt
+        updatedAt
+    }
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "myProfile": {
+            "firstName": "María",
+            "lastName": "García",
+            "displayName": "María García",
+            "phoneNumber": "+591 70123456",
+            "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+            "theme": "dark",
+            "language": "es",
+            "timezone": "America/La_Paz",
+            "pushWebNotifications": true,
+            "notificationsTickets": false,
+            "lastActivityAt": "2025-09-21T15:30:00Z",
+            "createdAt": "2025-01-15T08:00:00Z",
+            "updatedAt": "2025-09-20T14:22:00Z"
+        }
+    }
+}
+```
+
+**Casos de Uso**:
+- Formularios de edición de perfil
+- Página de configuración personal
+- Sincronización de preferencias
+
+---
+
+### 3. USERS - Lista Paginada de Usuarios
+
+**Descripción**: Lista paginada de usuarios del sistema con filtros avanzados. Solo accesible por administradores.
+
+```graphql
+query Users(
+    $filters: UserFilters
+    $orderBy: [UserOrderBy!]
+    $page: Int = 1
+    $first: Int = 15
+) {
+    users(
+        filters: $filters
+        orderBy: $orderBy
+        page: $page
+        first: $first
+    ) {
+        data {
+            id
+            userCode
+            email
+            emailVerified
+            status
+            profile {
+                firstName
+                lastName
+                displayName
+                avatarUrl
+            }
+            activeRoles {
+                roleCode
+                companyInfo {
+                    name
+                }
+            }
+            lastLoginAt
+            ticketsCount
+            createdAt
+        }
+        paginatorInfo {
+            total
+            perPage
+            currentPage
+            lastPage
+            hasMorePages
+        }
+    }
+}
+```
+
+**Variables de Ejemplo**:
+```json
+{
+    "filters": {
+        "search": "maria",
+        "status": "ACTIVE",
+        "role": "AGENT",
+        "emailVerified": true,
+        "createdBetween": {
+            "from": "2025-01-01T00:00:00Z",
+            "to": "2025-12-31T23:59:59Z"
+        },
+        "recentActivity": true
+    },
+    "orderBy": [
+        {
+            "field": "LAST_LOGIN_AT",
+            "order": "DESC"
+        }
+    ],
+    "page": 1,
+    "first": 20
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "users": {
+            "data": [
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "userCode": "USR-2025-00123",
+                    "email": "maria.garcia@empresa.com",
+                    "emailVerified": true,
+                    "status": "ACTIVE",
+                    "profile": {
+                        "firstName": "María",
+                        "lastName": "García",
+                        "displayName": "María García",
+                        "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg"
+                    },
+                    "activeRoles": [
+                        {
+                            "roleCode": "AGENT",
+                            "companyInfo": {
+                                "name": "Universidad del Valle"
+                            }
+                        }
+                    ],
+                    "lastLoginAt": "2025-09-21T14:45:00Z",
+                    "ticketsCount": 47,
+                    "createdAt": "2025-01-15T08:00:00Z"
+                }
+            ],
+            "paginatorInfo": {
+                "total": 156,
+                "perPage": 20,
+                "currentPage": 1,
+                "lastPage": 8,
+                "hasMorePages": true
+            }
+        }
+    }
+}
+```
+
+**Casos de Uso**:
+- Panel de administración de usuarios
+- Búsqueda de usuarios para asignar roles
+- Reportes de actividad de usuarios
+
+---
+
+### 4. USER - Usuario Específico
+
+**Descripción**: Obtiene información completa de un usuario específico por ID.
+
+```graphql
+query User($id: UUID!) {
+    user(id: $id) {
+        id
+        userCode
+        email
+        emailVerified
+        status
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            theme
+            language
+            timezone
+        }
+        roles {
+            id
+            roleCode
+            roleInfo {
+                name
+                description
+            }
+            companyInfo {
+                name
+                logoUrl
+            }
+            isActive
+            assignedAt
+            assignedBy {
+                displayName
+            }
+        }
+        lastLoginAt
+        ticketsCount
+        resolvedTicketsCount
+        averageRating
+        createdAt
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Casos de Uso**:
+- Página de detalle de usuario
+- Modal de información de usuario
+- Verificación antes de asignar roles
+
+---
+
+### 5. COMPANY_USERS - Usuarios de Empresa
+
+**Descripción**: Lista usuarios de una empresa específica. Solo accesible por admin/agentes de esa empresa.
+
+```graphql
+query CompanyUsers(
+    $companyId: UUID!
+    $filters: CompanyUserFilters
+    $first: Int = 15
+) {
+    companyUsers(
+        companyId: $companyId
+        filters: $filters
+        first: $first
+    ) {
+        id
+        userCode
+        email
+        profile {
+            firstName
+            lastName
+            displayName
+            avatarUrl
+        }
+        roles {
+            roleCode
+            roleInfo {
+                name
+            }
+            isActive
+        }
+        lastLoginAt
+        ticketsCount
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "companyId": "cmp-001",
+    "filters": {
+        "search": "juan",
+        "role": "AGENT",
+        "activeOnly": true
+    },
+    "first": 25
+}
+```
+
+**Casos de Uso**:
+- Panel de gestión de equipo
+- Asignación de tickets por agente
+- Estadísticas del equipo
+
+---
+
+### 6. AVAILABLE_ROLES - Roles Disponibles
+
+**Descripción**: Lista de roles disponibles en el sistema con sus descripciones.
+
+```graphql
+query AvailableRoles {
+    availableRoles {
+        code
+        name
+        description
+        requiresCompany
+        defaultDashboard
+        permissions
+        priority
+        isSystemRole
+    }
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "availableRoles": [
+            {
+                "code": "PLATFORM_ADMIN",
+                "name": "Administrador de Plataforma",
+                "description": "Acceso completo a todo el sistema",
+                "requiresCompany": false,
+                "defaultDashboard": "/admin/dashboard",
+                "permissions": ["*"],
+                "priority": 1,
+                "isSystemRole": true
+            },
+            {
+                "code": "COMPANY_ADMIN",
+                "name": "Administrador de Empresa",
+                "description": "Gestiona una empresa específica",
+                "requiresCompany": true,
+                "defaultDashboard": "/empresa/dashboard",
+                "permissions": ["company.manage", "agents.manage", "tickets.view"],
+                "priority": 2,
+                "isSystemRole": true
+            },
+            {
+                "code": "AGENT",
+                "name": "Agente de Soporte",
+                "description": "Atiende tickets de soporte",
+                "requiresCompany": true,
+                "defaultDashboard": "/agent/dashboard",
+                "permissions": ["tickets.respond", "tickets.resolve"],
+                "priority": 3,
+                "isSystemRole": true
+            },
+            {
+                "code": "USER",
+                "name": "Cliente",
+                "description": "Usuario que crea tickets",
+                "requiresCompany": false,
+                "defaultDashboard": "/tickets",
+                "permissions": ["tickets.create", "tickets.view.own"],
+                "priority": 4,
+                "isSystemRole": true
+            }
+        ]
+    }
+}
+```
+
+**Casos de Uso**:
+- Selector de roles en formularios
+- Documentación de permisos
+- Validación de asignaciones
+
+---
+
+## ✏️ MUTATIONS - OPERACIONES DE ESCRITURA
+
+### 1. UPDATE_MY_PROFILE - Actualizar Perfil Propio
+
+**Descripción**: Permite a cualquier usuario actualizar su propio perfil.
+
+```graphql
+mutation UpdateMyProfile($input: UpdateProfileInput!) {
+    updateMyProfile(input: $input) {
+        id
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            updatedAt
+        }
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "firstName": "María Alejandra",
+        "lastName": "García Rodríguez",
+        "phoneNumber": "+591 75987654",
+        "avatarUrl": "https://storage.helpdesk.com/avatars/new_avatar.jpg"
+    }
+}
+```
+
+**Validaciones**:
+- `firstName`: mínimo 2, máximo 100 caracteres
+- `lastName`: mínimo 2, máximo 100 caracteres
+- `phoneNumber`: entre 10 y 20 caracteres
+- `avatarUrl`: URL válida
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "updateMyProfile": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "profile": {
+                "firstName": "María Alejandra",
+                "lastName": "García Rodríguez",
+                "displayName": "María Alejandra García Rodríguez",
+                "phoneNumber": "+591 75987654",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/new_avatar.jpg",
+                "updatedAt": "2025-09-21T16:30:00Z"
+            }
+        }
+    }
+}
+```
+
+**Eventos Disparados**:
+- `UserProfileUpdated`: Para sincronización en otros features
+
+---
+
+### 2. UPDATE_MY_PREFERENCES - Actualizar Preferencias
+
+**Descripción**: Actualiza preferencias de interfaz y notificaciones del usuario.
+
+```graphql
+mutation UpdateMyPreferences($input: PreferencesInput!) {
+    updateMyPreferences(input: $input) {
+        id
+        profile {
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+            updatedAt
+        }
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "theme": "dark",
+        "language": "en",
+        "timezone": "America/New_York",
+        "pushWebNotifications": false,
+        "notificationsTickets": true
+    }
+}
+```
+
+**Validaciones**:
+- `theme`: debe ser "light" o "dark"
+- `language`: debe ser "es" o "en"
+- `timezone`: zona horaria válida
+- Booleanos para notificaciones
+
+---
+
+### 3. COMPLETE_MY_PROFILE - Completar Perfil
+
+**Descripción**: Completa información adicional del perfil después del registro.
+
+```graphql
+mutation CompleteMyProfile($input: CompleteProfileInput!) {
+    completeMyProfile(input: $input) {
+        id
+        profile {
+            firstName
+            lastName
+            phoneNumber
+            avatarUrl
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+        }
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "phoneNumber": "+591 70123456",
+        "avatarUrl": "https://storage.helpdesk.com/avatars/completed.jpg",
+        "theme": "dark",
+        "language": "es",
+        "timezone": "America/La_Paz",
+        "pushWebNotifications": true,
+        "notificationsTickets": false
+    }
+}
+```
+
+**Casos de Uso**:
+- Flujo de onboarding post-registro
+- Completar información faltante
+- Configuración inicial de preferencias
+
+---
+
+### 4. CREATE_USER - Crear Usuario (Admin)
+
+**Descripción**: Crea un nuevo usuario en el sistema. Solo accesible por platform admins.
+
+```graphql
+mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+        id
+        userCode
+        email
+        status
+        profile {
+            firstName
+            lastName
+            displayName
+        }
+        roles {
+            roleCode
+            companyInfo {
+                name
+            }
+            isActive
+        }
+        createdAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "email": "nuevo.agente@empresa.com",
+        "password": "TempPassword123!",
+        "firstName": "Juan",
+        "lastName": "Pérez",
+        "status": "ACTIVE",
+        "initialRoles": [
+            {
+                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                "roleCode": "USER",
+                "isActive": true
+            },
+            {
+                "userId": "550e8400-e29b-41d4-a716-446655440000",
+                "roleCode": "AGENT",
+                "companyId": "cmp-001",
+                "isActive": true
+            }
+        ],
+        "sendWelcomeEmail": true
+    }
+}
+```
+
+**Validaciones**:
+- `email`: único en el sistema, formato válido
+- `password`: mínimo 8 caracteres
+- `firstName`, `lastName`: entre 2 y 100 caracteres
+- `initialRoles`: roles válidos y permisos adecuados
+
+**Flujo de Proceso**:
+1. Validar email único
+2. Crear usuario con password hasheado
+3. Crear perfil asociado
+4. Asignar roles iniciales
+5. Enviar email de bienvenida (si solicitado)
+6. Registrar en auditoría
+
+---
+
+### 5. UPDATE_USER - Actualizar Usuario
+
+**Descripción**: Actualiza información de un usuario específico. Solo admins.
+
+```graphql
+mutation UpdateUser($id: UUID!, $input: UpdateUserInput!) {
+    updateUser(id: $id, input: $input) {
+        id
+        email
+        status
+        profile {
+            firstName
+            lastName
+            displayName
+        }
+        updatedAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "input": {
+        "email": "nuevo.email@empresa.com",
+        "status": "SUSPENDED",
+        "profile": {
+            "firstName": "Juan Carlos",
+            "lastName": "Pérez Silva"
+        },
+        "forceEmailVerification": true
+    }
+}
+```
+
+---
+
+### 6. SUSPEND_USER - Suspender Usuario
+
+**Descripción**: Suspende temporalmente un usuario del sistema.
+
+```graphql
+mutation SuspendUser($id: UUID!, $reason: String) {
+    suspendUser(id: $id, reason: $reason) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Violación de términos de servicio - spam de tickets"
+}
+```
+
+**Efectos**:
+- Cambia status a "SUSPENDED"
+- Invalida todos los tokens activos
+- Registra motivo en auditoría
+- Envía notificación al usuario
+
+---
+
+### 7. ACTIVATE_USER - Activar Usuario
+
+**Descripción**: Reactiva un usuario suspendido.
+
+```graphql
+mutation ActivateUser($id: UUID!) {
+    activateUser(id: $id) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Efectos**:
+- Cambia status a "ACTIVE"
+- Permite nuevo login
+- Registra reactivación en auditoría
+
+---
+
+### 8. DELETE_USER - Eliminar Usuario
+
+**Descripción**: Elimina lógicamente un usuario (soft delete).
+
+```graphql
+mutation DeleteUser($id: UUID!, $reason: String) {
+    deleteUser(id: $id, reason: $reason)
+}
+```
+
+**Input Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Solicitud del usuario - GDPR compliance"
+}
+```
+
+**Efectos**:
+- Cambia status a "DELETED"
+- Establece deletedAt timestamp
+- Anonimiza datos sensibles
+- Mantiene registros para auditoría
+
+---
+
+### 9. ASSIGN_ROLE - Asignar Rol
+
+**Descripción**: Asigna un rol específico a un usuario.
+
+```graphql
+mutation AssignRole($input: AssignRoleInput!) {
+    assignRole(input: $input) {
+        id
+        user {
+            displayName
+        }
+        roleCode
+        roleInfo {
+            name
+            description
+        }
+        companyInfo {
+            name
+        }
+        isActive
+        assignedAt
+        assignedBy {
+            displayName
+        }
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "userId": "550e8400-e29b-41d4-a716-446655440000",
+        "roleCode": "AGENT",
+        "companyId": "cmp-001",
+        "isActive": true
+    }
+}
+```
+
+**Validaciones**:
+- Usuario debe existir y estar activo
+- Rol debe ser válido
+- Si rol requiere empresa, companyId es obligatorio
+- Usuario asignador debe tener permisos
+- No duplicar asignaciones activas
+
+---
+
+### 10. REVOKE_ROLE - Revocar Rol
+
+**Descripción**: Revoca un rol específico de un usuario.
+
+```graphql
+mutation RevokeRole($userRoleId: UUID!, $reason: String) {
+    revokeRole(userRoleId: $userRoleId, reason: $reason)
+}
+```
+
+**Input Variables**:
+```json
+{
+    "userRoleId": "role-002",
+    "reason": "Cambio de empresa - ya no es agente aquí"
+}
+```
+
+**Efectos**:
+- Establece isActive = false
+- Registra revokedAt timestamp
+- Guarda motivo de revocación
+- Invalida permisos derivados
+
+---
+
+### 11. UPDATE_USER_ROLE - Actualizar Rol
+
+**Descripción**: Actualiza configuración de un rol específico.
+
+```graphql
+mutation UpdateUserRole($userRoleId: UUID!, $input: UpdateUserRoleInput!) {
+    updateUserRole(userRoleId: $userRoleId, input: $input) {
+        id
+        isActive
+        companyInfo {
+            name
+        }
+        updatedAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "userRoleId": "role-002",
+    "input": {
+        "isActive": false,
+        "companyId": "cmp-002"
+    }
+}
+```
+
+---
+
+## 🔒 SEGURIDAD Y PERMISOS
+
+### Directivas de Seguridad Aplicadas
+
+1. **@auth**: Requiere usuario autenticado
+2. **@auth(requires: [ROLE])**: Requiere rol específico
+3. **@can(ability, model)**: Verifica capacidad específica
+4. **@company(requireOwnership)**: Verifica acceso a empresa
+5. **@rateLimit(max, window)**: Limita requests por tiempo
+
+### Matriz de Permisos
+
+| Operación | USER | AGENT | COMPANY_ADMIN | PLATFORM_ADMIN |
+|-----------|------|-------|---------------|----------------|
+| me | ✅ | ✅ | ✅ | ✅ |
+| myProfile | ✅ | ✅ | ✅ | ✅ |
+| updateMyProfile | ✅ | ✅ | ✅ | ✅ |
+| updateMyPreferences | ✅ | ✅ | ✅ | ✅ |
+| users | ❌ | ❌ | ✅ (empresa) | ✅ (todos) |
+| createUser | ❌ | ❌ | ❌ | ✅ |
+| suspendUser | ❌ | ❌ | ❌ | ✅ |
+| assignRole | ❌ | ❌ | ✅ (empresa) | ✅ (todos) |
+
+### Rate Limiting
+
+- **createUser**: 10 requests/hora
+- **updateMyProfile**: 30 requests/hora
+- **assignRole**: 100 requests/hora
+- **Queries**: 1000 requests/hora
+
+---
+
+## 🧪 EJEMPLOS DE USO FRONTEND
+
+### React Hook para Gestión de Perfil
+
+```typescript
+// useProfile.ts
+import { useMutation, useQuery } from '@apollo/client';
+import { ME_QUERY, UPDATE_MY_PROFILE_MUTATION } from '../graphql';
+
+export const useProfile = () => {
+    const { data, loading, error, refetch } = useQuery(ME_QUERY);
+    const [updateProfile] = useMutation(UPDATE_MY_PROFILE_MUTATION);
+
+    const handleUpdateProfile = async (input: UpdateProfileInput) => {
+        try {
+            const result = await updateProfile({
+                variables: { input },
+                update: (cache, { data }) => {
+                    cache.writeQuery({
+                        query: ME_QUERY,
+                        data: { me: data.updateMyProfile }
+                    });
+                }
+            });
+            return result.data.updateMyProfile;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    };
+
+    return {
+        user: data?.me,
+        loading,
+        error,
+        updateProfile: handleUpdateProfile,
+        refetch
+    };
+};
+```
+
+### Componente de Edición de Perfil
+
+```typescript
+// ProfileForm.tsx
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { useProfile } from '../hooks/useProfile';
+
+interface ProfileFormData {
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+}
+
+export const ProfileForm: React.FC = () => {
+    const { user, updateProfile, loading } = useProfile();
+    const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
+        defaultValues: {
+            firstName: user?.profile?.firstName || '',
+            lastName: user?.profile?.lastName || '',
+            phoneNumber: user?.profile?.phoneNumber || ''
+        }
+    });
+
+    const onSubmit = async (data: ProfileFormData) => {
+        try {
+            await updateProfile(data);
+            alert('Perfil actualizado exitosamente');
+        } catch (error) {
+            alert('Error al actualizar perfil: ' + error.message);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <div>
+                <label>Nombre:</label>
+                <input
+                    {...register('firstName', { required: 'Nombre es requerido' })}
+                    disabled={loading}
+                />
+                {errors.firstName && <span>{errors.firstName.message}</span>}
+            </div>
+
+            <div>
+                <label>Apellido:</label>
+                <input
+                    {...register('lastName', { required: 'Apellido es requerido' })}
+                    disabled={loading}
+                />
+                {errors.lastName && <span>{errors.lastName.message}</span>}
+            </div>
+
+            <div>
+                <label>Teléfono:</label>
+                <input
+                    {...register('phoneNumber')}
+                    disabled={loading}
+                />
+            </div>
+
+            <button type="submit" disabled={loading}>
+                {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+        </form>
+    );
+};
+```
+
+---
+
+## 🚨 MANEJO DE ERRORES
+
+### Códigos de Error Estándar
+
+```typescript
+enum UserManagementErrors {
+    USER_NOT_FOUND = 'USER_NOT_FOUND',
+    EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS',
+    INVALID_ROLE_ASSIGNMENT = 'INVALID_ROLE_ASSIGNMENT',
+    INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
+    PROFILE_UPDATE_FAILED = 'PROFILE_UPDATE_FAILED',
+    ROLE_REQUIRES_COMPANY = 'ROLE_REQUIRES_COMPANY',
+    USER_SUSPENDED = 'USER_SUSPENDED',
+    INVALID_INPUT = 'INVALID_INPUT'
+}
+```
+
+### Estructura de Error GraphQL
+
+```json
+{
+    "errors": [
+        {
+            "message": "El email ya existe en el sistema",
+            "extensions": {
+                "code": "EMAIL_ALREADY_EXISTS",
+                "field": "email",
+                "value": "usuario@empresa.com"
+            },
+            "path": ["createUser"]
+        }
+    ],
+    "data": null
+}
+```
+
+---
+
+## 📊 MÉTRICAS Y MONITORING
+
+### Eventos de Auditoría
+
+- `user.created`: Usuario creado
+- `user.updated`: Usuario actualizado
+- `user.suspended`: Usuario suspendido
+- `user.activated`: Usuario reactivado
+- `user.deleted`: Usuario eliminado
+- `profile.updated`: Perfil actualizado
+- `role.assigned`: Rol asignado
+- `role.revoked`: Rol revocado
+
+### Métricas de Performance
+
+- Tiempo de respuesta de queries
+- Número de usuarios por empresa
+- Actividad de usuarios por día/semana
+- Distribución de roles en el sistema
+- Tasa de uso de features por usuario
+
+---
+
+## 🔄 INTEGRACIÓN CON OTROS FEATURES
+
+### Authentication Feature
+
+- Comparte modelo User
+- Sincroniza tokens y sesiones
+- Valida permisos en tiempo real
+
+### CompanyManagement Feature
+
+- Referencias a empresas vía CompanyBasicInfo
+- Validación de roles por empresa
+- Gestión de agentes por empresa
+
+### TicketManagement Feature
+
+- Estadísticas de tickets por usuario
+- Validación de permisos para tickets
+- Asignación de agentes a tickets
+
+### Notifications Feature
+
+- Configuración de notificaciones por usuario
+- Envío de notificaciones de cambios
+- Preferencias personalizadas
+
+---
+
+Esta documentación cubre completamente el **UserManagement Feature**, proporcionando ejemplos detallados, casos de uso, manejo de errores y patrones de integración. Es la referencia definitiva para desarrolladores frontend y backend trabajando con gestión de usuarios en el sistema Helpdesk.

@@ -1,0 +1,696 @@
+# ================================================================================
+# USER MANAGEMENT FEATURE SCHEMA - Sistema Helpdesk V8.0
+# Schema completo para gestión de usuarios, perfiles y roles
+# EVITA LOOPS INFINITOS usando tipos básicos de shared/
+# ================================================================================
+
+extend type Query {
+    """
+    Usuario autenticado con información completa
+    Incluye perfil, roles y relaciones necesarias
+    """
+    me: User
+        @auth
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\MeQuery")
+
+    """
+    Perfil completo del usuario autenticado
+    Útil para páginas de configuración y edición
+    """
+    myProfile: UserProfile
+        @auth
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\MyProfileQuery")
+
+    """
+    Lista paginada de usuarios del sistema
+    Solo accesible por administradores
+    """
+    users(
+        """Filtros de búsqueda"""
+        filters: UserFilters
+        """Ordenamiento de resultados"""
+        orderBy: [UserOrderBy!]
+        """Número de página"""
+        page: Int = 1
+        """Registros por página (máximo 50)"""
+        first: Int = 15
+    ): UserPaginator!
+        @auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @paginate(maxCount: 50)
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UsersQuery")
+
+    """
+    Usuario específico por ID
+    Acceso según permisos del usuario autenticado
+    """
+    user(id: UUID!): User
+        @auth
+        @can(ability: "view", model: "User", find: "id")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UserQuery")
+
+    """
+    Usuarios de una empresa específica
+    Solo accesible por admin/agentes de esa empresa
+    """
+    companyUsers(
+        """ID de la empresa"""
+        companyId: UUID!
+        """Filtros adicionales"""
+        filters: CompanyUserFilters
+        """Paginación"""
+        first: Int = 15
+    ): [User!]!
+        @auth(requires: [COMPANY_ADMIN, AGENT])
+        @company(requireOwnership: true)
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\CompanyUsersQuery")
+
+    """
+    Roles disponibles en el sistema
+    Lista estática de roles con sus descripciones
+    """
+    availableRoles: [RoleInfo!]!
+        @auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @cache(ttl: 3600, key: "available_roles")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\AvailableRolesQuery")
+}
+
+extend type Mutation {
+    # ===== GESTIÓN DE PERFIL PROPIO =====
+    """
+    Actualiza el perfil del usuario autenticado
+    Cualquier usuario puede modificar su propio perfil
+    """
+    updateMyProfile(input: UpdateProfileInput!): User!
+        @auth
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyProfileMutation")
+        @audit(action: "update_profile", includePayload: true)
+
+    """
+    Actualiza las preferencias del usuario autenticado
+    Incluye tema, idioma, timezone y notificaciones
+    """
+    updateMyPreferences(input: PreferencesInput!): User!
+        @auth
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyPreferencesMutation")
+        @audit(action: "update_preferences")
+
+    """
+    Completa el perfil del usuario recién registrado
+    Útil para flujo de onboarding post-registro
+    """
+    completeMyProfile(input: CompleteProfileInput!): User!
+        @auth
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\CompleteMyProfileMutation")
+        @audit(action: "complete_profile")
+
+    # ===== GESTIÓN DE USUARIOS (ADMIN) =====
+    """
+    Crea un nuevo usuario en el sistema
+    Solo accesible por administradores de plataforma
+    """
+    createUser(input: CreateUserInput!): User!
+        @auth(requires: [PLATFORM_ADMIN])
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\CreateUserMutation")
+        @audit(action: "create_user", includePayload: true)
+        @rateLimit(max: 10, window: 60)
+
+    """
+    Actualiza información de un usuario específico
+    Solo admins pueden modificar usuarios ajenos
+    """
+    updateUser(id: UUID!, input: UpdateUserInput!): User!
+        @auth(requires: [PLATFORM_ADMIN])
+        @can(ability: "update", model: "User", find: "id")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateUserMutation")
+        @audit(action: "update_user", includePayload: true)
+
+    """
+    Suspende temporalmente un usuario
+    Usuario no podrá acceder hasta reactivación
+    """
+    suspendUser(id: UUID!, reason: String): User!
+        @auth(requires: [PLATFORM_ADMIN])
+        @can(ability: "suspend", model: "User", find: "id")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\SuspendUserMutation")
+        @audit(action: "suspend_user", includePayload: true)
+
+    """
+    Reactiva un usuario suspendido
+    Restaura acceso completo al sistema
+    """
+    activateUser(id: UUID!): User!
+        @auth(requires: [PLATFORM_ADMIN])
+        @can(ability: "activate", model: "User", find: "id")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\ActivateUserMutation")
+        @audit(action: "activate_user")
+
+    """
+    Elimina lógicamente un usuario
+    Soft delete - mantiene datos para auditoría
+    """
+    deleteUser(id: UUID!, reason: String): Boolean!
+        @auth(requires: [PLATFORM_ADMIN])
+        @can(ability: "delete", model: "User", find: "id")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\DeleteUserMutation")
+        @audit(action: "delete_user", includePayload: true)
+
+    # ===== GESTIÓN DE ROLES =====
+    """
+    Asigna un rol a un usuario
+    Puede incluir contexto de empresa para roles específicos
+    """
+    assignRole(input: AssignRoleInput!): UserRole!
+        @auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\AssignRoleMutation")
+        @audit(action: "assign_role", includePayload: true)
+
+    """
+    Revoca un rol específico de un usuario
+    No afecta otros roles que pueda tener
+    """
+    revokeRole(userRoleId: UUID!, reason: String): Boolean!
+        @auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @can(ability: "revoke", model: "UserRole", find: "userRoleId")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\RevokeRoleMutation")
+        @audit(action: "revoke_role", includePayload: true)
+
+    """
+    Actualiza configuración de un rol específico
+    Permite activar/desactivar roles sin eliminarlos
+    """
+    updateUserRole(userRoleId: UUID!, input: UpdateUserRoleInput!): UserRole!
+        @auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @can(ability: "update", model: "UserRole", find: "userRoleId")
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateUserRoleMutation")
+        @audit(action: "update_user_role")
+}
+
+# ================================================================================
+# TYPES PRINCIPALES - Entidades completas para gestión
+# ================================================================================
+
+"""
+Usuario completo para gestión
+Incluye todas las relaciones necesarias SIN crear loops infinitos
+"""
+type User implements Node & Timestamped {
+    # ===== IDENTIFICADORES =====
+    """ID único del usuario"""
+    id: UUID!
+
+    """Código único legible (USR-2025-00001)"""
+    userCode: String!
+
+    # ===== DATOS BÁSICOS DE AUTENTICACIÓN =====
+    """Email único del usuario"""
+    email: Email!
+
+    """Si el email está verificado"""
+    emailVerified: Boolean!
+
+    """Fecha de verificación del email"""
+    emailVerifiedAt: DateTime
+
+    """Estado actual del usuario"""
+    status: UserStatus!
+
+    """Proveedor de autenticación (local, google, microsoft)"""
+    authProvider: String!
+
+    # ===== RELACIÓN CON PERFIL (1:1) =====
+    """Perfil completo del usuario"""
+    profile: UserProfile!
+
+    # ===== ROLES Y PERMISOS =====
+    """Lista de roles asignados al usuario"""
+    roles: [UserRole!]!
+        @hasMany(relation: "roles")
+
+    """Roles activos únicamente"""
+    activeRoles: [UserRole!]!
+        @hasMany(relation: "activeRoles")
+
+    """Si tiene al menos un rol de administrador"""
+    isAdmin: Boolean!
+
+    """Si puede crear tickets (tiene rol user activo)"""
+    canCreateTickets: Boolean!
+
+    """Empresas donde tiene roles activos (evita loop usando CompanyBasicInfo)"""
+    companies: [CompanyBasicInfo!]!
+
+    # ===== ACTIVIDAD Y SEGURIDAD =====
+    """Último acceso al sistema"""
+    lastLoginAt: DateTime
+
+    """IP del último acceso"""
+    lastLoginIp: String
+
+    """Última actividad registrada"""
+    lastActivityAt: DateTime
+
+    """Términos y condiciones aceptados"""
+    termsAccepted: Boolean!
+
+    """Fecha de aceptación de términos"""
+    termsAcceptedAt: DateTime
+
+    """Versión de términos aceptada"""
+    termsVersion: String
+
+    # ===== ESTADÍSTICAS RÁPIDAS =====
+    """Total de tickets creados por este usuario"""
+    ticketsCount: Int!
+
+    """Total de tickets resueltos (si es agente)"""
+    resolvedTicketsCount: Int!
+
+    """Calificación promedio como agente"""
+    averageRating: Float
+
+    # ===== AUDITORÍA =====
+    """Fecha de creación del usuario"""
+    createdAt: DateTime!
+
+    """Última modificación"""
+    updatedAt: DateTime!
+
+    """Fecha de eliminación lógica"""
+    deletedAt: DateTime
+}
+
+"""
+Perfil completo del usuario
+Separado de User para claridad y flexibilidad
+"""
+type UserProfile {
+    # ===== INFORMACIÓN PERSONAL =====
+    """Nombre del usuario"""
+    firstName: String!
+
+    """Apellido del usuario"""
+    lastName: String!
+
+    """Nombre completo calculado automáticamente"""
+    displayName: String!
+
+    """Número de teléfono (opcional)"""
+    phoneNumber: PhoneNumber
+
+    """URL del avatar del usuario"""
+    avatarUrl: URL
+
+    # ===== PREFERENCIAS DE INTERFAZ =====
+    """Tema de la interfaz (light, dark)"""
+    theme: String!
+
+    """Idioma preferido (es, en)"""
+    language: String!
+
+    """Zona horaria del usuario"""
+    timezone: String!
+
+    # ===== CONFIGURACIÓN DE NOTIFICACIONES =====
+    """Notificaciones web push habilitadas"""
+    pushWebNotifications: Boolean!
+
+    """Notificaciones de tickets habilitadas"""
+    notificationsTickets: Boolean!
+
+    # ===== ACTIVIDAD =====
+    """Última actividad registrada en el perfil"""
+    lastActivityAt: DateTime
+
+    # ===== AUDITORÍA =====
+    """Cuándo se creó el perfil"""
+    createdAt: DateTime!
+
+    """Última modificación del perfil"""
+    updatedAt: DateTime!
+}
+
+"""
+Rol asignado a un usuario
+Puede tener contexto de empresa para roles específicos
+"""
+type UserRole implements Node & Timestamped {
+    """ID único de la asignación de rol"""
+    id: UUID!
+
+    # ===== RELACIONES PRINCIPALES =====
+    """Usuario al que se asigna el rol"""
+    user: UserBasicInfo!
+
+    """Código del rol asignado"""
+    roleCode: Role!
+
+    """Información descriptiva del rol"""
+    roleInfo: RoleInfo!
+
+    # ===== CONTEXTO DE EMPRESA =====
+    """ID de empresa (solo para company_admin y agent)"""
+    companyId: UUID
+
+    """Información básica de empresa (evita loops)"""
+    companyInfo: CompanyBasicInfo
+
+    # ===== ESTADO Y CONFIGURACIÓN =====
+    """Si el rol está activo"""
+    isActive: Boolean!
+
+    """Fecha de asignación del rol"""
+    assignedAt: DateTime!
+
+    """Usuario que asignó el rol"""
+    assignedBy: UserBasicInfo
+
+    """Fecha de revocación (si aplica)"""
+    revokedAt: DateTime
+
+    """Usuario que revocó el rol"""
+    revokedBy: UserBasicInfo
+
+    """Motivo de revocación"""
+    revocationReason: String
+
+    # ===== AUDITORÍA =====
+    """Cuándo se creó la asignación"""
+    createdAt: DateTime!
+
+    """Última modificación"""
+    updatedAt: DateTime!
+}
+
+"""
+Información descriptiva de un rol del sistema
+Datos estáticos de cada rol disponible
+"""
+type RoleInfo {
+    """Código único del rol"""
+    code: Role!
+
+    """Nombre descriptivo del rol"""
+    name: String!
+
+    """Descripción detallada del rol"""
+    description: String!
+
+    """Si requiere contexto de empresa"""
+    requiresCompany: Boolean!
+
+    """Ruta del dashboard por defecto"""
+    defaultDashboard: String!
+
+    """Permisos principales del rol"""
+    permissions: [String!]!
+
+    """Nivel de prioridad del rol (para ordenamiento)"""
+    priority: Int!
+
+    """Si es un rol del sistema (no se puede eliminar)"""
+    isSystemRole: Boolean!
+}
+
+# ================================================================================
+# TYPES DE PAGINACIÓN Y FILTROS
+# ================================================================================
+
+"""
+Resultado paginado de usuarios
+"""
+type UserPaginator {
+    """Lista de usuarios en la página actual"""
+    data: [User!]!
+
+    """Información de paginación"""
+    paginatorInfo: PaginatorInfo!
+}
+
+"""
+Información estándar de paginación
+"""
+type PaginatorInfo {
+    """Número total de registros"""
+    total: Int!
+
+    """Registros por página"""
+    perPage: Int!
+
+    """Página actual"""
+    currentPage: Int!
+
+    """Última página disponible"""
+    lastPage: Int!
+
+    """Si hay página anterior"""
+    hasMorePages: Boolean!
+}
+
+# ================================================================================
+# INPUTS - Datos de entrada para mutations
+# ================================================================================
+
+"""
+Input para actualizar perfil propio
+"""
+input UpdateProfileInput {
+    """Nuevo nombre"""
+    firstName: String
+        @rules(apply: ["min:2", "max:100"])
+
+    """Nuevo apellido"""
+    lastName: String
+        @rules(apply: ["min:2", "max:100"])
+
+    """Nuevo teléfono"""
+    phoneNumber: PhoneNumber
+        @rules(apply: ["min:10", "max:20"])
+
+    """Nueva URL de avatar"""
+    avatarUrl: URL
+}
+
+"""
+Input para actualizar preferencias
+"""
+input PreferencesInput {
+    """Tema de interfaz"""
+    theme: String
+        @rules(apply: ["in:light,dark"])
+
+    """Idioma preferido"""
+    language: String
+        @rules(apply: ["in:es,en"])
+
+    """Zona horaria"""
+    timezone: String
+
+    """Notificaciones web push"""
+    pushWebNotifications: Boolean
+
+    """Notificaciones de tickets"""
+    notificationsTickets: Boolean
+}
+
+"""
+Input para completar perfil post-registro
+"""
+input CompleteProfileInput {
+    """Teléfono (opcional)"""
+    phoneNumber: PhoneNumber
+
+    """Avatar (opcional)"""
+    avatarUrl: URL
+
+    """Tema preferido"""
+    theme: String = "light"
+
+    """Idioma preferido"""
+    language: String = "es"
+
+    """Zona horaria"""
+    timezone: String = "America/La_Paz"
+
+    """Notificaciones web"""
+    pushWebNotifications: Boolean = true
+
+    """Notificaciones de tickets"""
+    notificationsTickets: Boolean = true
+}
+
+"""
+Input para crear nuevo usuario (admin only)
+"""
+input CreateUserInput {
+    """Email único del usuario"""
+    email: Email!
+        @rules(apply: ["required", "email", "unique:auth.users,email"])
+
+    """Contraseña temporal"""
+    password: String!
+        @rules(apply: ["required", "min:8"])
+
+    """Nombre del usuario"""
+    firstName: String!
+        @rules(apply: ["required", "min:2", "max:100"])
+
+    """Apellido del usuario"""
+    lastName: String!
+        @rules(apply: ["required", "min:2", "max:100"])
+
+    """Estado inicial del usuario"""
+    status: UserStatus = ACTIVE
+
+    """Roles iniciales a asignar"""
+    initialRoles: [AssignRoleInput!]
+
+    """Enviar email de bienvenida"""
+    sendWelcomeEmail: Boolean = true
+}
+
+"""
+Input para actualizar usuario existente
+"""
+input UpdateUserInput {
+    """Nuevo email (validado por unicidad)"""
+    email: Email
+        @rules(apply: ["email"])
+
+    """Nuevo estado"""
+    status: UserStatus
+
+    """Actualización de perfil"""
+    profile: UpdateProfileInput
+
+    """Forzar verificación de email"""
+    forceEmailVerification: Boolean = false
+}
+
+"""
+Input para asignar rol a usuario
+"""
+input AssignRoleInput {
+    """ID del usuario a quien asignar"""
+    userId: UUID!
+        @rules(apply: ["required", "exists:auth.users,id"])
+
+    """Código del rol a asignar"""
+    roleCode: Role!
+        @rules(apply: ["required"])
+
+    """ID de empresa (obligatorio para company_admin y agent)"""
+    companyId: UUID
+        @rules(apply: ["exists:business.companies,id"])
+
+    """Activar rol inmediatamente"""
+    isActive: Boolean = true
+}
+
+"""
+Input para actualizar configuración de rol
+"""
+input UpdateUserRoleInput {
+    """Activar o desactivar rol"""
+    isActive: Boolean
+
+    """Cambiar empresa (solo para roles que lo permiten)"""
+    companyId: UUID
+        @rules(apply: ["exists:business.companies,id"])
+}
+
+# ================================================================================
+# INPUTS DE FILTROS Y ORDENAMIENTO
+# ================================================================================
+
+"""
+Filtros para búsqueda de usuarios
+"""
+input UserFilters {
+    """Buscar por email o nombre"""
+    search: String
+
+    """Filtrar por estado"""
+    status: UserStatus
+
+    """Filtrar por rol"""
+    role: Role
+
+    """Filtrar por empresa"""
+    companyId: UUID
+
+    """Solo usuarios verificados"""
+    emailVerified: Boolean
+
+    """Rango de fechas de registro"""
+    createdBetween: DateRange
+
+    """Solo usuarios con actividad reciente"""
+    recentActivity: Boolean
+}
+
+"""
+Filtros para usuarios de empresa específica
+"""
+input CompanyUserFilters {
+    """Buscar por nombre o email"""
+    search: String
+
+    """Filtrar por rol en esta empresa"""
+    role: Role
+
+    """Solo usuarios activos"""
+    activeOnly: Boolean = true
+}
+
+"""
+Rango de fechas para filtros
+"""
+input DateRange {
+    """Fecha inicial"""
+    from: DateTime!
+
+    """Fecha final"""
+    to: DateTime!
+}
+
+"""
+Ordenamiento de usuarios
+"""
+input UserOrderBy {
+    """Campo por el cual ordenar"""
+    field: UserOrderField!
+
+    """Dirección del ordenamiento"""
+    order: SortOrder!
+}
+
+"""
+Campos disponibles para ordenar usuarios
+"""
+enum UserOrderField {
+    """Ordenar por fecha de creación"""
+    CREATED_AT
+
+    """Ordenar por último acceso"""
+    LAST_LOGIN_AT
+
+    """Ordenar por email"""
+    EMAIL
+
+    """Ordenar por nombre"""
+    NAME
+
+    """Ordenar por estado"""
+    STATUS
+}
+
+"""
+Dirección de ordenamiento
+"""
+enum SortOrder {
+    """Ascendente (A-Z, más antiguo primero)"""
+    ASC
+
+    """Descendente (Z-A, más reciente primero)"""
+    DESC
+}

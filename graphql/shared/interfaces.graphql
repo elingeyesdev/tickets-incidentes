@@ -1,0 +1,37 @@
+# ================================================================================
+# INTERFACES COMPARTIDAS - Sistema Helpdesk V8.0
+# Interfaces base para contratos comunes entre tipos
+# ================================================================================
+
+"""
+Entidad con identificador único UUID
+Implementar en todos los tipos que representan entidades persistentes
+"""
+interface Node {
+  """ID único UUID v4 de la entidad"""
+  id: UUID!
+}
+
+"""
+Entidad con timestamps de auditoría
+Implementar en tipos que requieren seguimiento temporal
+"""
+interface Timestamped {
+  """Fecha y hora de creación del registro"""
+  createdAt: DateTime!
+
+  """Fecha y hora de última actualización"""
+  updatedAt: DateTime!
+}
+
+"""
+Entidad que pertenece a una empresa específica
+Implementar en tipos que operan en contexto empresarial
+"""
+interface BelongsToCompany {
+  """ID de la empresa a la que pertenece"""
+  companyId: UUID!
+
+  """Información básica de la empresa"""
+  companyInfo: CompanyBasicInfo!
+}

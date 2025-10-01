@@ -1,0 +1,1080 @@
+# 🏢 COMPANY MANAGEMENT FEATURE - DOCUMENTACIÓN COMPLETA
+
+## 🎯 OVERVIEW DEL FEATURE
+
+El **CompanyManagement Feature** es fundamental para la arquitectura multi-tenant del sistema Helpdesk. Gestiona empresas, solicitudes de registro, configuración corporativa y validación de contextos empresariales para roles de agentes y administradores.
+
+### 🏗️ ARQUITECTURA DEL FEATURE
+
+```
+CompanyManagement/
+├── Services/           # Lógica de negocio empresarial
+│   ├── CompanyService.php
+│   ├── CompanyRequestService.php
+│   └── CompanyConfigService.php
+├── GraphQL/           # API Layer
+├── Models/            # Company, CompanyRequest
+├── Events/            # Eventos empresariales
+└── Tests/             # Tests específicos
+```
+
+### 🎭 TIPOS DE USUARIOS Y ACCESOS
+
+1. **Usuario Público**: Puede ver empresas públicas y solicitar registro
+2. **Platform Admin**: Gestión completa de empresas y solicitudes
+3. **Company Admin**: Gestión de su propia empresa
+4. **Agent**: Acceso de solo lectura a info de su empresa
+5. **User**: Puede seguir empresas y crear tickets
+
+---
+
+## 📖 QUERIES - OPERACIONES DE LECTURA
+
+### 1. PUBLIC_COMPANIES - Empresas Públicas
+
+**Descripción**: Lista de empresas públicas disponibles para registro de usuarios y creación de tickets. No requiere autenticación.
+
+```graphql
+query PublicCompanies(
+    $search: String
+    $activeOnly: Boolean = true
+    $first: Int = 20
+) {
+    publicCompanies(
+        search: $search
+        activeOnly: $activeOnly
+        first: $first
+    ) {
+        id
+        companyCode
+        name
+        supportEmail
+        website
+        logoUrl
+        description
+        industry
+        city
+        country
+        acceptsPublicUsers
+        businessHoursDisplay
+    }
+}
+```
+
+**Variables de Ejemplo**:
+```json
+{
+    "search": "universidad",
+    "activeOnly": true,
+    "first": 10
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "publicCompanies": [
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "companyCode": "CMP-2025-00001",
+                "name": "Universidad del Valle",
+                "supportEmail": "soporte@univalle.edu.bo",
+                "website": "https://univalle.edu.bo",
+                "logoUrl": "https://storage.helpdesk.com/logos/univalle.png",
+                "description": "Universidad privada líder en Bolivia",
+                "industry": "Educación Superior",
+                "city": "Cochabamba",
+                "country": "Bolivia",
+                "acceptsPublicUsers": true,
+                "businessHoursDisplay": "Lunes a Viernes: 8:00 - 18:00"
+            },
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440001",
+                "companyCode": "CMP-2025-00002",
+                "name": "Empresa Tech Solutions",
+                "supportEmail": "help@techsolutions.bo",
+                "website": "https://techsolutions.bo",
+                "logoUrl": "https://storage.helpdesk.com/logos/techsolutions.png",
+                "description": "Soluciones tecnológicas innovadoras",
+                "industry": "Tecnología",
+                "city": "Santa Cruz",
+                "country": "Bolivia",
+                "acceptsPublicUsers": true,
+                "businessHoursDisplay": "24/7 - Soporte continuo"
+            }
+        ]
+    }
+}
+```
+
+**Casos de Uso**:
+- Selector de empresa en formulario de tickets
+- Directorio público de empresas
+- Página de registro donde elegir empresa
+- Marketplace de servicios
+
+---
+
+### 2. COMPANY - Empresa Específica
+
+**Descripción**: Obtiene información completa de una empresa específica. Requiere permisos de acceso.
+
+```graphql
+query Company($id: UUID!) {
+    company(id: $id) {
+        id
+        companyCode
+        name
+        legalName
+        supportEmail
+        phone
+        website
+
+        # Información de contacto
+        contactAddress
+        contactCity
+        contactState
+        contactCountry
+        contactPostalCode
+
+        # Información legal
+        taxId
+        legalRepresentative
+
+        # Configuración operativa
+        businessHours
+        timezone
+
+        # Branding
+        logoUrl
+        faviconUrl
+        primaryColor
+        secondaryColor
+
+        # Estado
+        status
+        settings
+
+        # Relaciones
+        admin {
+            id
+            displayName
+            email
+        }
+
+        # Estadísticas (evita loops infinitos)
+        activeAgentsCount
+        totalUsersCount
+        totalTicketsCount
+        openTicketsCount
+        averageRating
+        categoriesCount
+        macrosCount
+
+        # Auditoría
+        createdAt
+        updatedAt
+        originRequest {
+            id
+            requestCode
+        }
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "company": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "companyCode": "CMP-2025-00001",
+            "name": "Universidad del Valle",
+            "legalName": "Universidad del Valle S.R.L.",
+            "supportEmail": "soporte@univalle.edu.bo",
+            "phone": "+591 4 4232323",
+            "website": "https://univalle.edu.bo",
+            "contactAddress": "Av. España #123, Zona Central",
+            "contactCity": "Cochabamba",
+            "contactState": "Cochabamba",
+            "contactCountry": "Bolivia",
+            "contactPostalCode": "0000",
+            "taxId": "1234567890",
+            "legalRepresentative": "Dr. Carlos Mendoza",
+            "businessHours": {
+                "monday": {"open": "08:00", "close": "18:00"},
+                "tuesday": {"open": "08:00", "close": "18:00"},
+                "wednesday": {"open": "08:00", "close": "18:00"},
+                "thursday": {"open": "08:00", "close": "18:00"},
+                "friday": {"open": "08:00", "close": "18:00"},
+                "saturday": {"open": "08:00", "close": "12:00"}
+            },
+            "timezone": "America/La_Paz",
+            "logoUrl": "https://storage.helpdesk.com/logos/univalle.png",
+            "faviconUrl": "https://storage.helpdesk.com/favicons/univalle.ico",
+            "primaryColor": "#1e40af",
+            "secondaryColor": "#64748b",
+            "status": "ACTIVE",
+            "settings": {
+                "allowPublicTickets": true,
+                "autoAssignTickets": true,
+                "requireEmailVerification": false
+            },
+            "admin": {
+                "id": "admin-001",
+                "displayName": "Admin Universidad",
+                "email": "admin@univalle.edu.bo"
+            },
+            "activeAgentsCount": 12,
+            "totalUsersCount": 145,
+            "totalTicketsCount": 1247,
+            "openTicketsCount": 23,
+            "averageRating": 4.3,
+            "categoriesCount": 8,
+            "macrosCount": 15,
+            "createdAt": "2025-01-15T10:00:00Z",
+            "updatedAt": "2025-09-20T14:30:00Z",
+            "originRequest": {
+                "id": "req-001",
+                "requestCode": "REQ-2025-00001"
+            }
+        }
+    }
+}
+```
+
+**Casos de Uso**:
+- Página de detalle de empresa
+- Panel de configuración empresarial
+- Validación de contexto para agentes
+- Información para branding dinámico
+
+---
+
+### 3. MY_COMPANIES - Mis Empresas
+
+**Descripción**: Lista las empresas donde el usuario autenticado tiene roles activos.
+
+```graphql
+query MyCompanies {
+    myCompanies {
+        id
+        companyCode
+        name
+        logoUrl
+        primaryColor
+        status
+    }
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "myCompanies": [
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "companyCode": "CMP-2025-00001",
+                "name": "Universidad del Valle",
+                "logoUrl": "https://storage.helpdesk.com/logos/univalle.png",
+                "primaryColor": "#1e40af",
+                "status": "ACTIVE"
+            },
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440001",
+                "companyCode": "CMP-2025-00002",
+                "name": "Empresa Tech Solutions",
+                "logoUrl": "https://storage.helpdesk.com/logos/techsolutions.png",
+                "primaryColor": "#dc2626",
+                "status": "ACTIVE"
+            }
+        ]
+    }
+}
+```
+
+**Casos de Uso**:
+- Selector de contexto empresarial
+- Dashboard de usuario con múltiples roles
+- Navegación entre empresas
+- Validación de permisos
+
+---
+
+### 4. COMPANIES - Lista Completa (Admin)
+
+**Descripción**: Lista paginada de todas las empresas del sistema. Solo para platform admins.
+
+```graphql
+query Companies(
+    $filters: CompanyFilters
+    $orderBy: [CompanyOrderBy!]
+    $page: Int = 1
+    $first: Int = 15
+) {
+    companies(
+        filters: $filters
+        orderBy: $orderBy
+        page: $page
+        first: $first
+    ) {
+        data {
+            id
+            companyCode
+            name
+            supportEmail
+            status
+            admin {
+                displayName
+                email
+            }
+            activeAgentsCount
+            totalTicketsCount
+            averageRating
+            createdAt
+        }
+        paginatorInfo {
+            total
+            perPage
+            currentPage
+            lastPage
+            hasMorePages
+        }
+    }
+}
+```
+
+**Variables con Filtros**:
+```json
+{
+    "filters": {
+        "search": "universidad",
+        "status": "ACTIVE",
+        "industry": "Educación",
+        "country": "Bolivia",
+        "recentActivity": true,
+        "createdBetween": {
+            "from": "2025-01-01T00:00:00Z",
+            "to": "2025-12-31T23:59:59Z"
+        }
+    },
+    "orderBy": [
+        {
+            "field": "CREATED_AT",
+            "order": "DESC"
+        }
+    ],
+    "page": 1,
+    "first": 25
+}
+```
+
+**Casos de Uso**:
+- Panel de administración de plataforma
+- Gestión masiva de empresas
+- Análisis y reportes administrativos
+- Monitoreo de actividad empresarial
+
+---
+
+### 5. COMPANY_REQUESTS - Solicitudes Pendientes
+
+**Descripción**: Lista de solicitudes de empresa pendientes de aprobación. Solo para platform admins.
+
+```graphql
+query CompanyRequests(
+    $status: CompanyRequestStatus
+    $first: Int = 15
+) {
+    companyRequests(
+        status: $status
+        first: $first
+    ) {
+        id
+        requestCode
+        companyName
+        legalName
+        adminEmail
+        businessDescription
+        website
+        industryType
+        estimatedUsers
+
+        # Información de contacto
+        contactAddress
+        contactCity
+        contactCountry
+        taxId
+
+        # Estado de solicitud
+        status
+        reviewedBy {
+            displayName
+        }
+        reviewedAt
+        rejectionReason
+        createdCompany {
+            id
+            name
+            companyCode
+        }
+
+        # Auditoría
+        createdAt
+        updatedAt
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "status": "PENDING",
+    "first": 20
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "companyRequests": [
+            {
+                "id": "req-001",
+                "requestCode": "REQ-2025-00003",
+                "companyName": "Consultoría Legal Pérez",
+                "legalName": "Consultoría Legal Pérez & Asociados S.R.L.",
+                "adminEmail": "admin@legaleperez.bo",
+                "businessDescription": "Consultoría legal especializada en derecho empresarial y tributario con más de 15 años de experiencia en el mercado boliviano.",
+                "website": "https://legalperez.bo",
+                "industryType": "Servicios Legales",
+                "estimatedUsers": 25,
+                "contactAddress": "Av. Ballivián #456, Zona Sur",
+                "contactCity": "La Paz",
+                "contactCountry": "Bolivia",
+                "taxId": "9876543210",
+                "status": "PENDING",
+                "reviewedBy": null,
+                "reviewedAt": null,
+                "rejectionReason": null,
+                "createdCompany": null,
+                "createdAt": "2025-09-20T15:30:00Z",
+                "updatedAt": "2025-09-20T15:30:00Z"
+            }
+        ]
+    }
+}
+```
+
+**Casos de Uso**:
+- Panel de revisión de solicitudes
+- Proceso de aprobación empresarial
+- Auditoría de nuevas empresas
+- Gestión de cola de solicitudes
+
+---
+
+## ✏️ MUTATIONS - OPERACIONES DE ESCRITURA
+
+### 1. REQUEST_COMPANY - Solicitar Nueva Empresa
+
+**Descripción**: Solicitud pública para crear una nueva empresa. No requiere autenticación.
+
+```graphql
+mutation RequestCompany($input: CompanyRequestInput!) {
+    requestCompany(input: $input) {
+        id
+        requestCode
+        companyName
+        adminEmail
+        status
+        createdAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "companyName": "Consultoría Legal Pérez",
+        "legalName": "Consultoría Legal Pérez & Asociados S.R.L.",
+        "adminEmail": "admin@legalperez.bo",
+        "businessDescription": "Consultoría legal especializada en derecho empresarial y tributario con más de 15 años de experiencia en el mercado boliviano. Ofrecemos servicios integrales de asesoramiento legal para empresas de todos los tamaños.",
+        "website": "https://legalperez.bo",
+        "industryType": "Servicios Legales",
+        "estimatedUsers": 25,
+        "contactAddress": "Av. Ballivián #456, Zona Sur",
+        "contactCity": "La Paz",
+        "contactCountry": "Bolivia",
+        "contactPostalCode": "0000",
+        "taxId": "9876543210"
+    }
+}
+```
+
+**Validaciones del Input**:
+- `companyName`: Requerido, 2-200 caracteres
+- `adminEmail`: Requerido, formato email válido
+- `businessDescription`: Requerido, 50-1000 caracteres
+- `industryType`: Requerido, máximo 100 caracteres
+- `estimatedUsers`: Opcional, entre 1 y 10,000
+- `website`: Opcional, URL válida
+- `taxId`: Opcional, máximo 50 caracteres
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "requestCompany": {
+            "id": "550e8400-e29b-41d4-a716-446655440010",
+            "requestCode": "REQ-2025-00003",
+            "companyName": "Consultoría Legal Pérez",
+            "adminEmail": "admin@legalperez.bo",
+            "status": "PENDING",
+            "createdAt": "2025-09-21T16:45:00Z"
+        }
+    }
+}
+```
+
+**Flujo Post-Solicitud**:
+1. Solicitud creada con status "PENDING"
+2. Email de confirmación enviado al solicitante
+3. Notificación a platform admins para revisión
+4. Solicitud aparece en cola de revisión
+
+**Rate Limiting**:
+- Máximo 3 solicitudes por hora por IP
+- Validación de email único por solicitud
+
+---
+
+### 2. APPROVE_COMPANY_REQUEST - Aprobar Solicitud
+
+**Descripción**: Aprueba una solicitud de empresa y crea automáticamente la empresa y admin. Solo platform admins.
+
+```graphql
+mutation ApproveCompanyRequest($requestId: UUID!) {
+    approveCompanyRequest(requestId: $requestId) {
+        id
+        companyCode
+        name
+        status
+        admin {
+            id
+            email
+            displayName
+        }
+        createdAt
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "requestId": "550e8400-e29b-41d4-a716-446655440010"
+}
+```
+
+**Respuesta de Ejemplo**:
+```json
+{
+    "data": {
+        "approveCompanyRequest": {
+            "id": "550e8400-e29b-41d4-a716-446655440020",
+            "companyCode": "CMP-2025-00003",
+            "name": "Consultoría Legal Pérez",
+            "status": "ACTIVE",
+            "admin": {
+                "id": "user-admin-003",
+                "email": "admin@legalperez.bo",
+                "displayName": "Admin Legal Pérez"
+            },
+            "createdAt": "2025-09-21T17:00:00Z"
+        }
+    }
+}
+```
+
+**Proceso Automático de Aprobación**:
+1. **Actualizar solicitud**: Status cambia a "APPROVED"
+2. **Crear empresa**: Nueva empresa con datos de la solicitud
+3. **Verificar admin**:
+   - Si email existe: Asignar rol "COMPANY_ADMIN"
+   - Si no existe: Crear usuario + rol automáticamente
+4. **Generar códigos**: Company code único (CMP-YYYY-NNNNN)
+5. **Configuración inicial**: Categorías y macros por defecto
+6. **Notificaciones**: Email al admin con credenciales y acceso
+
+**Auditoría**:
+- Registro completo de quién aprobó y cuándo
+- Link entre solicitud original y empresa creada
+- Log de acciones automatizadas
+
+---
+
+### 3. REJECT_COMPANY_REQUEST - Rechazar Solicitud
+
+**Descripción**: Rechaza una solicitud de empresa con motivo. Solo platform admins.
+
+```graphql
+mutation RejectCompanyRequest($requestId: UUID!, $reason: String!) {
+    rejectCompanyRequest(requestId: $requestId, reason: $reason)
+}
+```
+
+**Variables**:
+```json
+{
+    "requestId": "550e8400-e29b-41d4-a716-446655440010",
+    "reason": "La descripción del negocio no es suficientemente clara y no se proporciona información válida de contacto. Por favor, proporcione más detalles sobre los servicios que ofrece y verifique la información de contacto."
+}
+```
+
+**Respuesta**:
+```json
+{
+    "data": {
+        "rejectCompanyRequest": true
+    }
+}
+```
+
+**Proceso de Rechazo**:
+1. **Actualizar solicitud**: Status "REJECTED" + motivo
+2. **Registrar auditoría**: Quién rechazó y por qué
+3. **Notificar solicitante**: Email con motivo del rechazo
+4. **Permitir reenvío**: Solicitante puede corregir y reenviar
+
+---
+
+### 4. CREATE_COMPANY - Crear Empresa Directamente
+
+**Descripción**: Crea una empresa directamente sin proceso de solicitud. Solo platform admins.
+
+```graphql
+mutation CreateCompany($input: CreateCompanyInput!) {
+    createCompany(input: $input) {
+        id
+        companyCode
+        name
+        status
+        admin {
+            displayName
+            email
+        }
+        createdAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "input": {
+        "name": "Empresa Test Directa",
+        "legalName": "Empresa Test Directa S.A.",
+        "adminUserId": "550e8400-e29b-41d4-a716-446655440000",
+        "supportEmail": "soporte@test.com",
+        "phone": "+591 70123456",
+        "website": "https://test.com",
+        "contactInfo": {
+            "address": "Calle Test #123",
+            "city": "Santa Cruz",
+            "state": "Santa Cruz",
+            "country": "Bolivia",
+            "postalCode": "0000",
+            "taxId": "1111111111",
+            "legalRepresentative": "Juan Test"
+        },
+        "initialConfig": {
+            "businessHours": {
+                "monday": {"open": "09:00", "close": "17:00"},
+                "tuesday": {"open": "09:00", "close": "17:00"},
+                "wednesday": {"open": "09:00", "close": "17:00"},
+                "thursday": {"open": "09:00", "close": "17:00"},
+                "friday": {"open": "09:00", "close": "17:00"}
+            },
+            "timezone": "America/La_Paz"
+        },
+        "branding": {
+            "primaryColor": "#3b82f6",
+            "secondaryColor": "#64748b"
+        }
+    }
+}
+```
+
+**Casos de Uso**:
+- Crear empresas para testing
+- Migración de datos
+- Configuración inicial del sistema
+- Casos especiales sin solicitud pública
+
+---
+
+### 5. UPDATE_COMPANY - Actualizar Empresa
+
+**Descripción**: Actualiza información de una empresa existente. Company admin o platform admin.
+
+```graphql
+mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
+    updateCompany(id: $id, input: $input) {
+        id
+        name
+        legalName
+        supportEmail
+        website
+        primaryColor
+        secondaryColor
+        updatedAt
+    }
+}
+```
+
+**Input Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "input": {
+        "name": "Universidad del Valle - Campus Norte",
+        "supportEmail": "soporte.norte@univalle.edu.bo",
+        "website": "https://norte.univalle.edu.bo",
+        "contactInfo": {
+            "address": "Av. Norte #789, Zona Norte",
+            "city": "Cochabamba",
+            "phone": "+591 4 4567890"
+        },
+        "branding": {
+            "primaryColor": "#1e40af",
+            "secondaryColor": "#3730a3"
+        }
+    }
+}
+```
+
+**Permisos**:
+- **Platform Admin**: Puede modificar cualquier empresa
+- **Company Admin**: Solo su propia empresa
+- **Validación**: Verificación automática de permisos por directiva @can
+
+---
+
+### 6. SUSPEND_COMPANY - Suspender Empresa
+
+**Descripción**: Suspende temporalmente una empresa. Solo platform admins.
+
+```graphql
+mutation SuspendCompany($id: UUID!, $reason: String!) {
+    suspendCompany(id: $id, reason: $reason) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Variables**:
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Incumplimiento de términos de servicio - uso excesivo de recursos"
+}
+```
+
+**Efectos de Suspensión**:
+1. **Cambiar status** a "SUSPENDED"
+2. **Desactivar agentes**: Todos los roles de agentes se desactivan
+3. **Bloquear operaciones**: No pueden crear tickets ni responder
+4. **Notificar admin**: Email automático con motivo
+5. **Registrar auditoría**: Log completo de la suspensión
+
+---
+
+### 7. ACTIVATE_COMPANY - Reactivar Empresa
+
+**Descripción**: Reactiva una empresa suspendida. Solo platform admins.
+
+```graphql
+mutation ActivateCompany($id: UUID!) {
+    activateCompany(id: $id) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Efectos de Reactivación**:
+1. **Cambiar status** a "ACTIVE"
+2. **Reactivar agentes**: Restaurar roles de agentes
+3. **Restaurar operaciones**: Funcionalidad completa
+4. **Notificar admin**: Email de reactivación
+5. **Registrar auditoría**: Log de reactivación
+
+---
+
+## 🔒 SEGURIDAD Y PERMISOS
+
+### Matriz de Permisos por Operación
+
+| Operación | Público | USER | AGENT | COMPANY_ADMIN | PLATFORM_ADMIN |
+|-----------|---------|------|-------|---------------|----------------|
+| publicCompanies | ✅ | ✅ | ✅ | ✅ | ✅ |
+| company | ❌ | ✅ (con rol) | ✅ (su empresa) | ✅ (su empresa) | ✅ (todas) |
+| myCompanies | ❌ | ✅ | ✅ | ✅ | ✅ |
+| companies | ❌ | ❌ | ❌ | ❌ | ✅ |
+| requestCompany | ✅ | ✅ | ✅ | ✅ | ✅ |
+| approveRequest | ❌ | ❌ | ❌ | ❌ | ✅ |
+| rejectRequest | ❌ | ❌ | ❌ | ❌ | ✅ |
+| createCompany | ❌ | ❌ | ❌ | ❌ | ✅ |
+| updateCompany | ❌ | ❌ | ❌ | ✅ (su empresa) | ✅ (todas) |
+| suspendCompany | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+### Rate Limiting Específico
+
+- **requestCompany**: 3 requests/hora por IP
+- **createCompany**: 10 requests/hora por admin
+- **updateCompany**: 30 requests/hora por empresa
+
+### Validaciones de Contexto Empresarial
+
+```graphql
+# Validación automática por directivas
+query Company($id: UUID!) {
+    company(id: $id) @can(ability: "view", model: "Company", find: "id") {
+        # Solo retorna si el usuario tiene acceso
+    }
+}
+
+mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
+    updateCompany(id: $id, input: $input)
+        @can(ability: "update", model: "Company", find: "id") {
+        # Solo ejecuta si tiene permisos
+    }
+}
+```
+
+---
+
+## 🧪 EJEMPLOS DE USO FRONTEND
+
+### Hook para Gestión de Empresas
+
+```typescript
+// useCompanies.ts
+import { useQuery, useMutation } from '@apollo/client';
+import {
+    PUBLIC_COMPANIES_QUERY,
+    MY_COMPANIES_QUERY,
+    REQUEST_COMPANY_MUTATION
+} from '../graphql';
+
+export const useCompanies = () => {
+    const { data: publicCompanies, loading: publicLoading } = useQuery(
+        PUBLIC_COMPANIES_QUERY,
+        {
+            variables: { activeOnly: true, first: 50 }
+        }
+    );
+
+    const { data: myCompanies, loading: myLoading } = useQuery(
+        MY_COMPANIES_QUERY,
+        {
+            skip: !isAuthenticated // Solo si está logueado
+        }
+    );
+
+    const [requestCompany] = useMutation(REQUEST_COMPANY_MUTATION);
+
+    const handleRequestCompany = async (input: CompanyRequestInput) => {
+        try {
+            const { data } = await requestCompany({ variables: { input } });
+            return data.requestCompany;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    return {
+        publicCompanies: publicCompanies?.publicCompanies || [],
+        myCompanies: myCompanies?.myCompanies || [],
+        loading: publicLoading || myLoading,
+        requestCompany: handleRequestCompany
+    };
+};
+```
+
+### Componente Selector de Empresa
+
+```typescript
+// CompanySelector.tsx
+import React from 'react';
+import { useCompanies } from '../hooks/useCompanies';
+
+interface CompanySelectorProps {
+    onSelect: (company: CompanyPublicInfo) => void;
+    selectedCompanyId?: string;
+}
+
+export const CompanySelector: React.FC<CompanySelectorProps> = ({
+    onSelect,
+    selectedCompanyId
+}) => {
+    const { publicCompanies, loading } = useCompanies();
+
+    if (loading) {
+        return <div className="animate-pulse">Cargando empresas...</div>;
+    }
+
+    return (
+        <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+                Selecciona una empresa
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {publicCompanies.map((company) => (
+                    <div
+                        key={company.id}
+                        onClick={() => onSelect(company)}
+                        className={`
+                            p-4 border rounded-lg cursor-pointer transition-all
+                            ${selectedCompanyId === company.id
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }
+                        `}
+                    >
+                        <div className="flex items-center space-x-3">
+                            {company.logoUrl && (
+                                <img
+                                    src={company.logoUrl}
+                                    alt={`Logo ${company.name}`}
+                                    className="w-12 h-12 object-contain"
+                                />
+                            )}
+                            <div className="flex-1">
+                                <h3 className="font-medium text-gray-900">
+                                    {company.name}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    {company.industry} • {company.city}
+                                </p>
+                                {company.businessHoursDisplay && (
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {company.businessHoursDisplay}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                    ¿No encuentras tu empresa?{' '}
+                    <a href="/request-company" className="text-blue-600 hover:text-blue-500">
+                        Solicita que la agreguen
+                    </a>
+                </p>
+            </div>
+        </div>
+    );
+};
+```
+
+---
+
+## 🚨 MANEJO DE ERRORES
+
+### Códigos de Error Específicos
+
+```typescript
+enum CompanyManagementErrors {
+    COMPANY_NOT_FOUND = 'COMPANY_NOT_FOUND',
+    COMPANY_NAME_EXISTS = 'COMPANY_NAME_EXISTS',
+    COMPANY_SUSPENDED = 'COMPANY_SUSPENDED',
+    INVALID_COMPANY_CONTEXT = 'INVALID_COMPANY_CONTEXT',
+    REQUEST_ALREADY_EXISTS = 'REQUEST_ALREADY_EXISTS',
+    REQUEST_NOT_FOUND = 'REQUEST_NOT_FOUND',
+    INSUFFICIENT_COMPANY_PERMISSIONS = 'INSUFFICIENT_COMPANY_PERMISSIONS'
+}
+```
+
+### Estructura de Error
+
+```json
+{
+    "errors": [
+        {
+            "message": "No tienes permisos para acceder a esta empresa",
+            "extensions": {
+                "code": "INSUFFICIENT_COMPANY_PERMISSIONS",
+                "companyId": "cmp-001",
+                "requiredRole": "COMPANY_ADMIN"
+            },
+            "path": ["company"]
+        }
+    ]
+}
+```
+
+---
+
+## 📊 MÉTRICAS Y ESTADÍSTICAS
+
+### Eventos de Auditoría
+
+- `company.created`: Empresa creada
+- `company.updated`: Empresa actualizada
+- `company.suspended`: Empresa suspendida
+- `company.activated`: Empresa reactivada
+- `company_request.submitted`: Solicitud enviada
+- `company_request.approved`: Solicitud aprobada
+- `company_request.rejected`: Solicitud rechazada
+
+### Métricas de Sistema
+
+- Número total de empresas activas/suspendidas
+- Solicitudes pendientes vs tiempo promedio de aprobación
+- Distribución geográfica de empresas
+- Empresas más activas por tickets/usuarios
+- Crecimiento mensual de nuevas empresas
+
+---
+
+## 🔄 INTEGRACIÓN CON OTROS FEATURES
+
+### UserManagement Feature
+
+- **Roles Contextuales**: Valida company_id para AGENT y COMPANY_ADMIN
+- **CompanyBasicInfo**: Proporciona info básica sin loops infinitos
+- **User Assignments**: Gestiona asignaciones de usuarios a empresas
+
+### Authentication Feature
+
+- **Multi-tenant Context**: Proporciona contexto empresarial en tokens
+- **Company Branding**: Información para personalización de UI
+- **Role Validation**: Valida contexto empresarial en autenticación
+
+### TicketManagement Feature
+
+- **Ticket Context**: Todos los tickets pertenecen a una empresa
+- **Agent Assignment**: Solo agentes de la empresa pueden tomar tickets
+- **Company Settings**: Configuraciones específicas de ticket por empresa
+
+---
+
+Esta documentación cubre completamente el **CompanyManagement Feature**, proporcionando la base fundamental para el sistema multi-tenant del Helpdesk. Es crítico para que funcionen correctamente los roles de agentes y la separación de datos por empresa.

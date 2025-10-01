@@ -1,0 +1,106 @@
+# ================================================================================
+# ENUMS COMPARTIDOS - Sistema Helpdesk V8.0
+# Enumeraciones globales del sistema
+# ================================================================================
+
+"""
+Roles del sistema de helpdesk
+Determina nivel de acceso y permisos del usuario
+"""
+enum Role {
+  """Administrador de plataforma - acceso total al sistema"""
+  PLATFORM_ADMIN @enum(value: "platform_admin")
+
+  """Administrador de empresa - gestiona su empresa completa"""
+  COMPANY_ADMIN @enum(value: "company_admin")
+
+  """Agente de soporte - responde tickets de su empresa"""
+  AGENT @enum(value: "agent")
+
+  """Usuario final - crea y gestiona sus propios tickets"""
+  USER @enum(value: "user")
+}
+
+"""
+Estados posibles de un usuario en el sistema
+"""
+enum UserStatus {
+  """Usuario activo con acceso completo"""
+  ACTIVE @enum(value: "active")
+
+  """Usuario suspendido temporalmente"""
+  SUSPENDED @enum(value: "suspended")
+
+  """Usuario eliminado (soft delete)"""
+  DELETED @enum(value: "deleted")
+}
+
+"""
+Estados posibles de una empresa
+"""
+enum CompanyStatus {
+  """Empresa activa operando normalmente"""
+  ACTIVE @enum(value: "active")
+
+  """Empresa suspendida temporalmente"""
+  SUSPENDED @enum(value: "suspended")
+}
+
+"""
+Estados del ciclo de vida de un ticket
+"""
+enum TicketStatus {
+  """Ticket recién creado, esperando asignación"""
+  OPEN @enum(value: "open")
+
+  """Ticket en proceso, esperando respuesta del usuario"""
+  PENDING @enum(value: "pending")
+
+  """Problema resuelto, esperando confirmación"""
+  RESOLVED @enum(value: "resolved")
+
+  """Ticket cerrado y completado"""
+  CLOSED @enum(value: "closed")
+}
+
+"""
+Niveles de prioridad de tickets
+"""
+enum TicketPriority {
+  """Prioridad baja - no urgente"""
+  LOW @enum(value: "low")
+
+  """Prioridad media - atención normal"""
+  MEDIUM @enum(value: "medium")
+
+  """Prioridad alta - requiere atención pronto"""
+  HIGH @enum(value: "high")
+
+  """Urgente - requiere atención inmediata"""
+  URGENT @enum(value: "urgent")
+}
+
+"""
+Estados de solicitud de creación de empresa
+"""
+enum CompanyRequestStatus {
+  """Solicitud pendiente de revisión"""
+  PENDING @enum(value: "pending")
+
+  """Solicitud aprobada y empresa creada"""
+  APPROVED @enum(value: "approved")
+
+  """Solicitud rechazada"""
+  REJECTED @enum(value: "rejected")
+}
+
+"""
+Dirección de ordenamiento para queries
+"""
+enum SortOrder {
+  """Ascendente (A-Z, más antiguo primero, menor a mayor)"""
+  ASC @enum(value: "asc")
+
+  """Descendente (Z-A, más reciente primero, mayor a menor)"""
+  DESC @enum(value: "desc")
+}

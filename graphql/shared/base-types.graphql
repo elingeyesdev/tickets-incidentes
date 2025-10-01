@@ -1,0 +1,79 @@
+# ================================================================================
+# TIPOS BASE COMPARTIDOS - Sistema Helpdesk V8.0
+# Tipos básicos simplificados para EVITAR LOOPS INFINITOS
+# ================================================================================
+
+"""
+Información básica de usuario (versión simplificada)
+Usar en relaciones para evitar loops infinitos
+NO incluye relaciones complejas ni listas anidadas
+"""
+type UserBasicInfo {
+  """ID único del usuario"""
+  id: UUID!
+
+  """Código único legible del usuario"""
+  userCode: String!
+
+  """Email del usuario"""
+  email: Email!
+
+  """Nombre para mostrar (firstName + lastName)"""
+  displayName: String!
+
+  """URL del avatar del usuario"""
+  avatarUrl: URL
+
+  """Estado actual del usuario"""
+  status: UserStatus!
+}
+
+"""
+Información básica de empresa (versión simplificada)
+Usar en relaciones para evitar loops infinitos
+NO incluye listas de usuarios, agentes o tickets
+"""
+type CompanyBasicInfo {
+  """ID único de la empresa"""
+  id: UUID!
+
+  """Código único legible de la empresa"""
+  companyCode: String!
+
+  """Nombre comercial de la empresa"""
+  name: String!
+
+  """URL del logo de la empresa"""
+  logoUrl: URL
+
+  """Color primario de branding"""
+  primaryColor: HexColor
+
+  """Estado actual de la empresa"""
+  status: CompanyStatus!
+}
+
+"""
+Información básica de ticket (versión simplificada)
+Usar en relaciones para evitar loops infinitos
+NO incluye respuestas ni archivos adjuntos
+"""
+type TicketBasicInfo {
+  """ID único del ticket"""
+  id: UUID!
+
+  """Código único legible del ticket"""
+  ticketCode: String!
+
+  """Título del ticket"""
+  title: String!
+
+  """Estado actual del ticket"""
+  status: TicketStatus!
+
+  """Prioridad del ticket"""
+  priority: TicketPriority!
+
+  """Fecha de creación"""
+  createdAt: DateTime!
+}
