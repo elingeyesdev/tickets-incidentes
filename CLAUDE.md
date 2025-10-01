@@ -8,93 +8,143 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a helpdesk system built with Laravel 12 backend, React 18 frontend via Inertia.js, and planned GraphQL API for future mobile apps.
 
 ### Tech Stack
-- **Backend**: Laravel 12 + planned Lighthouse GraphQL
-- **Frontend Web**: React 18 + TypeScript + Inertia.js
+- **Backend**: Laravel 12 + Lighthouse GraphQL 6
+- **Frontend Web**: React 19 + Inertia.js (TypeScript support available)
 - **Database**: PostgreSQL 17 (4 schemas: auth, business, ticketing, audit)
 - **Authentication**: JWT with Refresh Tokens
-- **Development**: Currently using Laravel Herd, planned migration to Docker
+- **Build Tools**: Vite 7 + TailwindCSS 4
+- **Development**: Docker + Docker Compose
 
 ### Key Commands
 
-**Development**:exa
+**Development**:
 ```bash
-# Start development server with all services
-composer dev
+# Start all services with Docker
+docker compose up
 
-# Frontend development (Vite HMR)
-npm run dev
+# Start in background
+docker compose up -d
+
+# Frontend development (Vite HMR) - inside container
+docker compose exec app npm run dev
 
 # Build for production
-npm run build
+docker compose exec app npm run build
+
+# Stop all services
+docker compose down
 ```
 
 **Testing**:
 ```bash
 # Run all tests
-php artisan test
+docker compose exec app php artisan test
 
 # Run specific feature tests
-php artisan test --filter=[Feature]
+docker compose exec app php artisan test --filter=[Feature]
 
 # Run via composer
-composer test
+docker compose exec app composer test
 ```
 
 **Laravel**:
 ```bash
 # Generate services using feature structure
-php artisan make:service [Feature]/[Feature]Service
+docker compose exec app php artisan make:service [Feature]/[Feature]Service
 
 # Generate models with migrations
-php artisan make:model Features/[Feature]/Models/[Model] -m
+docker compose exec app php artisan make:model Features/[Feature]/Models/[Model] -m
 
 # Run migrations
-php artisan migrate
+docker compose exec app php artisan migrate
+
+# Access container shell
+docker compose exec app bash
 ```
 
 **Code Quality**:
 ```bash
 # Lint code (Laravel Pint)
-./vendor/bin/pint
+docker compose exec app ./vendor/bin/pint
+
+# Validate GraphQL schema
+docker compose exec app php artisan lighthouse:validate-schema
 
 # Type checking (when available)
-npm run type-check
+docker compose exec app npm run type-check
 ```
 
-### Architecture: Feature-First Organization
+### Architecture: Feature-First Organization (PURE)
 
-**CRITICAL**: This project uses feature-first organization. All code must be organized by business features, not technical layers.
+**CRITICAL**: This project uses **Feature-First PURE** organization. ALL code related to a feature lives inside its folder.
+
+**ONLY EXCEPTION**: `tests/` stays in root (Laravel convention), but organized by features inside.
 
 ```
 app/
-├── Core/                    # Shared code between features
-│   ├── Services/BaseService.php
-│   ├── GraphQL/Mutations/BaseMutation.php
-│   ├── GraphQL/Queries/BaseQuery.php
-│   └── GraphQL/DataLoaders/BaseDataLoader.php
+├── Shared/                         # Code shared between features
+│   ├── Services/                   # Shared business logic
+│   ├── GraphQL/
+│   │   ├── Scalars/               # UUID, Email, PhoneNumber, HexColor
+│   │   ├── Directives/            # @company, @audit, @rateLimit
+│   │   ├── Queries/               # ping, version, health
+│   │   └── Mutations/             # BaseMutation (inheritance)
+│   ├── Traits/                    # HasUuid, Auditable
+│   ├── Enums/                     # UserStatus, TicketStatus
+│   ├── Exceptions/                # Custom exceptions
+│   └── Helpers/                   # Utility functions
 │
-├── Features/                # Independent business features
-│   ├── Authentication/      # Login, registration, JWT, OAuth
-│   │   ├── Services/
+├── Features/                       # Independent business features
+│   ├── Authentication/            # ✅ Login, registration, JWT, OAuth
+│   │   ├── Services/              # AuthenticationService
+│   │   ├── Models/                # User, RefreshToken
 │   │   ├── GraphQL/
-│   │   │   ├── Queries/
-│   │   │   └── Mutations/
-│   │   ├── Models/
-│   │   ├── Events/
-│   │   └── Tests/
-│   ├── UserManagement/      # User CRUD, profiles, roles
-│   └── CompanyManagement/   # Company CRUD, requests, settings
+│   │   │   ├── Schema/            # authentication.graphql
+│   │   │   ├── Queries/           # AuthStatusQuery, MySessionsQuery
+│   │   │   ├── Mutations/         # LoginMutation, RegisterMutation
+│   │   │   ├── Types/             # Feature-specific types
+│   │   │   └── DataLoaders/       # ⏳ (pending)
+│   │   ├── Events/                # ⏳ UserLoggedIn, UserRegistered
+│   │   ├── Listeners/             # ⏳ SendLoginNotification
+│   │   ├── Jobs/                  # ⏳ SendEmailVerificationJob
+│   │   ├── Policies/              # ⏳ UserPolicy
+│   │   └── Database/              # ⏳ ALL database related
+│   │       ├── Migrations/        # Create users table
+│   │       ├── Seeders/           # UsersSeeder
+│   │       └── Factories/         # UserFactory
+│   │
+│   ├── UserManagement/            # ✅ User CRUD, profiles, roles
+│   │   └── (same structure)
+│   │
+│   └── CompanyManagement/         # ✅ Company CRUD, requests
+│       └── (same structure)
 │
-resources/js/
-├── Pages/                   # Inertia.js pages
-│   ├── Home.tsx            # Current working page
-│   └── [Features]/
-├── Features/                # Frontend logic by feature
+tests/                             # ⚠️ ONLY EXCEPTION
+├── Feature/                       # Integration tests
 │   ├── Authentication/
 │   ├── UserManagement/
 │   └── CompanyManagement/
-└── Shared/                  # Shared components
+└── Unit/                          # Unit tests
+    └── Services/
+        ├── Authentication/
+        ├── UserManagement/
+        └── CompanyManagement/
+
+resources/js/
+├── Pages/                         # Inertia.js pages
+│   ├── Home.tsx                   # ✅ Working
+│   └── [Features]/                # ⏳ Pending
+├── Features/                      # Frontend logic by feature
+│   ├── Authentication/
+│   ├── UserManagement/
+│   └── CompanyManagement/
+└── Shared/                        # Shared components
 ```
+
+**Current Implementation Status**:
+- ✅ GraphQL schemas and dummy resolvers (schema-first)
+- ⏳ Models, Services, Events, Listeners, Jobs, Policies (pending)
+- ⏳ Database: Migrations, Seeders, Factories (pending)
 
 ### Database Schema (PostgreSQL V7.0)
 
@@ -122,9 +172,36 @@ See `/documentacion/Modelado final de base de datos.txt` for complete schema.
 
 **Mobile API (GraphQL)**:
 - Purpose: Future React Native mobile app
-- Endpoint: Single `/graphql` endpoint
+- Endpoint: Single `/graphql` endpoint (http://localhost:8000/graphql)
+- GraphiQL: http://localhost:8000/graphiql
 - Client: Apollo Client
-- Status: ⏳ Lighthouse GraphQL pending installation
+- Status: ✅ Lighthouse GraphQL installed and configured
+
+### Feature-First PURE: Key Differences from Laravel Traditional
+
+**🔴 Laravel Traditional (by layers):**
+```
+app/Models/              ← ALL models together
+app/Services/            ← ALL services together
+database/migrations/     ← ALL migrations together
+database/seeders/        ← ALL seeders together
+database/factories/      ← ALL factories together
+```
+
+**🟢 This Project (Feature-First PURE):**
+```
+app/Features/Authentication/
+  ├── Models/            ← Models for THIS feature only
+  ├── Services/          ← Services for THIS feature only
+  └── Database/
+      ├── Migrations/    ← Migrations for THIS feature only
+      ├── Seeders/       ← Seeders for THIS feature only
+      └── Factories/     ← Factories for THIS feature only
+```
+
+**Why?** When working on login, ALL files (Models, Services, Migrations, GraphQL) are in `Features/Authentication/`. No jumping between folders.
+
+**IMPORTANT**: Migrations/Seeders/Factories are **inside each feature**, not in root `database/` folder.
 
 ### Development Rules
 
@@ -135,6 +212,8 @@ See `/documentacion/Modelado final de base de datos.txt` for complete schema.
 - ✅ Dependency injection
 - ✅ Use Eloquent (no raw SQL)
 - ❌ NEVER put business logic in Resolvers/Controllers
+- ❌ NEVER put Migrations in root `database/` folder (use `app/Features/[Feature]/Database/Migrations/`)
+- ❌ NEVER put Models in root `app/Models/` folder (use `app/Features/[Feature]/Models/`)
 
 **Frontend Web (Inertia.js)**:
 - ✅ TypeScript for all React components
@@ -152,6 +231,7 @@ See `/documentacion/Modelado final de base de datos.txt` for complete schema.
 ### Documentation References
 
 Feature specifications and GraphQL schemas are in `/documentacion/`:
+- `GUIA_ESTRUCTURA_CARPETAS_PROYECTO.md` - **COMPLETE guide to Feature-First architecture** (read this first!)
 - `AUTHENTICATION FEATURE - DOCUMENTACIÓN.txt`
 - `USER MANAGEMENT FEATURE - DOCUMENTACIÓN.txt`
 - `COMPANY MANAGEMENT FEATURE - DOCUMENTACIÓN.txt`
@@ -161,6 +241,7 @@ Feature specifications and GraphQL schemas are in `/documentacion/`:
 ### Current State
 
 - ✅ Laravel 12 initialized
+- ✅ Docker environment configured (Docker Compose with app, postgres, redis, nginx, mailpit)
 - ✅ Inertia.js configured and working (Home.tsx renders)
 - ✅ **Lighthouse GraphQL - Schema-First COMPLETADO (29-Sep-2025)**
   - ✅ `graphql/shared/` con scalars, directives, interfaces, enums, base-types, pagination
@@ -169,9 +250,8 @@ Feature specifications and GraphQL schemas are in `/documentacion/`:
   - ✅ Scalars personalizados: UUID, PhoneNumber, HexColor
   - ✅ Directivas: @auth, @can, @company, @rateLimit, @audit
   - ✅ **Anti-loop types:** UserBasicInfo, CompanyBasicInfo, TicketBasicInfo
-  - ⏳ **PENDIENTE:** Validar schema con `php artisan lighthouse:validate-schema`
-  - 📄 **Ver detalles:** `IMPLEMENTATION_STATUS.md`
-- ⏳ PostgreSQL schemas - pending migration from Herd
+  - ⏳ **PENDIENTE:** Validar schema con `docker compose exec app php artisan lighthouse:validate-schema`
+- ⏳ PostgreSQL schemas - pending migrations
 - ⏳ Features - pending backend implementation (resolvers son dummy)
 
 ### Development Workflow
@@ -224,19 +304,16 @@ When implementing features, follow the existing patterns in the codebase and mai
 
 ### ⏳ Next Step: VALIDATE SCHEMA
 
-**You MUST validate the schema in a NEW TERMINAL with Herd PHP:**
+**You MUST validate the schema using Docker:**
 
 ```bash
-# Open new terminal
-cd C:\Users\heisn\Herd\helpdesk
-
 # Validate schema
-php artisan lighthouse:validate-schema
+docker compose exec app php artisan lighthouse:validate-schema
 
 # If errors occur:
 # 1. DO NOT simplify the schema
 # 2. DO resolve the specific error
-# 3. Check IMPLEMENTATION_STATUS.md for debugging tips
+# 3. Check logs: docker compose logs app
 ```
 
 **Common validation errors and solutions:**
@@ -245,12 +322,16 @@ php artisan lighthouse:validate-schema
 - Scalar conflicts → Use Lighthouse built-in vs custom (Email, URL, DateTime)
 - Import path errors → Fix paths in schema.graphql
 
-### 🎯 After Validation: Test in Apollo Sandbox
+### 🎯 After Validation: Test in GraphiQL/Apollo Sandbox
 
 ```bash
-# Start server
-php artisan serve
-# Or use Herd: http://helpdesk.test/graphql
+# Ensure services are running
+docker compose up -d
+
+# Access GraphQL endpoints:
+# - GraphQL API: http://localhost:8000/graphql
+# - GraphiQL IDE: http://localhost:8000/graphiql
+# - App: http://localhost:8000
 
 # Test basic query:
 query {

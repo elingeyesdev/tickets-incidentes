@@ -7,13 +7,11 @@
 
 ---
 
-## 🎯 FILOSOFÍA: Arquitectura Híbrida (Feature-First + Laravel Estándar)
+## 🎯 FILOSOFÍA: Arquitectura Feature-First Pura
 
-Este proyecto usa un **enfoque híbrido** que combina:
-- ✅ **Feature-First** para lógica de negocio (Services, Models, GraphQL)
-- ✅ **Laravel Estándar** para infraestructura (Database, Tests)
+Este proyecto usa **Feature-First puro**: TODO el código relacionado con un feature está dentro de su carpeta.
 
-**¿Por qué híbrido?** No peleamos con las herramientas de Laravel (`php artisan migrate`, `php artisan test`) mientras mantenemos la organización clara por features.
+**Única excepción:** La carpeta `tests/` queda fuera de `Features/` por convención de Laravel (`php artisan test` espera que los tests estén en la raíz del proyecto).
 
 ### ¿Qué significa Feature-First?
 
@@ -42,13 +40,13 @@ app/Features/
 
 ---
 
-## 📦 ESTRUCTURA COMPLETA DEL PROYECTO (HÍBRIDA)
+## 📦 ESTRUCTURA COMPLETA DEL PROYECTO (FEATURE-FIRST)
 
 ```
 helpdesk/
 ├── app/
 │   ├── Shared/              # 🟢 Código compartido entre features
-│   └── Features/            # 🟠 Lógica de negocio por feature
+│   └── Features/            # 🟠 TODO por feature (Feature-First puro)
 │       ├── Authentication/
 │       │   ├── Services/    ✅ Lógica de negocio
 │       │   ├── Models/      ✅ Modelos Eloquent
@@ -56,23 +54,18 @@ helpdesk/
 │       │   ├── Policies/    ✅ Autorización
 │       │   ├── Events/      ✅ Eventos del dominio
 │       │   ├── Listeners/   ✅ Event listeners
-│       │   └── Jobs/        ✅ Tareas asíncronas
+│       │   ├── Jobs/        ✅ Tareas asíncronas
+│       │   └── Database/    ✅ Migrations, Seeders, Factories
+│       │       ├── Migrations/
+│       │       ├── Seeders/
+│       │       └── Factories/
 │       ├── UserManagement/
+│       │   └── Database/    ✅ Todo dentro del feature
 │       └── CompanyManagement/
+│           └── Database/    ✅ Todo dentro del feature
 │
-├── database/                # 🔵 Laravel estándar (organizado por features)
-│   ├── migrations/          ✅ TODAS las migraciones aquí
-│   ├── seeders/
-│   │   ├── Authentication/  ✅ Organizados por feature
-│   │   ├── UserManagement/
-│   │   └── CompanyManagement/
-│   └── factories/
-│       ├── Authentication/  ✅ Organizados por feature
-│       ├── UserManagement/
-│       └── CompanyManagement/
-│
-├── tests/                   # 🟣 Laravel estándar (organizados por features)
-│   ├── Feature/
+├── tests/                   # 🟣 ÚNICA EXCEPCIÓN: Tests fuera de Features
+│   ├── Feature/             #    (por convención de Laravel)
 │   │   ├── Authentication/  ✅ Tests de integración por feature
 │   │   ├── UserManagement/
 │   │   └── CompanyManagement/
@@ -464,15 +457,14 @@ app/Features/Authentication/
 ├── Events/              # Eventos del dominio
 ├── Listeners/           # Escuchan eventos
 ├── Jobs/                # Tareas asíncronas
-└── Policies/            # Autorización
+├── Policies/            # Autorización
+└── Database/            # ✅ TODO lo de base de datos del feature
+    ├── Migrations/      # Migraciones del feature
+    ├── Seeders/         # Seeders del feature
+    └── Factories/       # Factories del feature
 ```
 
-**⚠️ NOTA:** Las migraciones, seeders, factories y tests **NO** están aquí.
-Están en las carpetas estándar de Laravel:
-- **Migraciones:** `database/migrations/` (todas juntas)
-- **Seeders:** `database/seeders/[Feature]/` (organizados por carpetas)
-- **Factories:** `database/factories/[Feature]/` (organizados por carpetas)
-- **Tests:** `tests/Feature/[Feature]/` y `tests/Unit/Services/[Feature]/`
+**⚠️ NOTA:** La **única excepción** son los tests, que quedan en `tests/Feature/[Feature]/` y `tests/Unit/Services/[Feature]/` por convención de Laravel (para que `php artisan test` funcione sin configuración adicional).
 
 ---
 
@@ -756,7 +748,7 @@ return new class extends Migration
 };
 ```
 
-**⚠️ IMPORTANTE:** En Laravel estándar, las migraciones van en `database/migrations/`. Evalúa si quieres seguir eso.
+**✅ Ubicación:** Las migraciones están dentro de cada feature en `app/Features/[Feature]/Database/Migrations/`
 
 ---
 
@@ -866,22 +858,23 @@ class AuthenticationServiceTest extends TestCase
 
 ---
 
-## 📊 COMPARACIÓN: Feature-First vs Laravel Estándar
+## 📊 ARQUITECTURA IMPLEMENTADA: Feature-First Puro
 
-### Para tu proyecto Helpdesk, recomiendo un HÍBRIDO:
+### Este proyecto usa Feature-First PURO:
 
-| Aspecto | Usar Feature-First | Usar Laravel Estándar |
-|---------|-------------------|----------------------|
-| **Models** | ✅ `app/Features/[Feature]/Models/` | ❌ |
-| **Services** | ✅ `app/Features/[Feature]/Services/` | ❌ |
-| **GraphQL** | ✅ `app/Features/[Feature]/GraphQL/` | ❌ |
-| **Policies** | ✅ `app/Features/[Feature]/Policies/` | ❌ |
-| **Events/Listeners/Jobs** | ✅ `app/Features/[Feature]/` | ❌ |
-| **Migraciones** | ❌ | ✅ `database/migrations/` |
-| **Seeders** | ❌ | ✅ `database/seeders/` |
-| **Tests** | ❌ | ✅ `tests/Feature/`, `tests/Unit/` |
+| Aspecto | Ubicación | Nota |
+|---------|-----------|------|
+| **Models** | ✅ `app/Features/[Feature]/Models/` | Dentro del feature |
+| **Services** | ✅ `app/Features/[Feature]/Services/` | Dentro del feature |
+| **GraphQL** | ✅ `app/Features/[Feature]/GraphQL/` | Dentro del feature |
+| **Policies** | ✅ `app/Features/[Feature]/Policies/` | Dentro del feature |
+| **Events/Listeners/Jobs** | ✅ `app/Features/[Feature]/` | Dentro del feature |
+| **Migraciones** | ✅ `app/Features/[Feature]/Database/Migrations/` | Dentro del feature |
+| **Seeders** | ✅ `app/Features/[Feature]/Database/Seeders/` | Dentro del feature |
+| **Factories** | ✅ `app/Features/[Feature]/Database/Factories/` | Dentro del feature |
+| **Tests** | ⚠️ `tests/Feature/[Feature]/`, `tests/Unit/` | **ÚNICA EXCEPCIÓN** |
 
-**Razón:** Laravel ya tiene comandos y herramientas para `database/` y `tests/`. No pelees con el framework.
+**Única excepción:** Los tests quedan en `tests/` por convención de Laravel, pero organizados por features dentro de esa carpeta.
 
 ---
 
