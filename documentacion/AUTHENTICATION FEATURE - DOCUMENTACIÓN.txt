@@ -1,41 +1,134 @@
-# 🔐 AUTHENTICATION FEATURE - DOCUMENTACIÓN COMPLETA
+# 📘 AUTHENTICATION API V9.0 - DOCUMENTACIÓN COMPLETA
 
-## 🎯 OVERVIEW DEL FEATURE
-
-El **Authentication Feature** es el núcleo de seguridad del sistema Helpdesk. Gestiona el ciclo completo de autenticación: registro, login, logout, verificación de email, reset de contraseñas, OAuth con Google, y manejo de tokens JWT con refresh tokens.
-
-### 🏗️ ARQUITECTURA DEL FEATURE
-
-```
-Authentication/
-├── Services/           # Lógica de autenticación
-│   ├── AuthService.php
-│   ├── TokenService.php
-│   ├── GoogleAuthService.php
-│   └── PasswordResetService.php
-├── GraphQL/           # API Layer
-├── Models/            # RefreshToken
-├── Events/            # Eventos de auth
-└── Tests/             # Tests específicos
-```
-
-### 🔑 PRINCIPIOS DE SEGURIDAD
-
-1. **JWT Tokens**: Access tokens de corta duración (15-60 min)
-2. **Refresh Tokens**: Tokens de larga duración almacenados en BD
-3. **Rate Limiting**: Protección contra ataques de fuerza bruta
-4. **Email Verification**: Verificación obligatoria de emails
-5. **Password Security**: Hashing bcrypt con salt automático
-6. **OAuth Integration**: Google OAuth2 para SSO
+> Sistema Helpdesk Multi-Tenant
+> Feature: Authentication
+> Schema Version: 9.0 (Refactorizado - Reutiliza Shared Types)
+> Última actualización: 2025
 
 ---
 
-## 📖 QUERIES - OPERACIONES DE LECTURA
+## 📑 TABLA DE CONTENIDOS
 
-### 1. AUTH_STATUS - Estado de Autenticación
+1. [Introducción](#introducción)
+2. [Arquitectura](#arquitectura)
+3. [Queries](#queries)
+4. [Mutations](#mutations)
+5. [Types](#types)
+6. [Shared Types](#shared-types)
+7. [Permisos y Seguridad](#permisos-y-seguridad)
+8. [Códigos de Error](#códigos-de-error)
+9. [Rate Limiting](#rate-limiting)
+10. [Casos de Uso](#casos-de-uso)
 
-**Descripción**: Obtiene el estado completo de autenticación del usuario actual, incluyendo información de sesión y token.
+---
 
+## 🎯 INTRODUCCIÓN
+
+### Propósito del Feature
+El **Authentication Feature** gestiona todo el ciclo de autenticación y autorización del sistema:
+- Registro de nuevos usuarios
+- Login con email/password y OAuth (Google)
+- Gestión de tokens JWT (access + refresh)
+- Reset de contraseñas
+- Verificación de emails
+- Gestión de sesiones multi-dispositivo
+
+### Características Principales
+✅ **JWT Tokens**: Access tokens de corta duración (15-60 min)
+✅ **Refresh Tokens**: Tokens de larga duración (30 días) en BD
+✅ **Multi-device Sessions**: Tracking de sesiones por dispositivo
+✅ **OAuth Integration**: Google OAuth2 para SSO
+✅ **Rate Limiting**: Protección contra ataques de fuerza bruta
+✅ **Email Verification**: Verificación obligatoria de emails
+
+---
+
+## 🏗️ ARQUITECTURA
+
+### Cambios Clave en V9.0
+
+#### ✅ **Reutilización de Shared Types**
+
+```graphql
+# Antes V8.0 (duplicación)
+type AuthPayload {
+    user {
+        id
+        email
+        profile {
+            firstName
+            lastName
+            # ... duplicando definición
+        }
+    }
+}
+
+# Ahora V9.0 (reutilización)
+type AuthPayload {
+    user: UserAuthInfo!  # Shared type
+}
+```
+
+#### ✅ **AuthPayload Minimalista**
+
+```graphql
+# Antes V8.0 (sobrecargado)
+type AuthPayload {
+    user { ... 50+ campos ... }
+    availableRoles { ... nested confuso ... }
+    defaultRedirect
+    requiresEmailVerification
+    requiresProfileCompletion
+    # ... demasiado
+}
+
+# Ahora V9.0 (solo lo necesario)
+type AuthPayload {
+    accessToken: String!
+    refreshToken: String!
+    user: UserAuthInfo!
+    roleContexts: [RoleContext!]!
+    sessionId: String!
+    loginTimestamp: DateTime!
+}
+```
+
+#### ✅ **RoleContext Claro**
+
+```graphql
+# Antes V8.0 (confuso con nulls)
+type AvailableRole {
+    roleCode: String!
+    companyId: UUID        # null para USER
+    companyName: String    # null para USER
+}
+
+# Ahora V9.0 (type-safe)
+type RoleContext {
+    roleCode: RoleCode!
+    roleName: String!
+    company: RoleCompanyContext  # Presente SOLO si el rol requiere empresa
+    dashboardPath: String!
+}
+```
+
+---
+
+## 🔍 QUERIES
+
+### 1. `authStatus` - Estado de Autenticación
+
+**Descripción**: Obtiene el estado completo de autenticación del usuario actual.
+
+**Firma:**
+```graphql
+authStatus: AuthStatus!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+
+**Request:**
 ```graphql
 query AuthStatus {
     authStatus {
@@ -46,26 +139,18 @@ query AuthStatus {
             email
             emailVerified
             status
-            profile {
-                firstName
-                lastName
-                displayName
-                avatarUrl
-                theme
-                language
-                timezone
-            }
+            displayName
+            avatarUrl
+            theme
+            language
         }
-        session {
+        currentSession {
             sessionId
-            expiresAt
-            lastActivity
             deviceName
             ipAddress
-            location {
-                city
-                country
-            }
+            lastUsedAt
+            expiresAt
+            isCurrent
         }
         tokenInfo {
             expiresIn
@@ -76,7 +161,7 @@ query AuthStatus {
 }
 ```
 
-**Respuesta de Ejemplo**:
+**Response:**
 ```json
 {
     "data": {
@@ -88,30 +173,22 @@ query AuthStatus {
                 "email": "maria.garcia@empresa.com",
                 "emailVerified": true,
                 "status": "ACTIVE",
-                "profile": {
-                    "firstName": "María",
-                    "lastName": "García",
-                    "displayName": "María García",
-                    "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
-                    "theme": "dark",
-                    "language": "es",
-                    "timezone": "America/La_Paz"
-                }
+                "displayName": "María García",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+                "theme": "dark",
+                "language": "es"
             },
-            "session": {
+            "currentSession": {
                 "sessionId": "sess_abc123def456",
-                "expiresAt": "2025-09-22T15:45:00Z",
-                "lastActivity": "2025-09-21T15:45:00Z",
                 "deviceName": "Chrome on Windows",
                 "ipAddress": "192.168.1.100",
-                "location": {
-                    "city": "Santa Cruz",
-                    "country": "Bolivia"
-                }
+                "lastUsedAt": "2025-10-03T15:30:00Z",
+                "expiresAt": "2025-11-02T15:30:00Z",
+                "isCurrent": true
             },
             "tokenInfo": {
                 "expiresIn": 3400,
-                "issuedAt": "2025-09-21T14:45:00Z",
+                "issuedAt": "2025-10-03T14:45:00Z",
                 "tokenType": "Bearer"
             }
         }
@@ -119,22 +196,30 @@ query AuthStatus {
 }
 ```
 
-**Casos de Uso**:
+**Casos de Uso:**
 - Middleware de autenticación en frontend
-- Debugging de sesiones activas
-- Validación de estado de usuario
-- Monitoreo de seguridad
+- Validación de sesión activa
+- Debugging de estado de auth
 
 ---
 
-### 2. MY_SESSIONS - Sesiones Activas
+### 2. `mySessions` - Sesiones Activas
 
-**Descripción**: Lista todas las sesiones activas del usuario autenticado para gestión de dispositivos conectados.
+**Descripción**: Lista todas las sesiones activas del usuario para gestión de dispositivos.
 
+**Firma:**
+```graphql
+mySessions: [SessionInfo!]!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+
+**Request:**
 ```graphql
 query MySessions {
     mySessions {
-        id
+        sessionId
         deviceName
         ipAddress
         userAgent
@@ -149,18 +234,18 @@ query MySessions {
 }
 ```
 
-**Respuesta de Ejemplo**:
+**Response:**
 ```json
 {
     "data": {
         "mySessions": [
             {
-                "id": "sess_current123",
+                "sessionId": "sess_current123",
                 "deviceName": "Chrome on Windows",
                 "ipAddress": "192.168.1.100",
-                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...",
-                "lastUsedAt": "2025-09-21T15:45:00Z",
-                "expiresAt": "2025-10-21T15:45:00Z",
+                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...",
+                "lastUsedAt": "2025-10-03T15:30:00Z",
+                "expiresAt": "2025-11-02T15:30:00Z",
                 "isCurrent": true,
                 "location": {
                     "city": "Santa Cruz",
@@ -168,12 +253,12 @@ query MySessions {
                 }
             },
             {
-                "id": "sess_mobile456",
+                "sessionId": "sess_mobile456",
                 "deviceName": "iPhone Safari",
                 "ipAddress": "192.168.1.105",
-                "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)...",
-                "lastUsedAt": "2025-09-20T22:30:00Z",
-                "expiresAt": "2025-10-20T20:15:00Z",
+                "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)...",
+                "lastUsedAt": "2025-10-02T22:30:00Z",
+                "expiresAt": "2025-11-01T20:15:00Z",
                 "isCurrent": false,
                 "location": {
                     "city": "Santa Cruz",
@@ -185,18 +270,23 @@ query MySessions {
 }
 ```
 
-**Casos de Uso**:
+**Casos de Uso:**
 - Página de seguridad del usuario
 - Gestión de dispositivos conectados
-- Auditoría de accesos
 - Detección de sesiones sospechosas
 
 ---
 
-### 3. PASSWORD_RESET_STATUS - Validación de Token de Reset
+### 3. `passwordResetStatus` - Estado de Token de Reset
 
-**Descripción**: Valida el estado de un token de reset de contraseña antes de mostrar el formulario.
+**Descripción**: Valida un token de reset de contraseña antes de mostrar el formulario.
 
+**Firma:**
+```graphql
+passwordResetStatus(token: String!): PasswordResetStatus!
+```
+
+**Request:**
 ```graphql
 query PasswordResetStatus($token: String!) {
     passwordResetStatus(token: $token) {
@@ -209,21 +299,21 @@ query PasswordResetStatus($token: String!) {
 }
 ```
 
-**Variables**:
+**Variables:**
 ```json
 {
     "token": "reset_abc123def456ghi789jkl012"
 }
 ```
 
-**Respuesta Válida**:
+**Response (Token Válido):**
 ```json
 {
     "data": {
         "passwordResetStatus": {
             "isValid": true,
             "email": "m***a@empresa.com",
-            "expiresAt": "2025-09-21T17:00:00Z",
+            "expiresAt": "2025-10-03T17:00:00Z",
             "canReset": true,
             "attemptsRemaining": 3
         }
@@ -231,7 +321,7 @@ query PasswordResetStatus($token: String!) {
 }
 ```
 
-**Respuesta Inválida**:
+**Response (Token Inválido):**
 ```json
 {
     "data": {
@@ -246,17 +336,21 @@ query PasswordResetStatus($token: String!) {
 }
 ```
 
-**Casos de Uso**:
-- Validar token antes de mostrar formulario
-- Mostrar información de expiración
-- Prevenir intentos con tokens inválidos
-
 ---
 
-### 4. EMAIL_VERIFICATION_STATUS - Estado de Verificación de Email
+### 4. `emailVerificationStatus` - Estado de Verificación
 
-**Descripción**: Obtiene el estado actual de verificación de email del usuario autenticado.
+**Descripción**: Estado actual de verificación de email del usuario autenticado.
 
+**Firma:**
+```graphql
+emailVerificationStatus: EmailVerificationStatus!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+
+**Request:**
 ```graphql
 query EmailVerificationStatus {
     emailVerificationStatus {
@@ -270,51 +364,40 @@ query EmailVerificationStatus {
 }
 ```
 
-**Respuesta - Email No Verificado**:
+**Response (No Verificado):**
 ```json
 {
     "data": {
         "emailVerificationStatus": {
             "isVerified": false,
             "email": "nuevo.usuario@empresa.com",
-            "verificationSentAt": "2025-09-21T15:30:00Z",
+            "verificationSentAt": "2025-10-03T15:30:00Z",
             "canResend": false,
-            "resendAvailableAt": "2025-09-21T15:35:00Z",
+            "resendAvailableAt": "2025-10-03T15:35:00Z",
             "attemptsRemaining": 2
         }
     }
 }
 ```
 
-**Respuesta - Email Verificado**:
-```json
-{
-    "data": {
-        "emailVerificationStatus": {
-            "isVerified": true,
-            "email": "usuario.verificado@empresa.com",
-            "verificationSentAt": "2025-09-21T08:00:00Z",
-            "canResend": false,
-            "resendAvailableAt": null,
-            "attemptsRemaining": 3
-        }
-    }
-}
-```
-
-**Casos de Uso**:
-- Banner de verificación en UI
-- Página de verificación de email
-- Controlar botón de reenvío
-
 ---
 
-## ✏️ MUTATIONS - OPERACIONES DE ESCRITURA
+## ✏️ MUTATIONS
 
-### 1. REGISTER - Registro de Usuario
+### 1. `register` - Registro de Usuario
 
-**Descripción**: Registra un nuevo usuario en el sistema y genera tokens automáticamente.
+**Descripción**: Registra un nuevo usuario y genera tokens automáticamente.
 
+**Firma:**
+```graphql
+register(input: RegisterInput!): AuthPayload!
+```
+
+**Directivas:**
+- `@rateLimit(max: 5, window: 60)`: Máximo 5 registros por hora
+- `@audit(action: "user_register")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation Register($input: RegisterInput!) {
     register(input: $input) {
@@ -327,32 +410,22 @@ mutation Register($input: RegisterInput!) {
             userCode
             email
             emailVerified
-            status
-            profile {
-                firstName
-                lastName
-                displayName
-                theme
-                language
-                timezone
-            }
+            displayName
+            theme
+            language
         }
-        availableRoles {
-            id
+        roleContexts {
             roleCode
             roleName
             dashboardPath
         }
-        defaultRedirect
-        requiresEmailVerification
-        requiresProfileCompletion
-        loginTimestamp
         sessionId
+        loginTimestamp
     }
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "input": {
@@ -367,13 +440,13 @@ mutation Register($input: RegisterInput!) {
 }
 ```
 
-**Validaciones del Input**:
-- `email`: Requerido, formato válido, único en sistema
+**Validaciones:**
+- `email`: Requerido, formato email válido, único en sistema
 - `password`: Requerido, mínimo 8 caracteres, debe coincidir con confirmación
 - `firstName`, `lastName`: Requeridos, entre 2 y 100 caracteres
 - `acceptsTerms`, `acceptsPrivacyPolicy`: Deben ser `true`
 
-**Respuesta de Ejemplo**:
+**Response:**
 ```json
 {
     "data": {
@@ -387,41 +460,31 @@ mutation Register($input: RegisterInput!) {
                 "userCode": "USR-2025-00124",
                 "email": "carlos.mendoza@empresa.com",
                 "emailVerified": false,
-                "status": "ACTIVE",
-                "profile": {
-                    "firstName": "Carlos",
-                    "lastName": "Mendoza",
-                    "displayName": "Carlos Mendoza",
-                    "theme": "light",
-                    "language": "es",
-                    "timezone": "America/La_Paz"
-                }
+                "displayName": "Carlos Mendoza",
+                "theme": "light",
+                "language": "es"
             },
-            "availableRoles": [
+            "roleContexts": [
                 {
-                    "id": "role_user_001",
                     "roleCode": "USER",
                     "roleName": "Cliente",
                     "dashboardPath": "/tickets"
                 }
             ],
-            "defaultRedirect": "/verify-email",
-            "requiresEmailVerification": true,
-            "requiresProfileCompletion": false,
-            "loginTimestamp": "2025-09-21T16:00:00Z",
-            "sessionId": "sess_reg123abc456def"
+            "sessionId": "sess_reg123abc456def",
+            "loginTimestamp": "2025-10-03T16:00:00Z"
         }
     }
 }
 ```
 
-**Flujo Post-Registro**:
-1. Usuario registrado automáticamente logueado
-2. Email de verificación enviado automáticamente
+**Flujo Post-Registro:**
+1. Usuario automáticamente logueado
+2. Email de verificación enviado
 3. Rol "USER" asignado por defecto
-4. Redirección a página de verificación de email
+4. Redirección a `/verify-email`
 
-**Errores Comunes**:
+**Errores:**
 ```json
 {
     "errors": [
@@ -438,10 +501,20 @@ mutation Register($input: RegisterInput!) {
 
 ---
 
-### 2. LOGIN - Iniciar Sesión
+### 2. `login` - Iniciar Sesión
 
-**Descripción**: Autentica usuario con email/contraseña y genera tokens de acceso.
+**Descripción**: Autentica usuario con email/contraseña.
 
+**Firma:**
+```graphql
+login(input: LoginInput!): AuthPayload!
+```
+
+**Directivas:**
+- `@rateLimit(max: 5, window: 15)`: Máximo 5 intentos por 15 minutos
+- `@audit(action: "user_login")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation Login($input: LoginInput!) {
     login(input: $input) {
@@ -455,34 +528,29 @@ mutation Login($input: LoginInput!) {
             email
             emailVerified
             status
-            profile {
-                firstName
-                lastName
-                displayName
-                avatarUrl
-                theme
-                language
-                timezone
-            }
+            displayName
+            avatarUrl
+            theme
+            language
         }
-        availableRoles {
-            id
+        roleContexts {
             roleCode
             roleName
-            companyId
-            companyName
-            companyCode
+            company {
+                id
+                companyCode
+                name
+                logoUrl
+            }
             dashboardPath
         }
-        defaultRedirect
-        requiresProfileCompletion
-        loginTimestamp
         sessionId
+        loginTimestamp
     }
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "input": {
@@ -494,7 +562,7 @@ mutation Login($input: LoginInput!) {
 }
 ```
 
-**Respuesta - Usuario con Múltiples Roles**:
+**Response - Usuario con Múltiples Roles:**
 ```json
 {
     "data": {
@@ -509,97 +577,51 @@ mutation Login($input: LoginInput!) {
                 "email": "maria.garcia@empresa.com",
                 "emailVerified": true,
                 "status": "ACTIVE",
-                "profile": {
-                    "firstName": "María",
-                    "lastName": "García",
-                    "displayName": "María García",
-                    "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
-                    "theme": "dark",
-                    "language": "es",
-                    "timezone": "America/La_Paz"
-                }
+                "displayName": "María García",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+                "theme": "dark",
+                "language": "es"
             },
-            "availableRoles": [
+            "roleContexts": [
                 {
-                    "id": "role_user_456",
                     "roleCode": "USER",
                     "roleName": "Cliente",
-                    "companyId": null,
-                    "companyName": null,
-                    "companyCode": null,
+                    "company": null,
                     "dashboardPath": "/tickets"
                 },
                 {
-                    "id": "role_agent_789",
                     "roleCode": "AGENT",
                     "roleName": "Agente de Soporte",
-                    "companyId": "cmp-001",
-                    "companyName": "Universidad del Valle",
-                    "companyCode": "CMP-2025-00001",
+                    "company": {
+                        "id": "cmp-001",
+                        "companyCode": "CMP-2025-00001",
+                        "name": "Universidad del Valle",
+                        "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png"
+                    },
                     "dashboardPath": "/agent/dashboard"
                 }
             ],
-            "defaultRedirect": "/role-selector",
-            "requiresProfileCompletion": false,
-            "loginTimestamp": "2025-09-21T16:15:00Z",
-            "sessionId": "sess_login789xyz"
+            "sessionId": "sess_login789xyz",
+            "loginTimestamp": "2025-10-03T16:15:00Z"
         }
     }
 }
 ```
 
-**Respuesta - Usuario con Un Solo Rol**:
-```json
-{
-    "data": {
-        "login": {
-            "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
-            "refreshToken": "def50200c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7...",
-            "tokenType": "Bearer",
-            "expiresIn": 3600,
-            "user": {
-                "id": "550e8400-e29b-41d4-a716-446655440002",
-                "userCode": "USR-2025-00125",
-                "email": "usuario.simple@empresa.com",
-                "emailVerified": true,
-                "status": "ACTIVE",
-                "profile": {
-                    "firstName": "Juan",
-                    "lastName": "Pérez",
-                    "displayName": "Juan Pérez",
-                    "avatarUrl": null,
-                    "theme": "light",
-                    "language": "es",
-                    "timezone": "America/La_Paz"
-                }
-            },
-            "availableRoles": [
-                {
-                    "id": "role_user_999",
-                    "roleCode": "USER",
-                    "roleName": "Cliente",
-                    "companyId": null,
-                    "companyName": null,
-                    "companyCode": null,
-                    "dashboardPath": "/tickets"
-                }
-            ],
-            "defaultRedirect": "/tickets",
-            "requiresProfileCompletion": false,
-            "loginTimestamp": "2025-09-21T16:20:00Z",
-            "sessionId": "sess_simple456def"
-        }
-    }
+**Lógica de Redirección Frontend:**
+```typescript
+const { roleContexts } = loginResponse;
+
+if (roleContexts.length === 1) {
+    // Un solo rol: redirect directo
+    redirect(roleContexts[0].dashboardPath);
+} else {
+    // Múltiples roles: mostrar selector
+    redirect('/role-selector');
 }
 ```
 
-**Lógica de Redirección**:
-- **1 rol**: Redirección directa al dashboard del rol
-- **2+ roles**: Redirección a selector de roles (`/role-selector`)
-- **Email no verificado**: Redirección a verificación (`/verify-email`)
-- **Perfil incompleto**: Redirección a completar perfil (`/complete-profile`)
-
-**Errores de Autenticación**:
+**Errores:**
 ```json
 {
     "errors": [
@@ -619,7 +641,9 @@ mutation Login($input: LoginInput!) {
         {
             "message": "Usuario suspendido",
             "extensions": {
-                "code": "USER_SUSPENDED"
+                "code": "USER_SUSPENDED",
+                "suspendedAt": "2025-10-01T10:00:00Z",
+                "reason": "Violación de términos de servicio"
             }
         }
     ]
@@ -628,10 +652,20 @@ mutation Login($input: LoginInput!) {
 
 ---
 
-### 3. LOGIN_WITH_GOOGLE - Login OAuth con Google
+### 3. `loginWithGoogle` - Login OAuth con Google
 
 **Descripción**: Autentica usuario usando token de Google OAuth. Crea cuenta automáticamente si no existe.
 
+**Firma:**
+```graphql
+loginWithGoogle(input: GoogleLoginInput!): AuthPayload!
+```
+
+**Directivas:**
+- `@rateLimit(max: 10, window: 60)`: Máximo 10 intentos por hora
+- `@audit(action: "user_login_google")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation LoginWithGoogle($input: GoogleLoginInput!) {
     loginWithGoogle(input: $input) {
@@ -641,31 +675,23 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
         expiresIn
         user {
             id
-            userCode
             email
             emailVerified
-            status
-            profile {
-                firstName
-                lastName
-                displayName
-                avatarUrl
-            }
+            displayName
+            avatarUrl
         }
-        availableRoles {
+        roleContexts {
             roleCode
             roleName
             dashboardPath
         }
-        defaultRedirect
-        requiresProfileCompletion
-        loginTimestamp
         sessionId
+        loginTimestamp
     }
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "input": {
@@ -675,15 +701,15 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
 }
 ```
 
-**Flujo de Google OAuth**:
-1. **Frontend** obtiene token de Google OAuth
-2. **Frontend** envía token al backend
-3. **Backend** valida token con Google API
-4. **Si usuario existe**: Login normal
-5. **Si usuario NO existe**: Crear cuenta automáticamente con datos de Google
-6. **Retorna**: AuthPayload estándar
+**Flujo:**
+1. Frontend obtiene token de Google OAuth
+2. Frontend envía token al backend
+3. Backend valida token con Google API
+4. Si usuario existe: Login normal
+5. Si usuario NO existe: Crear cuenta automáticamente
+6. Retorna AuthPayload estándar
 
-**Respuesta - Usuario Nuevo (Auto-creado)**:
+**Response (Usuario Nuevo - Auto-creado):**
 ```json
 {
     "data": {
@@ -694,34 +720,26 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
             "expiresIn": 3600,
             "user": {
                 "id": "550e8400-e29b-41d4-a716-446655440003",
-                "userCode": "USR-2025-00126",
                 "email": "usuario.google@gmail.com",
                 "emailVerified": true,
-                "status": "ACTIVE",
-                "profile": {
-                    "firstName": "Ana",
-                    "lastName": "López",
-                    "displayName": "Ana López",
-                    "avatarUrl": "https://lh3.googleusercontent.com/a/photo.jpg"
-                }
+                "displayName": "Ana López",
+                "avatarUrl": "https://lh3.googleusercontent.com/a/photo.jpg"
             },
-            "availableRoles": [
+            "roleContexts": [
                 {
                     "roleCode": "USER",
                     "roleName": "Cliente",
                     "dashboardPath": "/tickets"
                 }
             ],
-            "defaultRedirect": "/complete-profile",
-            "requiresProfileCompletion": true,
-            "loginTimestamp": "2025-09-21T16:25:00Z",
-            "sessionId": "sess_google789ghi"
+            "sessionId": "sess_google789ghi",
+            "loginTimestamp": "2025-10-03T16:25:00Z"
         }
     }
 }
 ```
 
-**Datos Obtenidos de Google**:
+**Datos Obtenidos de Google:**
 - Email (automáticamente verificado)
 - Nombre y apellido
 - Foto de perfil
@@ -729,10 +747,25 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
 
 ---
 
-### 4. REFRESH_TOKEN - Renovar Token de Acceso
+### 4. `refreshToken` - Renovar Token
 
-**Descripción**: Genera nuevo access token usando refresh token válido. Invalida el refresh token anterior por seguridad.
+**Descripción**: Genera nuevo access token usando refresh token válido.
 
+**Firma:**
+```graphql
+refreshToken: RefreshPayload!
+```
+
+**Directivas:**
+- `@auth`: Requiere refresh token válido en headers
+- `@audit(action: "token_refresh")`: Auditoría automática
+
+**Headers Requeridos:**
+```
+Authorization: Bearer <refresh_token>
+```
+
+**Request:**
 ```graphql
 mutation RefreshToken {
     refreshToken {
@@ -740,28 +773,11 @@ mutation RefreshToken {
         refreshToken
         tokenType
         expiresIn
-        user {
-            id
-            email
-            status
-        }
-        availableRoles {
-            roleCode
-            roleName
-            companyId
-            dashboardPath
-        }
-        sessionId
     }
 }
 ```
 
-**Headers Requeridos**:
-```
-Authorization: Bearer <refresh_token>
-```
-
-**Respuesta de Ejemplo**:
+**Response:**
 ```json
 {
     "data": {
@@ -769,40 +785,25 @@ Authorization: Bearer <refresh_token>
             "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
             "refreshToken": "def50200e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9...",
             "tokenType": "Bearer",
-            "expiresIn": 3600,
-            "user": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "email": "maria.garcia@empresa.com",
-                "status": "ACTIVE"
-            },
-            "availableRoles": [
-                {
-                    "roleCode": "USER",
-                    "roleName": "Cliente",
-                    "companyId": null,
-                    "dashboardPath": "/tickets"
-                },
-                {
-                    "roleCode": "AGENT",
-                    "roleName": "Agente",
-                    "companyId": "cmp-001",
-                    "dashboardPath": "/agent/dashboard"
-                }
-            ],
-            "sessionId": "sess_refresh456def"
+            "expiresIn": 3600
         }
     }
 }
 ```
 
-**Flujo de Refresh Token**:
-1. Access token expira (automáticamente en 15-60 min)
-2. Frontend detecta expiración (401 en requests)
-3. Frontend automáticamente llama refreshToken
-4. Nuevo access token obtenido transparentemente
+**Flujo de Refresh Automático:**
+1. Access token expira (15-60 min)
+2. Frontend detecta 401 en requests
+3. Frontend automáticamente llama `refreshToken`
+4. Nuevo access token obtenido
 5. Request original se reintenta con nuevo token
 
-**Errores de Refresh**:
+**Seguridad:**
+- Refresh token anterior se invalida
+- Nuevo refresh token generado
+- Registro en auditoría
+
+**Errores:**
 ```json
 {
     "errors": [
@@ -818,21 +819,41 @@ Authorization: Bearer <refresh_token>
 
 ---
 
-### 5. LOGOUT - Cerrar Sesión
+### 5. `logout` - Cerrar Sesión
 
-**Descripción**: Cierra sesión del usuario. Puede cerrar solo la sesión actual o todas las sesiones.
+**Descripción**: Cierra sesión. Puede cerrar solo sesión actual o todas.
 
+**Firma:**
 ```graphql
-mutation Logout($everywhere: Boolean = false) {
+logout(everywhere: Boolean = false): Boolean!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@audit(action: "user_logout")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation Logout($everywhere: Boolean) {
     logout(everywhere: $everywhere)
 }
 ```
 
-**Parámetros**:
-- `everywhere: false` (default): Solo cierra sesión actual
-- `everywhere: true`: Cierra TODAS las sesiones del usuario
+**Variables (Logout Normal):**
+```json
+{
+    "everywhere": false
+}
+```
 
-**Respuesta**:
+**Variables (Logout Everywhere):**
+```json
+{
+    "everywhere": true
+}
+```
+
+**Response:**
 ```json
 {
     "data": {
@@ -841,42 +862,49 @@ mutation Logout($everywhere: Boolean = false) {
 }
 ```
 
-**Efectos del Logout**:
+**Efectos por Tipo:**
 
-#### **Logout Normal (`everywhere: false`)**:
-- Revoca solo el refresh token actual
-- Access token actual se marca como inválido
-- Otras sesiones permanecen activas
+| Tipo | `everywhere: false` | `everywhere: true` |
+|------|---------------------|-------------------|
+| Revoca | Solo sesión actual | TODAS las sesiones |
+| Access token | Actual se invalida | Todos se invalidan |
+| Refresh token | Actual se revoca | Todos se revocan |
+| Otros dispositivos | Permanecen activos | Deben re-loguearse |
 
-#### **Logout Everywhere (`everywhere: true`)**:
-- Revoca TODOS los refresh tokens del usuario
-- Invalida TODOS los access tokens
-- Usuario debe re-loguearse en todos los dispositivos
-
-**Casos de Uso**:
-- **Logout normal**: Botón logout estándar
-- **Logout everywhere**: Cambio de contraseña, sospecha de compromiso
+**Casos de Uso:**
+- **Normal**: Botón logout estándar
+- **Everywhere**: Cambio de contraseña, sospecha de compromiso
 
 ---
 
-### 6. REVOKE_OTHER_SESSION - Revocar Sesión Específica
+### 6. `revokeOtherSession` - Revocar Sesión Específica
 
-**Descripción**: Revoca una sesión específica de otro dispositivo (no la sesión actual).
+**Descripción**: Revoca una sesión específica de otro dispositivo.
 
+**Firma:**
+```graphql
+revokeOtherSession(sessionId: String!): Boolean!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@audit(action: "session_revoke")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation RevokeOtherSession($sessionId: String!) {
     revokeOtherSession(sessionId: $sessionId)
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "sessionId": "sess_mobile456"
 }
 ```
 
-**Respuesta**:
+**Response:**
 ```json
 {
     "data": {
@@ -885,36 +913,46 @@ mutation RevokeOtherSession($sessionId: String!) {
 }
 ```
 
-**Validaciones**:
+**Validaciones:**
 - No puede revocar su propia sesión actual (usar `logout` para eso)
 - Solo puede revocar sesiones de su propio usuario
 - SessionId debe existir y estar activo
 
-**Casos de Uso**:
+**Casos de Uso:**
 - Gestión de dispositivos conectados
 - Revocar acceso de dispositivo perdido/robado
 - Página de seguridad del usuario
 
 ---
 
-### 7. RESET_PASSWORD - Solicitar Reset de Contraseña
+### 7. `resetPassword` - Solicitar Reset
 
 **Descripción**: Envía email con token para reset de contraseña. Siempre retorna `true` por seguridad.
 
+**Firma:**
+```graphql
+resetPassword(email: Email!): Boolean!
+```
+
+**Directivas:**
+- `@rateLimit(max: 3, window: 3600)`: Máximo 3 intentos por hora
+- `@audit(action: "password_reset_request")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation ResetPassword($email: Email!) {
     resetPassword(email: $email)
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "email": "usuario@empresa.com"
 }
 ```
 
-**Respuesta (Siempre)**:
+**Response (Siempre):**
 ```json
 {
     "data": {
@@ -923,44 +961,53 @@ mutation ResetPassword($email: Email!) {
 }
 ```
 
-**Comportamiento por Seguridad**:
-- **Siempre** retorna `true`, incluso si email NO existe
-- NO revela si un email está registrado en el sistema
+**Comportamiento por Seguridad:**
+- **SIEMPRE** retorna `true`, incluso si email NO existe
+- NO revela si un email está registrado
 - Rate limiting: máximo 3 intentos por hora
 
-**Flujo Real**:
-1. **Si email existe**: Envía email con token de reset
-2. **Si email NO existe**: No hace nada, pero retorna `true`
-3. **Rate limiting**: Bloquea después de 3 intentos/hora
+**Flujo Real:**
+| Email Existe | Acción |
+|--------------|--------|
+| ✅ Sí | Envía email con token de reset |
+| ❌ No | No hace nada, pero retorna `true` |
 
-**Email de Reset** (si email existe):
+**Email de Reset (si email existe):**
 - Contiene link: `https://app.com/reset-password?token=abc123...`
 - Token expira en 1 hora
 - Máximo 3 intentos de reset por token
 
 ---
 
-### 8. CONFIRM_PASSWORD_RESET - Confirmar Reset
+### 8. `confirmPasswordReset` - Confirmar Reset
 
-**Descripción**: Establece nueva contraseña usando token válido de reset.
+**Descripción**: Establece nueva contraseña usando token válido.
 
+**Firma:**
 ```graphql
-mutation ConfirmPasswordReset($input: ConfirmPasswordResetInput!) {
+confirmPasswordReset(input: PasswordResetInput!): PasswordResetResult!
+```
+
+**Directivas:**
+- `@rateLimit(max: 3, window: 900)`: Máximo 3 intentos por 15 minutos
+- `@audit(action: "password_reset_confirm")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation ConfirmPasswordReset($input: PasswordResetInput!) {
     confirmPasswordReset(input: $input) {
         success
         message
         user {
             id
             email
-            profile {
-                displayName
-            }
+            displayName
         }
     }
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "input": {
@@ -971,7 +1018,7 @@ mutation ConfirmPasswordReset($input: ConfirmPasswordResetInput!) {
 }
 ```
 
-**Respuesta Exitosa**:
+**Response (Exitosa):**
 ```json
 {
     "data": {
@@ -981,16 +1028,14 @@ mutation ConfirmPasswordReset($input: ConfirmPasswordResetInput!) {
             "user": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "email": "usuario@empresa.com",
-                "profile": {
-                    "displayName": "María García"
-                }
+                "displayName": "María García"
             }
         }
     }
 }
 ```
 
-**Respuesta con Error**:
+**Response (Error):**
 ```json
 {
     "data": {
@@ -1003,138 +1048,333 @@ mutation ConfirmPasswordReset($input: ConfirmPasswordResetInput!) {
 }
 ```
 
-**Efectos del Reset Exitoso**:
+**Efectos del Reset Exitoso:**
 1. Contraseña actualizada con nuevo hash
 2. Token de reset invalidado
-3. TODAS las sesiones activas invalidadas (logout everywhere)
+3. **TODAS las sesiones activas invalidadas** (logout everywhere)
 4. Usuario debe loguearse nuevamente
+5. Email de confirmación enviado
 
 ---
 
-### 9. VERIFY_EMAIL - Verificar Email
+### 9. `verifyEmail` - Verificar Email
 
-**Descripción**: Verifica email del usuario usando token del enlace enviado por email.
+**Descripción**: Verifica email del usuario usando token.
 
+**Firma:**
+```graphql
+verifyEmail(token: String!): EmailVerificationResult!
+```
+
+**Directivas:**
+- `@audit(action: "email_verify")`: Auditoría automática
+
+**Request:**
 ```graphql
 mutation VerifyEmail($token: String!) {
     verifyEmail(token: $token) {
         success
         message
-        user {
-            id
-            email
-            emailVerified
-            profile {
-                displayName
-            }
-        }
+        canResend
+        resendAvailableAt
     }
 }
 ```
 
-**Input Variables**:
+**Variables:**
 ```json
 {
     "token": "verify_def456ghi789jkl012mno345pqr678"
 }
 ```
 
-**Respuesta Exitosa**:
+**Response (Exitosa):**
 ```json
 {
     "data": {
         "verifyEmail": {
             "success": true,
             "message": "Email verificado exitosamente",
-            "user": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "email": "usuario@empresa.com",
-                "emailVerified": true,
-                "profile": {
-                    "displayName": "María García"
-                }
-            }
+            "canResend": false,
+            "resendAvailableAt": null
         }
     }
 }
 ```
 
-**Respuesta con Error**:
+**Response (Error):**
 ```json
 {
     "data": {
         "verifyEmail": {
             "success": false,
             "message": "Token de verificación inválido o expirado",
-            "user": null
+            "canResend": true,
+            "resendAvailableAt": "2025-10-03T16:40:00Z"
         }
     }
 }
 ```
 
-**Efectos de Verificación Exitosa**:
+**Efectos de Verificación Exitosa:**
 1. `emailVerified` cambia a `true`
-2. `emailVerifiedAt` se establece con timestamp actual
-3. Usuario obtiene acceso completo al sistema
-4. Token de verificación se invalida
+2. `emailVerifiedAt` se establece
+3. Usuario obtiene acceso completo
+4. Token se invalida
 
 ---
 
-### 10. RESEND_EMAIL_VERIFICATION - Reenviar Verificación
+### 10. `resendVerification` - Reenviar Verificación
 
-**Descripción**: Reenvía email de verificación al usuario autenticado. Respeta rate limiting.
+**Descripción**: Reenvía email de verificación. Respeta rate limiting.
 
+**Firma:**
 ```graphql
-mutation ResendEmailVerification {
-    resendEmailVerification {
+resendVerification: EmailVerificationResult!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@rateLimit(max: 3, window: 300)`: Máximo 3 reenvíos por 5 minutos
+- `@audit(action: "email_verification_resend")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation ResendVerification {
+    resendVerification {
         success
         message
-        sentAt
-        expiresAt
+        canResend
+        resendAvailableAt
     }
 }
 ```
 
-**Respuesta Exitosa**:
+**Response (Exitosa):**
 ```json
 {
     "data": {
-        "resendEmailVerification": {
+        "resendVerification": {
             "success": true,
             "message": "Email de verificación enviado",
-            "sentAt": "2025-09-21T17:00:00Z",
-            "expiresAt": "2025-09-21T19:00:00Z"
+            "canResend": false,
+            "resendAvailableAt": "2025-10-03T17:05:00Z"
         }
     }
 }
 ```
 
-**Respuesta con Rate Limiting**:
+**Response (Rate Limit):**
 ```json
 {
     "data": {
-        "resendEmailVerification": {
+        "resendVerification": {
             "success": false,
             "message": "Debes esperar 5 minutos antes de reenviar",
-            "sentAt": "2025-09-21T16:55:00Z",
-            "expiresAt": null
+            "canResend": false,
+            "resendAvailableAt": "2025-10-03T17:00:00Z"
         }
     }
 }
 ```
 
-**Rate Limiting**:
+**Rate Limiting:**
 - Máximo 3 reenvíos por 5 minutos
-- Bloqueo temporal después de límite excedido
+- Bloqueo temporal después de límite
 - Usuario ya verificado recibe error
 
 ---
 
-## 🔒 SEGURIDAD Y AUTENTICACIÓN
+## 📦 TYPES
+
+### AuthPayload (V9.0 - Refactorizado)
+
+**Descripción**: Response de login/register. Solo lo necesario.
+
+```graphql
+type AuthPayload {
+    accessToken: String!
+    refreshToken: String!
+    tokenType: String!
+    expiresIn: Int!
+    user: UserAuthInfo!
+    roleContexts: [RoleContext!]!
+    sessionId: String!
+    loginTimestamp: DateTime!
+}
+```
+
+**Campos:**
+- `accessToken`: JWT de corta duración (15-60 min)
+- `refreshToken`: Token de larga duración (30 días)
+- `user`: Info básica (reutiliza `UserAuthInfo` de shared types)
+- `roleContexts`: Lista de roles para selector
+- `sessionId`: ID único de sesión
+
+---
+
+### RefreshPayload
+
+**Descripción**: Response de refresh token. Versión minimalista.
+
+```graphql
+type RefreshPayload {
+    accessToken: String!
+    refreshToken: String!
+    tokenType: String!
+    expiresIn: Int!
+}
+```
+
+**Nota**: No incluye información de usuario para máxima eficiencia.
+
+---
+
+### AuthStatus
+
+**Descripción**: Estado completo de autenticación.
+
+```graphql
+type AuthStatus {
+    isAuthenticated: Boolean!
+    user: UserAuthInfo
+    currentSession: SessionInfo
+    tokenInfo: TokenInfo
+}
+```
+
+---
+
+### SessionInfo
+
+**Descripción**: Información de sesión activa.
+
+```graphql
+type SessionInfo {
+    sessionId: String!
+    deviceName: String
+    ipAddress: String
+    userAgent: String
+    lastUsedAt: DateTime!
+    expiresAt: DateTime!
+    isCurrent: Boolean!
+    location: SessionLocation
+}
+```
+
+---
+
+## 🌐 SHARED TYPES
+
+Estos types están en `shared/types.graphql` y son reutilizados por múltiples features:
+
+### UserAuthInfo
+
+**Descripción**: Info de usuario para contexto de autenticación.
+
+```graphql
+type UserAuthInfo {
+    id: UUID!
+    userCode: String!
+    email: Email!
+    emailVerified: Boolean!
+    status: UserStatus!
+    displayName: String!
+    avatarUrl: URL
+    theme: String!
+    language: String!
+}
+```
+
+**Usado por:**
+- `AuthPayload.user`
+- `AuthStatus.user`
+
+---
+
+### RoleContext
+
+**Descripción**: Información de rol para selector (SIN over-fetching).
+
+```graphql
+type RoleContext {
+    roleCode: RoleCode!
+    roleName: String!
+    company: RoleCompanyContext
+    dashboardPath: String!
+}
+```
+
+**Campo Especial:**
+- `company`: **Opcional** - presente SOLO si el rol requiere empresa
+
+**Ejemplos:**
+
+```json
+// USER (sin empresa)
+{
+    "roleCode": "USER",
+    "roleName": "Cliente",
+    "company": null,
+    "dashboardPath": "/tickets"
+}
+
+// AGENT (con empresa)
+{
+    "roleCode": "AGENT",
+    "roleName": "Agente de Soporte",
+    "company": {
+        "id": "cmp-001",
+        "name": "Universidad del Valle",
+        "logoUrl": "https://..."
+    },
+    "dashboardPath": "/agent/dashboard"
+}
+```
+
+---
+
+### UserMinimal
+
+**Descripción**: Type mínimo de usuario para referencias.
+
+```graphql
+type UserMinimal {
+    id: UUID!
+    userCode: String!
+    email: Email!
+    displayName: String!
+    avatarUrl: URL
+}
+```
+
+**Usado por:**
+- `PasswordResetResult.user`
+- Múltiples features (UserManagement, TicketManagement, etc.)
+
+---
+
+## 🔒 PERMISOS Y SEGURIDAD
+
+### Matriz de Permisos
+
+| Operación | Público | Autenticado | Notas |
+|-----------|---------|-------------|-------|
+| `register` | ✅ | ✅ | Rate limited: 5/hora |
+| `login` | ✅ | ✅ | Rate limited: 5 cada 15min |
+| `loginWithGoogle` | ✅ | ✅ | Rate limited: 10/hora |
+| `resetPassword` | ✅ | ✅ | Rate limited: 3/hora |
+| `confirmPasswordReset` | ✅ | ✅ | Rate limited: 3 cada 15min |
+| `verifyEmail` | ✅ | ✅ | No rate limit |
+| `authStatus` | ❌ | ✅ | Requiere @auth |
+| `mySessions` | ❌ | ✅ | Requiere @auth |
+| `refreshToken` | ❌ | ✅ | Requiere refresh token |
+| `logout` | ❌ | ✅ | Requiere @auth |
+| `revokeOtherSession` | ❌ | ✅ | Requiere @auth |
+| `resendVerification` | ❌ | ✅ | Rate limited: 3 cada 5min |
 
 ### JWT Token Structure
 
-**Access Token (JWT)**:
 ```json
 {
     "header": {
@@ -1143,381 +1383,30 @@ mutation ResendEmailVerification {
     },
     "payload": {
         "iss": "helpdesk-api",
-        "sub": "550e8400-e29b-41d4-a716-446655440000",
+        "sub": "550e8400-...",
         "aud": "helpdesk-frontend",
         "exp": 1695308700,
         "iat": 1695305100,
-        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "user_id": "550e8400-...",
         "email": "usuario@empresa.com",
         "roles": ["USER", "AGENT"],
         "companies": ["cmp-001"],
-        "session_id": "sess_abc123def456"
+        "session_id": "sess_abc123"
     }
 }
 ```
 
-**Refresh Token**:
-- Almacenado en base de datos (tabla `auth.refresh_tokens`)
+### Refresh Token Storage
+
+- Almacenado en BD (`auth.refresh_tokens`)
 - Hash SHA-256 para seguridad
 - Asociado a dispositivo específico
-- Expiración configurable (30 días default)
-
-### Rate Limiting por Endpoint
-
-| Endpoint | Límite | Ventana | Acción al Límite |
-|----------|--------|---------|------------------|
-| `register` | 5 intentos | 60 min | Bloqueo temporal |
-| `login` | 5 intentos | 15 min | Bloqueo temporal |
-| `loginWithGoogle` | 10 intentos | 60 min | Bloqueo temporal |
-| `resetPassword` | 3 intentos | 60 min | Bloqueo temporal |
-| `confirmPasswordReset` | 3 intentos | 15 min | Bloqueo temporal |
-| `resendEmailVerification` | 3 intentos | 300 seg | Bloqueo temporal |
-
-### Directivas de Seguridad
-
-```graphql
-# Requiere autenticación
-@auth
-
-# Rate limiting específico
-@rateLimit(max: 5, window: 15, message: "Demasiados intentos")
-
-# Auditoría automática
-@audit(action: "login", includePayload: false)
-```
+- Expiración: 30 días (configurable)
+- Un usuario puede tener múltiples refresh tokens (multi-device)
 
 ---
 
-## 🧪 EJEMPLOS DE USO FRONTEND
-
-### React Hook para Autenticación
-
-```typescript
-// useAuth.ts
-import { useState, useCallback, useEffect } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
-import {
-    LOGIN_MUTATION,
-    REGISTER_MUTATION,
-    REFRESH_TOKEN_MUTATION,
-    AUTH_STATUS_QUERY
-} from '../graphql';
-
-interface AuthState {
-    user: AuthUser | null;
-    accessToken: string | null;
-    isAuthenticated: boolean;
-    loading: boolean;
-}
-
-export const useAuth = () => {
-    const [authState, setAuthState] = useState<AuthState>({
-        user: null,
-        accessToken: localStorage.getItem('accessToken'),
-        isAuthenticated: false,
-        loading: true
-    });
-
-    const { data: authStatusData } = useQuery(AUTH_STATUS_QUERY, {
-        skip: !authState.accessToken,
-        errorPolicy: 'ignore'
-    });
-
-    const [loginMutation] = useMutation(LOGIN_MUTATION);
-    const [registerMutation] = useMutation(REGISTER_MUTATION);
-    const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
-
-    // Login function
-    const login = useCallback(async (input: LoginInput) => {
-        try {
-            const { data } = await loginMutation({ variables: { input } });
-            const authPayload = data.login;
-
-            // Store tokens
-            localStorage.setItem('accessToken', authPayload.accessToken);
-            localStorage.setItem('refreshToken', authPayload.refreshToken);
-
-            // Update state
-            setAuthState({
-                user: authPayload.user,
-                accessToken: authPayload.accessToken,
-                isAuthenticated: true,
-                loading: false
-            });
-
-            return authPayload;
-        } catch (error) {
-            throw error;
-        }
-    }, [loginMutation]);
-
-    // Register function
-    const register = useCallback(async (input: RegisterInput) => {
-        try {
-            const { data } = await registerMutation({ variables: { input } });
-            const authPayload = data.register;
-
-            // Store tokens
-            localStorage.setItem('accessToken', authPayload.accessToken);
-            localStorage.setItem('refreshToken', authPayload.refreshToken);
-
-            // Update state
-            setAuthState({
-                user: authPayload.user,
-                accessToken: authPayload.accessToken,
-                isAuthenticated: true,
-                loading: false
-            });
-
-            return authPayload;
-        } catch (error) {
-            throw error;
-        }
-    }, [registerMutation]);
-
-    // Logout function
-    const logout = useCallback(async (everywhere = false) => {
-        try {
-            // Call logout mutation
-            await logoutMutation({ variables: { everywhere } });
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            // Always clear local state
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            setAuthState({
-                user: null,
-                accessToken: null,
-                isAuthenticated: false,
-                loading: false
-            });
-        }
-    }, []);
-
-    // Auto refresh token
-    const refreshToken = useCallback(async () => {
-        try {
-            const { data } = await refreshTokenMutation();
-            const authPayload = data.refreshToken;
-
-            localStorage.setItem('accessToken', authPayload.accessToken);
-            localStorage.setItem('refreshToken', authPayload.refreshToken);
-
-            setAuthState(prev => ({
-                ...prev,
-                accessToken: authPayload.accessToken
-            }));
-
-            return authPayload.accessToken;
-        } catch (error) {
-            // Refresh failed, logout user
-            logout();
-            throw error;
-        }
-    }, [refreshTokenMutation, logout]);
-
-    // Initialize auth state
-    useEffect(() => {
-        if (authStatusData?.authStatus) {
-            setAuthState({
-                user: authStatusData.authStatus.user,
-                accessToken: authState.accessToken,
-                isAuthenticated: authStatusData.authStatus.isAuthenticated,
-                loading: false
-            });
-        }
-    }, [authStatusData]);
-
-    return {
-        ...authState,
-        login,
-        register,
-        logout,
-        refreshToken
-    };
-};
-```
-
-### Componente de Login
-
-```typescript
-// LoginForm.tsx
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { useAuth } from '../hooks/useAuth';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-
-const loginSchema = yup.object({
-    email: yup.string().email('Email inválido').required('Email requerido'),
-    password: yup.string().min(6, 'Mínimo 6 caracteres').required('Contraseña requerida'),
-    rememberMe: yup.boolean()
-});
-
-interface LoginFormData {
-    email: string;
-    password: string;
-    rememberMe: boolean;
-}
-
-export const LoginForm: React.FC = () => {
-    const { login, loading } = useAuth();
-    const [googleLoading, setGoogleLoading] = useState(false);
-
-    const {
-        register,
-        handleSubmit,
-        formState: { errors, isValid },
-        setError
-    } = useForm<LoginFormData>({
-        resolver: yupResolver(loginSchema),
-        mode: 'onChange'
-    });
-
-    const onSubmit = async (data: LoginFormData) => {
-        try {
-            const authPayload = await login({
-                email: data.email,
-                password: data.password,
-                rememberMe: data.rememberMe,
-                deviceName: navigator.userAgent
-            });
-
-            // Handle redirection based on roles
-            if (authPayload.availableRoles.length === 1) {
-                window.location.href = authPayload.availableRoles[0].dashboardPath;
-            } else {
-                window.location.href = authPayload.defaultRedirect;
-            }
-        } catch (error: any) {
-            if (error.extensions?.code === 'INVALID_CREDENTIALS') {
-                setError('password', { message: 'Email o contraseña incorrectos' });
-            } else {
-                setError('root', { message: error.message });
-            }
-        }
-    };
-
-    const handleGoogleLogin = async (credentialResponse: any) => {
-        setGoogleLoading(true);
-        try {
-            const authPayload = await loginWithGoogle({
-                googleToken: credentialResponse.credential,
-                deviceName: navigator.userAgent
-            });
-
-            window.location.href = authPayload.defaultRedirect;
-        } catch (error: any) {
-            setError('root', { message: 'Error al iniciar sesión con Google' });
-        } finally {
-            setGoogleLoading(false);
-        }
-    };
-
-    return (
-        <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h2>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                    </label>
-                    <input
-                        {...register('email')}
-                        type="email"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={loading}
-                    />
-                    {errors.email && (
-                        <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contraseña
-                    </label>
-                    <input
-                        {...register('password')}
-                        type="password"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={loading}
-                    />
-                    {errors.password && (
-                        <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-                    )}
-                </div>
-
-                <div className="flex items-center">
-                    <input
-                        {...register('rememberMe')}
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        disabled={loading}
-                    />
-                    <label className="ml-2 block text-sm text-gray-900">
-                        Recordar sesión
-                    </label>
-                </div>
-
-                {errors.root && (
-                    <p className="text-red-500 text-sm">{errors.root.message}</p>
-                )}
-
-                <button
-                    type="submit"
-                    disabled={!isValid || loading}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                    {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                </button>
-            </form>
-
-            <div className="mt-6">
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">O continúa con</span>
-                    </div>
-                </div>
-
-                <div className="mt-6">
-                    <GoogleOAuthProvider clientId="your-google-client-id">
-                        <GoogleLogin
-                            onSuccess={handleGoogleLogin}
-                            onError={() => setError('root', { message: 'Error con Google OAuth' })}
-                            disabled={googleLoading}
-                        />
-                    </GoogleOAuthProvider>
-                </div>
-            </div>
-
-            <div className="mt-6 text-center">
-                <a href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
-                    ¿Olvidaste tu contraseña?
-                </a>
-            </div>
-
-            <div className="mt-2 text-center">
-                <a href="/register" className="text-sm text-blue-600 hover:text-blue-500">
-                    ¿No tienes cuenta? Regístrate
-                </a>
-            </div>
-        </div>
-    );
-};
-```
-
----
-
-## 🚨 MANEJO DE ERRORES
-
-### Códigos de Error del Authentication Feature
+## 🚨 CÓDIGOS DE ERROR
 
 ```typescript
 enum AuthenticationErrors {
@@ -1532,23 +1421,25 @@ enum AuthenticationErrors {
     RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
     GOOGLE_OAUTH_ERROR = 'GOOGLE_OAUTH_ERROR',
     PASSWORD_RESET_FAILED = 'PASSWORD_RESET_FAILED',
-    EMAIL_VERIFICATION_FAILED = 'EMAIL_VERIFICATION_FAILED'
+    EMAIL_VERIFICATION_FAILED = 'EMAIL_VERIFICATION_FAILED',
+    SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
+    CANNOT_REVOKE_CURRENT_SESSION = 'CANNOT_REVOKE_CURRENT_SESSION'
 }
 ```
 
-### Estructura de Error GraphQL
+### Estructura de Error
 
 ```json
 {
     "errors": [
         {
-            "message": "Credenciales incorrectas",
+            "message": "Mensaje legible",
             "extensions": {
-                "code": "INVALID_CREDENTIALS",
-                "field": "password",
-                "timestamp": "2025-09-21T16:30:00Z"
+                "code": "ERROR_CODE",
+                "field": "campo_invalido",
+                "timestamp": "2025-10-03T16:30:00Z"
             },
-            "path": ["login"]
+            "path": ["mutation", "field"]
         }
     ],
     "data": null
@@ -1557,50 +1448,268 @@ enum AuthenticationErrors {
 
 ---
 
-## 📊 MÉTRICAS Y AUDITORÍA
+## ⏱️ RATE LIMITING
 
-### Eventos de Auditoría Automática
-
-- `user.login`: Login exitoso
-- `user.login.failed`: Intento de login fallido
-- `user.logout`: Logout manual
-- `user.register`: Registro de nuevo usuario
-- `token.refreshed`: Token renovado
-- `password.reset.requested`: Reset solicitado
-- `password.reset.completed`: Reset completado
-- `email.verified`: Email verificado
-- `session.revoked`: Sesión revocada
-
-### Métricas de Seguridad
-
-- Intentos de login fallidos por hora
-- Número de tokens refresh activos
-- Distribución de métodos de auth (local vs OAuth)
-- Tiempo promedio entre registro y verificación de email
-- Geografía de logins (por IP)
+| Endpoint | Máximo | Ventana | Mensaje |
+|----------|--------|---------|---------|
+| `register` | 5 | 60 min | "Demasiados intentos de registro" |
+| `login` | 5 | 15 min | "Demasiados intentos de login" |
+| `loginWithGoogle` | 10 | 60 min | "Límite de login con Google excedido" |
+| `resetPassword` | 3 | 60 min | "Solo 3 intentos por hora" |
+| `confirmPasswordReset` | 3 | 15 min | "Demasiados intentos" |
+| `resendVerification` | 3 | 5 min | "Debes esperar antes de reenviar" |
 
 ---
 
-## 🔄 INTEGRACIÓN CON OTROS FEATURES
+## 💡 CASOS DE USO COMPLETOS
 
-### UserManagement Feature
+### Caso 1: Flujo de Registro Completo
 
-- **AuthUser** → **User**: Login crea contexto para UserManagement
-- **Roles**: Authentication valida roles, UserManagement los gestiona
-- **Profile**: Authentication usa perfil básico, UserManagement gestiona completo
+**1. Usuario se registra:**
+```graphql
+mutation Register {
+    register(input: {
+        email: "nuevo@empresa.com"
+        password: "Pass123!"
+        passwordConfirmation: "Pass123!"
+        firstName: "Juan"
+        lastName: "Pérez"
+        acceptsTerms: true
+        acceptsPrivacyPolicy: true
+    }) {
+        accessToken
+        user { email, emailVerified }
+        roleContexts { roleCode, dashboardPath }
+    }
+}
+```
 
-### CompanyManagement Feature
+**2. Response:**
+- `emailVerified: false`
+- `roleContexts: [{ roleCode: "USER", dashboardPath: "/tickets" }]`
 
-- **Company Context**: Authentication incluye empresas del usuario
-- **Role Assignment**: Authentication valida contexto empresarial
-- **Multi-tenant**: Authentication filtra por empresa cuando aplica
+**3. Frontend:**
+- Guarda tokens
+- Detecta `emailVerified: false`
+- Redirige a `/verify-email`
 
-### Notifications Feature
+**4. Usuario hace clic en link del email:**
+```graphql
+mutation VerifyEmail {
+    verifyEmail(token: "verify_abc123...")
+}
+```
 
-- **Auth Events**: Dispara notificaciones automáticas
-- **Email Verification**: Integración con sistema de emails
-- **Security Alerts**: Notifica logins sospechosos
+**5. Email verificado:**
+- Usuario puede acceder completamente al sistema
 
 ---
 
-Esta documentación cubre completamente el **Authentication Feature**, proporcionando ejemplos detallados, casos de uso, código frontend y patrones de integración. Es la referencia definitiva para desarrolladores trabajando con autenticación en el sistema Helpdesk.
+### Caso 2: Login con Múltiples Roles
+
+**1. Usuario se loguea:**
+```graphql
+mutation Login {
+    login(input: {
+        email: "maria@empresa.com"
+        password: "Pass123!"
+    }) {
+        roleContexts {
+            roleCode
+            roleName
+            company { name, logoUrl }
+            dashboardPath
+        }
+    }
+}
+```
+
+**2. Response:**
+```json
+{
+    "roleContexts": [
+        {
+            "roleCode": "USER",
+            "roleName": "Cliente",
+            "company": null,
+            "dashboardPath": "/tickets"
+        },
+        {
+            "roleCode": "AGENT",
+            "roleName": "Agente",
+            "company": {
+                "name": "Universidad del Valle",
+                "logoUrl": "https://..."
+            },
+            "dashboardPath": "/agent/dashboard"
+        }
+    ]
+}
+```
+
+**3. Frontend muestra selector:**
+```
+¿Con qué rol quieres ingresar?
+
+[📋 Cliente] → /tickets
+[👨‍💼 Agente - Universidad del Valle] → /agent/dashboard
+```
+
+**4. Usuario selecciona rol:**
+- Frontend redirige al dashboard correspondiente
+
+---
+
+### Caso 3: Refresh Token Automático
+
+**1. Access token expira (15-60 min después):**
+- Frontend detecta 401 en requests
+
+**2. Frontend automáticamente:**
+```graphql
+mutation RefreshToken {
+    refreshToken {
+        accessToken
+        refreshToken
+    }
+}
+```
+
+**3. Tokens actualizados:**
+- Nuevo access token guardado
+- Nuevo refresh token guardado
+- Request original se reintenta
+
+**4. Transparente para el usuario:**
+- No pierde contexto
+- No necesita re-loguearse
+
+---
+
+### Caso 4: Gestión de Dispositivos
+
+**1. Usuario ve sus sesiones:**
+```graphql
+query MySessions {
+    mySessions {
+        sessionId
+        deviceName
+        lastUsedAt
+        isCurrent
+    }
+}
+```
+
+**2. Response:**
+```json
+[
+    {
+        "sessionId": "sess_123",
+        "deviceName": "Chrome Windows",
+        "lastUsedAt": "2025-10-03T15:30:00Z",
+        "isCurrent": true
+    },
+    {
+        "sessionId": "sess_456",
+        "deviceName": "iPhone Safari",
+        "lastUsedAt": "2025-10-02T10:00:00Z",
+        "isCurrent": false
+    }
+]
+```
+
+**3. Usuario revoca sesión del iPhone:**
+```graphql
+mutation RevokeSession {
+    revokeOtherSession(sessionId: "sess_456")
+}
+```
+
+**4. iPhone debe re-loguearse:**
+- Su refresh token fue revocado
+- Su access token es inválido
+
+---
+
+### Caso 5: Reset de Contraseña
+
+**1. Usuario solicita reset:**
+```graphql
+mutation ResetPassword {
+    resetPassword(email: "usuario@empresa.com")
+}
+```
+
+**2. Response (siempre true):**
+```json
+{ "data": { "resetPassword": true } }
+```
+
+**3. Si email existe, recibe email con link:**
+```
+https://app.com/reset-password?token=reset_abc123...
+```
+
+**4. Usuario hace clic, frontend valida token:**
+```graphql
+query ValidateToken {
+    passwordResetStatus(token: "reset_abc123...") {
+        isValid
+        canReset
+    }
+}
+```
+
+**5. Si válido, muestra formulario y confirma:**
+```graphql
+mutation ConfirmReset {
+    confirmPasswordReset(input: {
+        token: "reset_abc123..."
+        password: "NuevaPass123!"
+        passwordConfirmation: "NuevaPass123!"
+    }) {
+        success
+    }
+}
+```
+
+**6. Contraseña actualizada:**
+- TODAS las sesiones invalidadas
+- Usuario debe loguearse nuevamente
+
+---
+
+## 📊 EVENTOS DE AUDITORÍA
+
+Todos los eventos se registran automáticamente:
+
+- `user_register`: Registro de usuario
+- `user_login`: Login exitoso
+- `user_login.failed`: Intento fallido
+- `user_login_google`: Login con Google
+- `user_logout`: Logout manual
+- `token_refresh`: Token renovado
+- `password_reset_request`: Reset solicitado
+- `password_reset_confirm`: Reset completado
+- `email_verify`: Email verificado
+- `email_verification_resend`: Reenvío de verificación
+- `session_revoke`: Sesión revocada
+
+**Metadata incluida:**
+```json
+{
+    "event": "user_login",
+    "userId": "550e8400-...",
+    "timestamp": "2025-10-03T16:15:00Z",
+    "ip": "192.168.1.100",
+    "userAgent": "Mozilla/5.0...",
+    "deviceName": "Chrome on Windows"
+}
+```
+
+---
+
+**Fin de la Documentación de Authentication**
+
+> Para implementación backend, ver `app/Features/Authentication/`
+> Para integración con otros features, consultar documentación de UserManagement

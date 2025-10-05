@@ -1,22 +1,22 @@
 # ================================================================================
-# AUTHENTICATION FEATURE SCHEMA - Sistema Helpdesk V8.0
-# Schema enfocado ÚNICAMENTE en autenticación, sin loops infinitos
+# AUTHENTICATION FEATURE SCHEMA V9.0 - Sistema Helpdesk
+# REFACTORIZADO: Reutiliza shared types, minimalista, sin over-fetching
 # ================================================================================
 
 extend type Query {
     """
     Estado completo de autenticación del usuario actual
-    Incluye información de sesión y tokens
+    Incluye información de sesión y token
     """
-    authStatus: AuthStatus
+    authStatus: AuthStatus!
         @guard
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Queries\\AuthStatusQuery")
 
     """
     Lista de sesiones activas del usuario autenticado
-    Útil para gestión de dispositivos conectados
+    Para gestión de dispositivos conectados
     """
-    mySessions: [RefreshTokenInfo!]!
+    mySessions: [SessionInfo!]!
         @guard
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Queries\\MySessionsQuery")
 
@@ -29,15 +29,15 @@ extend type Query {
 
     """
     Estado de verificación de email del usuario actual
-    Muestra si necesita verificar email y cuándo puede reenviar
     """
-    emailVerificationStatus: EmailVerificationStatus
+    emailVerificationStatus: EmailVerificationStatus!
         @guard
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Queries\\EmailVerificationStatusQuery")
 }
 
 extend type Mutation {
-    # ===== FLUJO DE REGISTRO =====
+    # ===== REGISTRO Y LOGIN =====
+
     """
     Registra un nuevo usuario en el sistema
     Genera tokens automáticamente tras registro exitoso
@@ -45,8 +45,8 @@ extend type Mutation {
     register(input: RegisterInput!): AuthPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RegisterMutation")
         @rateLimit(max: 5, window: 60, message: "Demasiados intentos de registro")
+        @audit(action: "user_register", includePayload: false)
 
-    # ===== FLUJO DE LOGIN =====
     """
     Autentica usuario con email y contraseña
     Retorna tokens y roles disponibles para selector
@@ -54,6 +54,7 @@ extend type Mutation {
     login(input: LoginInput!): AuthPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\LoginMutation")
         @rateLimit(max: 5, window: 15, message: "Demasiados intentos de login")
+        @audit(action: "user_login", includePayload: false)
 
     """
     Autentica usuario con token de Google OAuth
@@ -62,256 +63,158 @@ extend type Mutation {
     loginWithGoogle(input: GoogleLoginInput!): AuthPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\GoogleLoginMutation")
         @rateLimit(max: 10, window: 60)
+        @audit(action: "user_login_google", includePayload: false)
 
     # ===== GESTIÓN DE TOKENS =====
+
     """
     Genera nuevo access token usando refresh token válido
     Invalida refresh token anterior por seguridad
     """
-    refreshToken: AuthPayload!
+    refreshToken: RefreshPayload!
+        @guard
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RefreshTokenMutation")
+        @audit(action: "token_refresh")
 
     """
-    Cierra sesión del usuario autenticado
-    Puede cerrar solo sesión actual o todas las sesiones
+    Cierra sesión del usuario
+    everywhere=false: solo sesión actual
+    everywhere=true: todas las sesiones
     """
     logout(everywhere: Boolean = false): Boolean!
         @guard
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\LogoutMutation")
+        @audit(action: "user_logout")
 
     """
-    Revoca una sesión específica (otro dispositivo)
-    No puede revocar la sesión actual - usar logout para eso
+    Revoca una sesión específica de otro dispositivo
+    No puede revocar su propia sesión actual
     """
     revokeOtherSession(sessionId: String!): Boolean!
         @guard
-        @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RevokeSessionMutation")
+        @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RevokeOtherSessionMutation")
+        @audit(action: "session_revoke")
 
-    # ===== RESET DE CONTRASEÑA =====
+    # ===== PASSWORD MANAGEMENT =====
+
     """
-    Envía email con token para reset de contraseña
-    Siempre retorna true por seguridad (no revela si email existe)
+    Solicita reset de contraseña
+    Envía email con token. Siempre retorna true por seguridad
     """
     resetPassword(email: Email!): Boolean!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ResetPasswordMutation")
-        @rateLimit(max: 3, window: 60, message: "Demasiados intentos de reset")
+        @rateLimit(max: 3, window: 3600, message: "Solo 3 intentos por hora")
+        @audit(action: "password_reset_request")
 
     """
     Confirma reset de contraseña con token válido
-    Establece nueva contraseña e invalida token
+    Establece nueva contraseña e invalida todas las sesiones
     """
-    confirmPasswordReset(input: ConfirmPasswordResetInput!): PasswordResetResult!
+    confirmPasswordReset(input: PasswordResetInput!): PasswordResetResult!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ConfirmPasswordResetMutation")
-        @rateLimit(max: 3, window: 15)
+        @rateLimit(max: 3, window: 900, message: "Demasiados intentos")
+        @audit(action: "password_reset_confirm", includePayload: false)
 
-    # ===== VERIFICACIÓN DE EMAIL =====
+    # ===== EMAIL VERIFICATION =====
+
     """
-    Verifica email usando token del enlace enviado
-    Marca email como verificado en el perfil
+    Verifica email del usuario usando token
     """
     verifyEmail(token: String!): EmailVerificationResult!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\VerifyEmailMutation")
+        @audit(action: "email_verify")
 
     """
-    Reenvía email de verificación al usuario actual
-    Respeta rate limiting para evitar spam
+    Reenvía email de verificación al usuario autenticado
+    Rate limiting: 3 intentos cada 5 minutos
     """
-    resendEmailVerification: EmailResendResult!
+    resendVerification: EmailVerificationResult!
         @guard
-        @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ResendEmailVerificationMutation")
-        @rateLimit(max: 3, window: 300, message: "Espera 5 minutos antes de reenviar")
+        @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ResendVerificationMutation")
+        @rateLimit(max: 3, window: 300, message: "Debes esperar antes de reenviar")
+        @audit(action: "email_verification_resend")
 }
 
 # ================================================================================
-# TYPES DE OUTPUT - Respuestas de autenticación (SIN LOOPS INFINITOS)
+# TYPES - Response types
 # ================================================================================
 
 """
-Respuesta principal de autenticación
-Incluye tokens, usuario básico y metadata de sesión
-NO incluye relaciones complejas para evitar loops
+Response de login/register
+Contiene SOLO lo necesario para autenticación inicial
 """
 type AuthPayload {
-    # ===== TOKENS DE ACCESO =====
-    """Token JWT para autenticación en requests"""
+    """Token de acceso JWT (corta duración: 15-60 min)"""
     accessToken: String!
 
-    """Token para renovar access token expirado"""
+    """Token de refresh (larga duración: 30 días)"""
     refreshToken: String!
 
     """Tipo de token (siempre "Bearer")"""
     tokenType: String!
 
-    """Tiempo de expiración en segundos"""
+    """Tiempo de expiración del access token en segundos"""
     expiresIn: Int!
 
-    # ===== USUARIO SIMPLIFICADO =====
-    """Usuario autenticado (versión simplificada para auth)"""
-    user: AuthUser!
+    """Información básica del usuario autenticado"""
+    user: UserAuthInfo!
 
-    # ===== ROLES PARA SELECTOR =====
-    """Roles disponibles del usuario para selector de contexto"""
-    availableRoles: [AuthUserRole!]!
+    """
+    Contextos de roles disponibles
+    Para selector de roles si tiene más de uno
+    """
+    roleContexts: [RoleContext!]!
 
-    # ===== FLUJO DE REDIRECCIÓN =====
-    """URL de redirección sugerida después del login"""
-    defaultRedirect: String!
-
-    """Indica si requiere verificación de email"""
-    requiresEmailVerification: Boolean!
-
-    """Indica si debe completar su perfil"""
-    requiresProfileCompletion: Boolean!
-
-    # ===== METADATA DE SESIÓN =====
-    """Timestamp exacto del login"""
-    loginTimestamp: DateTime!
-
-    """ID único de la sesión creada"""
+    """ID de sesión único"""
     sessionId: String!
+
+    """Timestamp del login"""
+    loginTimestamp: DateTime!
 }
 
 """
-Usuario simplificado para contexto de autenticación
-NO incluye relaciones complejas ni datos sensibles
-Evita loops infinitos manteniendo solo lo esencial
+Response de refresh token
+Versión minimalista sin información de usuario
 """
-type AuthUser {
-    """ID único del usuario"""
-    id: UUID!
+type RefreshPayload {
+    """Nuevo token de acceso JWT"""
+    accessToken: String!
 
-    """Código único del usuario"""
-    userCode: String!
+    """Nuevo token de refresh"""
+    refreshToken: String!
 
-    """Email del usuario"""
-    email: Email!
+    """Tipo de token"""
+    tokenType: String!
 
-    """Si el email está verificado"""
-    emailVerified: Boolean!
-
-    """Estado actual del usuario"""
-    status: UserStatus!
-
-    """Perfil básico del usuario (simplificado)"""
-    profile: AuthUserProfile
+    """Tiempo de expiración en segundos"""
+    expiresIn: Int!
 }
 
 """
-Perfil simplificado para contexto de autenticación
-Solo incluye campos necesarios para la UI post-login
-"""
-type AuthUserProfile {
-    """Nombre del usuario"""
-    firstName: String!
-
-    """Apellido del usuario"""
-    lastName: String!
-
-    """Nombre completo calculado"""
-    displayName: String!
-
-    """URL del avatar del usuario"""
-    avatarUrl: URL
-
-    """Tema preferido del usuario"""
-    theme: String!
-
-    """Idioma preferido del usuario"""
-    language: String!
-
-    """Zona horaria del usuario"""
-    timezone: String!
-}
-
-"""
-Rol de usuario en contexto de autenticación
-Incluye información de empresa si aplica, para selector de roles
-"""
-type AuthUserRole {
-    """ID único del rol asignado"""
-    id: UUID!
-
-    """Código del rol (platform_admin, company_admin, agent, user)"""
-    roleCode: Role!
-
-    """Nombre descriptivo del rol"""
-    roleName: String!
-
-    """Si el rol está activo"""
-    isActive: Boolean!
-
-    # ===== CONTEXTO DE EMPRESA (SI APLICA) =====
-    """ID de empresa (solo para company_admin y agent)"""
-    companyId: UUID
-
-    """Nombre de la empresa (solo para company_admin y agent)"""
-    companyName: String
-
-    """Código de la empresa (solo para company_admin y agent)"""
-    companyCode: String
-
-    # ===== METADATA DE REDIRECCIÓN =====
-    """Ruta del dashboard por defecto para este rol"""
-    dashboardPath: String!
-
-    """Cuándo se asignó este rol"""
-    assignedAt: DateTime!
-}
-
-# ================================================================================
-# TYPES DE ESTADO Y VALIDACIÓN
-# ================================================================================
-
-"""
-Estado completo de autenticación del usuario
-Incluye información de sesión y tokens
+Estado de autenticación del usuario actual
 """
 type AuthStatus {
-    """Si el usuario está autenticado"""
+    """Si está autenticado"""
     isAuthenticated: Boolean!
 
-    """Usuario autenticado (null si no autenticado)"""
-    user: AuthUser
+    """Información del usuario (null si no autenticado)"""
+    user: UserAuthInfo
 
-    """Información de la sesión actual"""
-    session: SessionInfo
+    """Sesión actual (null si no autenticado)"""
+    currentSession: SessionInfo
 
-    """Información del token actual"""
+    """Info del token actual"""
     tokenInfo: TokenInfo
 }
 
 """
-Información de la sesión actual del usuario
-Útil para debugging y seguridad
-"""
-type SessionInfo {
-    """ID único de la sesión"""
-    sessionId: String!
-
-    """Cuándo expira la sesión"""
-    expiresAt: DateTime!
-
-    """Última actividad registrada"""
-    lastActivity: DateTime!
-
-    """Nombre del dispositivo"""
-    deviceName: String
-
-    """Dirección IP de la sesión"""
-    ipAddress: String!
-
-    """Ubicación aproximada"""
-    location: Location
-}
-
-"""
-Información del token de acceso actual
+Información del token JWT actual
 """
 type TokenInfo {
     """Segundos hasta expiración"""
     expiresIn: Int!
 
-    """Cuándo se emitió el token"""
+    """Cuándo fue emitido"""
     issuedAt: DateTime!
 
     """Tipo de token"""
@@ -319,66 +222,47 @@ type TokenInfo {
 }
 
 """
-Ubicación aproximada basada en IP
+Información de sesión activa
 """
-type Location {
-    """Ciudad aproximada"""
-    city: String
-
-    """País detectado"""
-    country: String
-}
-
-"""
-Información de refresh token / sesión activa
-Para gestión de dispositivos conectados
-"""
-type RefreshTokenInfo {
-    """ID único del refresh token"""
-    id: String!
+type SessionInfo {
+    """ID único de sesión"""
+    sessionId: String!
 
     """Nombre del dispositivo"""
     deviceName: String
 
-    """Dirección IP registrada"""
-    ipAddress: String!
+    """IP de acceso"""
+    ipAddress: String
 
     """User agent del navegador"""
     userAgent: String
 
-    """Última vez que se usó"""
+    """Último uso de la sesión"""
     lastUsedAt: DateTime!
 
-    """Cuándo expira"""
+    """Cuándo expira la sesión"""
     expiresAt: DateTime!
 
     """Si es la sesión actual"""
     isCurrent: Boolean!
 
-    """Ubicación aproximada"""
-    location: Location
-}
-
-# ================================================================================
-# TYPES DE RESULTADO DE OPERACIONES
-# ================================================================================
-
-"""
-Resultado de operación de reset de contraseña
-"""
-type PasswordResetResult {
-    """Si la operación fue exitosa"""
-    success: Boolean!
-
-    """Mensaje descriptivo del resultado"""
-    message: String!
-
-    """Usuario afectado (solo si fue exitoso)"""
-    user: AuthUser
+    """Ubicación estimada (opcional)"""
+    location: SessionLocation
 }
 
 """
-Estado de validación de token de reset
+Ubicación de la sesión (estimada por IP)
+"""
+type SessionLocation {
+    """Ciudad"""
+    city: String
+
+    """País"""
+    country: String
+}
+
+"""
+Estado de un token de reset de contraseña
 """
 type PasswordResetStatus {
     """Si el token es válido"""
@@ -390,32 +274,32 @@ type PasswordResetStatus {
     """Cuándo expira el token"""
     expiresAt: DateTime
 
-    """Si se puede usar para reset"""
+    """Si puede resetear la contraseña"""
     canReset: Boolean!
 
-    """Intentos restantes antes de bloqueo"""
+    """Intentos restantes"""
     attemptsRemaining: Int!
 }
 
 """
-Resultado de verificación de email
+Resultado de reset de contraseña
 """
-type EmailVerificationResult {
-    """Si la verificación fue exitosa"""
+type PasswordResetResult {
+    """Si la operación fue exitosa"""
     success: Boolean!
 
-    """Mensaje descriptivo del resultado"""
+    """Mensaje descriptivo"""
     message: String!
 
-    """Usuario con email verificado"""
-    user: AuthUser
+    """Usuario (solo si exitoso)"""
+    user: UserMinimal
 }
 
 """
-Estado de verificación de email del usuario
+Estado de verificación de email
 """
 type EmailVerificationStatus {
-    """Si el email ya está verificado"""
+    """Si el email está verificado"""
     isVerified: Boolean!
 
     """Email del usuario"""
@@ -427,7 +311,7 @@ type EmailVerificationStatus {
     """Si puede reenviar verificación"""
     canResend: Boolean!
 
-    """Cuándo estará disponible reenvío"""
+    """Cuándo puede reenviar nuevamente"""
     resendAvailableAt: DateTime
 
     """Intentos de reenvío restantes"""
@@ -435,36 +319,35 @@ type EmailVerificationStatus {
 }
 
 """
-Resultado de reenvío de verificación de email
+Resultado de verificación de email
 """
-type EmailResendResult {
-    """Si el reenvío fue exitoso"""
+type EmailVerificationResult {
+    """Si la operación fue exitosa"""
     success: Boolean!
 
     """Mensaje descriptivo"""
     message: String!
 
-    """Cuándo se envió"""
-    sentAt: DateTime!
+    """Si puede reenviar (en caso de fallo)"""
+    canResend: Boolean!
 
-    """Cuándo expira el token"""
-    expiresAt: DateTime!
+    """Cuándo puede reenviar"""
+    resendAvailableAt: DateTime
 }
 
 # ================================================================================
-# INPUTS - Datos de entrada para mutations
+# INPUTS
 # ================================================================================
 
 """
 Input para registro de nuevo usuario
 """
 input RegisterInput {
-    # ===== CAMPOS OBLIGATORIOS =====
     """Email único del usuario"""
     email: Email!
         @rules(apply: ["required", "email", "unique:auth.users,email"])
 
-    """Contraseña del usuario (mínimo 8 caracteres)"""
+    """Contraseña (mínimo 8 caracteres)"""
     password: String!
         @rules(apply: ["required", "min:8", "confirmed"])
 
@@ -480,32 +363,31 @@ input RegisterInput {
     lastName: String!
         @rules(apply: ["required", "min:2", "max:100"])
 
-    # ===== CAMPOS LEGALES =====
-    """Aceptación de términos y condiciones"""
+    """Acepta términos y condiciones"""
     acceptsTerms: Boolean!
-        @rules(apply: ["accepted"])
+        @rules(apply: ["required", "accepted"])
 
-    """Aceptación de política de privacidad"""
+    """Acepta política de privacidad"""
     acceptsPrivacyPolicy: Boolean!
-        @rules(apply: ["accepted"])
+        @rules(apply: ["required", "accepted"])
 }
 
 """
-Input para login con email y contraseña
+Input para login con email/password
 """
 input LoginInput {
     """Email del usuario"""
     email: Email!
         @rules(apply: ["required", "email"])
 
-    """Contraseña del usuario"""
+    """Contraseña"""
     password: String!
         @rules(apply: ["required"])
 
     """Recordar sesión por más tiempo"""
     rememberMe: Boolean = false
 
-    """Nombre del dispositivo para identificación"""
+    """Nombre del dispositivo (para tracking)"""
     deviceName: String
 }
 
@@ -522,10 +404,10 @@ input GoogleLoginInput {
 }
 
 """
-Input para confirmación de reset de contraseña
+Input para confirmar reset de contraseña
 """
-input ConfirmPasswordResetInput {
-    """Token de reset recibido por email"""
+input PasswordResetInput {
+    """Token de reset"""
     token: String!
         @rules(apply: ["required"])
 

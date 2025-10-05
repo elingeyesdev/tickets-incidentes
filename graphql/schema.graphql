@@ -1,5 +1,5 @@
 # ================================================================================
-# SCHEMA PRINCIPAL - Sistema Helpdesk V8.0
+# SCHEMA PRINCIPAL - Sistema Helpdesk V9.0
 # Importa todo el contenido compartido y de features
 # ================================================================================
 
@@ -9,6 +9,7 @@
 #import shared/interfaces.graphql
 #import shared/enums.graphql
 #import shared/base-types.graphql
+#import shared/inputs.graphql
 #import shared/pagination.graphql
 
 # ===== IMPORTAR SCHEMAS DE FEATURES =====

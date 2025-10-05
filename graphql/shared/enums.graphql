@@ -1,24 +1,37 @@
 # ================================================================================
-# ENUMS COMPARTIDOS - Sistema Helpdesk V8.0
+# ENUMS COMPARTIDOS - Sistema Helpdesk V9.0
 # Enumeraciones globales del sistema
 # ================================================================================
 
 """
-Roles del sistema de helpdesk
-Determina nivel de acceso y permisos del usuario
+Tipo de proveedor de autenticación
 """
-enum Role {
-  """Administrador de plataforma - acceso total al sistema"""
-  PLATFORM_ADMIN @enum(value: "platform_admin")
+enum AuthProvider {
+  """Autenticación local con email/password"""
+  LOCAL @enum(value: "local")
 
-  """Administrador de empresa - gestiona su empresa completa"""
-  COMPANY_ADMIN @enum(value: "company_admin")
+  """Autenticación con Google OAuth"""
+  GOOGLE @enum(value: "google")
 
-  """Agente de soporte - responde tickets de su empresa"""
-  AGENT @enum(value: "agent")
+  """Autenticación con Facebook OAuth (futuro)"""
+  FACEBOOK @enum(value: "facebook")
+}
 
-  """Usuario final - crea y gestiona sus propios tickets"""
-  USER @enum(value: "user")
+"""
+Códigos de roles del sistema
+"""
+enum RoleCode {
+  """Usuario final que crea tickets"""
+  USER @enum(value: "USER")
+
+  """Agente que responde tickets de una empresa"""
+  AGENT @enum(value: "AGENT")
+
+  """Administrador de una empresa específica"""
+  COMPANY_ADMIN @enum(value: "COMPANY_ADMIN")
+
+  """Administrador de toda la plataforma"""
+  PLATFORM_ADMIN @enum(value: "PLATFORM_ADMIN")
 }
 
 """
@@ -103,4 +116,45 @@ enum SortOrder {
 
   """Descendente (Z-A, más reciente primero, mayor a menor)"""
   DESC @enum(value: "desc")
+}
+
+"""
+Campo de ordenamiento para usuarios
+"""
+enum UserOrderField {
+  """Ordenar por fecha de creación"""
+  CREATED_AT @enum(value: "created_at")
+
+  """Ordenar por última actualización"""
+  UPDATED_AT @enum(value: "updated_at")
+
+  """Ordenar por último login"""
+  LAST_LOGIN_AT @enum(value: "last_login_at")
+
+  """Ordenar por email"""
+  EMAIL @enum(value: "email")
+
+  """Ordenar por estado"""
+  STATUS @enum(value: "status")
+
+  """Ordenar por cantidad de tickets"""
+  TICKETS_COUNT @enum(value: "tickets_count")
+}
+
+"""
+Contexto de uso para la query 'companies'
+Determina qué campos se devuelven para optimizar performance
+"""
+enum CompanyQueryContext {
+  """Para selectores simples: id, code, name, logo (4 campos)"""
+  MINIMAL
+
+  """Para explorar y seguir: + description, industry, location, followers (11 campos)"""
+  EXPLORE
+
+  """Para administración: todos los campos públicos"""
+  MANAGEMENT
+
+  """Para dashboards: + estadísticas agregadas"""
+  ANALYTICS
 }

@@ -1,98 +1,79 @@
-FROM php:8.4-fpm
+FROM php:8.4-fpm AS base
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libpq-dev \
-    libzip-dev \
-    libicu-dev \
-    zip \
-    unzip \
-    wget \
-    supervisor \
+    git curl libpng-dev libonig-dev libxml2-dev \
+    libpq-dev libzip-dev libicu-dev zip unzip wget \
     && docker-php-ext-configure gd \
     && docker-php-ext-install -j$(nproc) \
-        pdo \
-        pdo_pgsql \
-        pgsql \
-        mbstring \
-        exif \
-        pcntl \
-        bcmath \
-        gd \
-        zip \
-        intl \
-        opcache
+        pdo pdo_pgsql pgsql mbstring exif pcntl \
+        bcmath gd zip intl opcache \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Redis extension
+# Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
-# Install Node.js 20.x and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+# Node.js 22.x LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && npm install -g npm@latest
 
-# Get latest Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create system user to run Composer and Artisan Commands
-RUN useradd -G www-data,root -u 1000 -d /home/user user
-RUN mkdir -p /home/user/.composer && \
-    chown -R user:user /home/user
+# Create helpdesk user with YOUR UID (1001)
+RUN groupadd -g 33 www-data || true && \
+    useradd -u 1001 -g www-data -G root -m -s /bin/bash helpdesk && \
+    mkdir -p /home/helpdesk/.composer && \
+    chown -R helpdesk:www-data /home/helpdesk
 
-# Set working directory
 WORKDIR /var/www
 
-# Copy existing application directory contents
-COPY . /var/www
+# =============================================================================
+# DEVELOPMENT STAGE
+# =============================================================================
+FROM base AS development
 
-# Copy existing application directory permissions
-COPY --chown=user:user . /var/www
-
-# Create required directories
-RUN mkdir -p \
-    /var/www/storage/logs \
-    /var/www/storage/framework/cache \
-    /var/www/storage/framework/sessions \
-    /var/www/storage/framework/views \
-    /var/www/bootstrap/cache
-
-# Set permissions
-RUN chown -R user:www-data /var/www \
-    && chmod -R 755 /var/www \
-    && chmod -R 775 /var/www/storage \
-    && chmod -R 775 /var/www/bootstrap/cache
-
-# Install PHP dependencies
-USER user
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Install Node.js dependencies
-RUN npm install
-
-# Switch back to root for final configurations
-USER root
-
-# Copy PHP configuration
 COPY docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Copy supervisor configuration for managing processes
-COPY docker/php/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Install PostgreSQL client for pg_isready
+RUN apt-get update && apt-get install -y postgresql-client \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Expose port 9000 for PHP-FPM and 5173 for Vite
-EXPOSE 9000 5173
+RUN mkdir -p \
+    /var/www/storage/logs \
+    /var/www/storage/framework/cache/data \
+    /var/www/storage/framework/sessions \
+    /var/www/storage/framework/views \
+    /var/www/bootstrap/cache && \
+    chown -R helpdesk:www-data /var/www && \
+    chmod -R 775 /var/www/storage /var/www/bootstrap/cache && \
+    chmod +x /usr/local/bin/entrypoint.sh
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-php-fpm -D\n\
-if [ "$1" = "dev" ]; then\n\
-    su user -c "npm run dev -- --host 0.0.0.0 --port 5173"\n\
-else\n\
-    tail -f /dev/null\n\
-fi' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+EXPOSE 9000
 
-CMD ["/usr/local/bin/start.sh"]
+USER helpdesk
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["php-fpm", "-F"]
+
+# =============================================================================
+# VITE STAGE
+# =============================================================================
+FROM base AS vite
+
+COPY docker/php/entrypoint-vite.sh /usr/local/bin/entrypoint-vite.sh
+
+RUN chmod +x /usr/local/bin/entrypoint-vite.sh
+
+WORKDIR /var/www
+
+USER helpdesk
+
+EXPOSE 5173
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-vite.sh"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

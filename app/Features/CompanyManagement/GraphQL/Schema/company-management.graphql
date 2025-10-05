@@ -1,28 +1,36 @@
 # ================================================================================
-# COMPANY MANAGEMENT FEATURE SCHEMA - Sistema Helpdesk V8.0
-# Schema BÁSICO para soportar UserManagement sin loops infinitos
-# Solo funcionalidades esenciales para validar roles de agentes
+# COMPANY MANAGEMENT SCHEMA V9.0 - Sistema Helpdesk
+# BALANCEADO Y PRAGMÁTICO: Sin loops, separación de concerns, performance
 # ================================================================================
 
 extend type Query {
-    """
-    Lista de empresas públicas disponibles
-    Para registro de usuarios y selección de contexto
-    """
-    publicCompanies(
-        """Filtros de búsqueda básicos"""
-        search: String
-        """Solo empresas activas"""
-        activeOnly: Boolean = true
-        """Paginación"""
-        first: Int = 20
-    ): [CompanyPublicInfo!]!
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\PublicCompaniesQuery")
-        @cache(ttl: 300, key: "public_companies")
+    # ===== QUERY PRINCIPAL: 80% de casos de uso =====
 
     """
-    Información básica de una empresa específica
-    Accesible por usuarios que tienen relación con la empresa
+    Query principal con contextos inteligentes
+    USA ESTO para: selectores, exploradores, listas
+    """
+    companies(
+        """Define qué campos necesitas según el caso de uso"""
+        context: CompanyQueryContext!
+
+        """Filtros opcionales"""
+        filters: CompanyFilters
+
+        """Búsqueda de texto"""
+        search: String
+
+        """Paginación"""
+        page: Int = 1
+        first: Int = 20
+    ): CompanyQueryResult!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompaniesQuery")
+        @cache(ttl: 300, key: "companies_{context}_{filters}")
+
+    # ===== QUERIES ESPECÍFICAS: 20% restante =====
+
+    """
+    Detalle completo de una empresa específica
     """
     company(id: UUID!): Company
         @guard
@@ -30,257 +38,128 @@ extend type Query {
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompanyQuery")
 
     """
-    Empresas donde el usuario actual tiene roles
-    Útil para selector de contexto empresarial
+    Mis empresas seguidas con estadísticas personales
     """
-    myCompanies: [CompanyBasicInfo!]!
+    myFollowedCompanies: [CompanyFollowInfo!]!
         @guard
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\MyCompaniesQuery")
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\MyFollowedCompaniesQuery")
 
     """
-    Lista completa de empresas (solo admins)
-    Para gestión administrativa del sistema
+    Verificación rápida de seguimiento
     """
-    companies(
-        """Filtros administrativos"""
-        filters: CompanyFilters
-        """Ordenamiento"""
-        orderBy: [CompanyOrderBy!]
-        """Paginación"""
-        page: Int = 1
-        first: Int = 15
-    ): CompanyPaginator!
-        @guard(with: [PLATFORM_ADMIN])
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompaniesQuery")
+    isFollowingCompany(companyId: UUID!): Boolean!
+        @guard
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\IsFollowingCompanyQuery")
 
     """
-    Solicitudes pendientes de empresas
-    Solo para administradores de plataforma
+    Panel administrativo: solicitudes pendientes
     """
     companyRequests(
-        """Filtrar por estado"""
         status: CompanyRequestStatus
-        """Paginación"""
         first: Int = 15
     ): [CompanyRequest!]!
-        @guard(with: [PLATFORM_ADMIN])
+        @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompanyRequestsQuery")
 }
 
+# ================================================================================
+# MUTATIONS
+# ================================================================================
+
 extend type Mutation {
-    # ===== SOLICITUD PÚBLICA DE EMPRESA =====
-    """
-    Solicitar creación de nueva empresa
-    Proceso público que requiere aprobación admin
-    """
+    # Company Followers
+    followCompany(companyId: UUID!): CompanyFollowResult!
+        @guard
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\FollowCompanyMutation")
+        @audit(action: "company_follow")
+
+    unfollowCompany(companyId: UUID!): Boolean!
+        @guard
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\UnfollowCompanyMutation")
+        @audit(action: "company_unfollow")
+
+    # Solicitudes
     requestCompany(input: CompanyRequestInput!): CompanyRequest!
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\RequestCompanyMutation")
         @rateLimit(max: 3, window: 3600, message: "Solo 3 solicitudes por hora")
+        @audit(action: "company_request", includePayload: true)
 
-    # ===== GESTIÓN ADMIN DE SOLICITUDES =====
-    """
-    Aprobar solicitud de empresa
-    Crea automáticamente la empresa y asigna admin
-    """
+    # Admin
     approveCompanyRequest(requestId: UUID!): Company!
-        @guard(with: [PLATFORM_ADMIN])
+        @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\ApproveCompanyRequestMutation")
-        @audit(action: "approve_company_request", includePayload: true)
+        @audit(action: "company_request_approve", includePayload: true)
 
-    """
-    Rechazar solicitud de empresa
-    Requiere motivo para feedback al solicitante
-    """
     rejectCompanyRequest(requestId: UUID!, reason: String!): Boolean!
-        @guard(with: [PLATFORM_ADMIN])
+        @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\RejectCompanyRequestMutation")
-        @audit(action: "reject_company_request", includePayload: true)
+        @audit(action: "company_request_reject", includePayload: true)
 
-    # ===== GESTIÓN BÁSICA DE EMPRESAS =====
-    """
-    Crear empresa directamente (solo platform admin)
-    Para casos especiales sin proceso de solicitud
-    """
     createCompany(input: CreateCompanyInput!): Company!
-        @guard(with: [PLATFORM_ADMIN])
+        @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\CreateCompanyMutation")
-        @audit(action: "create_company", includePayload: true)
         @rateLimit(max: 10, window: 3600)
+        @audit(action: "company_create", includePayload: true)
 
-    """
-    Actualizar información básica de empresa
-    Solo company admin de esa empresa o platform admin
-    """
     updateCompany(id: UUID!, input: UpdateCompanyInput!): Company!
-        @guard(with: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @can(ability: "update", model: "Company", find: "id")
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\UpdateCompanyMutation")
-        @audit(action: "update_company", includePayload: true)
-
-    """
-    Suspender empresa temporalmente
-    Desactiva todos los agentes y bloquea operaciones
-    """
-    suspendCompany(id: UUID!, reason: String!): Company!
-        @guard(with: [PLATFORM_ADMIN])
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\SuspendCompanyMutation")
-        @audit(action: "suspend_company", includePayload: true)
-
-    """
-    Reactivar empresa suspendida
-    Restaura operaciones normales
-    """
-    activateCompany(id: UUID!): Company!
-        @guard(with: [PLATFORM_ADMIN])
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\ActivateCompanyMutation")
-        @audit(action: "activate_company")
+        @audit(action: "company_update", includePayload: true)
 }
 
 # ================================================================================
-# TYPES PRINCIPALES - Empresa completa SIN loops infinitos
+# RESULTADO POLIMÓRFICO: Devuelve el type correcto según contexto
 # ================================================================================
 
 """
-Empresa completa para gestión administrativa
-NO incluye listas de usuarios/tickets para evitar loops infinitos
-Usa contadores y referencias básicas únicamente
+Resultado inteligente basado en el contexto solicitado
 """
-type Company implements Node & Timestamped & BelongsToCompany {
-    # ===== IDENTIFICADORES =====
-    """ID único de la empresa"""
-    id: UUID!
+union CompanyQueryResult =
+    | CompanyMinimalList
+    | CompanyExploreList
+    | CompanyFullList
 
-    """Código único legible (CMP-2025-00001)"""
-    companyCode: String!
-
-    # ===== INFORMACIÓN BÁSICA =====
-    """Nombre comercial de la empresa"""
-    name: String!
-
-    """Razón social completa"""
-    legalName: String
-
-    """Email público de soporte"""
-    supportEmail: Email
-
-    """Teléfono de contacto"""
-    phone: PhoneNumber
-
-    """Sitio web oficial"""
-    website: URL
-
-    # ===== INFORMACIÓN DE CONTACTO =====
-    """Dirección completa de contacto"""
-    contactAddress: String
-
-    """Ciudad de ubicación"""
-    contactCity: String
-
-    """Estado o departamento"""
-    contactState: String
-
-    """País de ubicación"""
-    contactCountry: String
-
-    """Código postal"""
-    contactPostalCode: String
-
-    # ===== INFORMACIÓN LEGAL =====
-    """RUT, NIT o identificador fiscal"""
-    taxId: String
-
-    """Representante legal de la empresa"""
-    legalRepresentative: String
-
-    # ===== CONFIGURACIÓN OPERATIVA =====
-    """Horarios de atención por día (JSON)"""
-    businessHours: JSON!
-
-    """Zona horaria de operación"""
-    timezone: String!
-
-    # ===== BRANDING =====
-    """URL del logo principal"""
-    logoUrl: URL
-
-    """URL del favicon"""
-    faviconUrl: URL
-
-    """Color primario de la marca"""
-    primaryColor: HexColor!
-
-    """Color secundario de la marca"""
-    secondaryColor: HexColor!
-
-    # ===== ESTADO Y CONFIGURACIÓN =====
-    """Estado actual de la empresa"""
-    status: CompanyStatus!
-
-    """Configuraciones adicionales (JSON)"""
-    settings: JSON
-
-    # ===== RELACIONES BÁSICAS (SIN LOOPS) =====
-    """Administrador principal de la empresa"""
-    admin: UserBasicInfo!
-
-    """Información básica para cumplir interfaz BelongsToCompany"""
-    companyId: UUID!
-    companyInfo: CompanyBasicInfo!
-
-    # ===== ESTADÍSTICAS (EVITA LOOPS) =====
-    """Total de agentes activos"""
-    activeAgentsCount: Int!
-
-    """Total de usuarios con roles en esta empresa"""
-    totalUsersCount: Int!
-
-    """Total de tickets creados"""
-    totalTicketsCount: Int!
-
-    """Total de tickets abiertos actualmente"""
-    openTicketsCount: Int!
-
-    """Calificación promedio de servicio"""
-    averageRating: Float
-
-    """Total de categorías de tickets"""
-    categoriesCount: Int!
-
-    """Total de macros de respuesta"""
-    macrosCount: Int!
-
-    # ===== AUDITORÍA =====
-    """Cuándo se creó la empresa"""
-    createdAt: DateTime!
-
-    """Última modificación"""
-    updatedAt: DateTime!
-
-    """Solicitud original que generó esta empresa"""
-    originRequest: CompanyRequest
+"""Wrapper para contexto MINIMAL"""
+type CompanyMinimalList {
+    items: [CompanyMinimal!]!
+    totalCount: Int!
+    hasNextPage: Boolean!
 }
 
+"""Wrapper para contexto EXPLORE"""
+type CompanyExploreList {
+    items: [CompanyForFollowing!]!
+    totalCount: Int!
+    hasNextPage: Boolean!
+}
+
+"""Wrapper para contexto MANAGEMENT/ANALYTICS"""
+type CompanyFullList {
+    items: [Company!]!
+    totalCount: Int!
+    hasNextPage: Boolean!
+}
+
+# ================================================================================
+# TYPES - Response types
+# ================================================================================
+
 """
-Información pública de empresa
-Para mostrar en listas públicas y registro de usuarios
+Type para EXPLORAR empresas y seguir
+CASO DE USO: Página "Explorar Empresas", selector de onboarding
 """
-type CompanyPublicInfo {
-    """ID único de la empresa"""
+type CompanyForFollowing {
+    """ID único"""
     id: UUID!
 
-    """Código único de la empresa"""
+    """Código único"""
     companyCode: String!
 
     """Nombre comercial"""
     name: String!
 
-    """Email público de soporte"""
-    supportEmail: Email
-
-    """Sitio web"""
-    website: URL
-
-    """Logo de la empresa"""
+    """Logo"""
     logoUrl: URL
 
     """Descripción breve del negocio"""
@@ -289,123 +168,114 @@ type CompanyPublicInfo {
     """Sector o industria"""
     industry: String
 
-    """Ciudad de ubicación"""
+    """Ciudad"""
     city: String
 
-    """País de ubicación"""
+    """País"""
     country: String
 
-    """Si acepta nuevos usuarios"""
-    acceptsPublicUsers: Boolean!
+    """Color primario para branding"""
+    primaryColor: HexColor
 
-    """Horarios de atención (formato legible)"""
-    businessHoursDisplay: String
+    """Total de seguidores (social proof)"""
+    followersCount: Int!
+
+    """Si yo la estoy siguiendo"""
+    isFollowedByMe: Boolean!
 }
 
 """
-Solicitud de creación de empresa
-Para proceso de aprobación administrativa
+Type COMPLETO de empresa - SIN loops infinitos
+CASO DE USO: Query company($id) para detalle completo
 """
-type CompanyRequest implements Node & Timestamped {
-    """ID único de la solicitud"""
+type Company implements Node & Timestamped {
+    # Identificadores
     id: UUID!
+    companyCode: String!
 
-    """Código único de la solicitud (REQ-2025-00001)"""
-    requestCode: String!
-
-    # ===== INFORMACIÓN SOLICITADA =====
-    """Nombre comercial solicitado"""
-    companyName: String!
-
-    """Razón social"""
+    # Info básica
+    name: String!
     legalName: String
-
-    """Email del administrador solicitante"""
-    adminEmail: Email!
-
-    """Descripción del negocio"""
-    businessDescription: String!
-
-    """Sitio web de la empresa"""
+    supportEmail: Email
+    phone: PhoneNumber
     website: URL
 
-    """Tipo de industria o sector"""
-    industryType: String!
-
-    """Número estimado de usuarios"""
-    estimatedUsers: Int
-
-    # ===== INFORMACIÓN DE CONTACTO =====
-    """Dirección de contacto"""
+    # Contacto
     contactAddress: String
-
-    """Ciudad"""
     contactCity: String
-
-    """País"""
     contactCountry: String
 
-    """Código postal"""
-    contactPostalCode: String
-
-    """Identificador fiscal"""
+    # Legal
     taxId: String
+    legalRepresentative: String
 
-    # ===== ESTADO DE LA SOLICITUD =====
-    """Estado actual de la solicitud"""
-    status: CompanyRequestStatus!
+    # Config
+    businessHours: JSON!
+    timezone: String!
 
-    """Administrador que revisó la solicitud"""
-    reviewedBy: UserBasicInfo
+    # Branding
+    logoUrl: URL
+    primaryColor: HexColor!
+    secondaryColor: HexColor!
 
-    """Fecha de revisión"""
-    reviewedAt: DateTime
+    # Estado
+    status: CompanyStatus!
 
-    """Motivo de rechazo (si aplica)"""
-    rejectionReason: String
+    # Admin (SIN loops)
+    adminId: UUID!
+    adminName: String!
+    adminEmail: Email!
 
-    """Empresa creada (si fue aprobada)"""
-    createdCompany: CompanyBasicInfo
+    # Estadísticas (contadores)
+    activeAgentsCount: Int!
+    totalUsersCount: Int!
+    totalTicketsCount: Int!
+    openTicketsCount: Int!
+    followersCount: Int!
 
-    # ===== AUDITORÍA =====
-    """Fecha de creación de la solicitud"""
+    # Flags contextuales
+    isFollowedByMe: Boolean @guard
+
+    # Auditoría
     createdAt: DateTime!
-
-    """Última modificación"""
     updatedAt: DateTime!
 }
 
-# ================================================================================
-# TYPES DE PAGINACIÓN
-# ================================================================================
-
 """
-Resultado paginado de empresas
+Información de empresa seguida CON contexto de seguimiento
+CASO DE USO: myFollowedCompanies query
 """
-type CompanyPaginator {
-    """Lista de empresas en la página actual"""
-    data: [Company!]!
-
-    """Información de paginación"""
-    paginatorInfo: PaginatorInfo!
+type CompanyFollowInfo {
+    id: UUID!
+    company: CompanyMinimal!
+    followedAt: DateTime!
+    myTicketsCount: Int!
+    lastTicketCreatedAt: DateTime
+    hasUnreadAnnouncements: Boolean!
 }
 
-# ================================================================================
-# ENUMS
-# ================================================================================
+"""
+Solicitud de empresa pendiente de aprobación
+"""
+type CompanyRequest implements Node & Timestamped {
+    id: UUID!
+    requestCode: String!
+    companyName: String!
+    adminEmail: Email!
+    businessDescription: String!
+    status: CompanyRequestStatus!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
 
 """
-Estados posibles de una solicitud de empresa
+Resultado de seguir una empresa
 """
-enum CompanyRequestStatus {
-    """Solicitud pendiente de revisión"""
-    PENDING @enum(value: "pending")
-
-    """Solicitud aprobada y empresa creada"""
-    APPROVED @enum(value: "approved")
-
-    """Solicitud rechazada"""
-    REJECTED @enum(value: "rejected")
+type CompanyFollowResult {
+    success: Boolean!
+    message: String!
+    company: CompanyMinimal!
+    followedAt: DateTime!
 }
 
 # ================================================================================
@@ -413,91 +283,69 @@ enum CompanyRequestStatus {
 # ================================================================================
 
 """
-Input para solicitar creación de empresa
+Filtros para query companies
+"""
+input CompanyFilters {
+    status: CompanyStatus
+    industry: String
+    country: String
+    hasActiveTickets: Boolean
+    followedByMe: Boolean
+}
+
+"""
+Input para solicitar empresa
 """
 input CompanyRequestInput {
-    # ===== INFORMACIÓN BÁSICA =====
-    """Nombre comercial deseado"""
     companyName: String!
         @rules(apply: ["required", "min:2", "max:200"])
 
-    """Razón social completa"""
-    legalName: String
-        @rules(apply: ["max:250"])
-
-    """Email del administrador"""
     adminEmail: Email!
         @rules(apply: ["required", "email"])
 
-    """Descripción detallada del negocio"""
     businessDescription: String!
         @rules(apply: ["required", "min:50", "max:1000"])
 
-    """Sitio web de la empresa"""
-    website: URL
-        @rules(apply: ["url"])
-
-    """Sector o industria"""
     industryType: String!
         @rules(apply: ["required", "max:100"])
 
-    """Número estimado de usuarios"""
-    estimatedUsers: Int
-        @rules(apply: ["min:1", "max:10000"])
+    website: URL
+        @rules(apply: ["url"])
 
-    # ===== INFORMACIÓN DE CONTACTO =====
-    """Dirección completa"""
     contactAddress: String
         @rules(apply: ["max:500"])
 
-    """Ciudad"""
     contactCity: String
         @rules(apply: ["max:100"])
 
-    """País"""
     contactCountry: String
         @rules(apply: ["max:100"])
 
-    """Código postal"""
-    contactPostalCode: String
-        @rules(apply: ["max:20"])
-
-    """RUT, NIT o identificador fiscal"""
     taxId: String
         @rules(apply: ["max:50"])
 }
 
 """
-Input para crear empresa directamente
+Input para crear empresa directamente (admin)
 """
 input CreateCompanyInput {
-    """Nombre comercial"""
     name: String!
         @rules(apply: ["required", "min:2", "max:200"])
 
-    """Razón social"""
     legalName: String
         @rules(apply: ["max:250"])
 
-    """Email de administrador existente"""
     adminUserId: UUID!
         @rules(apply: ["required", "exists:auth.users,id"])
 
-    """Email público de soporte"""
     supportEmail: Email
         @rules(apply: ["email"])
 
-    """Teléfono de contacto"""
     phone: PhoneNumber
-
-    """Sitio web"""
     website: URL
         @rules(apply: ["url"])
 
-    """Información de contacto"""
     contactInfo: ContactInfoInput
-
-    """Configuración inicial"""
     initialConfig: CompanyConfigInput
 }
 
@@ -505,159 +353,53 @@ input CreateCompanyInput {
 Input para actualizar empresa
 """
 input UpdateCompanyInput {
-    """Nuevo nombre comercial"""
     name: String
         @rules(apply: ["min:2", "max:200"])
 
-    """Nueva razón social"""
     legalName: String
         @rules(apply: ["max:250"])
 
-    """Nuevo email de soporte"""
     supportEmail: Email
         @rules(apply: ["email"])
 
-    """Nuevo teléfono"""
     phone: PhoneNumber
-
-    """Nuevo sitio web"""
     website: URL
         @rules(apply: ["url"])
 
-    """Actualizar información de contacto"""
     contactInfo: ContactInfoInput
-
-    """Actualizar configuración"""
     config: CompanyConfigInput
-
-    """Actualizar branding"""
     branding: CompanyBrandingInput
 }
 
-"""
-Información de contacto de empresa
-"""
 input ContactInfoInput {
-    """Dirección completa"""
     address: String
         @rules(apply: ["max:500"])
-
-    """Ciudad"""
     city: String
         @rules(apply: ["max:100"])
-
-    """Estado o departamento"""
     state: String
         @rules(apply: ["max:100"])
-
-    """País"""
     country: String
         @rules(apply: ["max:100"])
-
-    """Código postal"""
     postalCode: String
         @rules(apply: ["max:20"])
-
-    """Identificador fiscal"""
     taxId: String
         @rules(apply: ["max:50"])
-
-    """Representante legal"""
     legalRepresentative: String
         @rules(apply: ["max:200"])
 }
 
-"""
-Configuración operativa de empresa
-"""
 input CompanyConfigInput {
-    """Horarios de atención (JSON)"""
     businessHours: JSON
-
-    """Zona horaria"""
     timezone: String
         @rules(apply: ["timezone"])
-
-    """Configuraciones adicionales"""
     settings: JSON
 }
 
-"""
-Branding de empresa
-"""
 input CompanyBrandingInput {
-    """URL del logo"""
     logoUrl: URL
         @rules(apply: ["url"])
-
-    """URL del favicon"""
     faviconUrl: URL
         @rules(apply: ["url"])
-
-    """Color primario"""
     primaryColor: HexColor
-
-    """Color secundario"""
     secondaryColor: HexColor
-}
-
-# ================================================================================
-# INPUTS DE FILTROS
-# ================================================================================
-
-"""
-Filtros para búsqueda de empresas
-"""
-input CompanyFilters {
-    """Buscar por nombre o código"""
-    search: String
-
-    """Filtrar por estado"""
-    status: CompanyStatus
-
-    """Filtrar por sector"""
-    industry: String
-
-    """Filtrar por país"""
-    country: String
-
-    """Solo empresas con actividad reciente"""
-    recentActivity: Boolean
-
-    """Rango de fechas de creación"""
-    createdBetween: DateRange
-}
-
-"""
-Ordenamiento de empresas
-"""
-input CompanyOrderBy {
-    """Campo por el cual ordenar"""
-    field: CompanyOrderField!
-
-    """Dirección del ordenamiento"""
-    order: SortOrder!
-}
-
-"""
-Campos disponibles para ordenar empresas
-"""
-enum CompanyOrderField {
-    """Ordenar por fecha de creación"""
-    CREATED_AT
-
-    """Ordenar por nombre"""
-    NAME
-
-    """Ordenar por estado"""
-    STATUS
-
-    """Ordenar por número de agentes"""
-    AGENTS_COUNT
-
-    """Ordenar por número de tickets"""
-    TICKETS_COUNT
-
-    """Ordenar por calificación"""
-    RATING
 }

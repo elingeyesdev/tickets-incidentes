@@ -1,0 +1,16 @@
+# ================================================================================
+# INPUTS COMPARTIDOS - Sistema Helpdesk V9.0
+# Inputs reutilizables entre features
+# ================================================================================
+
+"""
+Rango de fechas para filtros
+Usado en queries que requieren filtrado por rangos temporales
+"""
+input DateRange {
+  """Fecha de inicio (inclusive)"""
+  from: DateTime!
+
+  """Fecha de fin (inclusive)"""
+  to: DateTime!
+}

@@ -1,5 +1,5 @@
 # ================================================================================
-# INTERFACES COMPARTIDAS - Sistema Helpdesk V8.0
+# INTERFACES COMPARTIDAS - Sistema Helpdesk V9.0
 # Interfaces base para contratos comunes entre tipos
 # ================================================================================
 
@@ -22,16 +22,4 @@ interface Timestamped {
 
   """Fecha y hora de última actualización"""
   updatedAt: DateTime!
-}
-
-"""
-Entidad que pertenece a una empresa específica
-Implementar en tipos que operan en contexto empresarial
-"""
-interface BelongsToCompany {
-  """ID de la empresa a la que pertenece"""
-  companyId: UUID!
-
-  """Información básica de la empresa"""
-  companyInfo: CompanyBasicInfo!
 }

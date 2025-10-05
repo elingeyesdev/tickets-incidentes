@@ -39,6 +39,14 @@ COMMENT ON SCHEMA business IS 'Business schema - companies, departments, users r
 COMMENT ON SCHEMA ticketing IS 'Ticketing schema - tickets, responses, attachments, ratings';
 COMMENT ON SCHEMA audit IS 'Audit schema - logs, tracking, monitoring';
 
+-- Create updated_at trigger function (used globally)
+CREATE OR REPLACE FUNCTION public.update_updated_at_column() RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create helper functions for UUID generation
 CREATE OR REPLACE FUNCTION auth.generate_user_code() RETURNS text AS $$
 BEGIN

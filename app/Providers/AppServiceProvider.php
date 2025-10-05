@@ -19,6 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Load migrations from feature directories
+        $this->loadMigrationsFrom([
+            database_path('migrations'),
+            app_path('Features/UserManagement/Database/Migrations'),
+            app_path('Features/Authentication/Database/Migrations'),
+            app_path('Features/CompanyManagement/Database/Migrations'),
+        ]);
     }
 }

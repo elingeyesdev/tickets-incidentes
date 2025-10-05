@@ -37,5 +37,5 @@ done
 echo "✅ Performance optimization complete!"
 echo ""
 echo "Expected performance:"
-echo "- First request: ~200-500ms (cold start)"
+echo "- First request: ~200-500ms (cold start)"doc
 echo "- Subsequent requests: <100ms"

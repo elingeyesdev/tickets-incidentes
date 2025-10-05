@@ -1,9 +1,6 @@
 # =============================================================================
 # HELPDESK SYSTEM - DOCKER COMPOSE (DEVELOPMENT)
 # =============================================================================
-# Development environment with hot-reload, debugging tools, and exposed ports
-# For production use: docker-compose.prod.yml
-# =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
@@ -13,18 +10,17 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-      target: development  # Multi-stage build target
+      target: development
     container_name: helpdesk_app
     restart: unless-stopped
     working_dir: /var/www
     volumes:
       - .:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      # Don't mount vendor and node_modules for performance
-      - /var/www/vendor
-      - /var/www/node_modules
+      - ./docker/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
     environment:
       - APP_ENV=local
+      - APP_DEBUG=true
       - DB_HOST=postgres
       - DB_CONNECTION=pgsql
       - REDIS_HOST=redis
@@ -38,13 +34,29 @@ services:
         condition: service_healthy
     networks:
       - helpdesk
-    ports:
-      - "5173:5173"  # Vite HMR
     healthcheck:
-      test: ["CMD", "php", "-v"]
+      test: ["CMD-SHELL", "php-fpm -t"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Vite Development Server
+  # ---------------------------------------------------------------------------
+  vite:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: vite
+    container_name: helpdesk_vite
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    ports:
+      - "5173:5173"
+    networks:
+      - helpdesk
 
   # ---------------------------------------------------------------------------
   # Nginx Web Server
@@ -86,7 +98,7 @@ services:
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./docker/postgres/create-multiple-databases.sh:/docker-entrypoint-initdb.d/02-create-multiple-databases.sh
     ports:
-      - "5432:5432"  # Exposed for local connections (pgAdmin, DBeaver, etc)
+      - "5432:5432"
     networks:
       - helpdesk
     healthcheck:
@@ -104,7 +116,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"  # Exposed for Redis CLI access
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -129,8 +141,6 @@ services:
     volumes:
       - .:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - /var/www/vendor
-      - /var/www/node_modules
     environment:
       - APP_ENV=local
       - DB_HOST=postgres
@@ -164,8 +174,6 @@ services:
     volumes:
       - .:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - /var/www/vendor
-      - /var/www/node_modules
     environment:
       - APP_ENV=local
       - DB_HOST=postgres
@@ -197,8 +205,8 @@ services:
     container_name: helpdesk_mailpit
     restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
+      - "1025:1025"
+      - "8025:8025"
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1

@@ -50,6 +50,12 @@ docker compose logs -f
 docker compose logs -f app
 ```
 
+**Windows-Specific Notes**:
+- Running on Laravel Herd (local PHP installation)
+- Use PowerShell for better command compatibility
+- Local PHP commands run faster than Docker for CPU-intensive tasks
+- Use `powershell -Command "php artisan ..."` for artisan commands when Docker is slow
+
 **Testing**:
 ```bash
 # Run all tests
@@ -64,23 +70,33 @@ docker compose exec app composer test
 
 **Laravel**:
 ```bash
-# Generate services using feature structure
-docker compose exec app php artisan make:service [Feature]/[Feature]Service
-
-# Generate models with migrations
-docker compose exec app php artisan make:model Features/[Feature]/Models/[Model] -m
-
-# Run migrations
+# Run migrations (all features)
 docker compose exec app php artisan migrate
 
-# Run seeders
-docker compose exec app php artisan db:seed
+# Run specific seeder
+docker compose exec app php artisan db:seed --class=Features\\[Feature]\\Database\\Seeders\\[Seeder]
+
+# Refresh database (⚠️ drops all tables)
+docker compose exec app php artisan migrate:fresh --seed
 
 # Access container shell
 docker compose exec app bash
 
 # Clear all caches (when troubleshooting)
 docker compose exec app php artisan optimize:clear
+
+# Run deployment scripts (from host)
+bash scripts/deploy-dev.sh      # Development deployment
+bash scripts/deploy-prod.sh     # Production deployment
+bash scripts/optimize-performance.sh  # Performance optimization
+```
+
+**Artisan Custom Commands** (when needed):
+```bash
+# Generate feature components (custom commands - to be implemented)
+php artisan make:feature [FeatureName]  # Create complete feature structure
+php artisan make:resolver [Feature]/[ResolverName]  # Create GraphQL resolver
+php artisan make:dataloader [Feature]/[LoaderName]  # Create DataLoader
 ```
 
 **Code Quality**:
@@ -171,8 +187,8 @@ resources/js/
 
 **Current Implementation Status**:
 - ✅ GraphQL schemas and dummy resolvers (schema-first)
-- ⏳ Models, Services, Events, Listeners, Jobs, Policies (pending)
-- ⏳ Database: Migrations, Seeders, Factories (pending)
+- 🔄 Models, Services, Events, Listeners, Jobs, Policies (in progress)
+- 🔄 Database: Migrations, Seeders, Factories (in progress - see git status)
 
 ### Database Schema (PostgreSQL V7.0)
 
@@ -231,6 +247,24 @@ app/Features/Authentication/
 
 **IMPORTANT**: Migrations/Seeders/Factories are **inside each feature**, not in root `database/` folder.
 
+**Loading Feature Migrations**:
+Feature migrations must be loaded in `AppServiceProvider::boot()`:
+```php
+// In app/Providers/AppServiceProvider.php
+$this->loadMigrationsFrom([
+    database_path('migrations'),
+    app_path('Features/Authentication/Database/Migrations'),
+    app_path('Features/UserManagement/Database/Migrations'),
+    app_path('Features/CompanyManagement/Database/Migrations'),
+    // Add new features here
+]);
+```
+
+**⚠️ IMPORTANT**: After adding migration paths, you must restart the application/queue containers:
+```bash
+docker compose restart app queue scheduler
+```
+
 ### Development Rules
 
 **Backend (Laravel)**:
@@ -279,8 +313,19 @@ Feature specifications and GraphQL schemas are in `/documentacion/`:
   - ✅ Directivas: @auth, @can, @company, @rateLimit, @audit
   - ✅ **Anti-loop types:** UserBasicInfo, CompanyBasicInfo, TicketBasicInfo
   - ✅ **Schema validado exitosamente** (usando PHP local por rendimiento)
-- ⏳ PostgreSQL schemas - pending migrations
-- ⏳ Features - pending backend implementation (resolvers son dummy)
+- 🔄 **Backend Implementation - IN PROGRESS (03-Oct-2025)**
+  - ✅ Models: User, UserProfile, UserRole, Role, RefreshToken
+  - ✅ Services: AuthService, TokenService, PasswordResetService, UserService, RoleService, ProfileService
+  - ✅ Events/Listeners: Authentication events system
+  - ✅ Jobs: Email verification and password reset jobs
+  - ✅ Policies: UserPolicy, UserRolePolicy
+  - ✅ Migrations: Authentication and UserManagement tables created
+  - ✅ Factories: User, UserProfile, UserRole, Role, RefreshToken
+  - ✅ Seeders: RolesSeeder, DemoUsersSeeder
+  - ✅ DataLoaders: UserByIdLoader, UserProfileByUserIdLoader, UserRolesByUserIdLoader
+  - 🔄 CompanyManagement: Mutations and queries (in progress)
+- ⏳ PostgreSQL schemas - migrations need to be run
+- ⏳ Real resolvers implementation - currently dummy
 
 ### Development Workflow
 
@@ -300,7 +345,7 @@ When implementing features, follow the existing patterns in the codebase and mai
 
 ## GraphQL Schema-First Implementation (CURRENT STATUS)
 
-**Last updated:** 29-Sep-2025 23:15 (Bogotá Time)
+**Last updated:** 03-Oct-2025 (Active Development)
 
 ### ✅ What's Completed
 
@@ -391,3 +436,58 @@ query {
 - ✅ Keep all 3 feature schemas complete (Authentication, UserManagement, CompanyManagement)
 - ✅ Maintain anti-loop types (UserBasicInfo, CompanyBasicInfo, TicketBasicInfo)
 - ✅ All resolvers return null/empty for now (dummy implementation)
+
+---
+
+## GraphQL DataLoaders (N+1 Query Prevention)
+
+**Purpose:** Prevent N+1 query problems when fetching related data in GraphQL.
+
+**Location:** `app/Shared/GraphQL/DataLoaders/` (shared) or `app/Features/[Feature]/GraphQL/DataLoaders/` (feature-specific)
+
+**Example Pattern:**
+```php
+// app/Shared/GraphQL/DataLoaders/UserByIdLoader.php
+namespace App\Shared\GraphQL\DataLoaders;
+
+use App\Features\UserManagement\Models\User;
+use Closure;
+
+class UserByIdLoader
+{
+    public function __invoke(array $keys): array
+    {
+        // Batch load all users at once
+        $users = User::whereIn('id', $keys)->get()->keyBy('id');
+
+        // Return in same order as keys
+        return array_map(fn($id) => $users->get($id), $keys);
+    }
+}
+```
+
+**Usage in Resolvers:**
+```php
+// In any Query/Mutation
+use Nuwave\Lighthouse\Execution\Utils\Subscription;
+
+public function __invoke($rootValue, array $args)
+{
+    // GraphQL will automatically batch these calls
+    return app(\App\Shared\GraphQL\DataLoaders\UserByIdLoader::class)
+        ->load($args['userId']);
+}
+```
+
+**Common DataLoaders Needed:**
+- `UserByIdLoader` - Load users by ID
+- `UserProfileByUserIdLoader` - Load profiles by user ID
+- `UserRolesByUserIdLoader` - Load roles by user ID
+- `CompanyByIdLoader` - Load companies by ID
+- `TicketsByCompanyIdLoader` - Load tickets by company ID
+
+**When to Use:**
+- ✅ When fetching related models in GraphQL fields
+- ✅ When a field might be called multiple times in a single query
+- ✅ When implementing `author`, `company`, `creator` fields on types
+- ❌ NOT needed for simple direct queries (single record fetch)

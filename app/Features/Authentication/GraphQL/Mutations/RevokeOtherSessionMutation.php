@@ -4,7 +4,7 @@ namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Shared\GraphQL\Mutations\BaseMutation;
 
-class RevokeSessionMutation extends BaseMutation
+class RevokeOtherSessionMutation extends BaseMutation
 {
     public function __invoke($root, array $args)
     {

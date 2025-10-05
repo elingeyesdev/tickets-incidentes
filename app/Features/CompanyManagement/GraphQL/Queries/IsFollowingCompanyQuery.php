@@ -4,11 +4,12 @@ namespace App\Features\CompanyManagement\GraphQL\Queries;
 
 use App\Shared\GraphQL\Queries\BaseQuery;
 
-class MyCompaniesQuery extends BaseQuery
+class IsFollowingCompanyQuery extends BaseQuery
 {
     public function __invoke($root, array $args)
     {
         // TODO: Implementar lógica real
-        return [];
+        // Verificar si el usuario autenticado sigue a la empresa
+        return false;
     }
 }

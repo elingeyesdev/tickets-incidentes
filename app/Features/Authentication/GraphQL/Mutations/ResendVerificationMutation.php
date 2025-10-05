@@ -4,7 +4,7 @@ namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Shared\GraphQL\Mutations\BaseMutation;
 
-class ResendEmailVerificationMutation extends BaseMutation
+class ResendVerificationMutation extends BaseMutation
 {
     public function __invoke($root, array $args)
     {

@@ -4,11 +4,12 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 
 use App\Shared\GraphQL\Mutations\BaseMutation;
 
-class ActivateCompanyMutation extends BaseMutation
+class UnfollowCompanyMutation extends BaseMutation
 {
     public function __invoke($root, array $args)
     {
         // TODO: Implementar lógica real
-        return null;
+        // Dejar de seguir una empresa
+        return true;
     }
 }
