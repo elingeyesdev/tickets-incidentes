@@ -1,14 +1,20 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Migración para crear la tabla 'user_roles' en el schema 'auth'
  *
  * Tabla pivot entre users y roles con contexto de empresa.
  * Permite que un usuario tenga diferentes roles en diferentes empresas.
+ *
+ * IMPORTANTE:
+ * - FK a role_code VARCHAR (NO role_id UUID)
+ * - CHECK constraint: company_admin y agent REQUIEREN company_id
+ * - platform_admin y user NO requieren company_id
+ *
+ * Referencia: Modelado V7.0 líneas 137-157
  */
 return new class extends Migration
 {
@@ -17,54 +23,56 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('auth.user_roles', function (Blueprint $table) {
-            // ===== PRIMARY KEY =====
-            $table->uuid('id')->primary();
+        // Crear tabla user_roles
+        DB::statement("
+            CREATE TABLE auth.user_roles (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+                role_code VARCHAR(50) NOT NULL REFERENCES auth.roles(role_code),
 
-            // ===== RELACIONES =====
-            $table->uuid('user_id')->comment('FK a auth.users');
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('auth.users')
-                ->onDelete('cascade');
+                -- Contexto de empresa (solo para company_admin y agent)
+                company_id UUID,
 
-            $table->uuid('role_id')->comment('FK a auth.roles');
-            $table->foreign('role_id')
-                ->references('id')
-                ->on('auth.roles')
-                ->onDelete('restrict'); // No permitir eliminar roles en uso
+                is_active BOOLEAN DEFAULT TRUE,
 
-            // ===== CONTEXTO DE EMPRESA =====
-            $table->uuid('company_id')->nullable()->comment('FK a business.companies (NULL para roles globales)');
-            // NOTA: FK a business.companies se agregará cuando se cree esa tabla en CompanyManagement feature
+                assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                assigned_by UUID REFERENCES auth.users(id),
+                revoked_at TIMESTAMPTZ,
 
-            // ===== ESTADO =====
-            $table->boolean('is_active')->default(true)->comment('Si el rol está activo');
+                CONSTRAINT uq_user_role_context UNIQUE (user_id, role_code, company_id),
+                CONSTRAINT chk_company_context CHECK (
+                    (role_code IN ('company_admin', 'agent') AND company_id IS NOT NULL) OR
+                    (role_code NOT IN ('company_admin', 'agent'))
+                )
+            )
+        ");
 
-            // ===== FECHAS =====
-            $table->timestamp('assigned_at')->useCurrent()->comment('Fecha de asignación del rol');
-            $table->timestamp('revoked_at')->nullable()->comment('Fecha de revocación del rol');
+        // Comentarios
+        DB::statement("
+            COMMENT ON TABLE auth.user_roles IS
+            'Asignación de roles a usuarios con contexto de empresa'
+        ");
 
-            // ===== AUDITORÍA =====
-            $table->uuid('assigned_by_id')->nullable()->comment('Usuario que asignó el rol');
-            $table->uuid('revoked_by_id')->nullable()->comment('Usuario que revocó el rol');
-            $table->timestamps(); // created_at, updated_at
+        DB::statement("COMMENT ON COLUMN auth.user_roles.role_code IS 'FK a auth.roles.role_code (VARCHAR)'");
+        DB::statement("COMMENT ON COLUMN auth.user_roles.company_id IS 'Contexto de empresa (NULL para platform_admin y user)'");
+        DB::statement("COMMENT ON COLUMN auth.user_roles.assigned_by IS 'Usuario que asignó este rol'");
 
-            // ===== ÍNDICES =====
-            $table->index('user_id', 'idx_user_roles_user_id');
-            $table->index('role_id', 'idx_user_roles_role_id');
-            $table->index('company_id', 'idx_user_roles_company_id');
-            $table->index('is_active', 'idx_user_roles_is_active');
-            $table->index(['user_id', 'role_id', 'company_id'], 'idx_user_roles_composite');
-            $table->index(['user_id', 'is_active'], 'idx_user_roles_user_active');
+        // Índices para performance
+        DB::statement('CREATE INDEX idx_user_roles_user_id ON auth.user_roles(user_id)');
+        DB::statement('CREATE INDEX idx_user_roles_role_code ON auth.user_roles(role_code)');
+        DB::statement('CREATE INDEX idx_user_roles_company_id ON auth.user_roles(company_id)');
+        DB::statement('CREATE INDEX idx_user_roles_is_active ON auth.user_roles(is_active)');
+        DB::statement('CREATE INDEX idx_user_roles_user_active ON auth.user_roles(user_id, is_active)');
+        DB::statement('CREATE INDEX idx_user_roles_composite ON auth.user_roles(user_id, role_code, company_id)');
 
-            // ===== UNIQUE CONSTRAINT =====
-            // Un usuario no puede tener el mismo rol dos veces en la misma empresa (o globalmente)
-            $table->unique(['user_id', 'role_id', 'company_id'], 'unq_user_role_company');
-
-            // Comentario de la tabla
-            $table->comment('Roles asignados a usuarios con contexto de empresa');
-        });
+        // Trigger para updated_at (aunque no hay updated_at en Modelado, es útil)
+        // NOTA: Si prefieres 100% fidelidad al Modelado, comenta estas líneas
+        DB::statement('ALTER TABLE auth.user_roles ADD COLUMN updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+        DB::statement("
+            CREATE TRIGGER trigger_update_user_roles_updated_at
+            BEFORE UPDATE ON auth.user_roles
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column()
+        ");
     }
 
     /**
@@ -72,6 +80,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('auth.user_roles');
+        DB::statement('DROP TABLE IF EXISTS auth.user_roles CASCADE');
     }
 };

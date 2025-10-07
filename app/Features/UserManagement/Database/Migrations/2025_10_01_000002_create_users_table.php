@@ -1,14 +1,15 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Migración para crear la tabla 'users' en el schema 'auth'
  *
  * Tabla principal de usuarios del sistema.
  * Contiene información de autenticación y estado de la cuenta.
+ *
+ * Referencia: Modelado V7.0 líneas 42-74
  */
 return new class extends Migration
 {
@@ -17,64 +18,72 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('auth.users', function (Blueprint $table) {
-            // ===== PRIMARY KEY =====
-            $table->uuid('id')->primary();
+        // Crear tabla usando DB::statement para control total
+        DB::statement("
+            CREATE TABLE auth.users (
+                -- Identificadores
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                user_code VARCHAR(20) UNIQUE NOT NULL,
 
-            // ===== IDENTIFICADORES ÚNICOS =====
-            $table->string('user_code', 20)->unique()->comment('Código único: USR-2025-00123');
+                -- Información de autenticación (CRÍTICA)
+                email CITEXT UNIQUE NOT NULL,
+                email_verified BOOLEAN DEFAULT FALSE,
+                email_verified_at TIMESTAMPTZ,
+                password_hash VARCHAR(255),
+                auth_provider VARCHAR(20) DEFAULT 'local',
+                external_auth_id VARCHAR(255),
 
-            // ===== AUTENTICACIÓN =====
-            $table->string('email')->unique()->comment('Email único del usuario');
-            $table->string('password_hash')->nullable()->comment('Hash bcrypt de la contraseña (NULL si usa OAuth)');
-            $table->boolean('email_verified')->default(false)->comment('Si el email está verificado');
-            $table->timestamp('email_verified_at')->nullable()->comment('Fecha de verificación del email');
+                -- Seguridad (CRÍTICA)
+                password_reset_token VARCHAR(255),
+                password_reset_expires TIMESTAMPTZ,
 
-            // ===== AUTENTICACIÓN OAUTH =====
-            $table->string('auth_provider', 50)->default('local')
-                ->comment('Proveedor de auth: local, google, microsoft');
-            $table->string('external_auth_id', 255)->nullable()
-                ->comment('Google ID, Microsoft ID, etc.');
+                -- Estado del sistema (CRÍTICO)
+                status auth.user_status DEFAULT 'active' NOT NULL,
+                last_login_at TIMESTAMPTZ,
+                last_login_ip INET,
 
-            // ===== RECUPERACIÓN DE CONTRASEÑA =====
-            $table->string('password_reset_token', 255)->nullable()
-                ->comment('Token para reset password');
-            $table->timestamp('password_reset_expires')->nullable()
-                ->comment('Expiración del token de reset');
+                -- Términos y condiciones
+                terms_accepted BOOLEAN DEFAULT FALSE,
+                terms_accepted_at TIMESTAMPTZ,
+                terms_version VARCHAR(10),
 
-            // ===== ESTADO Y CONFIGURACIÓN =====
-            $table->enum('status', ['active', 'suspended', 'deleted'])
-                ->default('active')
-                ->comment('Estado del usuario');
+                -- Auditoría (CRÍTICA)
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMPTZ
+            )
+        ");
 
-            // ===== ACTIVIDAD Y SEGURIDAD =====
-            $table->timestamp('last_login_at')->nullable()->comment('Último acceso al sistema');
-            $table->string('last_login_ip', 45)->nullable()->comment('IP del último acceso (IPv6 compatible)');
-            $table->timestamp('last_activity_at')->nullable()->comment('Última actividad registrada');
+        // Comentarios de tabla
+        DB::statement("
+            COMMENT ON TABLE auth.users IS
+            'Usuarios del sistema - Información de autenticación y estado'
+        ");
 
-            // ===== TÉRMINOS Y CONDICIONES =====
-            $table->boolean('terms_accepted')->default(false)->comment('Términos aceptados');
-            $table->timestamp('terms_accepted_at')->nullable()->comment('Fecha de aceptación');
-            $table->string('terms_version', 10)->nullable()->comment('Versión de términos aceptada');
+        DB::statement("COMMENT ON COLUMN auth.users.user_code IS 'Código único: USR-2025-00001'");
+        DB::statement("COMMENT ON COLUMN auth.users.email IS 'Email único del usuario'");
+        DB::statement("COMMENT ON COLUMN auth.users.password_hash IS 'Hash bcrypt de la contraseña (NULL si usa OAuth)'");
+        DB::statement("COMMENT ON COLUMN auth.users.auth_provider IS 'Proveedor de auth: local, google, microsoft'");
+        DB::statement("COMMENT ON COLUMN auth.users.external_auth_id IS 'Google ID, Microsoft ID, etc.'");
+        DB::statement("COMMENT ON COLUMN auth.users.last_login_ip IS 'IP del último acceso (soporta IPv4 e IPv6)'");
 
-            // ===== AUDITORÍA =====
-            $table->timestamps(); // created_at, updated_at
-            $table->softDeletes(); // deleted_at
+        // Índices para performance
+        DB::statement('CREATE INDEX idx_users_status ON auth.users(status)');
+        DB::statement('CREATE INDEX idx_users_email_verified ON auth.users(email_verified)');
+        DB::statement('CREATE INDEX idx_users_auth_provider ON auth.users(auth_provider)');
+        DB::statement('CREATE INDEX idx_users_last_login ON auth.users(last_login_at)');
+        DB::statement('CREATE INDEX idx_users_created_at ON auth.users(created_at)');
+        DB::statement('CREATE INDEX idx_users_status_verified ON auth.users(status, email_verified)');
 
-            // ===== ÍNDICES =====
-            $table->index('status', 'idx_users_status');
-            $table->index('email_verified', 'idx_users_email_verified');
-            $table->index('auth_provider', 'idx_users_auth_provider');
-            $table->index('last_login_at', 'idx_users_last_login');
-            $table->index('created_at', 'idx_users_created_at');
-            $table->index(['status', 'email_verified'], 'idx_users_status_verified');
+        // Índice full-text para búsqueda por email
+        DB::statement("CREATE INDEX idx_users_email_search ON auth.users USING gin(to_tsvector('english', email))");
 
-            // Comentario de la tabla
-            $table->comment('Usuarios del sistema - Información de autenticación y estado');
-        });
-
-        // Crear índice para búsqueda full-text en email (PostgreSQL)
-        DB::statement('CREATE INDEX idx_users_email_search ON auth.users USING gin(to_tsvector(\'english\', email))');
+        // Trigger para updated_at
+        DB::statement("
+            CREATE TRIGGER trigger_update_users_updated_at
+            BEFORE UPDATE ON auth.users
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column()
+        ");
     }
 
     /**
@@ -82,6 +91,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('auth.users');
+        DB::statement('DROP TABLE IF EXISTS auth.users CASCADE');
     }
 };

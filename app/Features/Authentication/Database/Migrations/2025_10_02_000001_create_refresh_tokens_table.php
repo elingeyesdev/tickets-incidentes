@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Migración para crear la tabla 'refresh_tokens' en el schema 'auth'
@@ -13,8 +12,10 @@ use Illuminate\Support\Facades\Schema;
  * Seguridad:
  * - Tokens almacenados como hash SHA-256 (nunca plain text)
  * - Expiración automática (30 días default)
- * - Revocación manual posible
+ * - Revocación manual posible con razón
  * - Asociados a dispositivo específico
+ *
+ * Referencia: Modelado V7.0 líneas 159-183
  */
 return new class extends Migration
 {
@@ -23,51 +24,60 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('auth.refresh_tokens', function (Blueprint $table) {
-            // ===== PRIMARY KEY =====
-            $table->uuid('id')->primary();
+        // Crear tabla refresh_tokens
+        DB::statement("
+            CREATE TABLE auth.refresh_tokens (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
 
-            // ===== RELACIÓN CON USER =====
-            $table->uuid('user_id')->comment('FK a auth.users');
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('auth.users')
-                ->onDelete('cascade');
+                -- Token seguro (hasheado, nunca en texto plano)
+                token_hash VARCHAR(255) UNIQUE NOT NULL,
 
-            // ===== TOKEN (HASH SHA-256) =====
-            $table->string('token_hash', 64)->unique()->comment('Hash SHA-256 del refresh token');
+                -- Información del dispositivo
+                device_name VARCHAR(100),
+                ip_address INET NOT NULL,
+                user_agent TEXT,
 
-            // ===== INFORMACIÓN DEL DISPOSITIVO =====
-            $table->string('device_name', 255)->nullable()->comment('Nombre del dispositivo (Chrome on Windows)');
-            $table->string('ip_address', 45)->nullable()->comment('IP del dispositivo (IPv6 compatible)');
-            $table->text('user_agent')->nullable()->comment('User agent completo del navegador');
+                -- Temporalidad
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMPTZ NOT NULL,
+                last_used_at TIMESTAMPTZ,
 
-            // ===== EXPIRACIÓN Y USO =====
-            $table->timestamp('expires_at')->comment('Fecha de expiración del token');
-            $table->timestamp('last_used_at')->nullable()->comment('Última vez que se usó para refresh');
+                -- Estado
+                is_revoked BOOLEAN DEFAULT FALSE,
+                revoked_at TIMESTAMPTZ,
+                revoke_reason VARCHAR(100),
 
-            // ===== REVOCACIÓN =====
-            $table->boolean('is_revoked')->default(false)->comment('Si el token fue revocado manualmente');
-            $table->timestamp('revoked_at')->nullable()->comment('Fecha de revocación');
-            $table->uuid('revoked_by_id')->nullable()->comment('Usuario que revocó el token');
-            $table->foreign('revoked_by_id')
-                ->references('id')
-                ->on('auth.users')
-                ->onDelete('set null');
+                CONSTRAINT chk_token_expiry CHECK (expires_at > created_at)
+            )
+        ");
 
-            // ===== AUDITORÍA =====
-            $table->timestamps(); // created_at, updated_at
+        // Comentarios
+        DB::statement("
+            COMMENT ON TABLE auth.refresh_tokens IS
+            'Refresh tokens JWT para renovación de access tokens'
+        ");
 
-            // ===== ÍNDICES PARA PERFORMANCE =====
-            $table->index('user_id', 'idx_refresh_tokens_user_id');
-            $table->index('token_hash', 'idx_refresh_tokens_token_hash');
-            $table->index('expires_at', 'idx_refresh_tokens_expires_at');
-            $table->index('is_revoked', 'idx_refresh_tokens_is_revoked');
-            $table->index(['user_id', 'is_revoked'], 'idx_refresh_tokens_user_active');
+        DB::statement("COMMENT ON COLUMN auth.refresh_tokens.token_hash IS 'Hash SHA-256 del refresh token (nunca plain text)'");
+        DB::statement("COMMENT ON COLUMN auth.refresh_tokens.device_name IS 'Ej: Chrome on Windows, iPhone Safari'");
+        DB::statement("COMMENT ON COLUMN auth.refresh_tokens.ip_address IS 'IP del dispositivo (soporta IPv4 e IPv6)'");
+        DB::statement("COMMENT ON COLUMN auth.refresh_tokens.revoke_reason IS 'Razón de revocación: manual_logout, security_breach, expired'");
 
-            // Comentario de la tabla
-            $table->comment('Refresh tokens JWT para renovación de access tokens');
-        });
+        // Índices para performance
+        DB::statement('CREATE INDEX idx_refresh_tokens_user_id ON auth.refresh_tokens(user_id)');
+        DB::statement('CREATE INDEX idx_refresh_tokens_token_hash ON auth.refresh_tokens(token_hash)');
+        DB::statement('CREATE INDEX idx_refresh_tokens_expires_at ON auth.refresh_tokens(expires_at)');
+        DB::statement('CREATE INDEX idx_refresh_tokens_is_revoked ON auth.refresh_tokens(is_revoked)');
+        DB::statement('CREATE INDEX idx_refresh_tokens_user_active ON auth.refresh_tokens(user_id, is_revoked)');
+        DB::statement('CREATE INDEX idx_refresh_tokens_created_at ON auth.refresh_tokens(created_at)');
+
+        // Trigger para updated_at (aunque no está en Modelado, Laravel lo espera)
+        DB::statement('ALTER TABLE auth.refresh_tokens ADD COLUMN updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP');
+        DB::statement("
+            CREATE TRIGGER trigger_update_refresh_tokens_updated_at
+            BEFORE UPDATE ON auth.refresh_tokens
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column()
+        ");
     }
 
     /**
@@ -75,6 +85,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('auth.refresh_tokens');
+        DB::statement('DROP TABLE IF EXISTS auth.refresh_tokens CASCADE');
     }
 };

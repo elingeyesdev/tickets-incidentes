@@ -1,14 +1,19 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Migración para crear la tabla 'user_profiles' en el schema 'auth'
  *
  * Tabla de perfiles de usuarios (relación 1:1 con users).
  * Contiene información personal y preferencias del usuario.
+ *
+ * IMPORTANTE:
+ * - PK es user_id (NO hay campo 'id' separado)
+ * - display_name NO se almacena, se calcula en queries o accesor
+ *
+ * Referencia: Modelado V7.0 líneas 76-100
  */
 return new class extends Migration
 {
@@ -17,50 +22,61 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('auth.user_profiles', function (Blueprint $table) {
-            // ===== PRIMARY KEY =====
-            $table->uuid('id')->primary();
+        // Crear tabla usando DB::statement para control total
+        DB::statement("
+            CREATE TABLE auth.user_profiles (
+                -- Relación 1:1 con users (PK + FK)
+                user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
-            // ===== RELACIÓN CON USER (1:1) =====
-            $table->uuid('user_id')->unique()->comment('FK a auth.users');
-            $table->foreign('user_id')
-                ->references('id')
-                ->on('auth.users')
-                ->onDelete('cascade');
+                -- Información personal
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                -- display_name se calcula en queries, NO se almacena
+                phone_number VARCHAR(20),
+                avatar_url VARCHAR(500),
 
-            // ===== INFORMACIÓN PERSONAL =====
-            $table->string('first_name', 100)->comment('Nombre del usuario');
-            $table->string('last_name', 100)->comment('Apellido del usuario');
-            $table->string('display_name', 200)->comment('Nombre completo calculado');
-            $table->string('phone_number', 20)->nullable()->comment('Teléfono de contacto');
-            $table->string('avatar_url', 500)->nullable()->comment('URL del avatar');
+                -- Preferencias de usuario
+                theme VARCHAR(20) DEFAULT 'light',
+                language VARCHAR(10) DEFAULT 'es',
+                timezone VARCHAR(50) DEFAULT 'UTC',
 
-            // ===== PREFERENCIAS DE INTERFAZ =====
-            $table->enum('theme', ['light', 'dark'])->default('light')->comment('Tema de la interfaz');
-            $table->enum('language', ['es', 'en'])->default('es')->comment('Idioma preferido');
-            $table->string('timezone', 50)->default('America/La_Paz')->comment('Zona horaria');
+                -- Configuración de notificaciones
+                push_web_notifications BOOLEAN DEFAULT TRUE,
+                notifications_tickets BOOLEAN DEFAULT TRUE,
 
-            // ===== PREFERENCIAS DE NOTIFICACIONES =====
-            $table->boolean('push_web_notifications')->default(true)->comment('Notificaciones web push');
-            $table->boolean('notifications_tickets')->default(true)->comment('Notificaciones de tickets');
+                -- Auditoría
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
 
-            // ===== ACTIVIDAD =====
-            $table->timestamp('last_activity_at')->nullable()->comment('Última actividad en el perfil');
+        // Comentarios
+        DB::statement("
+            COMMENT ON TABLE auth.user_profiles IS
+            'Perfiles de usuarios - Información personal y preferencias (relación 1:1 con users)'
+        ");
 
-            // ===== AUDITORÍA =====
-            $table->timestamps(); // created_at, updated_at
+        DB::statement("COMMENT ON COLUMN auth.user_profiles.user_id IS 'FK a auth.users (también es PK)'");
+        DB::statement("COMMENT ON COLUMN auth.user_profiles.theme IS 'Tema de interfaz: light, dark'");
+        DB::statement("COMMENT ON COLUMN auth.user_profiles.language IS 'Idioma preferido: es, en'");
 
-            // ===== ÍNDICES =====
-            $table->index('user_id', 'idx_user_profiles_user_id');
-            $table->index(['first_name', 'last_name'], 'idx_user_profiles_name');
-            $table->index('last_activity_at', 'idx_user_profiles_activity');
+        // Índices para búsqueda por nombre
+        DB::statement('CREATE INDEX idx_user_profiles_first_name ON auth.user_profiles(first_name)');
+        DB::statement('CREATE INDEX idx_user_profiles_last_name ON auth.user_profiles(last_name)');
+        DB::statement('CREATE INDEX idx_user_profiles_full_name ON auth.user_profiles(first_name, last_name)');
 
-            // Comentario de la tabla
-            $table->comment('Perfiles de usuarios - Información personal y preferencias');
-        });
+        // Índice full-text para búsqueda por nombre completo
+        DB::statement("
+            CREATE INDEX idx_user_profiles_name_search ON auth.user_profiles
+            USING gin(to_tsvector('spanish', first_name || ' ' || last_name))
+        ");
 
-        // Crear índice para búsqueda full-text en nombres (PostgreSQL)
-        DB::statement("CREATE INDEX idx_user_profiles_name_search ON auth.user_profiles USING gin(to_tsvector('spanish', first_name || ' ' || last_name))");
+        // Trigger para updated_at
+        DB::statement("
+            CREATE TRIGGER trigger_update_user_profiles_updated_at
+            BEFORE UPDATE ON auth.user_profiles
+            FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column()
+        ");
     }
 
     /**
@@ -68,6 +84,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('auth.user_profiles');
+        DB::statement('DROP TABLE IF EXISTS auth.user_profiles CASCADE');
     }
 };
