@@ -19,9 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Load migrations from feature directories
+        // Load migrations from shared infrastructure and feature directories
+        // Order matters: Shared first (extensions, schemas), then features
         $this->loadMigrationsFrom([
-            database_path('migrations'),
+            app_path('Shared/Database/Migrations'),           // Extensions, schemas, audit system
             app_path('Features/UserManagement/Database/Migrations'),
             app_path('Features/Authentication/Database/Migrations'),
             app_path('Features/CompanyManagement/Database/Migrations'),

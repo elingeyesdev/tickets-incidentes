@@ -23,6 +23,9 @@ services:
       - APP_DEBUG=true
       - DB_HOST=postgres
       - DB_CONNECTION=pgsql
+      - DB_DATABASE=helpdesk
+      - DB_USERNAME=helpdesk
+      - DB_PASSWORD=helpdesk_password
       - REDIS_HOST=redis
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
@@ -95,7 +98,8 @@ services:
       POSTGRES_MULTIPLE_DATABASES: helpdesk_test
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # Database schema is now managed by Laravel migrations in app/Shared/Database/Migrations/
+      # No need for init.sql - Laravel migrations handle schema creation
       - ./docker/postgres/create-multiple-databases.sh:/docker-entrypoint-initdb.d/02-create-multiple-databases.sh
     ports:
       - "5432:5432"
@@ -145,6 +149,9 @@ services:
       - APP_ENV=local
       - DB_HOST=postgres
       - DB_CONNECTION=pgsql
+      - DB_DATABASE=helpdesk
+      - DB_USERNAME=helpdesk
+      - DB_PASSWORD=helpdesk_password
       - REDIS_HOST=redis
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
@@ -178,6 +185,9 @@ services:
       - APP_ENV=local
       - DB_HOST=postgres
       - DB_CONNECTION=pgsql
+      - DB_DATABASE=helpdesk
+      - DB_USERNAME=helpdesk
+      - DB_PASSWORD=helpdesk_password
       - REDIS_HOST=redis
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis

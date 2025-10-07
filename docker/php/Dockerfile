@@ -24,7 +24,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Create helpdesk user with YOUR UID (1001)
 RUN groupadd -g 33 www-data || true && \
-    useradd -u 1001 -g www-data -G root -m -s /bin/bash helpdesk && \
+    useradd -u 1000 -g www-data -G root -m -s /bin/bash helpdesk && \
     mkdir -p /home/helpdesk/.composer && \
     chown -R helpdesk:www-data /home/helpdesk
 
@@ -55,7 +55,9 @@ RUN mkdir -p \
 
 EXPOSE 9000
 
-USER helpdesk
+# Don't switch to helpdesk user yet - entrypoint needs root permissions
+# The entrypoint will handle migrations and composer, then exec php-fpm
+# php-fpm will run as helpdesk user (configured in www.conf)
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm", "-F"]

@@ -17,13 +17,7 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
         hmr: {
-            protocol: 'wss',
-            host: 'webofficial.proyecto-de-ultimo-minuto.online',
-            clientPort: 443,
-        },
-        cors: {
-            origin: '*',
-            credentials: true,
+            host: 'localhost',
         },
     },
 });
