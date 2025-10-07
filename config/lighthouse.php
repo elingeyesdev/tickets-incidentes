@@ -235,7 +235,12 @@ return [
         'directives' => ['App\\Shared\\GraphQL\\Directives', 'App\\GraphQL\\Directives'],
         'validators' => 'App\\GraphQL\\Validators',
         // DataLoaders se resuelven automáticamente por clase completa en contexto
-        'dataLoaders' => ['App\\Shared\\GraphQL\\DataLoaders'],
+        'dataLoaders' => [
+            'App\\Shared\\GraphQL\\DataLoaders',
+            'App\\Features\\Authentication\\GraphQL\\DataLoaders',
+            'App\\Features\\UserManagement\\GraphQL\\DataLoaders',
+            'App\\Features\\CompanyManagement\\GraphQL\\DataLoaders',
+        ],
     ],
 
     /*
