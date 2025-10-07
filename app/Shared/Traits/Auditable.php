@@ -57,7 +57,7 @@ trait Auditable
     /**
      * Verifica si el model tiene un atributo específico
      */
-    protected function hasAttribute(string $attribute): bool
+    public function hasAttribute($attribute): bool
     {
         return array_key_exists($attribute, $this->attributes)
             || $this->isFillable($attribute);
