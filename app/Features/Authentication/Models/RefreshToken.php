@@ -26,12 +26,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \DateTime|null $last_used_at
  * @property bool $is_revoked
  * @property \DateTime|null $revoked_at
- * @property string|null $revoked_by_id
+ * @property string|null $revoke_reason
  * @property \DateTime $created_at
  * @property \DateTime $updated_at
  *
  * @property-read User $user
- * @property-read User|null $revokedBy
  */
 class RefreshToken extends Model
 {
@@ -62,7 +61,7 @@ class RefreshToken extends Model
         'last_used_at',
         'is_revoked',
         'revoked_at',
-        'revoked_by_id',
+        'revoke_reason',
     ];
 
     /**
@@ -92,13 +91,6 @@ class RefreshToken extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    /**
-     * Relación con User que revocó el token
-     */
-    public function revokedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'revoked_by_id', 'id');
-    }
 
     // ==================== MÉTODOS DE VALIDACIÓN ====================
 
@@ -140,14 +132,16 @@ class RefreshToken extends Model
     // ==================== MÉTODOS DE ACCIÓN ====================
 
     /**
-     * Revocar el token
+     * Revocar el token con razón
+     *
+     * @param string|null $reason Razón: 'manual_logout', 'security_breach', 'expired'
      */
-    public function revoke(?string $revokedById = null): void
+    public function revoke(?string $reason = null): void
     {
         $this->update([
             'is_revoked' => true,
             'revoked_at' => now(),
-            'revoked_by_id' => $revokedById,
+            'revoke_reason' => $reason ?? 'manual_logout',
         ]);
     }
 
@@ -280,17 +274,17 @@ class RefreshToken extends Model
      * Revocar todos los tokens de un usuario
      *
      * @param string $userId
-     * @param string|null $revokedById
+     * @param string|null $reason
      * @return int Número de tokens revocados
      */
-    public static function revokeAllForUser(string $userId, ?string $revokedById = null): int
+    public static function revokeAllForUser(string $userId, ?string $reason = null): int
     {
         return static::forUser($userId)
             ->active()
             ->update([
                 'is_revoked' => true,
                 'revoked_at' => now(),
-                'revoked_by_id' => $revokedById,
+                'revoke_reason' => $reason ?? 'manual_logout',
             ]);
     }
 }

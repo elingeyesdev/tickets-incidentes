@@ -14,11 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Relación 1:1 con User.
  * Tabla: auth.user_profiles
  *
- * @property string $id
- * @property string $user_id
+ * IMPORTANTE:
+ * - PK es user_id (NO hay campo 'id')
+ * - display_name NO se almacena, se calcula con accessor
+ *
+ * @property string $user_id (PK)
  * @property string $first_name
  * @property string $last_name
- * @property string $display_name
  * @property string|null $phone_number
  * @property string|null $avatar_url
  * @property string $theme
@@ -26,11 +28,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $timezone
  * @property bool $push_web_notifications
  * @property bool $notifications_tickets
- * @property \DateTime|null $last_activity_at
  * @property \DateTime $created_at
  * @property \DateTime $updated_at
  *
  * @property-read User $user
+ * @property-read string $display_name (computed)
  */
 class UserProfile extends Model
 {
@@ -43,8 +45,9 @@ class UserProfile extends Model
     protected $table = 'auth.user_profiles';
 
     /**
-     * Primary key es UUID
+     * Primary key es user_id (NO 'id')
      */
+    protected $primaryKey = 'user_id';
     protected $keyType = 'string';
     public $incrementing = false;
 
@@ -55,7 +58,6 @@ class UserProfile extends Model
         'user_id',
         'first_name',
         'last_name',
-        'display_name',
         'phone_number',
         'avatar_url',
         'theme',
@@ -63,7 +65,6 @@ class UserProfile extends Model
         'timezone',
         'push_web_notifications',
         'notifications_tickets',
-        'last_activity_at',
     ];
 
     /**
@@ -72,10 +73,14 @@ class UserProfile extends Model
     protected $casts = [
         'push_web_notifications' => 'boolean',
         'notifications_tickets' => 'boolean',
-        'last_activity_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Appends - Atributos calculados que se incluyen en JSON
+     */
+    protected $appends = ['display_name'];
 
     /**
      * Relación inversa con User (1:1)
@@ -85,27 +90,21 @@ class UserProfile extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    // ==================== OBSERVERS / HOOKS ====================
+    // ==================== ACCESSORS (COMPUTED ATTRIBUTES) ====================
 
     /**
-     * Boot del modelo - Auto-calcular display_name
+     * Accessor: display_name calculado (NO almacenado)
+     * Según Modelado V7.0 línea 84
      */
-    protected static function boot()
+    public function getDisplayNameAttribute(): string
     {
-        parent::boot();
-
-        // Calcular display_name automáticamente antes de guardar
-        static::saving(function (UserProfile $profile) {
-            if ($profile->isDirty(['first_name', 'last_name'])) {
-                $profile->display_name = trim("{$profile->first_name} {$profile->last_name}");
-            }
-        });
+        return trim("{$this->first_name} {$this->last_name}");
     }
 
     // ==================== MÉTODOS HELPER ====================
 
     /**
-     * Obtener nombre completo
+     * Obtener nombre completo (alias para display_name)
      */
     public function getFullName(): string
     {
@@ -169,14 +168,6 @@ class UserProfile extends Model
         ]);
     }
 
-    /**
-     * Registrar actividad en el perfil
-     */
-    public function recordActivity(): void
-    {
-        $this->update(['last_activity_at' => now()]);
-    }
-
     // ==================== SCOPES ====================
 
     /**
@@ -186,8 +177,7 @@ class UserProfile extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('first_name', 'ILIKE', "%{$search}%")
-              ->orWhere('last_name', 'ILIKE', "%{$search}%")
-              ->orWhere('display_name', 'ILIKE', "%{$search}%");
+              ->orWhere('last_name', 'ILIKE', "%{$search}%");
         });
     }
 

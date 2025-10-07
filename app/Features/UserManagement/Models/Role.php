@@ -10,25 +10,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Role Model
  *
- * Catálogo de roles del sistema.
+ * Catálogo de roles FIJOS del sistema.
  * Tabla: auth.roles
  *
- * Roles disponibles:
- * - USER: Usuario final
- * - AGENT: Agente de soporte (requiere empresa)
- * - COMPANY_ADMIN: Administrador de empresa (requiere empresa)
- * - PLATFORM_ADMIN: Administrador de plataforma
+ * Roles disponibles (no se pueden modificar):
+ * - platform_admin: Administrador de Plataforma
+ * - company_admin: Administrador de Empresa
+ * - agent: Agente de Soporte
+ * - user: Cliente
+ *
+ * IMPORTANTE:
+ * - Permisos se manejan en Laravel Policies, NO en BD
+ * - role_code es la clave principal para consultas
+ * - Solo created_at (roles no se modifican, no hay updated_at)
+ *
+ * Referencia: Modelado V7.0 líneas 117-135
  *
  * @property string $id
- * @property string $name
- * @property string $display_name
+ * @property string $role_code
+ * @property string $role_name
  * @property string|null $description
- * @property array $permissions
- * @property bool $requires_company
- * @property string $default_dashboard
- * @property int $priority
+ * @property bool $is_system
  * @property \DateTime $created_at
- * @property \DateTime $updated_at
  *
  * @property-read \Illuminate\Database\Eloquent\Collection<UserRole> $userRoles
  */
@@ -49,77 +52,52 @@ class Role extends Model
     public $incrementing = false;
 
     /**
+     * Disable updated_at (roles no se modifican)
+     */
+    const UPDATED_AT = null;
+
+    /**
      * Campos asignables en masa
      */
     protected $fillable = [
-        'name',
-        'display_name',
+        'role_code',
+        'role_name',
         'description',
-        'permissions',
-        'requires_company',
-        'default_dashboard',
-        'priority',
+        'is_system',
     ];
 
     /**
      * Casting de tipos
      */
     protected $casts = [
-        'permissions' => 'array',
-        'requires_company' => 'boolean',
-        'priority' => 'integer',
+        'is_system' => 'boolean',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     /**
-     * Constantes de roles
+     * Constantes de códigos de roles
      */
-    public const USER = 'USER';
-    public const AGENT = 'AGENT';
-    public const COMPANY_ADMIN = 'COMPANY_ADMIN';
-    public const PLATFORM_ADMIN = 'PLATFORM_ADMIN';
+    public const PLATFORM_ADMIN = 'platform_admin';
+    public const COMPANY_ADMIN = 'company_admin';
+    public const AGENT = 'agent';
+    public const USER = 'user';
 
     /**
      * Relación 1:N con UserRole
      */
     public function userRoles(): HasMany
     {
-        return $this->hasMany(UserRole::class, 'role_id', 'id');
+        return $this->hasMany(UserRole::class, 'role_code', 'role_code');
     }
 
     // ==================== MÉTODOS DE VERIFICACIÓN ====================
 
     /**
-     * Verificar si el rol requiere contexto de empresa
+     * Verificar si es rol del sistema (no se puede eliminar)
      */
-    public function requiresCompany(): bool
+    public function isSystemRole(): bool
     {
-        return $this->requires_company;
-    }
-
-    /**
-     * Verificar si es rol de usuario
-     */
-    public function isUser(): bool
-    {
-        return $this->name === self::USER;
-    }
-
-    /**
-     * Verificar si es rol de agente
-     */
-    public function isAgent(): bool
-    {
-        return $this->name === self::AGENT;
-    }
-
-    /**
-     * Verificar si es rol de administrador de empresa
-     */
-    public function isCompanyAdmin(): bool
-    {
-        return $this->name === self::COMPANY_ADMIN;
+        return $this->is_system;
     }
 
     /**
@@ -127,83 +105,57 @@ class Role extends Model
      */
     public function isPlatformAdmin(): bool
     {
-        return $this->name === self::PLATFORM_ADMIN;
-    }
-
-    // ==================== MÉTODOS DE PERMISOS ====================
-
-    /**
-     * Verificar si tiene un permiso específico
-     */
-    public function hasPermission(string $permission): bool
-    {
-        // Si tiene permiso total (*)
-        if (in_array('*', $this->permissions)) {
-            return true;
-        }
-
-        // Verificar permiso exacto
-        if (in_array($permission, $this->permissions)) {
-            return true;
-        }
-
-        // Verificar wildcards (ej: 'tickets.*' incluye 'tickets.create')
-        foreach ($this->permissions as $rolePermission) {
-            if (str_ends_with($rolePermission, '.*')) {
-                $prefix = substr($rolePermission, 0, -2);
-                if (str_starts_with($permission, $prefix . '.')) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $this->role_code === self::PLATFORM_ADMIN;
     }
 
     /**
-     * Verificar si tiene todos los permisos especificados
+     * Verificar si es rol de administrador de empresa
      */
-    public function hasAllPermissions(array $permissions): bool
+    public function isCompanyAdmin(): bool
     {
-        foreach ($permissions as $permission) {
-            if (!$this->hasPermission($permission)) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->role_code === self::COMPANY_ADMIN;
     }
 
     /**
-     * Verificar si tiene al menos uno de los permisos especificados
+     * Verificar si es rol de agente
      */
-    public function hasAnyPermission(array $permissions): bool
+    public function isAgent(): bool
     {
-        foreach ($permissions as $permission) {
-            if ($this->hasPermission($permission)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->role_code === self::AGENT;
     }
 
     /**
-     * Obtener dashboard por defecto
+     * Verificar si es rol de usuario
      */
-    public function getDefaultDashboard(): string
+    public function isUser(): bool
     {
-        return $this->default_dashboard;
+        return $this->role_code === self::USER;
+    }
+
+    /**
+     * Verificar si requiere contexto de empresa
+     */
+    public function requiresCompany(): bool
+    {
+        return in_array($this->role_code, [self::COMPANY_ADMIN, self::AGENT]);
     }
 
     // ==================== SCOPES ====================
+
+    /**
+     * Scope: Roles del sistema
+     */
+    public function scopeSystem($query)
+    {
+        return $query->where('is_system', true);
+    }
 
     /**
      * Scope: Roles que requieren empresa
      */
     public function scopeRequiresCompany($query)
     {
-        return $query->where('requires_company', true);
+        return $query->whereIn('role_code', [self::COMPANY_ADMIN, self::AGENT]);
     }
 
     /**
@@ -211,56 +163,69 @@ class Role extends Model
      */
     public function scopeGlobal($query)
     {
-        return $query->where('requires_company', false);
+        return $query->whereNotIn('role_code', [self::COMPANY_ADMIN, self::AGENT]);
     }
 
     /**
-     * Scope: Ordenar por prioridad (mayor a menor)
+     * Scope: Buscar por código
      */
-    public function scopeByPriority($query)
+    public function scopeByCode($query, string $code)
     {
-        return $query->orderBy('priority', 'desc');
-    }
-
-    /**
-     * Scope: Buscar por nombre
-     */
-    public function scopeByName($query, string $name)
-    {
-        return $query->where('name', $name);
+        return $query->where('role_code', $code);
     }
 
     // ==================== MÉTODOS ESTÁTICOS ====================
 
     /**
-     * Obtener rol USER
+     * Obtener rol por código
      */
-    public static function user(): ?self
+    public static function findByCode(string $code): ?self
     {
-        return static::where('name', self::USER)->first();
+        return static::where('role_code', $code)->first();
     }
 
     /**
-     * Obtener rol AGENT
-     */
-    public static function agent(): ?self
-    {
-        return static::where('name', self::AGENT)->first();
-    }
-
-    /**
-     * Obtener rol COMPANY_ADMIN
-     */
-    public static function companyAdmin(): ?self
-    {
-        return static::where('name', self::COMPANY_ADMIN)->first();
-    }
-
-    /**
-     * Obtener rol PLATFORM_ADMIN
+     * Obtener rol platform_admin
      */
     public static function platformAdmin(): ?self
     {
-        return static::where('name', self::PLATFORM_ADMIN)->first();
+        return static::findByCode(self::PLATFORM_ADMIN);
+    }
+
+    /**
+     * Obtener rol company_admin
+     */
+    public static function companyAdmin(): ?self
+    {
+        return static::findByCode(self::COMPANY_ADMIN);
+    }
+
+    /**
+     * Obtener rol agent
+     */
+    public static function agent(): ?self
+    {
+        return static::findByCode(self::AGENT);
+    }
+
+    /**
+     * Obtener rol user
+     */
+    public static function user(): ?self
+    {
+        return static::findByCode(self::USER);
+    }
+
+    /**
+     * Obtener todos los códigos de roles
+     */
+    public static function allCodes(): array
+    {
+        return [
+            self::PLATFORM_ADMIN,
+            self::COMPANY_ADMIN,
+            self::AGENT,
+            self::USER,
+        ];
     }
 }

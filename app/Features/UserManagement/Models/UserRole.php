@@ -14,22 +14,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Permite asignación multi-tenant de roles.
  * Tabla: auth.user_roles
  *
+ * IMPORTANTE:
+ * - FK a role_code VARCHAR (NO role_id UUID)
+ * - CHECK constraint: company_admin y agent REQUIEREN company_id
+ *
+ * Referencia: Modelado V7.0 líneas 137-157
+ *
  * @property string $id
  * @property string $user_id
- * @property string $role_id
+ * @property string $role_code (FK a roles)
  * @property string|null $company_id
  * @property bool $is_active
  * @property \DateTime $assigned_at
+ * @property string|null $assigned_by
  * @property \DateTime|null $revoked_at
- * @property string|null $assigned_by_id
- * @property string|null $revoked_by_id
  * @property \DateTime $created_at
  * @property \DateTime $updated_at
  *
  * @property-read User $user
  * @property-read Role $role
- * @property-read User|null $assignedBy
- * @property-read User|null $revokedBy
+ * @property-read User|null $assignedByUser
  */
 class UserRole extends Model
 {
@@ -52,13 +56,12 @@ class UserRole extends Model
      */
     protected $fillable = [
         'user_id',
-        'role_id',
+        'role_code',  // FK a VARCHAR, no UUID
         'company_id',
         'is_active',
         'assigned_at',
+        'assigned_by',
         'revoked_at',
-        'assigned_by_id',
-        'revoked_by_id',
     ];
 
     /**
@@ -81,27 +84,19 @@ class UserRole extends Model
     }
 
     /**
-     * Relación con Role
+     * Relación con Role (FK a role_code VARCHAR)
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class, 'role_id', 'id');
+        return $this->belongsTo(Role::class, 'role_code', 'role_code');
     }
 
     /**
      * Relación con el usuario que asignó el rol
      */
-    public function assignedBy(): BelongsTo
+    public function assignedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_by_id', 'id');
-    }
-
-    /**
-     * Relación con el usuario que revocó el rol
-     */
-    public function revokedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'revoked_by_id', 'id');
+        return $this->belongsTo(User::class, 'assigned_by', 'id');
     }
 
     // ==================== OBSERVERS / HOOKS ====================
@@ -165,50 +160,28 @@ class UserRole extends Model
         $this->update([
             'is_active' => true,
             'revoked_at' => null,
-            'revoked_by_id' => null,
         ]);
     }
 
     /**
      * Desactivar el rol
      */
-    public function deactivate(?string $revokedById = null): void
+    public function deactivate(): void
     {
         $this->update([
             'is_active' => false,
-            'revoked_at' => now(),
-            'revoked_by_id' => $revokedById,
         ]);
     }
 
     /**
      * Revocar el rol permanentemente
      */
-    public function revoke(?string $revokedById = null): void
+    public function revoke(): void
     {
-        $this->deactivate($revokedById);
-    }
-
-    // ==================== MÉTODOS DE PERMISOS ====================
-
-    /**
-     * Verificar si tiene permiso específico
-     */
-    public function hasPermission(string $permission): bool
-    {
-        if (!$this->isActive()) {
-            return false;
-        }
-
-        return $this->role->hasPermission($permission);
-    }
-
-    /**
-     * Obtener todos los permisos del rol
-     */
-    public function getPermissions(): array
-    {
-        return $this->role->permissions ?? [];
+        $this->update([
+            'is_active' => false,
+            'revoked_at' => now(),
+        ]);
     }
 
     // ==================== SCOPES ====================
@@ -247,21 +220,11 @@ class UserRole extends Model
     }
 
     /**
-     * Scope: Por rol específico
+     * Scope: Por código de rol
      */
-    public function scopeByRole($query, string $roleId)
+    public function scopeByRoleCode($query, string $roleCode)
     {
-        return $query->where('role_id', $roleId);
-    }
-
-    /**
-     * Scope: Por nombre de rol
-     */
-    public function scopeByRoleName($query, string $roleName)
-    {
-        return $query->whereHas('role', function ($q) use ($roleName) {
-            $q->where('name', $roleName);
-        });
+        return $query->where('role_code', $roleCode);
     }
 
     /**

@@ -206,38 +206,51 @@ class User extends Model implements Authenticatable
 
     /**
      * Verificar si tiene un rol específico (en cualquier empresa)
+     *
+     * @param string $roleCode Código del rol: 'platform_admin', 'company_admin', 'agent', 'user'
      */
-    public function hasRole(string $roleName): bool
+    public function hasRole(string $roleCode): bool
     {
         return $this->activeRoles()
-            ->whereHas('role', function ($query) use ($roleName) {
-                $query->where('name', $roleName);
-            })
+            ->where('role_code', $roleCode)
             ->exists();
     }
 
     /**
      * Verificar si tiene un rol en una empresa específica
+     *
+     * @param string $roleCode Código del rol
+     * @param string $companyId ID de la empresa
      */
-    public function hasRoleInCompany(string $roleName, string $companyId): bool
+    public function hasRoleInCompany(string $roleCode, string $companyId): bool
     {
         return $this->activeRoles()
+            ->where('role_code', $roleCode)
             ->where('company_id', $companyId)
-            ->whereHas('role', function ($query) use ($roleName) {
-                $query->where('name', $roleName);
-            })
             ->exists();
     }
 
     /**
-     * Obtener todos los roles del usuario (nombres)
+     * Obtener todos los role_codes del usuario
+     */
+    public function getRoleCodes(): array
+    {
+        return $this->activeRoles()
+            ->pluck('role_code')
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Obtener todos los nombres legibles de los roles
      */
     public function getRoleNames(): array
     {
         return $this->activeRoles()
             ->with('role')
             ->get()
-            ->pluck('role.name')
+            ->pluck('role.role_name')
             ->unique()
             ->values()
             ->toArray();
