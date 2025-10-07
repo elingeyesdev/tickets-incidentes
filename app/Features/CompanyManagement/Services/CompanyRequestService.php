@@ -99,11 +99,11 @@ class CompanyRequestService
             ], $adminUser);
 
             // 3. Assign COMPANY_ADMIN role to admin user
-            $this->roleService->assignRole(
+            $this->roleService->assignRoleToUser(
                 userId: $adminUser->id,
                 roleCode: 'company_admin',
                 companyId: $company->id,
-                assignedBy: $reviewer
+                assignedBy: $reviewer->id
             );
 
             // 4. Mark request as approved

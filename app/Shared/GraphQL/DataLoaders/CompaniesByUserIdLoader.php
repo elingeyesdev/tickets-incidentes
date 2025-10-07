@@ -32,63 +32,30 @@ class CompaniesByUserIdLoader extends BatchLoader
      */
     public function resolve(array $keys): Closure
     {
-        // TODO: Reemplazar con modelos reales cuando estén disponibles
-        // Por ahora retornamos datos mock para testing
-
         return function () use ($keys): Collection {
-            // TEMPORAL: Mock data hasta que tengamos los modelos Company y UserRole
-            // Una vez tengamos los modelos, usar:
-            /*
-            // Cargar company_ids de user_roles
-            $userRoleCompanies = \App\Features\UserManagement\Models\UserRole::query()
+            // Cargar relaciones user_id -> company_id de roles activos
+            $userRoles = \App\Features\UserManagement\Models\UserRole::query()
                 ->whereIn('user_id', $keys)
                 ->where('is_active', true)
                 ->whereNotNull('company_id')
-                ->pluck('company_id', 'user_id');
+                ->get();
 
-            // Cargar todas las empresas necesarias
-            $companyIds = $userRoleCompanies->unique()->values()->all();
+            // Obtener IDs únicos de empresas
+            $companyIds = $userRoles->pluck('company_id')->unique()->values()->all();
+
+            // Cargar todas las empresas en una sola query
             $companies = \App\Features\CompanyManagement\Models\Company::query()
                 ->whereIn('id', $companyIds)
                 ->get()
                 ->keyBy('id');
 
-            // Agrupar por user_id
-            $userCompanies = collect($keys)->mapWithKeys(function ($userId) use ($userRoleCompanies, $companies) {
-                $companyId = $userRoleCompanies->get($userId);
-                $company = $companyId ? $companies->get($companyId) : null;
-
-                return [$userId => $company ? collect([$company]) : collect()];
+            // Agrupar empresas por user_id (un usuario puede tener múltiples empresas)
+            $userCompaniesMap = $userRoles->groupBy('user_id')->map(function ($roles) use ($companies) {
+                return $roles->map(fn($role) => $companies->get($role->company_id))->filter();
             });
 
-            // Retornar en el mismo orden que los keys
-            return collect($keys)->map(fn($key) => $userCompanies->get($key, collect()));
-            */
-
-            // MOCK DATA (remover después)
-            $mockUserCompanies = collect($keys)->mapWithKeys(function ($userId) {
-                // Simular 0-2 empresas por usuario
-                $numCompanies = rand(0, 2);
-                $companies = collect();
-
-                for ($i = 0; $i < $numCompanies; $i++) {
-                    $companyId = \Illuminate\Support\Str::uuid()->toString();
-
-                    $companies->push((object) [
-                        'id' => $companyId,
-                        'company_code' => 'CMP-2025-' . str_pad(rand(1, 999), 5, '0', STR_PAD_LEFT),
-                        'name' => 'Company ' . substr($companyId, 0, 8),
-                        'logo_url' => 'https://ui-avatars.com/api/?name=Company+' . $i,
-                        'primary_color' => '#' . substr(md5($companyId), 0, 6),
-                        'status' => 'active',
-                    ]);
-                }
-
-                return [$userId => $companies];
-            });
-
-            // Retornar en el mismo orden que los keys
-            return collect($keys)->map(fn($key) => $mockUserCompanies->get($key, collect()));
+            // Retornar en el mismo orden que los keys (array de empresas por usuario)
+            return collect($keys)->map(fn($key) => $userCompaniesMap->get($key, collect()));
         };
     }
 }

@@ -19,18 +19,18 @@ use Illuminate\Support\Facades\DB;
 class RoleService
 {
     /**
-     * Obtener rol por ID
+     * Obtener rol por código
      *
-     * @param string $roleId
+     * @param string $roleCode
      * @return Role
      * @throws NotFoundException
      */
-    public function getRoleById(string $roleId): Role
+    public function getRoleByCode(string $roleCode): Role
     {
-        $role = Role::find($roleId);
+        $role = Role::findByCode($roleCode);
 
         if (!$role) {
-            throw NotFoundException::resource('Rol', $roleId);
+            throw NotFoundException::resource('Rol', $roleCode);
         }
 
         return $role;
@@ -61,7 +61,7 @@ class RoleService
      */
     public function getAllRoles()
     {
-        return Role::byPriority()->get();
+        return Role::orderBy('role_code')->get();
     }
 
     /**
@@ -71,7 +71,7 @@ class RoleService
      */
     public function getCompanyRoles()
     {
-        return Role::requiresCompany()->byPriority()->get();
+        return Role::requiresCompany()->orderBy('role_code')->get();
     }
 
     /**
@@ -81,25 +81,25 @@ class RoleService
      */
     public function getGlobalRoles()
     {
-        return Role::global()->byPriority()->get();
+        return Role::global()->orderBy('role_code')->get();
     }
 
     /**
      * Asignar rol a usuario
      *
      * @param string $userId
-     * @param string $roleId
+     * @param string $roleCode
      * @param string|null $companyId
-     * @param string|null $assignedById
+     * @param string|null $assignedBy
      * @return UserRole
      * @throws NotFoundException
      * @throws ValidationException
      */
     public function assignRoleToUser(
         string $userId,
-        string $roleId,
+        string $roleCode,
         ?string $companyId = null,
-        ?string $assignedById = null
+        ?string $assignedBy = null
     ): UserRole {
         // Validar que el usuario existe
         $user = User::find($userId);
@@ -108,13 +108,13 @@ class RoleService
         }
 
         // Validar que el rol existe
-        $role = $this->getRoleById($roleId);
+        $role = $this->getRoleByCode($roleCode);
 
         // Validar que si el rol requiere empresa, se proporcione company_id
         if ($role->requiresCompany() && !$companyId) {
             throw ValidationException::withField(
                 'company_id',
-                "El rol {$role->name} requiere contexto de empresa"
+                "El rol {$role->role_name} requiere contexto de empresa"
             );
         }
 
@@ -122,13 +122,13 @@ class RoleService
         if (!$role->requiresCompany() && $companyId) {
             throw ValidationException::withField(
                 'company_id',
-                "El rol {$role->name} no puede tener contexto de empresa"
+                "El rol {$role->role_name} no puede tener contexto de empresa"
             );
         }
 
         // Verificar que el usuario no tenga ya ese rol en esa empresa
         $existingRole = UserRole::where('user_id', $userId)
-            ->where('role_id', $roleId)
+            ->where('role_code', $roleCode)
             ->where('company_id', $companyId)
             ->first();
 
@@ -140,7 +140,7 @@ class RoleService
             }
 
             throw ValidationException::withField(
-                'role_id',
+                'role_code',
                 'El usuario ya tiene este rol asignado'
             );
         }
@@ -148,10 +148,10 @@ class RoleService
         // Crear asignación de rol
         return UserRole::create([
             'user_id' => $userId,
-            'role_id' => $roleId,
+            'role_code' => $roleCode,
             'company_id' => $companyId,
             'is_active' => true,
-            'assigned_by_id' => $assignedById,
+            'assigned_by' => $assignedBy,
         ]);
     }
 
@@ -159,29 +159,29 @@ class RoleService
      * Revocar rol de usuario
      *
      * @param string $userId
-     * @param string $roleId
+     * @param string $roleCode
      * @param string|null $companyId
-     * @param string|null $revokedById
+     * @param string|null $revokedBy
      * @return bool
      * @throws NotFoundException
      */
     public function revokeRoleFromUser(
         string $userId,
-        string $roleId,
+        string $roleCode,
         ?string $companyId = null,
-        ?string $revokedById = null
+        ?string $revokedBy = null
     ): bool {
         $userRole = UserRole::where('user_id', $userId)
-            ->where('role_id', $roleId)
+            ->where('role_code', $roleCode)
             ->where('company_id', $companyId)
             ->where('is_active', true)
             ->first();
 
         if (!$userRole) {
-            throw NotFoundException::resource('Asignación de rol', "{$userId}-{$roleId}");
+            throw NotFoundException::resource('Asignación de rol', "{$userId}-{$roleCode}");
         }
 
-        $userRole->revoke($revokedById);
+        $userRole->revoke($revokedBy);
 
         return true;
     }
@@ -324,44 +324,44 @@ class RoleService
      * (Revoca todos los roles anteriores y asigna los nuevos)
      *
      * @param string $userId
-     * @param array $roleIds
+     * @param array $roleCodes
      * @param string|null $companyId
-     * @param string|null $changedById
+     * @param string|null $changedBy
      * @return array
      * @throws ValidationException
      */
     public function syncUserRoles(
         string $userId,
-        array $roleIds,
+        array $roleCodes,
         ?string $companyId = null,
-        ?string $changedById = null
+        ?string $changedBy = null
     ): array {
-        return DB::transaction(function () use ($userId, $roleIds, $companyId, $changedById) {
+        return DB::transaction(function () use ($userId, $roleCodes, $companyId, $changedBy) {
             // Obtener roles actuales
             $currentRoles = UserRole::where('user_id', $userId)
                 ->where('company_id', $companyId)
                 ->active()
                 ->get();
 
-            $currentRoleIds = $currentRoles->pluck('role_id')->toArray();
+            $currentRoleCodes = $currentRoles->pluck('role_code')->toArray();
 
             // Revocar roles que ya no están en la nueva lista
             foreach ($currentRoles as $currentRole) {
-                if (!in_array($currentRole->role_id, $roleIds)) {
-                    $currentRole->revoke($changedById);
+                if (!in_array($currentRole->role_code, $roleCodes)) {
+                    $currentRole->revoke($changedBy);
                 }
             }
 
             // Asignar nuevos roles
             $newRoles = [];
-            foreach ($roleIds as $roleId) {
-                if (!in_array($roleId, $currentRoleIds)) {
-                    $newRoles[] = $this->assignRoleToUser($userId, $roleId, $companyId, $changedById);
+            foreach ($roleCodes as $roleCode) {
+                if (!in_array($roleCode, $currentRoleCodes)) {
+                    $newRoles[] = $this->assignRoleToUser($userId, $roleCode, $companyId, $changedBy);
                 }
             }
 
             return [
-                'revoked' => count($currentRoleIds) - count(array_intersect($currentRoleIds, $roleIds)),
+                'revoked' => count($currentRoleCodes) - count(array_intersect($currentRoleCodes, $roleCodes)),
                 'assigned' => count($newRoles),
             ];
         });
@@ -370,13 +370,13 @@ class RoleService
     /**
      * Obtener usuarios con un rol específico
      *
-     * @param string $roleId
+     * @param string $roleCode
      * @param string|null $companyId
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getUsersByRole(string $roleId, ?string $companyId = null)
+    public function getUsersByRole(string $roleCode, ?string $companyId = null)
     {
-        $query = UserRole::where('role_id', $roleId)
+        $query = UserRole::where('role_code', $roleCode)
             ->active()
             ->with('user.profile');
 

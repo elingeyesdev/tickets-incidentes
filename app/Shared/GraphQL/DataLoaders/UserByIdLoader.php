@@ -32,40 +32,15 @@ class UserByIdLoader extends BatchLoader
      */
     public function resolve(array $keys): Closure
     {
-        // TODO: Reemplazar con modelo real cuando esté disponible
-        // Por ahora retornamos datos mock para testing
-
         return function () use ($keys): Collection {
-            // TEMPORAL: Mock data hasta que tengamos el modelo User
-            // Una vez tengamos el modelo, usar:
-            /*
+            // Cargar usuarios por IDs en una sola query
             $users = \App\Features\UserManagement\Models\User::query()
                 ->whereIn('id', $keys)
                 ->get()
                 ->keyBy('id');
 
-            // Retornar en el mismo orden que los keys
+            // Retornar en el mismo orden que los keys (puede haber nulls)
             return collect($keys)->map(fn($key) => $users->get($key));
-            */
-
-            // MOCK DATA (remover después)
-            $mockUsers = collect($keys)->mapWithKeys(function ($userId) {
-                return [
-                    $userId => (object) [
-                        'id' => $userId,
-                        'user_code' => 'USR-2025-' . str_pad(rand(1, 999), 5, '0', STR_PAD_LEFT),
-                        'email' => 'user_' . substr($userId, 0, 8) . '@example.com',
-                        'email_verified' => true,
-                        'status' => 'active',
-                        'auth_provider' => 'local',
-                        'created_at' => now()->subDays(rand(1, 365)),
-                        'updated_at' => now(),
-                    ]
-                ];
-            });
-
-            // Retornar en el mismo orden que los keys
-            return collect($keys)->map(fn($key) => $mockUsers->get($key));
         };
     }
 }

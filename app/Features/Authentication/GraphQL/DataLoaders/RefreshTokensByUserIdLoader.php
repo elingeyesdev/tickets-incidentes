@@ -33,58 +33,17 @@ class RefreshTokensByUserIdLoader extends BatchLoader
     public function resolve(array $keys): Closure
     {
         return function () use ($keys): Collection {
-            // TODO: Reemplazar con modelo real cuando esté disponible
-            // Por ahora retornamos datos mock para testing
-
-            // Una vez tengamos el modelo RefreshToken, usar:
-            /*
-            use App\Features\Authentication\Models\RefreshToken;
-
-            $refreshTokens = RefreshToken::query()
+            // Cargar refresh tokens activos por user_id
+            $refreshTokens = \App\Features\Authentication\Models\RefreshToken::query()
                 ->whereIn('user_id', $keys)
                 ->where('expires_at', '>', now())
+                ->whereNull('revoked_at')
                 ->orderBy('last_used_at', 'desc')
                 ->get()
                 ->groupBy('user_id');
 
-            // Retornar en el mismo orden que los keys
+            // Retornar en el mismo orden que los keys (array de tokens por usuario)
             return collect($keys)->map(fn($key) => $refreshTokens->get($key, collect()));
-            */
-
-            // MOCK DATA (remover después)
-            $mockSessions = collect($keys)->mapWithKeys(function ($userId) {
-                // Simular 1-3 sesiones por usuario
-                $numSessions = rand(1, 3);
-                $sessions = collect();
-
-                $deviceNames = [
-                    'Chrome on Windows',
-                    'Safari on iPhone',
-                    'Firefox on Mac',
-                    'Edge on Windows',
-                    'Chrome on Android'
-                ];
-
-                for ($i = 0; $i < $numSessions; $i++) {
-                    $sessions->push((object) [
-                        'id' => \Illuminate\Support\Str::uuid()->toString(),
-                        'session_id' => 'sess_' . \Illuminate\Support\Str::random(16),
-                        'user_id' => $userId,
-                        'device_name' => $deviceNames[$i % count($deviceNames)],
-                        'ip_address' => '192.168.1.' . rand(100, 200),
-                        'user_agent' => 'Mozilla/5.0...',
-                        'last_used_at' => now()->subHours(rand(0, 48)),
-                        'expires_at' => now()->addDays(30)->subHours(rand(0, 48)),
-                        'is_current' => $i === 0,
-                        'created_at' => now()->subDays(rand(1, 60)),
-                    ]);
-                }
-
-                return [$userId => $sessions];
-            });
-
-            // Retornar en el mismo orden que los keys
-            return collect($keys)->map(fn($key) => $mockSessions->get($key, collect()));
         };
     }
 }
