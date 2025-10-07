@@ -491,3 +491,4 @@ public function __invoke($rootValue, array $args)
 - ✅ When a field might be called multiple times in a single query
 - ✅ When implementing `author`, `company`, `creator` fields on types
 - ❌ NOT needed for simple direct queries (single record fetch)
+- to memorize

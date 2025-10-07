@@ -26,16 +26,26 @@ return new class extends Migration
 
             // ===== AUTENTICACIÓN =====
             $table->string('email')->unique()->comment('Email único del usuario');
-            $table->string('password_hash')->comment('Hash bcrypt de la contraseña');
+            $table->string('password_hash')->nullable()->comment('Hash bcrypt de la contraseña (NULL si usa OAuth)');
             $table->boolean('email_verified')->default(false)->comment('Si el email está verificado');
             $table->timestamp('email_verified_at')->nullable()->comment('Fecha de verificación del email');
+
+            // ===== AUTENTICACIÓN OAUTH =====
+            $table->string('auth_provider', 50)->default('local')
+                ->comment('Proveedor de auth: local, google, microsoft');
+            $table->string('external_auth_id', 255)->nullable()
+                ->comment('Google ID, Microsoft ID, etc.');
+
+            // ===== RECUPERACIÓN DE CONTRASEÑA =====
+            $table->string('password_reset_token', 255)->nullable()
+                ->comment('Token para reset password');
+            $table->timestamp('password_reset_expires')->nullable()
+                ->comment('Expiración del token de reset');
 
             // ===== ESTADO Y CONFIGURACIÓN =====
             $table->enum('status', ['active', 'suspended', 'deleted'])
                 ->default('active')
                 ->comment('Estado del usuario');
-            $table->string('auth_provider', 50)->default('local')
-                ->comment('Proveedor de auth: local, google, microsoft');
 
             // ===== ACTIVIDAD Y SEGURIDAD =====
             $table->timestamp('last_login_at')->nullable()->comment('Último acceso al sistema');

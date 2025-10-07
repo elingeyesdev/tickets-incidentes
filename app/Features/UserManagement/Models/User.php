@@ -70,6 +70,9 @@ class User extends Model implements Authenticatable
         'email_verified_at',
         'status',
         'auth_provider',
+        'external_auth_id',
+        'password_reset_token',
+        'password_reset_expires',
         'last_login_at',
         'last_login_ip',
         'last_activity_at',
@@ -83,6 +86,8 @@ class User extends Model implements Authenticatable
      */
     protected $hidden = [
         'password_hash',
+        'password_reset_token',
+        'external_auth_id',
     ];
 
     /**
@@ -92,6 +97,7 @@ class User extends Model implements Authenticatable
         'email_verified' => 'boolean',
         'email_verified_at' => 'datetime',
         'status' => UserStatus::class,
+        'password_reset_expires' => 'datetime',
         'last_login_at' => 'datetime',
         'last_activity_at' => 'datetime',
         'terms_accepted' => 'boolean',
