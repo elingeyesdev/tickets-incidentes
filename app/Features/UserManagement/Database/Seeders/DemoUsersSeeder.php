@@ -79,10 +79,9 @@ class DemoUsersSeeder extends Seeder
             'timezone' => 'America/La_Paz',
         ]);
 
-        $platformAdminRole = Role::where('name', 'PLATFORM_ADMIN')->first();
         UserRole::create([
             'user_id' => $user->id,
-            'role_id' => $platformAdminRole->id,
+            'role_code' => 'platform_admin',
             'company_id' => null,
             'is_active' => true,
         ]);
@@ -118,20 +117,18 @@ class DemoUsersSeeder extends Seeder
         ]);
 
         // Asignar rol USER (global)
-        $userRole = Role::where('name', 'USER')->first();
         UserRole::create([
             'user_id' => $user->id,
-            'role_id' => $userRole->id,
+            'role_code' => 'user',
             'company_id' => null,
             'is_active' => true,
         ]);
 
         // Asignar rol AGENT (requiere empresa, usaremos null por ahora)
         // TODO: Cuando tengamos CompanyManagement, asignar a empresa real
-        $agentRole = Role::where('name', 'AGENT')->first();
         UserRole::create([
             'user_id' => $user->id,
-            'role_id' => $agentRole->id,
+            'role_code' => 'agent',
             'company_id' => null, // TODO: Asignar empresa cuando exista CompanyManagement
             'is_active' => true,
         ]);
@@ -166,10 +163,9 @@ class DemoUsersSeeder extends Seeder
             'timezone' => 'America/La_Paz',
         ]);
 
-        $userRole = Role::where('name', 'USER')->first();
         UserRole::create([
             'user_id' => $user->id,
-            'role_id' => $userRole->id,
+            'role_code' => 'user',
             'company_id' => null,
             'is_active' => true,
         ]);
@@ -182,16 +178,14 @@ class DemoUsersSeeder extends Seeder
      */
     private function createRandomUsers(int $count): void
     {
-        $userRole = Role::where('name', 'USER')->first();
-
         User::factory()
             ->count($count)
             ->withProfile()
             ->create()
-            ->each(function (User $user) use ($userRole) {
+            ->each(function (User $user) {
                 UserRole::create([
                     'user_id' => $user->id,
-                    'role_id' => $userRole->id,
+                    'role_code' => 'user',
                     'company_id' => null,
                     'is_active' => true,
                 ]);

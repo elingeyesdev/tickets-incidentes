@@ -45,7 +45,7 @@ class RefreshTokenFactory extends Factory
             'last_used_at' => now(),
             'is_revoked' => false,
             'revoked_at' => null,
-            'revoked_by_id' => null,
+            'revoke_reason' => null,
         ];
     }
 

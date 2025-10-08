@@ -30,13 +30,12 @@ class UserRoleFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'role_id' => Role::where('name', 'USER')->first()->id ?? Role::factory(),
-            'company_id' => null, // Por defecto rol global (USER)
+            'role_code' => Role::where('role_code', 'user')->first()->role_code ?? 'user',
+            'company_id' => null, // Por defecto rol global (user)
             'is_active' => true,
             'assigned_at' => now()->subDays(rand(1, 365)),
             'revoked_at' => null,
-            'assigned_by_id' => null,
-            'revoked_by_id' => null,
+            'assigned_by' => null,
         ];
     }
 
@@ -48,19 +47,17 @@ class UserRoleFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_active' => true,
             'revoked_at' => null,
-            'revoked_by_id' => null,
         ]);
     }
 
     /**
      * Rol revocado
      */
-    public function revoked(?string $revokedById = null): static
+    public function revoked(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_active' => false,
             'revoked_at' => now()->subDays(rand(1, 30)),
-            'revoked_by_id' => $revokedById,
         ]);
     }
 
@@ -90,7 +87,7 @@ class UserRoleFactory extends Factory
     public function userRole(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'USER')->first()->id,
+            'role_code' => 'user',
             'company_id' => null,
         ]);
     }
@@ -101,7 +98,7 @@ class UserRoleFactory extends Factory
     public function agentRole(string $companyId): static
     {
         return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'AGENT')->first()->id,
+            'role_code' => 'agent',
             'company_id' => $companyId,
         ]);
     }
@@ -112,7 +109,7 @@ class UserRoleFactory extends Factory
     public function companyAdminRole(string $companyId): static
     {
         return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'COMPANY_ADMIN')->first()->id,
+            'role_code' => 'company_admin',
             'company_id' => $companyId,
         ]);
     }
@@ -123,7 +120,7 @@ class UserRoleFactory extends Factory
     public function platformAdminRole(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'PLATFORM_ADMIN')->first()->id,
+            'role_code' => 'platform_admin',
             'company_id' => null,
         ]);
     }
@@ -144,7 +141,7 @@ class UserRoleFactory extends Factory
     public function assignedBy(string $userId): static
     {
         return $this->state(fn (array $attributes) => [
-            'assigned_by_id' => $userId,
+            'assigned_by' => $userId,
         ]);
     }
 }

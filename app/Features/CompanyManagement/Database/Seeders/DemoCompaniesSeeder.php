@@ -17,10 +17,15 @@ class DemoCompaniesSeeder extends Seeder
     {
         // Get existing demo users (created by DemoUsersSeeder)
         $platformAdmin = User::where('email', 'admin@helpdesk.com')->first();
-        $companyAdmin1 = User::where('email', 'company-admin@techsolutions.com')->first();
-        $companyAdmin2 = User::where('email', 'company-admin@innovatesoft.com')->first();
 
-        // Create 5 demo companies with specific data
+        // Use platform admin as company admin for demo purposes
+        // In a real scenario, each company would have its own admin created via CompanyRequestService
+        if (!$platformAdmin) {
+            $this->command->warn('⚠️  Demo users not found. Run DemoUsersSeeder first.');
+            return;
+        }
+
+        // Create 2 demo companies with specific data
         $companies = [
             [
                 'name' => 'Tech Solutions Inc.',
@@ -29,7 +34,7 @@ class DemoCompaniesSeeder extends Seeder
                 'website' => 'https://techsolutions.com',
                 'contact_city' => 'Santa Cruz de la Sierra',
                 'contact_country' => 'Bolivia',
-                'admin_user_id' => $companyAdmin1->id,
+                'admin_user_id' => $platformAdmin->id, // Using platform admin for demo
             ],
             [
                 'name' => 'Innovate Soft',
@@ -38,7 +43,7 @@ class DemoCompaniesSeeder extends Seeder
                 'website' => 'https://innovatesoft.com',
                 'contact_city' => 'La Paz',
                 'contact_country' => 'Bolivia',
-                'admin_user_id' => $companyAdmin2->id,
+                'admin_user_id' => $platformAdmin->id, // Using platform admin for demo
             ],
         ];
 
