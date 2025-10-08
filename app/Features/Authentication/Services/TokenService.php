@@ -35,7 +35,7 @@ class TokenService
     public function generateAccessToken(User $user, ?string $sessionId = null): string
     {
         $now = time();
-        $ttl = config('jwt.ttl') * 60; // TTL en segundos
+        $ttl = (int) config('jwt.ttl') * 60; // TTL en segundos
 
         $payload = [
             // Standard claims
@@ -70,7 +70,7 @@ class TokenService
         $tokenHash = hash('sha256', $token);
 
         // TTL desde config (en minutos)
-        $refreshTtl = config('jwt.refresh_ttl');
+        $refreshTtl = (int) config('jwt.refresh_ttl');
 
         // Crear registro en DB
         $refreshToken = RefreshToken::create([

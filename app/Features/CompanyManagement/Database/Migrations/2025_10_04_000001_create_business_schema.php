@@ -14,6 +14,8 @@ return new class extends Migration
         DB::statement('CREATE SCHEMA IF NOT EXISTS business');
 
         // Create enums in business schema
+        // Drop first to make migration idempotent (can run multiple times)
+        DB::statement("DROP TYPE IF EXISTS business.request_status CASCADE");
         DB::statement("
             CREATE TYPE business.request_status AS ENUM (
                 'pending',
@@ -22,6 +24,7 @@ return new class extends Migration
             )
         ");
 
+        DB::statement("DROP TYPE IF EXISTS business.publication_status CASCADE");
         DB::statement("
             CREATE TYPE business.publication_status AS ENUM (
                 'draft',

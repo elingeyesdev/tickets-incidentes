@@ -21,9 +21,10 @@ abstract class BaseMutation
      *
      * @param  mixed  $root
      * @param  array<string, mixed>  $args
+     * @param  mixed  $context GraphQL context (Lighthouse)
      * @return mixed
      */
-    public function __invoke($root, array $args)
+    public function __invoke($root, array $args, $context = null)
     {
         // TODO: Implementar lógica real en clases hijas
         // Por ahora retorna null para schema-first approach

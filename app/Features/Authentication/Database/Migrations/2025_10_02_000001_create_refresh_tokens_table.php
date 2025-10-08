@@ -35,7 +35,7 @@ return new class extends Migration
 
                 -- Información del dispositivo
                 device_name VARCHAR(100),
-                ip_address INET NOT NULL,
+                ip_address INET,
                 user_agent TEXT,
 
                 -- Temporalidad

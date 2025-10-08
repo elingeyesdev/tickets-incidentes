@@ -313,7 +313,11 @@ return [
     |
     */
 
-    'debug' => env('LIGHTHOUSE_DEBUG', GraphQL\Error\DebugFlag::INCLUDE_DEBUG_MESSAGE | GraphQL\Error\DebugFlag::INCLUDE_TRACE),
+    // Debug: Solo mostrar trace en desarrollo local
+    'debug' => env('LIGHTHOUSE_DEBUG', config('app.debug')
+        ? GraphQL\Error\DebugFlag::INCLUDE_DEBUG_MESSAGE | GraphQL\Error\DebugFlag::INCLUDE_TRACE
+        : GraphQL\Error\DebugFlag::INCLUDE_NONE
+    ),
 
     /*
     |--------------------------------------------------------------------------
@@ -329,7 +333,8 @@ return [
     'error_handlers' => [
         Nuwave\Lighthouse\Execution\AuthenticationErrorHandler::class,
         Nuwave\Lighthouse\Execution\AuthorizationErrorHandler::class,
-        Nuwave\Lighthouse\Execution\ValidationErrorHandler::class,
+        // Custom ValidationErrorHandler para mensajes limpios y profesionales
+        \App\Shared\GraphQL\Errors\CustomValidationErrorHandler::class,
         Nuwave\Lighthouse\Execution\ReportingErrorHandler::class,
     ],
 

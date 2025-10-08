@@ -33,6 +33,8 @@ return new class extends Migration
 
         // Create ENUM for ticket status
         // According to Modelado V7.0 línea 34
+        // Drop first to make migration idempotent
+        DB::statement("DROP TYPE IF EXISTS ticketing.ticket_status CASCADE");
         DB::statement("
             CREATE TYPE ticketing.ticket_status AS ENUM (
                 'open',
@@ -49,6 +51,7 @@ return new class extends Migration
 
         // Create ENUM for author type
         // According to Modelado V7.0 línea 35
+        DB::statement("DROP TYPE IF EXISTS ticketing.author_type CASCADE");
         DB::statement("
             CREATE TYPE ticketing.author_type AS ENUM (
                 'user',

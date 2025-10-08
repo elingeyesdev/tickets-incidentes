@@ -33,6 +33,8 @@ return new class extends Migration
 
         // Create ENUM for action types
         // According to Modelado V7.0 línea 36
+        // Drop first to make migration idempotent
+        DB::statement("DROP TYPE IF EXISTS audit.action_type CASCADE");
         DB::statement("
             CREATE TYPE audit.action_type AS ENUM (
                 'create',

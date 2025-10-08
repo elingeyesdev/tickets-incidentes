@@ -345,15 +345,15 @@ Input para registro de nuevo usuario
 input RegisterInput {
     """Email único del usuario"""
     email: Email!
-        @rules(apply: ["required", "email", "unique:auth.users,email"])
+        @rules(apply: ["required", "email", "unique:App\\Features\\UserManagement\\Models\\User,email"])
 
     """Contraseña (mínimo 8 caracteres)"""
     password: String!
-        @rules(apply: ["required", "min:8", "confirmed"])
+        @rules(apply: ["required", "min:8"])
 
     """Confirmación de contraseña"""
     passwordConfirmation: String!
-        @rules(apply: ["required"])
+        @rules(apply: ["required", "same:password"])
 
     """Nombre del usuario"""
     firstName: String!

@@ -30,6 +30,7 @@ return new class extends Migration
 
         // Crear ENUM TYPE para status de usuarios
         // Según Modelado V7.0 línea 31
+        DB::statement("DROP TYPE IF EXISTS auth.user_status CASCADE");
         DB::statement("
             CREATE TYPE auth.user_status AS ENUM (
                 'active',
