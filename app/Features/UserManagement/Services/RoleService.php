@@ -45,7 +45,7 @@ class RoleService
      */
     public function getRoleByName(string $roleName): Role
     {
-        $role = Role::where('name', $roleName)->first();
+        $role = Role::where('role_name', $roleName)->first();
 
         if (!$role) {
             throw NotFoundException::resource('Rol', $roleName);
@@ -181,7 +181,7 @@ class RoleService
             throw NotFoundException::resource('Asignación de rol', "{$userId}-{$roleCode}");
         }
 
-        $userRole->revoke($revokedBy);
+        $userRole->revoke();
 
         return true;
     }
@@ -244,11 +244,11 @@ class RoleService
      * @param string|null $companyId
      * @return bool
      */
-    public function userHasRole(string $userId, string $roleName, ?string $companyId = null): bool
+    public function userHasRole(string $userId, string $roleCode, ?string $companyId = null): bool
     {
         $query = UserRole::where('user_id', $userId)
-            ->active()
-            ->byRoleName($roleName);
+            ->where('role_code', $roleCode)
+            ->active();
 
         if ($companyId) {
             $query->forCompany($companyId);
@@ -348,7 +348,7 @@ class RoleService
             // Revocar roles que ya no están en la nueva lista
             foreach ($currentRoles as $currentRole) {
                 if (!in_array($currentRole->role_code, $roleCodes)) {
-                    $currentRole->revoke($changedBy);
+                    $currentRole->revoke();
                 }
             }
 

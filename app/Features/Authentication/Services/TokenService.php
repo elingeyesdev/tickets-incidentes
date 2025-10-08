@@ -48,8 +48,6 @@ class TokenService
             // Custom claims
             'user_id' => $user->id,
             'email' => $user->email,
-            'roles' => $user->roles->pluck('name')->toArray(),
-            'companies' => $user->companies->pluck('id')->toArray(),
             'session_id' => $sessionId ?? Str::uuid()->toString(),
         ];
 

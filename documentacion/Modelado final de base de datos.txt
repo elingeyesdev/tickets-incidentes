@@ -6,7 +6,7 @@
 -- DescripciÃ³n: VersiÃ³n perfeccionada incorporando todas las mejoras sugeridas
 -- MEJORAS APLICADAS:
 -- 1. Nuevo esquema 'audit' para separaciÃ³n de logs
--- 2. Campo display_name ahora es calculado (no almacenado)
+-- 2. Campo display_name ahora es calculado (no aletmacenado)
 -- 3. business_hours ahora usa JSONB
 -- 4. Ãndices adicionales para performance y seguridad
 -- 5. Trigger automÃ¡tico para asignaciÃ³n de owner_agent_id

@@ -85,7 +85,7 @@ class AuthService
         event(new UserRegistered($user, $verificationToken));
 
         return [
-            'user' => $user->fresh(['profile', 'roles', 'companies']),
+            'user' => $user->fresh(['profile']),
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,
@@ -136,7 +136,7 @@ class AuthService
         event(new UserLoggedIn($user, $deviceInfo));
 
         return [
-            'user' => $user->fresh(['profile', 'roles', 'companies']),
+            'user' => $user->fresh(['profile']),
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,
@@ -315,7 +315,7 @@ class AuthService
         // Disparar evento
         event(new EmailVerified($user));
 
-        return $user->fresh(['profile', 'roles', 'companies']);
+        return $user->fresh(['profile']);
     }
 
     /**
@@ -380,7 +380,7 @@ class AuthService
     {
         $payload = $this->tokenService->validateAccessToken($accessToken);
 
-        $user = User::with(['profile', 'roles', 'companies'])
+        $user = User::with(['profile'])
             ->find($payload->user_id);
 
         if (!$user) {
