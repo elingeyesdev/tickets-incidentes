@@ -52,6 +52,12 @@ class UserRole extends Model
     public $incrementing = false;
 
     /**
+     * Deshabilitar timestamps automáticos (no tiene created_at/updated_at)
+     * Solo tiene assigned_at que se maneja manualmente
+     */
+    public $timestamps = false;
+
+    /**
      * Campos asignables en masa
      */
     protected $fillable = [
@@ -71,8 +77,6 @@ class UserRole extends Model
         'is_active' => 'boolean',
         'assigned_at' => 'datetime',
         'revoked_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     /**
@@ -97,6 +101,15 @@ class UserRole extends Model
     public function assignedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by', 'id');
+    }
+
+    /**
+     * Relación con Company (solo para roles AGENT y COMPANY_ADMIN)
+     * Puede ser null para roles USER y PLATFORM_ADMIN
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(\App\Features\CompanyManagement\Models\Company::class, 'company_id', 'id');
     }
 
     // ==================== OBSERVERS / HOOKS ====================

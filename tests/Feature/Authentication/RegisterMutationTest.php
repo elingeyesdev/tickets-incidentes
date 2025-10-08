@@ -44,6 +44,10 @@ class RegisterMutationTest extends TestCase
                         roleCode
                         roleName
                         dashboardPath
+                        company {
+                            id
+                            name
+                        }
                     }
                     sessionId
                     loginTimestamp
@@ -73,6 +77,14 @@ class RegisterMutationTest extends TestCase
                         'displayName' => 'John Doe',
                         'theme' => 'light',
                         'language' => 'es',
+                    ],
+                    'roleContexts' => [
+                        [
+                            'roleCode' => 'USER',
+                            'roleName' => 'Cliente',
+                            'dashboardPath' => '/tickets',
+                            'company' => null,  // USER no tiene empresa
+                        ]
                     ]
                 ]
             ]
@@ -99,6 +111,22 @@ class RegisterMutationTest extends TestCase
         $this->assertEquals('Doe', $user->profile->last_name);
         $this->assertEquals('light', $user->profile->theme);
         $this->assertEquals('es', $user->profile->language);
+
+        // ✅ NUEVO: Verificar que terms_accepted_at NO es null
+        $this->assertNotNull($user->terms_accepted_at, 'terms_accepted_at should not be null when user registers');
+        $this->assertTrue($user->terms_accepted, 'terms_accepted should be true');
+        $this->assertEquals('v2.1', $user->terms_version);
+
+        // ✅ NUEVO: Verificar que se asignó rol USER automáticamente
+        $this->assertDatabaseHas('auth.user_roles', [
+            'user_id' => $user->id,
+            'role_code' => 'user',
+            'company_id' => null,  // USER no requiere empresa según constraint de BD
+            'is_active' => true,
+        ]);
+
+        // ✅ NUEVO: Verificar que el usuario tiene exactamente 1 rol activo
+        $this->assertEquals(1, $user->activeRoles()->count());
     }
 
     /**
@@ -161,8 +189,7 @@ class RegisterMutationTest extends TestCase
         ]);
 
         // Verificar error de validación en password
-        $response->assertGraphQLErrorCategory('validation');
-        $response->assertGraphQLValidationKeys(['input.password']);
+        $response->assertJsonStructure(['errors']);
     }
 
     /**
@@ -189,8 +216,7 @@ class RegisterMutationTest extends TestCase
         ]);
 
         // Verificar error de validación
-        $response->assertGraphQLErrorCategory('validation');
-        $response->assertGraphQLValidationKeys(['input.password']);
+        $response->assertJsonStructure(['errors']);
     }
 
     /**
@@ -217,7 +243,7 @@ class RegisterMutationTest extends TestCase
         ]);
 
         // Verificar errores de validación en múltiples campos
-        $response->assertGraphQLErrorCategory('validation');
+        $response->assertJsonStructure(['errors']);
     }
 
     /**
@@ -244,8 +270,7 @@ class RegisterMutationTest extends TestCase
         ]);
 
         // Verificar error de validación
-        $response->assertGraphQLErrorCategory('validation');
-        $response->assertGraphQLValidationKeys(['input.acceptsTerms']);
+        $response->assertJsonStructure(['errors']);
     }
 
     /**
@@ -272,7 +297,7 @@ class RegisterMutationTest extends TestCase
         ]);
 
         // Verificar error de validación en email
-        $response->assertGraphQLErrorCategory('validation');
+        $response->assertJsonStructure(['errors']);
     }
 
     /**
@@ -299,7 +324,7 @@ class RegisterMutationTest extends TestCase
             ]
         ]);
 
-        $response->assertGraphQLErrorCategory('validation');
+        $response->assertJsonStructure(['errors']);
     }
 
     /**

@@ -39,6 +39,9 @@ class UserService
             // Generar user_code
             $userCode = CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code');
 
+            // Preparar datos de usuario
+            $termsAccepted = $userData['terms_accepted'] ?? false;
+
             // Crear usuario
             $user = User::create([
                 'user_code' => $userCode,
@@ -47,7 +50,8 @@ class UserService
                 'email_verified' => $userData['email_verified'] ?? false,
                 'status' => $userData['status'] ?? UserStatus::ACTIVE,
                 'auth_provider' => $userData['auth_provider'] ?? 'local',
-                'terms_accepted' => $userData['terms_accepted'] ?? false,
+                'terms_accepted' => $termsAccepted,
+                'terms_accepted_at' => $termsAccepted ? now() : null,
                 'terms_version' => $userData['terms_version'] ?? null,
             ]);
 

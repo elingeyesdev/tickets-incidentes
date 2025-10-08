@@ -7,7 +7,9 @@ use App\Features\Authentication\Events\UserLoggedIn;
 use App\Features\Authentication\Events\UserLoggedOut;
 use App\Features\Authentication\Events\UserRegistered;
 use App\Features\Authentication\Models\RefreshToken;
+use App\Features\UserManagement\Models\Role;
 use App\Features\UserManagement\Models\User;
+use App\Features\UserManagement\Services\RoleService;
 use App\Features\UserManagement\Services\UserService;
 use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Exceptions\ValidationException;
@@ -32,7 +34,8 @@ class AuthService
 {
     public function __construct(
         private TokenService $tokenService,
-        private UserService $userService
+        private UserService $userService,
+        private RoleService $roleService
     ) {
     }
 
@@ -72,6 +75,14 @@ class AuthService
 
         // Crear usuario (UserService se encarga de profile)
         $user = $this->userService->createUser($userData, $profileData);
+
+        // Asignar rol USER por defecto (sin empresa, según constraint de BD)
+        $this->roleService->assignRoleToUser(
+            userId: $user->id,
+            roleCode: Role::USER,
+            companyId: null,  // USER no requiere empresa
+            assignedBy: null   // Auto-asignado en registro
+        );
 
         // Generar tokens
         $sessionId = Str::uuid()->toString();

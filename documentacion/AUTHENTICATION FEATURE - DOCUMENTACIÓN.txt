@@ -1505,46 +1505,7 @@ mutation VerifyEmail {
 
 ---
 
-### Caso 2: Login con Múltiples Roles
-
-**1. Usuario se loguea:**
-```graphql
-mutation Login {
-    login(input: {
-        email: "maria@empresa.com"
-        password: "Pass123!"
-    }) {
-        roleContexts {
-            roleCode
-            roleName
-            company { name, logoUrl }
-            dashboardPath
-        }
-    }
-}
-```
-
-**2. Response:**
-```json
-{
-    "roleContexts": [
-        {
-            "roleCode": "USER",
-            "roleName": "Cliente",
-            "company": null,
-            "dashboardPath": "/tickets"
-        },
-        {
-            "roleCode": "AGENT",
-            "roleName": "Agente",
-            "company": {
-                "name": "Universidad del Valle",
-                "logoUrl": "https://..."
-            },
-            "dashboardPath": "/agent/dashboard"
-        }
-    ]
-}
+3
 ```
 
 **3. Frontend muestra selector:**

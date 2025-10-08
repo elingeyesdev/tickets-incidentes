@@ -107,6 +107,9 @@ class RegisterMutation extends BaseMutation
     {
         $user = $result['user'];
 
+        // Cargar roles activos del usuario con relaciones necesarias
+        $userRoles = $user->activeRoles()->with(['role', 'company'])->get();
+
         return [
             // Tokens
             'accessToken' => $result['access_token'],
@@ -127,14 +130,69 @@ class RegisterMutation extends BaseMutation
                 'language' => $user->profile->language,
             ],
 
-            // Contextos de roles
-            // TODO: Asignar rol USER automáticamente en AuthService.register()
-            // Según documentación oficial, el usuario debería tener rol USER por defecto
-            'roleContexts' => [],
+            // Contextos de roles (con company que puede ser null)
+            'roleContexts' => $this->buildRoleContexts($userRoles),
 
             // Metadata de sesión
             'sessionId' => Str::uuid()->toString(),
             'loginTimestamp' => now()->toIso8601String(),
         ];
+    }
+
+    /**
+     * Construye array de roleContexts según estructura GraphQL
+     *
+     * Cada roleContext incluye:
+     * - roleCode: Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
+     * - roleName: Nombre legible del rol
+     * - company: null para roles sin empresa (USER, PLATFORM_ADMIN), objeto para roles con empresa (AGENT, COMPANY_ADMIN)
+     * - dashboardPath: Ruta del dashboard según el rol
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $userRoles
+     * @return array
+     */
+    private function buildRoleContexts($userRoles): array
+    {
+        return $userRoles->map(function ($userRole) {
+            $roleCode = strtoupper($userRole->role_code);
+
+            // Mapear dashboard paths según rol
+            $dashboardPaths = [
+                'USER' => '/tickets',
+                'AGENT' => '/agent/dashboard',
+                'COMPANY_ADMIN' => '/admin/dashboard',
+                'PLATFORM_ADMIN' => '/platform/dashboard',
+            ];
+
+            // Mapear nombres legibles de roles
+            $roleNames = [
+                'USER' => 'Cliente',
+                'AGENT' => 'Agente de Soporte',
+                'COMPANY_ADMIN' => 'Administrador de Empresa',
+                'PLATFORM_ADMIN' => 'Administrador de Plataforma',
+            ];
+
+            $context = [
+                'roleCode' => $roleCode,
+                'roleName' => $roleNames[$roleCode] ?? $userRole->role->role_name,
+                'dashboardPath' => $dashboardPaths[$roleCode] ?? '/dashboard',
+            ];
+
+            // Agregar company solo si el rol requiere empresa
+            // USER y PLATFORM_ADMIN: company es null
+            // AGENT y COMPANY_ADMIN: company tiene datos
+            if ($userRole->company) {
+                $context['company'] = [
+                    'id' => $userRole->company->id,
+                    'companyCode' => $userRole->company->company_code,
+                    'name' => $userRole->company->name,
+                    'logoUrl' => $userRole->company->logo_url,
+                ];
+            } else {
+                $context['company'] = null;
+            }
+
+            return $context;
+        })->toArray();
     }
 }
