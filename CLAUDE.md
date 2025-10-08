@@ -493,3 +493,4 @@ public function __invoke($rootValue, array $args)
 - ❌ NOT needed for simple direct queries (single record fetch)
 - to memorize
 - to memorize
+- to memorize

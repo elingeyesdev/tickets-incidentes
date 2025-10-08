@@ -2,68 +2,88 @@
 
 namespace App\Shared\GraphQL\Errors;
 
-use GraphQL\Error\Error;
-use Nuwave\Lighthouse\Execution\ErrorHandler;
 use Nuwave\Lighthouse\Exceptions\ValidationException;
 
 /**
  * Custom Validation Error Handler
  *
- * Reemplaza el ValidationErrorHandler de Lighthouse para formatear
- * errores de validación de manera profesional y user-friendly.
+ * Maneja errores de validación de GraphQL con diferenciación por entorno.
  *
- * Mejoras:
- * - Quita prefijos "input." de nombres de campos
- * - Limpia mensajes de error
- * - Oculta stack traces en producción
- * - Mensaje principal más claro
+ * DESARROLLO:
+ * - Estructura `validation` detallada: {"email": ["Email is required"]}
+ * - locations, path, timestamp, environment visibles
+ * - Mensaje técnico: "Validation error"
+ *
+ * PRODUCCIÓN:
+ * - Estructura `fieldErrors` user-friendly: [{"field": "email", "message": "..."}]
+ * - locations y path OCULTOS (seguridad)
+ * - Mensaje genérico: "Los datos proporcionados no son válidos."
+ *
+ * Mejoras sobre handler anterior:
+ * - ✅ Diferenciación DEV/PROD automática
+ * - ✅ Reutiliza BaseErrorHandler
+ * - ✅ Códigos de error consistentes
+ * - ✅ Quita prefijos "input." de campos
  */
-class CustomValidationErrorHandler implements ErrorHandler
+class CustomValidationErrorHandler extends BaseErrorHandler
 {
     /**
-     * Manejar el error
-     *
-     * @param Error|null $error
-     * @param \Closure $next
-     * @return array|null
+     * Determina si debe manejar ValidationException
      */
-    public function __invoke(?Error $error, \Closure $next): ?array
+    protected function shouldHandle(\Throwable $exception): bool
     {
-        // Si no hay error, pasar al siguiente handler
-        if ($error === null) {
-            return $next($error);
-        }
+        return $exception instanceof ValidationException;
+    }
 
-        $underlyingException = $error->getPrevious();
-
-        // Solo procesar ValidationException
-        if (!$underlyingException instanceof ValidationException) {
-            return $next($error);
-        }
-
-        // Dejar que el siguiente handler procese primero para obtener las extensiones
-        $result = $next($error);
-
-        // Si el resultado es null o no tiene extensiones de validación, retornar como está
-        if ($result === null || !isset($result['extensions']['validation'])) {
+    /**
+     * Formatea errores de validación
+     */
+    protected function formatError(array $result, \Throwable $exception): array
+    {
+        // Si no hay extensiones de validación, retornar como está
+        if (!isset($result['extensions']['validation'])) {
             return $result;
         }
 
-        // Limpiar nombres de campos en las extensiones
+        // Limpiar nombres de campos (quitar "input." prefix)
         $validationErrors = $result['extensions']['validation'];
         $cleanedErrors = $this->cleanValidationErrors($validationErrors);
 
-        // Reemplazar con errores limpios
-        $result['extensions']['validation'] = $cleanedErrors;
-        $result['message'] = 'Validation error';
-
-        // SIEMPRE quitar file/line/trace de Lighthouse para validation errors
-        // (son internos de Lighthouse, no útiles para el usuario)
-        unset($result['extensions']['file']);
-        unset($result['extensions']['line']);
-        unset($result['extensions']['trace']);
+        // Formatear según entorno
+        if (EnvironmentErrorFormatter::isProduction()) {
+            // PRODUCCIÓN: fieldErrors array (user-friendly para frontend)
+            $result['extensions']['fieldErrors'] = EnvironmentErrorFormatter::toFieldErrors($cleanedErrors);
+            unset($result['extensions']['validation']); // Quitar estructura técnica
+        } else {
+            // DESARROLLO: validation map (detallado para debugging)
+            $result['extensions']['validation'] = $cleanedErrors;
+        }
 
         return $result;
+    }
+
+    /**
+     * Código de error
+     */
+    protected function getErrorCode(\Throwable $exception): string
+    {
+        return ErrorCodeRegistry::VALIDATION_ERROR;
+    }
+
+    /**
+     * Mensaje para desarrollo (técnico)
+     */
+    protected function getDevelopmentMessage(\Throwable $exception): string
+    {
+        return 'Validation error';
+    }
+
+    /**
+     * Mensaje para producción (user-friendly)
+     */
+    protected function getProductionMessage(\Throwable $exception): string
+    {
+        return 'Los datos proporcionados no son válidos. Por favor verifica la información.';
     }
 
     /**

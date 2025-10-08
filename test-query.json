@@ -1,0 +1,3 @@
+{
+  "query": "mutation { register(input: { email: \"test@example.com\", password: \"SecurePass123!\", passwordConfirmation: \"WrongPassword!\", firstName: \"Test\", lastName: \"User\", acceptsTerms: true, acceptsPrivacyPolicy: true }) { accessToken } }"
+}

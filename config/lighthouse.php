@@ -331,10 +331,19 @@ return [
     */
 
     'error_handlers' => [
-        Nuwave\Lighthouse\Execution\AuthenticationErrorHandler::class,
-        Nuwave\Lighthouse\Execution\AuthorizationErrorHandler::class,
-        // Custom ValidationErrorHandler para mensajes limpios y profesionales
+        // Custom handlers profesionales (Chain of Responsibility)
+        // Orden importante: del más específico al más genérico
+
+        // 1. Errores de autenticación (401)
+        \App\Shared\GraphQL\Errors\CustomAuthenticationErrorHandler::class,
+
+        // 2. Errores de autorización (403)
+        \App\Shared\GraphQL\Errors\CustomAuthorizationErrorHandler::class,
+
+        // 3. Errores de validación (422)
         \App\Shared\GraphQL\Errors\CustomValidationErrorHandler::class,
+
+        // 4. Catch-all y logging (debe ir al final)
         Nuwave\Lighthouse\Execution\ReportingErrorHandler::class,
     ],
 
