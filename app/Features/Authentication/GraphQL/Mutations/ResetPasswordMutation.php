@@ -6,7 +6,7 @@ use App\Shared\GraphQL\Mutations\BaseMutation;
 
 class ResetPasswordMutation extends BaseMutation
 {
-    public function __invoke($root, array $args)
+    public function __invoke($root, array $args, $context = null)
     {
         // TODO: Implementar lógica real de reset password
         return true;
