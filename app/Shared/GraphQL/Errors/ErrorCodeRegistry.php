@@ -51,6 +51,15 @@ class ErrorCodeRegistry
     /** Refresh token inválido o expirado */
     public const INVALID_REFRESH_TOKEN = 'INVALID_REFRESH_TOKEN';
 
+    /** Refresh token requerido pero no proporcionado */
+    public const REFRESH_TOKEN_REQUIRED = 'REFRESH_TOKEN_REQUIRED';
+
+    /** Sesión no encontrada o no pertenece al usuario */
+    public const SESSION_NOT_FOUND = 'SESSION_NOT_FOUND';
+
+    /** No se puede revocar la sesión actual */
+    public const CANNOT_REVOKE_CURRENT_SESSION = 'CANNOT_REVOKE_CURRENT_SESSION';
+
     /** Cuenta de usuario suspendida */
     public const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED';
 
@@ -177,6 +186,9 @@ class ErrorCodeRegistry
             self::INVALID_CREDENTIALS => 'Invalid email or password',
             self::EMAIL_NOT_VERIFIED => 'Email address has not been verified',
             self::INVALID_REFRESH_TOKEN => 'Refresh token is invalid or expired',
+            self::REFRESH_TOKEN_REQUIRED => 'Refresh token is required',
+            self::SESSION_NOT_FOUND => 'Session not found or does not belong to user',
+            self::CANNOT_REVOKE_CURRENT_SESSION => 'Cannot revoke current session',
             self::ACCOUNT_SUSPENDED => 'User account is suspended',
 
             // Authorization
@@ -239,6 +251,9 @@ class ErrorCodeRegistry
             self::INVALID_CREDENTIALS,
             self::EMAIL_NOT_VERIFIED,
             self::INVALID_REFRESH_TOKEN,
+            self::REFRESH_TOKEN_REQUIRED,
+            self::SESSION_NOT_FOUND,
+            self::CANNOT_REVOKE_CURRENT_SESSION,
             self::ACCOUNT_SUSPENDED => 'authentication',
 
             self::FORBIDDEN,

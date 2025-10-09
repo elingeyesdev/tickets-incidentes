@@ -70,9 +70,15 @@ extend type Mutation {
     """
     Genera nuevo access token usando refresh token válido
     Invalida refresh token anterior por seguridad
+
+    El refresh token se puede enviar de 3 formas (en orden de prioridad):
+    1. Header X-Refresh-Token (recomendado)
+    2. Cookie refresh_token (para web)
+    3. Argumento refreshToken en body (para Apollo Studio/clientes que no permiten headers personalizados)
+
+    NO requiere access token - solo refresh token (el access token puede estar expirado)
     """
-    refreshToken: RefreshPayload!
-        @jwt
+    refreshToken(refreshToken: String): RefreshPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RefreshTokenMutation")
         @audit(action: "token_refresh")
 

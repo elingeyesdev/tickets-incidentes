@@ -3,17 +3,26 @@
 namespace App\Http\Middleware;
 
 use App\Features\Authentication\Services\TokenService;
+use App\Features\UserManagement\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * GraphQL JWT Middleware
  *
  * Extrae y valida JWT tokens del header Authorization
- * Agrega el usuario autenticado al contexto de GraphQL
+ * Autentica al usuario en Laravel para que Lighthouse pueda accederlo
  *
  * IMPORTANTE: No bloquea requests sin token (queries/mutations públicas deben funcionar)
  * La autenticación se valida a nivel de field con @jwt directive
+ *
+ * FLOW:
+ * 1. Extrae token del header Authorization
+ * 2. Valida token y obtiene user_id
+ * 3. Carga usuario desde BD
+ * 4. Autentica usuario en Laravel (Auth::setUser)
+ * 5. Lighthouse automáticamente pasa el usuario al contexto GraphQL
  */
 class GraphQLJWTMiddleware
 {
@@ -39,13 +48,24 @@ class GraphQLJWTMiddleware
                 // Validar token y extraer payload
                 $payload = $this->tokenService->validateAccessToken($token);
 
-                // Agregar al request para que esté disponible en resolvers
-                $request->attributes->set('jwt_payload', $payload);
-                $request->attributes->set('jwt_user_id', $payload->user_id ?? $payload->sub);
+                // Extraer user_id del payload
+                $userId = $payload->user_id ?? $payload->sub;
 
-                // IMPORTANTE: También agregamos el user_id a la request normal
-                // para que los resolvers puedan accederlo fácilmente
-                $request->merge(['_authenticated_user_id' => $payload->user_id ?? $payload->sub]);
+                if ($userId) {
+                    // Cargar usuario desde base de datos
+                    $user = User::find($userId);
+
+                    if ($user && $user->isActive()) {
+                        // ✅ CRÍTICO: Autenticar usuario en Laravel
+                        // Lighthouse automáticamente lo pasa al contexto GraphQL
+                        Auth::setUser($user);
+
+                        // Agregar metadata al request para uso adicional
+                        $request->attributes->set('jwt_payload', $payload);
+                        $request->attributes->set('jwt_user_id', $userId);
+                        $request->merge(['_authenticated_user_id' => $userId]);
+                    }
+                }
             } catch (\Exception $e) {
                 // Token inválido: NO bloqueamos el request
                 // La directiva @jwt manejará el error si el field requiere auth
@@ -59,7 +79,9 @@ class GraphQLJWTMiddleware
     /**
      * Extraer token del header Authorization
      *
-     * Soporta formato: "Bearer <token>"
+     * Soporta formatos:
+     * - "Bearer <token>" (estándar OAuth 2.0)
+     * - "<token>" (token directo, para compatibilidad con clientes GraphQL)
      *
      * @param Request $request
      * @return string|null
@@ -72,9 +94,15 @@ class GraphQLJWTMiddleware
             return null;
         }
 
-        // Formato esperado: "Bearer <token>"
+        // Formato 1: "Bearer <token>" (estándar OAuth 2.0)
         if (preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
             return $matches[1];
+        }
+
+        // Formato 2: Token directo (para compatibilidad con GraphQL Playground y otros clientes)
+        // Solo si parece un JWT (tiene al menos 2 puntos)
+        if (substr_count($header, '.') >= 2) {
+            return $header;
         }
 
         return null;

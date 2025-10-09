@@ -151,7 +151,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
         // Verificar en la base de datos
         $user = User::find($userId);
         $this->assertTrue($user->email_verified);
-        $this->assertNotNull($user->verified_at);
+        $this->assertNotNull($user->email_verified_at);
 
         // Verificar que el token fue eliminado del cache
         $this->assertNull(Cache::get("email_verification:{$userId}"));
@@ -273,7 +273,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
         ]);
 
         $message = $response->json('data.verifyEmail.message');
-        $this->assertStringContainsString('inválido', strtolower($message));
+        $this->assertStringContainsString('invalid', strtolower($message));
     }
 
     /**
@@ -313,7 +313,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
         ]);
 
         $message = $response->json('data.verifyEmail.message');
-        $this->assertStringContainsString('expirado', strtolower($message));
+        $this->assertStringContainsString('expired', strtolower($message));
     }
 
     /**

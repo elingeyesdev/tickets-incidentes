@@ -339,7 +339,10 @@ return [
         // Custom handlers profesionales (Chain of Responsibility)
         // Orden importante: del más específico al más genérico
 
-        // 1. Errores de autenticación (401)
+        // 0. Errores específicos de tokens JWT (más específico)
+        \App\Features\Authentication\GraphQL\Errors\TokenErrorHandler::class,
+
+        // 1. Errores de autenticación genéricos (401)
         \App\Shared\GraphQL\Errors\CustomAuthenticationErrorHandler::class,
 
         // 2. Errores de autorización (403)

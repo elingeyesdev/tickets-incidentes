@@ -3,6 +3,8 @@
 namespace App\Features\Authentication\Services;
 
 use App\Features\Authentication\Models\RefreshToken;
+use App\Features\Authentication\Exceptions\TokenInvalidException;
+use App\Features\Authentication\Exceptions\TokenExpiredException;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Exceptions\AuthenticationException;
 use Firebase\JWT\JWT;
@@ -108,24 +110,32 @@ class TokenService
             $requiredClaims = config('jwt.required_claims');
             foreach ($requiredClaims as $claim) {
                 if (!isset($decoded->$claim)) {
-                    throw new AuthenticationException("Missing required claim: {$claim}");
+                    throw TokenInvalidException::accessToken();
                 }
             }
 
-            // Verificar si está en blacklist (logout)
+            // Verificar si está en blacklist (logout simple)
             if ($this->isTokenBlacklisted($decoded->session_id ?? '')) {
-                throw new AuthenticationException('Token has been revoked');
+                throw TokenInvalidException::accessToken();
+            }
+
+            // Verificar si el usuario está en blacklist global (logout everywhere)
+            if ($this->isUserBlacklisted($decoded->user_id, $decoded->iat)) {
+                throw TokenInvalidException::accessToken();
             }
 
             return $decoded;
+        } catch (TokenInvalidException | TokenExpiredException $e) {
+            // Re-throw our custom exceptions
+            throw $e;
         } catch (\Firebase\JWT\ExpiredException $e) {
-            throw new AuthenticationException('Token has expired');
+            throw TokenExpiredException::accessToken();
         } catch (\Firebase\JWT\SignatureInvalidException $e) {
-            throw new AuthenticationException('Invalid token signature');
+            throw TokenInvalidException::accessToken();
         } catch (\Firebase\JWT\BeforeValidException $e) {
-            throw new AuthenticationException('Token not yet valid');
+            throw TokenInvalidException::accessToken();
         } catch (\Exception $e) {
-            throw new AuthenticationException('Invalid token: ' . $e->getMessage());
+            throw TokenInvalidException::accessToken();
         }
     }
 
@@ -143,19 +153,19 @@ class TokenService
         $refreshToken = RefreshToken::where('token_hash', $tokenHash)->first();
 
         if (!$refreshToken) {
-            throw new AuthenticationException('Invalid refresh token');
+            throw TokenInvalidException::refreshToken();
         }
 
         if ($refreshToken->isExpired()) {
-            throw new AuthenticationException('Refresh token has expired');
+            throw TokenExpiredException::refreshToken();
         }
 
         if ($refreshToken->isRevoked()) {
-            throw new AuthenticationException('Refresh token has been revoked');
+            throw TokenInvalidException::refreshToken();
         }
 
         if (!$refreshToken->user->isActive()) {
-            throw new AuthenticationException('User account is not active');
+            throw TokenInvalidException::refreshToken();
         }
 
         return $refreshToken;
@@ -180,14 +190,13 @@ class TokenService
 
         $user = $oldRefreshToken->user;
 
-        // Generar nuevo access token
-        $sessionId = Str::uuid()->toString();
-        $accessToken = $this->generateAccessToken($user, $sessionId);
-
         // ROTACIÓN: Invalidar refresh token viejo y crear uno nuevo
         $oldRefreshToken->revoke($user->id);
-
         $newRefreshTokenData = $this->createRefreshToken($user, $deviceInfo);
+
+        // Generar nuevo access token usando el ID del nuevo RefreshToken como session_id
+        $sessionId = $newRefreshTokenData['model']->id;
+        $accessToken = $this->generateAccessToken($user, $sessionId);
 
         return [
             'access_token' => $accessToken,
@@ -211,7 +220,7 @@ class TokenService
         $refreshToken = RefreshToken::where('token_hash', $tokenHash)->first();
 
         if (!$refreshToken) {
-            throw new AuthenticationException('Refresh token not found');
+            throw TokenInvalidException::refreshToken();
         }
 
         $refreshToken->revoke($revokedById);
@@ -265,6 +274,52 @@ class TokenService
         }
 
         return Cache::has($this->getBlacklistKey($sessionId));
+    }
+
+    /**
+     * Agregar usuario a blacklist global (logout everywhere)
+     * Invalida todos los access tokens del usuario generados antes de este momento
+     *
+     * @param string $userId
+     * @return void
+     */
+    public function blacklistUser(string $userId): void
+    {
+        if (!config('jwt.blacklist_enabled')) {
+            return;
+        }
+
+        // Guardar timestamp actual - todos los tokens anteriores quedan inválidos
+        $ttl = config('jwt.ttl') * 60; // Duración del access token en segundos
+
+        Cache::put(
+            $this->getUserBlacklistKey($userId),
+            time(), // Timestamp actual
+            now()->addSeconds($ttl + 300) // +5 min de margen para limpieza
+        );
+    }
+
+    /**
+     * Verificar si un usuario está en blacklist global
+     *
+     * @param string $userId
+     * @param int $tokenIssuedAt Timestamp 'iat' del token
+     * @return bool
+     */
+    public function isUserBlacklisted(string $userId, int $tokenIssuedAt): bool
+    {
+        if (!config('jwt.blacklist_enabled')) {
+            return false;
+        }
+
+        $blacklistedAt = Cache::get($this->getUserBlacklistKey($userId));
+
+        if (!$blacklistedAt) {
+            return false;
+        }
+
+        // Si el token fue emitido antes o igual al blacklist, está invalidado
+        return $tokenIssuedAt <= $blacklistedAt;
     }
 
     /**
@@ -325,6 +380,14 @@ class TokenService
     private function getBlacklistKey(string $sessionId): string
     {
         return "jwt_blacklist:{$sessionId}";
+    }
+
+    /**
+     * Generar key para blacklist de usuario en cache
+     */
+    private function getUserBlacklistKey(string $userId): string
+    {
+        return "jwt_user_blacklist:{$userId}";
     }
 
     /**

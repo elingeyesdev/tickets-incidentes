@@ -17,7 +17,7 @@ namespace App\Shared\Exceptions;
 class AuthenticationException extends HelpdeskException
 {
     protected string $category = 'authentication';
-    protected string $errorCode = 'AUTHENTICATION_FAILED';
+    protected string $errorCode = 'UNAUTHENTICATED';
 
     public static function invalidCredentials(): self
     {
@@ -58,6 +58,13 @@ class AuthenticationException extends HelpdeskException
     {
         $exception = new self('Debes verificar tu email antes de continuar.');
         $exception->errorCode = 'EMAIL_NOT_VERIFIED';
+        return $exception;
+    }
+
+    public static function unauthenticated(): self
+    {
+        $exception = new self('Authentication required: No valid token provided or token is invalid.');
+        $exception->errorCode = 'UNAUTHENTICATED';
         return $exception;
     }
 }

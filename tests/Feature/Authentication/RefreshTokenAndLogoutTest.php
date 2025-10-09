@@ -131,34 +131,10 @@ class RefreshTokenAndLogoutTest extends TestCase
             ->withRefreshToken($oldRefreshToken)
             ->graphQL($refreshQuery);
 
-        $secondRefresh->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $secondRefresh->assertGraphQLErrorMessage('Refresh token is invalid or has been revoked.');
 
         $errors = $secondRefresh->json('errors');
-        $this->assertEquals('TOKEN_INVALID', $errors[0]['extensions']['code']);
-    }
-
-    /**
-     * @test
-     * RefreshToken requiere autenticación JWT
-     */
-    public function refresh_token_requires_jwt_authentication(): void
-    {
-        $query = '
-            mutation {
-                refreshToken {
-                    accessToken
-                }
-            }
-        ';
-
-        // Act - Sin JWT access token
-        $response = $this->graphQL($query);
-
-        // Assert - Sistema global de errores
-        $response->assertGraphQLErrorMessage('Authentication required: No valid token provided or token is invalid.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
+        $this->assertEquals('INVALID_TOKEN', $errors[0]['extensions']['code']);
     }
 
     /**
@@ -219,7 +195,7 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $test1->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
 
         // Sesión 2 debe seguir funcionando
         $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
@@ -271,13 +247,13 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $test1->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
 
         $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
-        $test2->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $test2->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
 
         $test3 = $this->withJWT($session3['accessToken'])->graphQL($testQuery);
-        $test3->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $test3->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
     }
 
     /**
@@ -330,7 +306,7 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test = $this->withJWT($loginResponse['accessToken'])->graphQL($testQuery);
-        $test->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        $test->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
     }
 
     /**
@@ -403,8 +379,11 @@ class RefreshTokenAndLogoutTest extends TestCase
             ->withRefreshToken($loginResponse['refreshToken'])
             ->graphQL($refreshQuery);
 
-        // Assert - Debe fallar
-        $response->assertGraphQLErrorMessage('Token inválido o ya revocado');
+        // Assert - Debe fallar porque el refresh token fue revocado en el logout
+        $response->assertGraphQLErrorMessage('Refresh token is invalid or has been revoked.');
+
+        $errors = $response->json('errors');
+        $this->assertEquals('INVALID_TOKEN', $errors[0]['extensions']['code']);
     }
 
     /**

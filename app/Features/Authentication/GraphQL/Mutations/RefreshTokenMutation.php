@@ -3,6 +3,7 @@
 namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Features\Authentication\Services\AuthService;
+use App\Features\Authentication\Exceptions\RefreshTokenRequiredException;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Helpers\DeviceInfoParser;
@@ -13,7 +14,8 @@ use App\Shared\Helpers\DeviceInfoParser;
  * Genera nuevo access token usando refresh token válido.
  * Invalida el refresh token anterior por seguridad (rotate tokens).
  *
- * Requiere autenticación JWT (@jwt directive).
+ * NO requiere access token (puede estar expirado - ese es el punto del refresh!)
+ * Solo requiere refresh token válido.
  *
  * @usage GraphQL
  * ```graphql
@@ -39,46 +41,42 @@ class RefreshTokenMutation extends BaseMutation
     /**
      * Renovar tokens
      *
-     * IMPORTANTE: Esta mutation requiere @jwt directive.
-     * El usuario debe estar autenticado con un token válido.
-     * Necesitamos extraer el refresh token del request.
+     * IMPORTANTE: NO requiere @jwt directive.
+     * El access token puede estar expirado - por eso se hace refresh!
+     *
+     * El refresh token se puede enviar de 3 formas (orden de prioridad):
+     * 1. Header X-Refresh-Token (más seguro, recomendado)
+     * 2. Cookie refresh_token (para web)
+     * 3. Argumento en body (para clientes que no permiten headers personalizados)
      *
      * @param  mixed  $root
      * @param  array  $args
      * @param  \Nuwave\Lighthouse\Support\Contracts\GraphQLContext  $context
      * @return array RefreshPayload
-     * @throws AuthenticationException
+     * @throws RefreshTokenRequiredException
      */
     public function __invoke($root, array $args, $context = null): array
     {
-        // Obtener usuario autenticado (garantizado por @jwt directive)
-        $user = $context->user;
-
-        if (!$user) {
-            throw new AuthenticationException('Authentication required');
-        }
-
-        // Obtener refresh token del header o body
-        // Por seguridad, el refresh token debe enviarse en el Authorization header
-        // o en una cookie HttpOnly (implementación futura)
         $request = $context->request();
 
-        // Intentar obtener refresh token de diferentes fuentes:
-        // 1. Header X-Refresh-Token (recomendado para GraphQL)
-        // 2. Cookie refresh_token (para web)
+        // Intentar obtener refresh token de diferentes fuentes (en orden de prioridad):
+        // 1. Header X-Refresh-Token (más seguro, recomendado)
+        // 2. Cookie refresh_token (para web con HttpOnly cookies)
+        // 3. Argumento en body $args['refreshToken'] (para Apollo Studio y clientes limitados)
         $refreshToken = $request->header('X-Refresh-Token')
-            ?? $request->cookie('refresh_token');
+            ?? $request->cookie('refresh_token')
+            ?? $args['refreshToken']
+            ?? null;
 
         if (!$refreshToken) {
-            throw new AuthenticationException(
-                'Refresh token required. Send it via X-Refresh-Token header or refresh_token cookie.'
-            );
+            throw new RefreshTokenRequiredException();
         }
 
         // Extraer información del dispositivo
         $deviceInfo = DeviceInfoParser::fromGraphQLContext($context);
 
         // Llamar al servicio para renovar tokens
+        // El servicio valida el refresh token y obtiene el usuario internamente
         $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
 
         // Retornar en formato RefreshPayload (más simple que AuthPayload)

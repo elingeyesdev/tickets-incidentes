@@ -117,6 +117,16 @@ class User extends Model implements Authenticatable
     ];
 
     /**
+     * Accessors to append to JSON (para GraphQL UserAuthInfo)
+     */
+    protected $appends = [
+        'displayName',
+        'avatarUrl',
+        'theme',
+        'language',
+    ];
+
+    /**
      * Relación 1:1 con UserProfile
      */
     public function profile(): HasOne
@@ -329,6 +339,47 @@ class User extends Model implements Authenticatable
             companyId: $companyId,
             assignedBy: null
         );
+    }
+
+    // ==================== ACCESSORS FOR GRAPHQL ====================
+
+    /**
+     * Accessor: displayName para UserAuthInfo GraphQL type
+     * Computed from profile->first_name + profile->last_name
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->profile && $this->profile->first_name) {
+            return trim("{$this->profile->first_name} {$this->profile->last_name}");
+        }
+        return $this->email;
+    }
+
+    /**
+     * Accessor: avatarUrl para UserAuthInfo GraphQL type
+     * Direct access to profile->avatar_url
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->profile?->avatar_url ?? null;
+    }
+
+    /**
+     * Accessor: theme para UserAuthInfo GraphQL type
+     * Direct access to profile->theme
+     */
+    public function getThemeAttribute(): string
+    {
+        return $this->profile?->theme ?? 'light';
+    }
+
+    /**
+     * Accessor: language para UserAuthInfo GraphQL type
+     * Direct access to profile->language
+     */
+    public function getLanguageAttribute(): string
+    {
+        return $this->profile?->language ?? 'es';
     }
 
     // ==================== SCOPES ====================

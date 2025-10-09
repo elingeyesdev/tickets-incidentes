@@ -87,9 +87,7 @@ GRAPHQL;
             }
 
             // Cargar usuario completo con roles activos
-            $user = User::with(['roles' => function ($query) {
-                $query->where('is_active', true);
-            }])->find($userId);
+            $user = User::with(['activeRoles'])->find($userId);
 
             if (!$user) {
                 throw AuthenticationException::userNotFound();
@@ -123,8 +121,7 @@ GRAPHQL;
     private function validateUserRoles(User $user, array $requiredRoles): void
     {
         // Obtener roles activos del usuario (códigos)
-        $userRoleCodes = $user->roles
-            ->where('is_active', true)
+        $userRoleCodes = $user->activeRoles
             ->pluck('role_code')
             ->toArray();
 

@@ -84,10 +84,10 @@ class AuthService
             assignedBy: null   // Auto-asignado en registro
         );
 
-        // Generar tokens
-        $sessionId = Str::uuid()->toString();
-        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
+        // Generar tokens - RefreshToken PRIMERO para usar su ID como session_id
         $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
+        $sessionId = $refreshTokenData['model']->id; // Usar ID del RefreshToken como session_id
+        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
 
         // Crear token de verificación de email
         $verificationToken = $this->createEmailVerificationToken($user);
@@ -142,10 +142,10 @@ class AuthService
             'last_login_ip' => $deviceInfo['ip'] ?? request()->ip(),
         ]);
 
-        // Generar tokens
-        $sessionId = Str::uuid()->toString();
-        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
+        // Generar tokens - RefreshToken PRIMERO para usar su ID como session_id
         $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
+        $sessionId = $refreshTokenData['model']->id; // Usar ID del RefreshToken como session_id
+        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
 
         // Disparar evento
         event(new UserLoggedIn($user, $deviceInfo));
@@ -198,6 +198,9 @@ class AuthService
      */
     public function logoutAllDevices(string $userId): int
     {
+        // Blacklist global: invalida todos los access tokens existentes
+        $this->tokenService->blacklistUser($userId);
+
         // Revocar todos los refresh tokens
         $revokedCount = $this->tokenService->revokeAllUserTokens($userId, $userId);
 
