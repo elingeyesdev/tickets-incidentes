@@ -37,21 +37,8 @@ class CustomAuthenticationErrorHandler extends BaseErrorHandler
             return true;
         }
 
-        // Custom AuthenticationException del proyecto
-        if ($exception instanceof \App\Features\Authentication\Exceptions\AuthenticationException) {
-            return true;
-        }
-
-        // Excepciones específicas de autenticación
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidCredentialsException) {
-            return true;
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\EmailNotVerifiedException) {
-            return true;
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidRefreshTokenException) {
+        // Custom AuthenticationException del proyecto (Shared)
+        if ($exception instanceof \App\Shared\Exceptions\AuthenticationException) {
             return true;
         }
 
@@ -73,17 +60,9 @@ class CustomAuthenticationErrorHandler extends BaseErrorHandler
      */
     protected function getErrorCode(\Throwable $exception): string
     {
-        // Excepciones específicas → códigos específicos
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidCredentialsException) {
-            return ErrorCodeRegistry::INVALID_CREDENTIALS;
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\EmailNotVerifiedException) {
-            return ErrorCodeRegistry::EMAIL_NOT_VERIFIED;
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidRefreshTokenException) {
-            return ErrorCodeRegistry::INVALID_REFRESH_TOKEN;
+        // Si la excepción tiene getErrorCode(), usarlo
+        if ($exception instanceof \App\Shared\Exceptions\AuthenticationException) {
+            return $exception->getErrorCode();
         }
 
         // Default: UNAUTHENTICATED
@@ -110,17 +89,9 @@ class CustomAuthenticationErrorHandler extends BaseErrorHandler
      */
     protected function getProductionMessage(\Throwable $exception): string
     {
-        // Mensajes específicos según tipo de error
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidCredentialsException) {
-            return 'Credenciales incorrectas. Por favor verifica tu email y contraseña.';
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\EmailNotVerifiedException) {
-            return 'Tu cuenta no ha sido verificada. Por favor verifica tu email.';
-        }
-
-        if ($exception instanceof \App\Features\Authentication\Exceptions\InvalidRefreshTokenException) {
-            return 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+        // Usar mensaje de la excepción si es user-friendly
+        if ($exception instanceof \App\Shared\Exceptions\AuthenticationException) {
+            return $exception->getMessage();
         }
 
         // Mensaje genérico

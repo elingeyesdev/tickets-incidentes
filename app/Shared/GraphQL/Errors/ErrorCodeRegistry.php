@@ -51,6 +51,9 @@ class ErrorCodeRegistry
     /** Refresh token inválido o expirado */
     public const INVALID_REFRESH_TOKEN = 'INVALID_REFRESH_TOKEN';
 
+    /** Cuenta de usuario suspendida */
+    public const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED';
+
     // ========================================
     // AUTHORIZATION (403) - No tiene permisos
     // ========================================
@@ -174,6 +177,7 @@ class ErrorCodeRegistry
             self::INVALID_CREDENTIALS => 'Invalid email or password',
             self::EMAIL_NOT_VERIFIED => 'Email address has not been verified',
             self::INVALID_REFRESH_TOKEN => 'Refresh token is invalid or expired',
+            self::ACCOUNT_SUSPENDED => 'User account is suspended',
 
             // Authorization
             self::FORBIDDEN => 'User does not have permission',
@@ -234,7 +238,8 @@ class ErrorCodeRegistry
             self::INVALID_TOKEN,
             self::INVALID_CREDENTIALS,
             self::EMAIL_NOT_VERIFIED,
-            self::INVALID_REFRESH_TOKEN => 'authentication',
+            self::INVALID_REFRESH_TOKEN,
+            self::ACCOUNT_SUSPENDED => 'authentication',
 
             self::FORBIDDEN,
             self::INSUFFICIENT_ROLE,

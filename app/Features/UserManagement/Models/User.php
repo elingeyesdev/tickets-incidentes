@@ -312,6 +312,25 @@ class User extends Model implements Authenticatable
         ]);
     }
 
+    /**
+     * Asignar un rol al usuario
+     *
+     * @param string $roleCode Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
+     * @param string|null $companyId ID de la empresa (requerido para AGENT y COMPANY_ADMIN)
+     * @return \App\Features\UserManagement\Models\UserRole
+     */
+    public function assignRole(string $roleCode, ?string $companyId = null): UserRole
+    {
+        $roleService = app(\App\Features\UserManagement\Services\RoleService::class);
+
+        return $roleService->assignRoleToUser(
+            userId: $this->id,
+            roleCode: strtolower($roleCode), // Normalizar a lowercase (BD usa lowercase)
+            companyId: $companyId,
+            assignedBy: null
+        );
+    }
+
     // ==================== SCOPES ====================
 
     /**

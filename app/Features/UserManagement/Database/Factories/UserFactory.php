@@ -40,7 +40,6 @@ class UserFactory extends Factory
             'auth_provider' => 'local',
             'last_login_at' => fake()->optional()->dateTimeBetween('-30 days', 'now'),
             'last_login_ip' => fake()->optional()->ipv4(),
-            'last_activity_at' => fake()->optional()->dateTimeBetween('-7 days', 'now'),
             'terms_accepted' => true,
             'terms_accepted_at' => now()->subDays(rand(1, 365)),
             'terms_version' => 'v2.1',
@@ -109,7 +108,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'last_login_at' => now()->subMinutes(rand(1, 60)),
-            'last_activity_at' => now()->subMinutes(rand(1, 30)),
         ]);
     }
 
@@ -131,5 +129,29 @@ class UserFactory extends Factory
                 'notifications_tickets' => fake()->boolean(70),
             ], $profileOverrides));
         });
+    }
+
+    /**
+     * Usuario con rol asignado
+     *
+     * @param string $roleCode Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
+     * @param string|null $companyId ID de la empresa (requerido para AGENT y COMPANY_ADMIN)
+     */
+    public function withRole(string $roleCode, ?string $companyId = null): static
+    {
+        return $this->afterCreating(function (User $user) use ($roleCode, $companyId) {
+            $user->assignRole($roleCode, $companyId);
+        });
+    }
+
+    /**
+     * Usuario verificado (email verificado)
+     */
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified' => true,
+            'email_verified_at' => now(),
+        ]);
     }
 }

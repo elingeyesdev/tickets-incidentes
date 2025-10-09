@@ -119,17 +119,21 @@ class AuthService
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            throw new AuthenticationException('Invalid credentials');
+            throw AuthenticationException::invalidCredentials();
         }
 
         // Verificar password
         if (!Hash::check($password, $user->password_hash)) {
-            throw new AuthenticationException('Invalid credentials');
+            throw AuthenticationException::invalidCredentials();
         }
 
         // Verificar que el usuario esté activo
         if (!$user->isActive()) {
-            throw new AuthenticationException('User account is not active');
+            // Diferenciar entre suspendido y eliminado
+            if ($user->isSuspended()) {
+                throw AuthenticationException::accountSuspended();
+            }
+            throw AuthenticationException::invalidCredentials(); // Para deleted u otros estados
         }
 
         // Actualizar last_login

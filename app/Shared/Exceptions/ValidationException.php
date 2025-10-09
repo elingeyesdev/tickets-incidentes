@@ -24,6 +24,11 @@ class ValidationException extends HelpdeskException
         return new self('Errores de validación.', $errors);
     }
 
+    public static function withField(string $field, string $message): self
+    {
+        return new self($message, [$field => [$message]]);
+    }
+
     public static function fieldRequired(string $field): self
     {
         return new self("El campo '{$field}' es requerido.", [$field => ['required']]);
