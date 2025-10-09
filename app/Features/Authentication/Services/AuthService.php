@@ -292,13 +292,22 @@ class AuthService
     /**
      * Verificar email usando token
      *
-     * @param string $userId
-     * @param string $token
+     * Busca el usuario asociado al token en cache y verifica el email.
+     * Esta es la implementación profesional estándar (GitHub, Google, etc.)
+     *
+     * @param string $token Token de verificación
      * @return User
      * @throws AuthenticationException
      */
-    public function verifyEmail(string $userId, string $token): User
+    public function verifyEmail(string $token): User
     {
+        // Buscar userId que tiene este token
+        $userId = $this->findUserIdByVerificationToken($token);
+
+        if (!$userId) {
+            throw new AuthenticationException('Invalid or expired verification token');
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -309,7 +318,7 @@ class AuthService
             throw new AuthenticationException('Email already verified');
         }
 
-        // Verificar token
+        // Verificar que el token coincide
         $key = $this->getEmailVerificationKey($userId);
         $storedToken = Cache::get($key);
 
@@ -413,5 +422,35 @@ class AuthService
     private function getEmailVerificationKey(string $userId): string
     {
         return "email_verification:{$userId}";
+    }
+
+    /**
+     * Buscar userId asociado a un token de verificación
+     *
+     * Busca en todos los keys de email_verification:* en cache
+     * para encontrar cuál userId tiene este token
+     *
+     * @param string $token Token a buscar
+     * @return string|null UserId si se encuentra, null si no
+     */
+    private function findUserIdByVerificationToken(string $token): ?string
+    {
+        // Obtener todos los usuarios registrados recientemente (últimas 24 horas)
+        // que aún no han verificado su email
+        $recentUsers = User::where('email_verified', false)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->pluck('id');
+
+        // Buscar en cache cuál de estos usuarios tiene el token
+        foreach ($recentUsers as $userId) {
+            $key = $this->getEmailVerificationKey($userId);
+            $storedToken = Cache::get($key);
+
+            if ($storedToken === $token) {
+                return $userId;
+            }
+        }
+
+        return null;
     }
 }

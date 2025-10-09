@@ -33,8 +33,13 @@ return [
             // Always set the `Accept: application/json` header.
             Nuwave\Lighthouse\Http\Middleware\AcceptJson::class,
 
+            // JWT Authentication Middleware - Extracts and validates JWT tokens
+            // Adds user to context for @jwt directive validation
+            \App\Http\Middleware\GraphQLJWTMiddleware::class,
+
             // Logs in a user if they are authenticated. In contrast to Laravel's 'auth'
             // middleware, this delegates auth and permission checks to the field level.
+            // NOTE: Keep this for backward compatibility with @guard directive
             Nuwave\Lighthouse\Http\Middleware\AttemptAuthentication::class,
 
             // Logs every incoming GraphQL query.

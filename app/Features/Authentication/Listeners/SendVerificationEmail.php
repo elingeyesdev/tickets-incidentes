@@ -4,15 +4,17 @@ namespace App\Features\Authentication\Listeners;
 
 use App\Features\Authentication\Events\UserRegistered;
 use App\Features\Authentication\Jobs\SendEmailVerificationJob;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
  * Send Verification Email Listener
  *
  * Escucha el evento UserRegistered y dispara el job
  * para enviar el email de verificación.
+ *
+ * NOTA: Este listener NO implementa ShouldQueue porque el Event
+ * contiene el modelo User completo. Solo el Job debe estar queued.
  */
-class SendVerificationEmail implements ShouldQueue
+class SendVerificationEmail
 {
     /**
      * Handle the event.

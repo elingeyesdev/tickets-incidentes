@@ -9,10 +9,10 @@ This is a helpdesk system built with Laravel 12 backend, React 18 frontend via I
 
 ### Tech Stack
 - **Backend**: Laravel 12 + Lighthouse GraphQL 6
-- **Frontend Web**: React 19 + Inertia.js (TypeScript support available)
+- **Frontend Web**: React 19 + Inertia.js (TypeScript available)
 - **Database**: PostgreSQL 17 (4 schemas: auth, business, ticketing, audit)
 - **Authentication**: JWT with Refresh Tokens
-- **Build Tools**: Vite 7 + TailwindCSS 4
+- **Build Tools**: Vite 7 + TailwindCSS 4 (via @tailwindcss/vite)
 - **Development**: Docker + Docker Compose
 
 ### Docker Services
@@ -53,8 +53,9 @@ docker compose logs -f app
 **Windows-Specific Notes**:
 - Running on Laravel Herd (local PHP installation)
 - Use PowerShell for better command compatibility
-- Local PHP commands run faster than Docker for CPU-intensive tasks
-- Use `powershell -Command "php artisan ..."` for artisan commands when Docker is slow
+- Local PHP commands run faster than Docker for CPU-intensive tasks (especially `lighthouse:validate-schema`)
+- For artisan commands outside Docker: `php artisan [command]` (requires Herd or local PHP)
+- Docker exec syntax: `docker compose exec app php artisan [command]`
 
 **Testing**:
 ```bash
@@ -91,9 +92,9 @@ bash scripts/deploy-prod.sh     # Production deployment
 bash scripts/optimize-performance.sh  # Performance optimization
 ```
 
-**Artisan Custom Commands** (when needed):
+**Artisan Custom Commands** (planned - not yet implemented):
 ```bash
-# Generate feature components (custom commands - to be implemented)
+# Future custom generators for feature scaffolding
 php artisan make:feature [FeatureName]  # Create complete feature structure
 php artisan make:resolver [Feature]/[ResolverName]  # Create GraphQL resolver
 php artisan make:dataloader [Feature]/[LoaderName]  # Create DataLoader
@@ -303,6 +304,7 @@ Feature specifications and GraphQL schemas are in `/documentacion/`:
 ### Current State
 
 **Last Updated:** 08-Oct-2025
+**Branch:** backup/work-in-progress-2025-10-05
 
 #### ✅ COMPLETADO (Production-Ready)
 
@@ -543,6 +545,8 @@ public function __invoke($rootValue, array $args)
 - ✅ When a field might be called multiple times in a single query
 - ✅ When implementing `author`, `company`, `creator` fields on types
 - ❌ NOT needed for simple direct queries (single record fetch)
-- to memorize
-- to memorize
-- to memorize
+
+**Registration:**
+DataLoaders are automatically resolved by Lighthouse from the namespaces configured in `config/lighthouse.php`:
+- `App\Shared\GraphQL\DataLoaders`
+- `App\Features\[Feature]\GraphQL\DataLoaders`

@@ -163,7 +163,11 @@ services:
         condition: service_healthy
       app:
         condition: service_healthy
-    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    # Professional queue configuration:
+    # - Listen to multiple queues with priorities (emails > default)
+    # - emails: Email verification, password resets (high priority)
+    # - default: General background jobs
+    command: php artisan queue:work redis --queue=emails,default --verbose --tries=3 --timeout=90
     networks:
       - helpdesk
 

@@ -49,6 +49,15 @@ class User extends Model implements Authenticatable
     use AuthenticatableTrait;
 
     /**
+     * Factory para el modelo
+     * Feature-first: Factory está en app/Features/UserManagement/Database/Factories
+     */
+    protected static function newFactory()
+    {
+        return \App\Features\UserManagement\Database\Factories\UserFactory::new();
+    }
+
+    /**
      * Tabla en PostgreSQL
      */
     protected $table = 'auth.users';

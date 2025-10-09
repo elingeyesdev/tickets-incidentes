@@ -101,12 +101,17 @@ return [
     |
     | Supported drivers: "database-uuids", "dynamodb", "file", "null"
     |
+    | We use "file" for maximum reliability (no database dependency).
+    | Failed jobs are stored in storage/logs/laravel-failed-jobs.log
+    | TODO: Migrate to "database-uuids" in production for better querying.
+    |
     */
 
     'failed' => [
-        'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
+        'driver' => env('QUEUE_FAILED_DRIVER', 'file'),
         'database' => env('DB_CONNECTION', 'sqlite'),
         'table' => 'failed_jobs',
+        'path' => storage_path('logs/laravel-failed-jobs.log'),
     ],
 
 ];
