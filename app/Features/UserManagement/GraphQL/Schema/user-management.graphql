@@ -1,12 +1,12 @@
 # ================================================================================
-# USER MANAGEMENT FEATURE SCHEMA V9.0 - Sistema Helpdesk
-# REFACTORIZADO: Reutiliza shared types, sin nested innecesario
+# USER MANAGEMENT FEATURE SCHEMA V10.1 - Sistema Helpdesk
+# CORREGIDO: Payloads específicos, API profesional, sin over-fetching
 # ================================================================================
 
 extend type Query {
     """
     Usuario autenticado con información completa
-    Incluye perfil, roles activos y empresas relacionadas
+    Incluye perfil, roles activos (roleContexts) y estadísticas
     """
     me: User!
         @guard
@@ -23,6 +23,7 @@ extend type Query {
     """
     Lista paginada de usuarios del sistema
     Solo accesible por administradores
+    Máximo 50 registros por página
     """
     users(
         """Filtros de búsqueda"""
@@ -38,7 +39,8 @@ extend type Query {
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UsersQuery")
 
     """
-    Usuario específico por ID
+    Usuario específico por ID con información COMPLETA
+    Misma estructura que 'me' para consistencia
     Acceso según permisos del usuario autenticado
     """
     user(id: UUID!): User
@@ -47,24 +49,9 @@ extend type Query {
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UserQuery")
 
     """
-    Usuarios de una empresa específica
-    Solo accesible por admin/agentes de esa empresa
-    """
-    companyUsers(
-        """ID de la empresa"""
-        companyId: UUID!
-        """Filtros adicionales"""
-        filters: CompanyUserFilters
-        """Registros máximos"""
-        first: Int = 50
-    ): [UserCompanyInfo!]!
-        @guard(requires: [COMPANY_ADMIN, AGENT])
-        @company(requireOwnership: true)
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\CompanyUsersQuery")
-
-    """
     Roles disponibles en el sistema
     Lista estática de roles con sus descripciones
+    Cache de 1 hora para performance
     """
     availableRoles: [RoleInfo!]!
         @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
@@ -76,75 +63,54 @@ extend type Mutation {
     # ===== GESTIÓN DE PERFIL PROPIO =====
 
     """
-    Actualiza el perfil del usuario autenticado
-    Cualquier usuario puede modificar su propio perfil
+    Actualiza DATOS PERSONALES del perfil (firstName, lastName, phone, avatar)
+    Retorna SOLO el perfil actualizado (sin roleContexts, tickets, etc.)
+    Rate limit: 30 actualizaciones por hora
     """
-    updateMyProfile(input: UpdateProfileInput!): User!
+    updateMyProfile(input: UpdateProfileInput!): ProfileUpdatePayload!
         @guard
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyProfileMutation")
         @rateLimit(max: 30, window: 3600)
         @audit(action: "profile_update")
 
     """
-    Actualiza preferencias de interfaz y notificaciones
+    Actualiza PREFERENCIAS de interfaz y notificaciones (theme, language, notifications)
+    Retorna SOLO las preferencias actualizadas
+    Rate limit: 50 actualizaciones por hora (más frecuente que perfil)
     """
-    updateMyPreferences(input: PreferencesInput!): User!
+    updateMyPreferences(input: PreferencesInput!): PreferencesUpdatePayload!
         @guard
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyPreferencesMutation")
         @rateLimit(max: 50, window: 3600)
         @audit(action: "preferences_update")
 
-    """
-    Completa información del perfil después del registro
-    Para flujo de onboarding
-    """
-    completeMyProfile(input: CompleteProfileInput!): User!
-        @guard
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\CompleteMyProfileMutation")
-        @audit(action: "profile_complete")
-
     # ===== GESTIÓN DE USUARIOS (ADMIN) =====
-
-    """
-    Crea un nuevo usuario en el sistema
-    Solo accesible por platform admins
-    """
-    createUser(input: CreateUserInput!): User!
-        @guard(requires: [PLATFORM_ADMIN])
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\CreateUserMutation")
-        @rateLimit(max: 10, window: 3600)
-        @audit(action: "user_create", includePayload: true)
-
-    """
-    Actualiza información de un usuario específico
-    Admins pueden editar usuarios
-    """
-    updateUser(id: UUID!, input: UpdateUserInput!): User!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
-        @can(ability: "update", model: "User", find: "id")
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateUserMutation")
-        @audit(action: "user_update", includePayload: true)
 
     """
     Suspende temporalmente un usuario
     Invalida todas sus sesiones activas
+    Retorna SOLO userId y status actualizado
+    Solo accesible por platform admins
     """
-    suspendUser(id: UUID!, reason: String): User!
+    suspendUser(id: UUID!, reason: String): UserStatusPayload!
         @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\SuspendUserMutation")
         @audit(action: "user_suspend", includePayload: true)
 
     """
     Reactiva un usuario suspendido
+    Retorna SOLO userId y status actualizado
+    Solo accesible por platform admins
     """
-    activateUser(id: UUID!): User!
+    activateUser(id: UUID!): UserStatusPayload!
         @guard(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\ActivateUserMutation")
         @audit(action: "user_activate")
 
     """
     Elimina lógicamente un usuario (soft delete)
-    Anonimiza datos sensibles
+    Anonimiza datos sensibles según GDPR
+    Solo accesible por platform admins
     """
     deleteUser(id: UUID!, reason: String): Boolean!
         @guard(requires: [PLATFORM_ADMIN])
@@ -154,32 +120,27 @@ extend type Mutation {
     # ===== GESTIÓN DE ROLES =====
 
     """
-    Asigna un rol específico a un usuario
-    Si el rol requiere empresa, companyId es obligatorio
+    Asigna un rol a un usuario de manera INTELIGENTE:
+    - Si el rol existe inactivo: lo REACTIVA
+    - Si el rol no existe: lo CREA
+    - Si el rol requiere empresa, companyId es obligatorio
+    - Retorna información completa del resultado
     """
-    assignRole(input: AssignRoleInput!): UserRole!
+    assignRole(input: AssignRoleInput!): UserRoleResult!
         @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\AssignRoleMutation")
         @rateLimit(max: 100, window: 3600)
         @audit(action: "role_assign", includePayload: true)
 
     """
-    Revoca un rol específico de un usuario
-    Establece isActive = false
+    Remueve un rol de un usuario (soft delete - reversible)
+    Establece isActive = false, registra revokedAt y reason
+    Para reactivarlo, usar assignRole con los mismos parámetros
     """
-    revokeRole(userRoleId: UUID!, reason: String): Boolean!
+    removeRole(roleId: UUID!, reason: String): Boolean!
         @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\RevokeRoleMutation")
-        @audit(action: "role_revoke", includePayload: true)
-
-    """
-    Actualiza configuración de un rol específico
-    Permite cambiar estado o empresa asociada
-    """
-    updateUserRole(userRoleId: UUID!, input: UpdateUserRoleInput!): UserRole!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
-        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateUserRoleMutation")
-        @audit(action: "role_update", includePayload: true)
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\RemoveRoleMutation")
+        @audit(action: "role_remove", includePayload: true)
 }
 
 # ================================================================================
@@ -187,63 +148,38 @@ extend type Mutation {
 # ================================================================================
 
 """
-Usuario completo del sistema
+Usuario completo del sistema V10.1
+SOLO para queries: me, user(id)
+NO usado en mutations (usan Payloads específicos)
 """
 type User implements Node & Timestamped {
     # ===== IDENTIFICADORES =====
     id: UUID!
     userCode: String!
 
-    # ===== DATOS BÁSICOS =====
+    # ===== AUTENTICACIÓN =====
     email: Email!
     emailVerified: Boolean!
-    emailVerifiedAt: DateTime
     status: UserStatus!
     authProvider: AuthProvider!
 
     # ===== PERFIL =====
+    """Perfil del usuario con información personal y preferencias"""
     profile: UserProfile!
 
     # ===== ROLES (CONSISTENTE con Authentication) =====
     """
-    Contextos de roles activos
-    Misma estructura que login para consistencia
-    Usado para selector de roles y permisos
+    Contextos de roles ACTIVOS únicamente
+    Misma estructura que login/register para consistencia 100%
+    Reutiliza RoleContext de shared types
     """
     roleContexts: [RoleContext!]!
 
-    """
-    Historial completo de roles (activos e inactivos)
-    Para auditoría y gestión administrativa
-    """
-    roleHistory: [UserRole!]!
-
-    # ===== EMPRESAS RELACIONADAS =====
-    """
-    Empresas donde tiene roles activos
-    Reutiliza CompanyMinimal de shared types
-    """
-    companies: [CompanyMinimal!]!
-
-    # ===== ESTADOS CALCULADOS =====
-    """Si es admin de plataforma o empresa (calculado)"""
-    isAdmin: Boolean!
-
-    """Si puede crear tickets públicos (calculado)"""
-    canCreateTickets: Boolean!
-
-    # ===== ACTIVIDAD Y SEGURIDAD =====
-    lastLoginAt: DateTime
-    lastLoginIp: String
-    lastActivityAt: DateTime
-
-    # ===== TÉRMINOS =====
-    termsAccepted: Boolean!
-    termsAcceptedAt: DateTime
-    termsVersion: String
-
     # ===== ESTADÍSTICAS =====
+    """Total de tickets creados por el usuario"""
     ticketsCount: Int!
+
+    """Total de tickets resueltos (solo agentes)"""
     resolvedTicketsCount: Int!
 
     """
@@ -252,46 +188,137 @@ type User implements Node & Timestamped {
     """
     averageRating: Float
 
+    # ===== ACTIVIDAD =====
+    """Última vez que el usuario inició sesión"""
+    lastLoginAt: DateTime
+
+    """Última actividad registrada en el sistema"""
+    lastActivityAt: DateTime
+
     # ===== AUDITORÍA =====
     createdAt: DateTime!
     updatedAt: DateTime!
+
+    """Fecha de eliminación (soft delete)"""
     deletedAt: DateTime
 }
 
 """
-Perfil de usuario
-Información personal y preferencias
+Perfil de usuario V10.1
+Solo DATOS PERSONALES (sin preferencias)
 """
 type UserProfile {
-    # Información personal
+    # ===== INFORMACIÓN PERSONAL =====
     firstName: String!
     lastName: String!
     displayName: String!
     phoneNumber: String
     avatarUrl: URL
 
-    # Preferencias de interfaz
+    # ===== PREFERENCIAS (SEPARADAS en UserPreferences) =====
+    # Nota: Para obtener preferencias, usar UserPreferences
+    # Este type solo contiene datos personales
     theme: String!
     language: String!
     timezone: String!
-
-    # Preferencias de notificaciones
     pushWebNotifications: Boolean!
     notificationsTickets: Boolean!
 
-    # Actividad
+    # ===== ACTIVIDAD =====
     lastActivityAt: DateTime
 
-    # Auditoría
+    # ===== AUDITORÍA =====
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 """
-Rol asignado a un usuario
-Estructura CLARA: company estará presente según el tipo de rol
+Preferencias de usuario V10.1
+Solo PREFERENCIAS de interfaz y notificaciones
+Separado de UserProfile para claridad en mutations
 """
-type UserRole {
+type UserPreferences {
+    # ===== PREFERENCIAS DE INTERFAZ =====
+    theme: String!
+    language: String!
+    timezone: String!
+
+    # ===== PREFERENCIAS DE NOTIFICACIONES =====
+    pushWebNotifications: Boolean!
+    notificationsTickets: Boolean!
+
+    # ===== AUDITORÍA =====
+    updatedAt: DateTime!
+}
+
+# ===== PAYLOADS ESPECÍFICOS (Retornos de mutations) =====
+
+"""
+Resultado de updateMyProfile
+Retorna SOLO el perfil actualizado (sin roleContexts, tickets, etc.)
+"""
+type ProfileUpdatePayload {
+    """ID del usuario"""
+    userId: UUID!
+
+    """Perfil actualizado con datos personales"""
+    profile: UserProfile!
+
+    """Timestamp de la actualización"""
+    updatedAt: DateTime!
+}
+
+"""
+Resultado de updateMyPreferences
+Retorna SOLO las preferencias actualizadas
+"""
+type PreferencesUpdatePayload {
+    """ID del usuario"""
+    userId: UUID!
+
+    """Preferencias actualizadas"""
+    preferences: UserPreferences!
+
+    """Timestamp de la actualización"""
+    updatedAt: DateTime!
+}
+
+"""
+Resultado de suspendUser/activateUser
+Retorna SOLO userId y status actualizado
+"""
+type UserStatusPayload {
+    """ID del usuario"""
+    userId: UUID!
+
+    """Estado actualizado del usuario"""
+    status: UserStatus!
+
+    """Timestamp de la actualización"""
+    updatedAt: DateTime!
+}
+
+"""
+Resultado de asignación de rol V10.1
+Indica si fue creado o reactivado
+"""
+type UserRoleResult {
+    """Si la operación fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo del resultado ('asignado' o 'reactivado')"""
+    message: String!
+
+    """Información del rol asignado/reactivado"""
+    role: UserRoleInfo!
+}
+
+"""
+Información de rol asignado a un usuario V10.1
+Estructura CLARA: company estará presente según el tipo de rol
+Reutiliza CompanyMinimal y UserMinimal de shared types
+"""
+type UserRoleInfo {
     """ID único del registro de rol"""
     id: UUID!
 
@@ -301,12 +328,6 @@ type UserRole {
 
     """Nombre del rol"""
     roleName: String!
-
-    """Descripción del rol"""
-    roleDescription: String!
-
-    """Dashboard path por defecto"""
-    dashboardPath: String!
 
     # ===== EMPRESA (opcional, reutiliza CompanyMinimal) =====
     """
@@ -330,21 +351,12 @@ type UserRole {
     Reutiliza UserMinimal de shared types
     """
     assignedBy: UserMinimal
-
-    # ===== AUDITORÍA =====
-    """Cuándo fue revocado (null si activo)"""
-    revokedAt: DateTime
-
-    """Quién revocó el rol"""
-    revokedBy: UserMinimal
-
-    """Motivo de revocación"""
-    revocationReason: String
 }
 
 """
-Información de rol disponible en el sistema
-Para listado de roles y sus permisos
+Información de rol disponible en el sistema V10.1
+Para listado de roles y validaciones
+SIMPLIFICADO: Elimina permissions y priority
 """
 type RoleInfo {
     """Código único del rol"""
@@ -362,48 +374,16 @@ type RoleInfo {
     """Dashboard por defecto"""
     defaultDashboard: String!
 
-    """Lista de permisos"""
-    permissions: [String!]!
-
-    """Prioridad (1 = mayor)"""
-    priority: Int!
-
     """Si es rol del sistema (no personalizado)"""
     isSystemRole: Boolean!
 }
 
-"""
-Información de usuario en contexto de empresa
-Para listados de usuarios de una empresa
-"""
-type UserCompanyInfo {
-    """Usuario (reutiliza UserMinimal)"""
-    user: UserMinimal!
-
-    """Rol en esta empresa"""
-    roleCode: RoleCode!
-
-    """Nombre del rol"""
-    roleName: String!
-
-    """Si el rol está activo"""
-    isActive: Boolean!
-
-    """Cuándo se unió a la empresa"""
-    joinedAt: DateTime!
-
-    """Tickets asignados en esta empresa"""
-    ticketsAssigned: Int!
-
-    """Tickets resueltos en esta empresa"""
-    ticketsResolved: Int!
-
-    """Última actividad"""
-    lastActivityAt: DateTime
-}
-
 # ===== PAGINACIÓN =====
 
+"""
+Paginador de usuarios
+Reutiliza PaginatorInfo de shared types
+"""
 type UserPaginator {
     data: [User!]!
     paginatorInfo: PaginatorInfo!
@@ -414,7 +394,8 @@ type UserPaginator {
 # ================================================================================
 
 """
-Input para actualizar perfil propio
+Input para actualizar datos personales del perfil
+Solo campos modificables: firstName, lastName, phoneNumber, avatarUrl
 """
 input UpdateProfileInput {
     firstName: String
@@ -431,7 +412,8 @@ input UpdateProfileInput {
 }
 
 """
-Input para actualizar preferencias
+Input para actualizar preferencias de interfaz y notificaciones
+Separado de UpdateProfileInput (patrón profesional)
 """
 input PreferencesInput {
     theme: String
@@ -449,71 +431,8 @@ input PreferencesInput {
 }
 
 """
-Input para completar perfil (onboarding)
-"""
-input CompleteProfileInput {
-    phoneNumber: String
-        @rules(apply: ["min:10", "max:20"])
-
-    avatarUrl: URL
-        @rules(apply: ["url"])
-
-    theme: String
-        @rules(apply: ["in:light,dark"])
-
-    language: String
-        @rules(apply: ["in:es,en"])
-
-    timezone: String
-        @rules(apply: ["required", "timezone"])
-
-    pushWebNotifications: Boolean
-
-    notificationsTickets: Boolean
-}
-
-"""
-Input para crear usuario (admin)
-"""
-input CreateUserInput {
-    email: Email!
-        @rules(apply: ["required", "email", "unique:auth.users,email"])
-
-    password: String!
-        @rules(apply: ["required", "min:8"])
-
-    firstName: String!
-        @rules(apply: ["required", "min:2", "max:100"])
-
-    lastName: String!
-        @rules(apply: ["required", "min:2", "max:100"])
-
-    status: UserStatus = ACTIVE
-
-    """Roles iniciales a asignar"""
-    initialRoles: [AssignRoleInput!]
-
-    """Si enviar email de bienvenida"""
-    sendWelcomeEmail: Boolean = true
-}
-
-"""
-Input para actualizar usuario
-"""
-input UpdateUserInput {
-    email: Email
-        @rules(apply: ["email"])
-
-    status: UserStatus
-
-    profile: UpdateProfileInput
-
-    """Si forzar reverificación de email"""
-    forceEmailVerification: Boolean = false
-}
-
-"""
 Input para asignar rol a usuario
+Validación crítica: roles que requieren empresa deben tener companyId
 """
 input AssignRoleInput {
     """ID del usuario"""
@@ -525,24 +444,10 @@ input AssignRoleInput {
         @rules(apply: ["required"])
 
     """
-    ID de empresa (requerido solo si el rol requiere empresa)
-    AGENT y COMPANY_ADMIN requieren companyId
-    USER y PLATFORM_ADMIN no requieren companyId
+    ID de empresa (requerido SOLO si el rol requiere empresa)
+    - AGENT y COMPANY_ADMIN: requieren companyId
+    - USER y PLATFORM_ADMIN: NO requieren companyId (debe ser null)
     """
-    companyId: UUID
-
-    """Si el rol está activo desde el inicio"""
-    isActive: Boolean = true
-}
-
-"""
-Input para actualizar un rol de usuario
-"""
-input UpdateUserRoleInput {
-    """Cambiar estado activo/inactivo"""
-    isActive: Boolean
-
-    """Cambiar empresa asociada (solo si el rol requiere empresa)"""
     companyId: UUID
 }
 
@@ -562,7 +467,7 @@ input UserFilters {
     """Filtrar por email verificado"""
     emailVerified: Boolean
 
-    """Filtrar por empresa"""
+    """Filtrar por empresa (usuarios con rol en esta empresa)"""
     companyId: UUID
 
     """Filtrar por actividad reciente (últimos 7 días)"""
@@ -573,21 +478,8 @@ input UserFilters {
 }
 
 """
-Filtros para usuarios de empresa
-"""
-input CompanyUserFilters {
-    """Búsqueda de texto"""
-    search: String
-
-    """Filtrar por rol en la empresa"""
-    role: RoleCode
-
-    """Solo usuarios activos"""
-    activeOnly: Boolean = true
-}
-
-"""
 Ordenamiento de usuarios
+Reutiliza UserOrderField y SortOrder de shared enums
 """
 input UserOrderBy {
     field: UserOrderField!

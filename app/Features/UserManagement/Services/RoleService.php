@@ -85,13 +85,14 @@ class RoleService
     }
 
     /**
-     * Asignar rol a usuario
+     * Asignar rol a usuario (V10.1 - Lógica inteligente)
+     * CREA nuevo rol O REACTIVA si existe inactivo
      *
      * @param string $userId
      * @param string $roleCode
      * @param string|null $companyId
      * @param string|null $assignedBy
-     * @return UserRole
+     * @return array{success: bool, message: string, role: UserRole, wasReactivated: bool}
      * @throws NotFoundException
      * @throws ValidationException
      */
@@ -100,7 +101,7 @@ class RoleService
         string $roleCode,
         ?string $companyId = null,
         ?string $assignedBy = null
-    ): UserRole {
+    ): array {
         // Validar que el usuario existe
         $user = User::find($userId);
         if (!$user) {
@@ -135,8 +136,18 @@ class RoleService
         if ($existingRole) {
             // Si existe pero está revocado, reactivarlo
             if ($existingRole->isRevoked()) {
-                $existingRole->activate();
-                return $existingRole;
+                $existingRole->update([
+                    'is_active' => true,
+                    'revoked_at' => null,
+                    'revocation_reason' => null,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => "Rol {$roleCode} reactivado exitosamente",
+                    'role' => $existingRole->fresh(),
+                    'wasReactivated' => true,
+                ];
             }
 
             throw ValidationException::withField(
@@ -146,13 +157,20 @@ class RoleService
         }
 
         // Crear asignación de rol
-        return UserRole::create([
+        $newRole = UserRole::create([
             'user_id' => $userId,
             'role_code' => $roleCode,
             'company_id' => $companyId,
             'is_active' => true,
             'assigned_by' => $assignedBy,
         ]);
+
+        return [
+            'success' => true,
+            'message' => "Rol {$roleCode} asignado exitosamente",
+            'role' => $newRole,
+            'wasReactivated' => false,
+        ];
     }
 
     /**
@@ -182,6 +200,33 @@ class RoleService
         }
 
         $userRole->revoke();
+
+        return true;
+    }
+
+    /**
+     * Remover rol por ID (V10.1 - nuevo método)
+     * Soft delete reversible - puede reactivarse con assignRole
+     *
+     * @param string $roleId
+     * @param string|null $reason
+     * @return bool
+     * @throws NotFoundException
+     */
+    public function removeRoleById(string $roleId, ?string $reason = null): bool
+    {
+        $userRole = UserRole::find($roleId);
+
+        if (!$userRole) {
+            throw NotFoundException::resource('Asignación de rol', $roleId);
+        }
+
+        // Soft delete con razón
+        $userRole->update([
+            'is_active' => false,
+            'revoked_at' => now(),
+            'revocation_reason' => $reason,
+        ]);
 
         return true;
     }

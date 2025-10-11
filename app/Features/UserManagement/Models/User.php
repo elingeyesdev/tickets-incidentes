@@ -323,7 +323,7 @@ class User extends Model implements Authenticatable
     }
 
     /**
-     * Asignar un rol al usuario
+     * Asignar un rol al usuario (V10.1)
      *
      * @param string $roleCode Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
      * @param string|null $companyId ID de la empresa (requerido para AGENT y COMPANY_ADMIN)
@@ -333,12 +333,15 @@ class User extends Model implements Authenticatable
     {
         $roleService = app(\App\Features\UserManagement\Services\RoleService::class);
 
-        return $roleService->assignRoleToUser(
+        $result = $roleService->assignRoleToUser(
             userId: $this->id,
             roleCode: strtolower($roleCode), // Normalizar a lowercase (BD usa lowercase)
             companyId: $companyId,
             assignedBy: null
         );
+
+        // Retornar solo el UserRole (extraer del array result)
+        return $result['role'];
     }
 
     // ==================== ACCESSORS FOR GRAPHQL ====================

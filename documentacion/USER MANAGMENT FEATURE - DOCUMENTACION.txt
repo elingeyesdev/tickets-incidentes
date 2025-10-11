@@ -1,0 +1,1626 @@
+# 📘 USER MANAGEMENT API V10.1 - DOCUMENTACIÓN DEFINITIVA
+
+> Sistema Helpdesk Multi-Tenant
+> Feature: User Management
+> Schema Version: 10.1 (Definitivo - Listo para Producción)
+> Última actualización: Octubre 2025
+
+---
+
+## 🚨 CAMBIOS CRÍTICOS DE V9.0 A V10.1
+
+### ❌ PROBLEMAS ELIMINADOS:
+1. **Nomenclatura inconsistente** → `roleContexts` SIEMPRE
+2. **Redundancia de mutations** → Eliminadas `revokeRole`, `updateUserRole`, `completeMyProfile`
+3. **Campos calculados en API** → Eliminados `isAdmin`, `canCreateTickets` (frontend calcula)
+4. **Mutations innecesarias** → Eliminadas `createUser`, `updateUser`, `companyUsers`
+5. **Referencias a permisos** → Eliminadas (no existen en BD V7.0)
+
+### ✅ MEJORAS IMPLEMENTADAS:
+1. **API minimalista** → 5 queries + 6 mutations (vs 12 queries + 11 mutations en V9.0)
+2. **Nomenclatura consistente** → `roleContexts` en TODO el sistema
+3. **Separación clara** → `updateMyProfile` vs `updateMyPreferences` (patrón profesional)
+4. **Mutations inteligentes** → `assignRole` crea O reactiva automáticamente
+5. **Query completa** → `user(id)` retorna información completa como `me`
+
+---
+
+## 📋 TABLA DE CONTENIDOS
+
+1. [Introducción](#introducción)
+2. [Arquitectura](#arquitectura)
+3. [Queries](#queries)
+4. [Mutations](#mutations)
+5. [Types](#types)
+6. [Roles del Sistema](#roles-del-sistema)
+7. [Permisos y Seguridad](#permisos-y-seguridad)
+8. [Códigos de Error](#códigos-de-error)
+9. [Casos de Uso](#casos-de-uso)
+10. [Migración desde V9.0](#migración-desde-v90)
+
+---
+
+## 🎯 INTRODUCCIÓN
+
+### Propósito del Feature
+El **User Management Feature** gestiona usuarios, perfiles y roles en el sistema Helpdesk multi-tenant:
+- Gestión de usuarios (lectura y estados)
+- Administración de perfiles personales
+- Asignación y remoción de roles
+- Gestión de permisos por empresa
+- Multi-rol y multi-tenant
+
+### Características Principales
+✅ **API Minimalista**: Solo 11 operaciones esenciales
+✅ **Multi-Rol**: Un usuario puede tener múltiples roles
+✅ **Multi-Tenant**: Roles asociados a empresas específicas
+✅ **Profiles Separados**: Datos personales vs Preferencias
+✅ **Nomenclatura Consistente**: `roleContexts` en TODO el sistema
+✅ **Sin Redundancia**: Cada mutation tiene un propósito único
+
+---
+
+## 🗃️ ARQUITECTURA
+
+### Principios de Diseño V10.1
+
+#### ✅ **1. Consistencia Total con Authentication**
+
+```graphql
+# Authentication retorna (login/register):
+{
+    "roleContexts": [...]  # ✅ Establecido en Authentication
+}
+
+# User Management USA EL MISMO NOMBRE:
+type User {
+    roleContexts: [RoleContext!]!  # ✅ 100% Consistente
+}
+```
+
+#### ✅ **2. API Retorna Datos, Frontend Calcula Lógica**
+
+```graphql
+# ❌ ANTES V9.0
+type User {
+    isAdmin: Boolean!          # Lógica calculada
+    canCreateTickets: Boolean! # Lógica calculada
+}
+
+# ✅ AHORA V10.1
+type User {
+    roleContexts: [RoleContext!]!  # Solo datos
+}
+
+# Frontend calcula:
+const isAdmin = user.roleContexts.some(r => 
+    ['PLATFORM_ADMIN', 'COMPANY_ADMIN'].includes(r.roleCode)
+);
+```
+
+#### ✅ **3. Mutations Inteligentes (Menos es Más)**
+
+```graphql
+# ❌ ANTES V9.0 (3 mutations para roles)
+assignRole(...)      # Crear
+updateUserRole(...)  # Modificar
+revokeRole(...)      # Eliminar
+
+# ✅ AHORA V10.1 (2 mutations inteligentes)
+assignRole(...)      # Crea O reactiva automáticamente
+removeRole(...)      # Soft-delete (reversible)
+```
+
+#### ✅ **4. Separación Profesional de Concerns**
+
+```graphql
+# ✅ V10.1 - Patrón de APIs maduras (GitHub, Stripe, Slack)
+updateMyProfile(...)       # Datos personales (cambio poco frecuente)
+updateMyPreferences(...)   # Configuración app (cambio frecuente)
+
+# Beneficios:
+# - Rate limiting diferenciado
+# - Validaciones específicas
+# - Formularios separados en frontend
+# - Auditoría más clara
+```
+
+---
+
+## 🔍 QUERIES
+
+### 1. `me` - Usuario Autenticado
+
+**Descripción**: Obtiene información completa del usuario autenticado para contexto de aplicación.
+
+**Firma:**
+```graphql
+me: User!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+
+**Request:**
+```graphql
+query Me {
+    me {
+        # Identificadores
+        id
+        userCode
+
+        # Datos básicos
+        email
+        emailVerified
+        status
+        authProvider
+
+        # Perfil
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+        }
+
+        # Roles ACTIVOS (consistente con Authentication)
+        roleContexts {
+            roleCode
+            roleName
+            company {
+                id
+                companyCode
+                name
+                logoUrl
+            }
+            dashboardPath
+        }
+
+        # Estadísticas
+        ticketsCount
+        resolvedTicketsCount
+        averageRating
+
+        # Auditoría
+        lastLoginAt
+        createdAt
+        updatedAt
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "data": {
+        "me": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "userCode": "USR-2025-00123",
+            "email": "maria.garcia@empresa.com",
+            "emailVerified": true,
+            "status": "ACTIVE",
+            "authProvider": "LOCAL",
+            "profile": {
+                "firstName": "María",
+                "lastName": "García",
+                "displayName": "María García",
+                "phoneNumber": "+591 70123456",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+                "theme": "dark",
+                "language": "es",
+                "timezone": "America/La_Paz",
+                "pushWebNotifications": true,
+                "notificationsTickets": false
+            },
+            "roleContexts": [
+                {
+                    "roleCode": "USER",
+                    "roleName": "Cliente",
+                    "company": null,
+                    "dashboardPath": "/tickets"
+                },
+                {
+                    "roleCode": "AGENT",
+                    "roleName": "Agente de Soporte",
+                    "company": {
+                        "id": "cmp-001",
+                        "companyCode": "CMP-2025-00001",
+                        "name": "Universidad del Valle",
+                        "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png"
+                    },
+                    "dashboardPath": "/agent/dashboard"
+                }
+            ],
+            "ticketsCount": 47,
+            "resolvedTicketsCount": 23,
+            "averageRating": 4.3,
+            "lastLoginAt": "2025-10-03T14:45:00Z",
+            "createdAt": "2025-01-15T08:00:00Z",
+            "updatedAt": "2025-09-20T14:22:00Z"
+        }
+    }
+}
+```
+
+**Casos de Uso:**
+- Header de usuario en interfaz
+- Página completa de perfil
+- Validación de permisos
+- Selector de roles/empresas
+
+---
+
+### 2. `myProfile` - Perfil Personal
+
+**Descripción**: Obtiene solo la información del perfil del usuario autenticado.
+
+**Firma:**
+```graphql
+myProfile: UserProfile!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+
+**Request:**
+```graphql
+query MyProfile {
+    myProfile {
+        firstName
+        lastName
+        displayName
+        phoneNumber
+        avatarUrl
+        theme
+        language
+        timezone
+        pushWebNotifications
+        notificationsTickets
+        lastActivityAt
+        createdAt
+        updatedAt
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "data": {
+        "myProfile": {
+            "firstName": "María",
+            "lastName": "García",
+            "displayName": "María García",
+            "phoneNumber": "+591 70123456",
+            "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
+            "theme": "dark",
+            "language": "es",
+            "timezone": "America/La_Paz",
+            "pushWebNotifications": true,
+            "notificationsTickets": false,
+            "lastActivityAt": "2025-10-03T15:30:00Z",
+            "createdAt": "2025-01-15T08:00:00Z",
+            "updatedAt": "2025-09-20T14:22:00Z"
+        }
+    }
+}
+```
+
+**Casos de Uso:**
+- Formularios de edición de perfil
+- Página de configuración personal
+
+---
+
+### 3. `users` - Lista Paginada de Usuarios
+
+**Descripción**: Lista paginada de usuarios con filtros avanzados. Solo administradores.
+
+**Firma:**
+```graphql
+users(
+    filters: UserFilters
+    orderBy: [UserOrderBy!]
+    page: Int = 1
+    first: Int = 15
+): UserPaginator!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])`: Solo admins
+- `@paginate(maxCount: 50)`: Máximo 50 por página
+
+**Request:**
+```graphql
+query Users(
+    $filters: UserFilters
+    $orderBy: [UserOrderBy!]
+    $page: Int
+    $first: Int
+) {
+    users(
+        filters: $filters
+        orderBy: $orderBy
+        page: $page
+        first: $first
+    ) {
+        data {
+            id
+            userCode
+            email
+            emailVerified
+            status
+            profile {
+                firstName
+                lastName
+                displayName
+                avatarUrl
+            }
+            roleContexts {
+                roleCode
+                roleName
+                company {
+                    id
+                    name
+                }
+                dashboardPath
+            }
+            lastLoginAt
+            ticketsCount
+            createdAt
+        }
+        paginatorInfo {
+            total
+            perPage
+            currentPage
+            lastPage
+            hasMorePages
+        }
+    }
+}
+```
+
+**Variables:**
+```json
+{
+    "filters": {
+        "search": "maria",
+        "status": "ACTIVE",
+        "role": "AGENT",
+        "emailVerified": true,
+        "companyId": "cmp-001",
+        "recentActivity": true
+    },
+    "orderBy": [
+        {
+            "field": "LAST_LOGIN_AT",
+            "order": "DESC"
+        }
+    ],
+    "page": 1,
+    "first": 20
+}
+```
+
+**Filtros Disponibles:**
+
+| Filtro | Tipo | Descripción |
+|--------|------|-------------|
+| `search` | String | Busca en email/nombre |
+| `status` | UserStatus | ACTIVE, SUSPENDED, DELETED |
+| `role` | RoleCode | USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN |
+| `emailVerified` | Boolean | Si email está verificado |
+| `companyId` | UUID | Usuarios con rol en una empresa |
+| `recentActivity` | Boolean | Activos últimos 7 días |
+| `createdBetween` | DateRange | Rango de fecha de creación |
+
+**Casos de Uso:**
+- Panel de administración de usuarios
+- Búsqueda de usuarios para asignar roles
+- Reportes de actividad
+
+---
+
+### 4. `user` - Usuario Específico (COMPLETO)
+
+**Descripción**: Obtiene información **COMPLETA** de un usuario por ID. Igual que `me` pero para cualquier usuario.
+
+**Firma:**
+```graphql
+user(id: UUID!): User
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@can(ability: "view", model: "User", find: "id")`: Valida permisos
+
+**Request:**
+```graphql
+query User($id: UUID!) {
+    user(id: $id) {
+        # MISMOS CAMPOS QUE 'me'
+        id
+        userCode
+        email
+        emailVerified
+        status
+        authProvider
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+        }
+        roleContexts {
+            roleCode
+            roleName
+            company {
+                id
+                name
+                logoUrl
+            }
+            dashboardPath
+        }
+        ticketsCount
+        resolvedTicketsCount
+        averageRating
+        lastLoginAt
+        createdAt
+        updatedAt
+    }
+}
+```
+
+**Variables:**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Cambios vs V9.0:**
+- ✅ Ahora retorna `User` completo (antes estaba limitado)
+- ✅ Misma información que `me` (consistencia)
+
+**Casos de Uso:**
+- Página de detalle de usuario (admin)
+- Modal de información completa
+- Verificación antes de asignar roles
+
+---
+
+### 5. `availableRoles` - Roles Disponibles
+
+**Descripción**: Lista de roles del sistema con sus descripciones.
+
+**Firma:**
+```graphql
+availableRoles: [RoleInfo!]!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])`: Solo admins
+- `@cache(ttl: 3600)`: Cache de 1 hora
+
+**Request:**
+```graphql
+query AvailableRoles {
+    availableRoles {
+        code
+        name
+        description
+        requiresCompany
+        defaultDashboard
+        isSystemRole
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "data": {
+        "availableRoles": [
+            {
+                "code": "PLATFORM_ADMIN",
+                "name": "Administrador de Plataforma",
+                "description": "Acceso completo a todo el sistema",
+                "requiresCompany": false,
+                "defaultDashboard": "/admin/dashboard",
+                "isSystemRole": true
+            },
+            {
+                "code": "COMPANY_ADMIN",
+                "name": "Administrador de Empresa",
+                "description": "Gestiona una empresa específica",
+                "requiresCompany": true,
+                "defaultDashboard": "/empresa/dashboard",
+                "isSystemRole": true
+            },
+            {
+                "code": "AGENT",
+                "name": "Agente de Soporte",
+                "description": "Atiende tickets de soporte",
+                "requiresCompany": true,
+                "defaultDashboard": "/agent/dashboard",
+                "isSystemRole": true
+            },
+            {
+                "code": "USER",
+                "name": "Cliente",
+                "description": "Usuario que crea tickets",
+                "requiresCompany": false,
+                "defaultDashboard": "/tickets",
+                "isSystemRole": true
+            }
+        ]
+    }
+}
+```
+
+**Casos de Uso:**
+- Selector de roles en formularios
+- Documentación de roles
+- Validación de asignaciones
+
+---
+
+## ✏️ MUTATIONS
+
+### 1. `updateMyProfile` - Actualizar Datos Personales
+
+**Descripción**: Permite actualizar **datos personales** del perfil (firstName, lastName, phone, avatar).
+
+**Firma:**
+```graphql
+updateMyProfile(input: UpdateProfileInput!): User!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@rateLimit(max: 30, window: 3600)`: Máximo 30 actualizaciones por hora
+- `@audit(action: "profile_update")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation UpdateMyProfile($input: UpdateProfileInput!) {
+    updateMyProfile(input: $input) {
+        id
+        profile {
+            firstName
+            lastName
+            displayName
+            phoneNumber
+            avatarUrl
+            updatedAt
+        }
+    }
+}
+```
+
+**Variables:**
+```json
+{
+    "input": {
+        "firstName": "María Alejandra",
+        "lastName": "García Rodríguez",
+        "phoneNumber": "+591 75987654",
+        "avatarUrl": "https://storage.helpdesk.com/avatars/new_avatar.jpg"
+    }
+}
+```
+
+**Validaciones:**
+- `firstName`: mínimo 2, máximo 100 caracteres
+- `lastName`: mínimo 2, máximo 100 caracteres
+- `phoneNumber`: entre 10 y 20 caracteres
+- `avatarUrl`: URL válida
+
+**Response:**
+```json
+{
+    "data": {
+        "updateMyProfile": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "profile": {
+                "firstName": "María Alejandra",
+                "lastName": "García Rodríguez",
+                "displayName": "María Alejandra García Rodríguez",
+                "phoneNumber": "+591 75987654",
+                "avatarUrl": "https://storage.helpdesk.com/avatars/new_avatar.jpg",
+                "updatedAt": "2025-10-03T16:30:00Z"
+            }
+        }
+    }
+}
+```
+
+**Casos de Uso:**
+- Formulario "Editar Perfil"
+- Actualizar foto de perfil
+- Cambiar número de teléfono
+
+---
+
+### 2. `updateMyPreferences` - Actualizar Preferencias
+
+**Descripción**: Permite actualizar **preferencias de aplicación** (theme, language, notifications).
+
+**Firma:**
+```graphql
+updateMyPreferences(input: PreferencesInput!): User!
+```
+
+**Directivas:**
+- `@auth`: Requiere autenticación
+- `@rateLimit(max: 50, window: 3600)`: Máximo 50 actualizaciones por hora
+- `@audit(action: "preferences_update")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation UpdateMyPreferences($input: PreferencesInput!) {
+    updateMyPreferences(input: $input) {
+        id
+        profile {
+            theme
+            language
+            timezone
+            pushWebNotifications
+            notificationsTickets
+            updatedAt
+        }
+    }
+}
+```
+
+**Variables:**
+```json
+{
+    "input": {
+        "theme": "dark",
+        "language": "en",
+        "timezone": "America/New_York",
+        "pushWebNotifications": false,
+        "notificationsTickets": true
+    }
+}
+```
+
+**Validaciones:**
+- `theme`: debe ser "light" o "dark"
+- `language`: debe ser "es" o "en"
+- `timezone`: zona horaria IANA válida
+
+**Response:**
+```json
+{
+    "data": {
+        "updateMyPreferences": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "profile": {
+                "theme": "dark",
+                "language": "en",
+                "timezone": "America/New_York",
+                "pushWebNotifications": false,
+                "notificationsTickets": true,
+                "updatedAt": "2025-10-03T16:35:00Z"
+            }
+        }
+    }
+}
+```
+
+**Casos de Uso:**
+- Toggle de tema dark/light
+- Cambio de idioma
+- Configuración de notificaciones
+
+**¿Por qué separado de `updateMyProfile`?**
+- ✅ Patrón profesional (GitHub, Stripe, Slack)
+- ✅ Rate limiting diferenciado (preferencias cambian más frecuente)
+- ✅ Validaciones diferentes
+- ✅ Formularios separados en frontend
+
+---
+
+### 3. `suspendUser` - Suspender Usuario
+
+**Descripción**: Suspende temporalmente un usuario del sistema.
+
+**Firma:**
+```graphql
+suspendUser(id: UUID!, reason: String): User!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN])`: Solo platform admins
+- `@audit(action: "user_suspend", includePayload: true)`: Auditoría completa
+
+**Request:**
+```graphql
+mutation SuspendUser($id: UUID!, $reason: String) {
+    suspendUser(id: $id, reason: $reason) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Variables:**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Violación de términos de servicio - spam de tickets"
+}
+```
+
+**Efectos:**
+- Cambia status a "SUSPENDED"
+- Invalida todos los tokens activos
+- Registra motivo en auditoría
+- Envía notificación al usuario
+
+**Response:**
+```json
+{
+    "data": {
+        "suspendUser": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "status": "SUSPENDED",
+            "updatedAt": "2025-10-03T16:40:00Z"
+        }
+    }
+}
+```
+
+---
+
+### 4. `activateUser` - Activar Usuario
+
+**Descripción**: Reactiva un usuario suspendido.
+
+**Firma:**
+```graphql
+activateUser(id: UUID!): User!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN])`: Solo platform admins
+- `@audit(action: "user_activate")`: Auditoría automática
+
+**Request:**
+```graphql
+mutation ActivateUser($id: UUID!) {
+    activateUser(id: $id) {
+        id
+        status
+        updatedAt
+    }
+}
+```
+
+**Efectos:**
+- Cambia status a "ACTIVE"
+- Permite nuevo login
+- Registra reactivación en auditoría
+
+**Response:**
+```json
+{
+    "data": {
+        "activateUser": {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "status": "ACTIVE",
+            "updatedAt": "2025-10-03T16:45:00Z"
+        }
+    }
+}
+```
+
+---
+
+### 5. `deleteUser` - Eliminar Usuario (Soft Delete)
+
+**Descripción**: Elimina lógicamente un usuario (soft delete).
+
+**Firma:**
+```graphql
+deleteUser(id: UUID!, reason: String): Boolean!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN])`: Solo platform admins
+- `@audit(action: "user_delete", includePayload: true)`: Auditoría completa
+
+**Request:**
+```graphql
+mutation DeleteUser($id: UUID!, $reason: String) {
+    deleteUser(id: $id, reason: $reason)
+}
+```
+
+**Variables:**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Solicitud del usuario - GDPR compliance"
+}
+```
+
+**Efectos:**
+- Cambia status a "DELETED"
+- Establece deletedAt timestamp
+- Anonimiza datos sensibles
+- Mantiene registros para auditoría
+
+**Response:**
+```json
+{
+    "data": {
+        "deleteUser": true
+    }
+}
+```
+
+---
+
+### 6. `assignRole` - Asignar Rol (Inteligente)
+
+**Descripción**: Asigna un rol a un usuario. **Crea nuevo O reactiva si existe inactivo.**
+
+**Firma:**
+```graphql
+assignRole(input: AssignRoleInput!): UserRoleResult!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])`: Solo admins
+- `@rateLimit(max: 100, window: 3600)`: Máximo 100 asignaciones por hora
+- `@audit(action: "role_assign", includePayload: true)`: Auditoría completa
+
+**Request:**
+```graphql
+mutation AssignRole($input: AssignRoleInput!) {
+    assignRole(input: $input) {
+        success
+        message
+        role {
+            id
+            roleCode
+            roleName
+            company {
+                id
+                name
+                logoUrl
+            }
+            isActive
+            assignedAt
+        }
+    }
+}
+```
+
+**Variables (Rol CON Empresa - AGENT):**
+```json
+{
+    "input": {
+        "userId": "550e8400-e29b-41d4-a716-446655440000",
+        "roleCode": "AGENT",
+        "companyId": "cmp-001"
+    }
+}
+```
+
+**Variables (Rol SIN Empresa - USER):**
+```json
+{
+    "input": {
+        "userId": "550e8400-e29b-41d4-a716-446655440000",
+        "roleCode": "USER"
+    }
+}
+```
+
+**Validaciones Críticas:**
+
+| Rol | Requiere Empresa | companyId |
+|-----|------------------|-----------|
+| USER | ❌ NO | Debe ser null |
+| PLATFORM_ADMIN | ❌ NO | Debe ser null |
+| AGENT | ✅ SÍ | Obligatorio |
+| COMPANY_ADMIN | ✅ SÍ | Obligatorio |
+
+**Response (Nuevo Rol):**
+```json
+{
+    "data": {
+        "assignRole": {
+            "success": true,
+            "message": "Rol AGENT asignado exitosamente",
+            "role": {
+                "id": "role-123",
+                "roleCode": "AGENT",
+                "roleName": "Agente de Soporte",
+                "company": {
+                    "id": "cmp-001",
+                    "name": "Universidad del Valle",
+                    "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png"
+                },
+                "isActive": true,
+                "assignedAt": "2025-10-03T16:45:00Z"
+            }
+        }
+    }
+}
+```
+
+**Response (Rol Reactivado):**
+```json
+{
+    "data": {
+        "assignRole": {
+            "success": true,
+            "message": "Rol AGENT reactivado exitosamente",
+            "role": {
+                "id": "role-123",
+                "roleCode": "AGENT",
+                "roleName": "Agente de Soporte",
+                "company": {
+                    "id": "cmp-001",
+                    "name": "Universidad del Valle",
+                    "logoUrl": "https://storage.helpdesk.com/logos/cmp_001.png"
+                },
+                "isActive": true,
+                "assignedAt": "2025-03-10T10:15:00Z"
+            }
+        }
+    }
+}
+```
+
+**Lógica Inteligente:**
+```typescript
+// Backend Service
+if (rolExisteInactivo) {
+    // Reactivar
+    rol.isActive = true;
+    rol.revokedAt = null;
+    return { success: true, message: "reactivado" };
+} else {
+    // Crear nuevo
+    return crearNuevoRol();
+}
+```
+
+**Errores:**
+```json
+{
+    "errors": [
+        {
+            "message": "El rol AGENT requiere empresa asociada",
+            "extensions": {
+                "code": "ROLE_REQUIRES_COMPANY",
+                "roleCode": "AGENT"
+            }
+        }
+    ]
+}
+```
+
+---
+
+### 7. `removeRole` - Remover Rol (Soft Delete)
+
+**Descripción**: Desactiva un rol de un usuario (soft delete, reversible con `assignRole`).
+
+**Firma:**
+```graphql
+removeRole(roleId: UUID!, reason: String): Boolean!
+```
+
+**Directivas:**
+- `@auth(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])`: Solo admins
+- `@audit(action: "role_remove", includePayload: true)`: Auditoría completa
+
+**Request:**
+```graphql
+mutation RemoveRole($roleId: UUID!, $reason: String) {
+    removeRole(roleId: $roleId, reason: $reason)
+}
+```
+
+**Variables:**
+```json
+{
+    "roleId": "role-002",
+    "reason": "Usuario dejó de trabajar en la empresa"
+}
+```
+
+**Efectos:**
+- Establece `isActive = false`
+- Registra `revokedAt` timestamp
+- Guarda `revocationReason`
+- Invalida permisos derivados
+
+**Response:**
+```json
+{
+    "data": {
+        "removeRole": true
+    }
+}
+```
+
+**NOTA:** Para reactivar el rol, usar `assignRole` con los mismos parámetros.
+
+---
+
+## 📦 TYPES
+
+### User (Simplificado V10.1)
+
+**Descripción**: Usuario completo del sistema.
+
+```graphql
+type User {
+    # Identificadores
+    id: UUID!
+    userCode: String!
+    
+    # Autenticación
+    email: Email!
+    emailVerified: Boolean!
+    status: UserStatus!
+    authProvider: AuthProvider!
+    
+    # Perfil
+    profile: UserProfile!
+    
+    # Roles ACTIVOS únicamente (consistente con Authentication)
+    roleContexts: [RoleContext!]!
+    
+    # Estadísticas
+    ticketsCount: Int!
+    resolvedTicketsCount: Int!
+    averageRating: Float  # Nullable - solo agentes con tickets
+    
+    # Auditoría
+    lastLoginAt: DateTime
+    lastActivityAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+```
+
+**Campos Eliminados vs V9.0:**
+- ❌ `roleHistory` → Eliminado (no necesario para V1.0)
+- ❌ `companies` → Derivar de `roleContexts[].company`
+- ❌ `isAdmin` → Calcular en frontend
+- ❌ `canCreateTickets` → Calcular en frontend
+
+**Lógica de Frontend (Helpers):**
+
+```typescript
+// src/features/user-management/utils/userHelpers.ts
+
+export const isAdmin = (user: User): boolean => {
+    return user.roleContexts.some(role => 
+        ['PLATFORM_ADMIN', 'COMPANY_ADMIN'].includes(role.roleCode)
+    );
+};
+
+export const canCreateTickets = (user: User): boolean => {
+    return user.roleContexts.length > 0; // Cualquier rol puede
+};
+
+export const getUserCompanies = (user: User): CompanyMinimal[] => {
+    return user.roleContexts
+        .filter(role => role.company !== null)
+        .map(role => role.company!)
+        .filter((company, index, self) => 
+            index === self.findIndex(c => c.id === company.id)
+        );
+};
+
+export const hasRole = (user: User, roleCode: RoleCode): boolean => {
+    return user.roleContexts.some(role => role.roleCode === roleCode);
+};
+
+export const hasRoleInCompany = (
+    user: User, 
+    roleCode: RoleCode, 
+    companyId: string
+): boolean => {
+    return user.roleContexts.some(role => 
+        role.roleCode === roleCode && 
+        role.company?.id === companyId
+    );
+};
+```
+
+---
+
+### UserProfile
+
+**Descripción**: Perfil de usuario con preferencias.
+
+```graphql
+type UserProfile {
+    firstName: String!
+    lastName: String!
+    displayName: String!
+    phoneNumber: String
+    avatarUrl: URL
+    theme: String!
+    language: String!
+    timezone: String!
+    pushWebNotifications: Boolean!
+    notificationsTickets: Boolean!
+    lastActivityAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+```
+
+---
+
+### UserRoleResult (NUEVO V10.1)
+
+**Descripción**: Resultado de asignación de rol.
+
+```graphql
+type UserRoleResult {
+    success: Boolean!
+    message: String!
+    role: UserRoleInfo!
+}
+```
+
+---
+
+### UserRoleInfo (NUEVO V10.1)
+
+**Descripción**: Información de rol asignado.
+
+```graphql
+type UserRoleInfo {
+    id: UUID!
+    roleCode: RoleCode!
+    roleName: String!
+    company: CompanyMinimal
+    isActive: Boolean!
+    assignedAt: DateTime!
+    assignedBy: UserMinimal
+}
+```
+
+---
+
+### RoleInfo (Simplificado V10.1)
+
+**Descripción**: Información de rol del sistema (catálogo).
+
+```graphql
+type RoleInfo {
+    code: RoleCode!
+    name: String!
+    description: String!
+    requiresCompany: Boolean!
+    defaultDashboard: String!
+    isSystemRole: Boolean!
+}
+```
+
+**Campos Eliminados vs V9.0:**
+- ❌ `permissions` → No existe en BD V7.0
+- ❌ `priority` → No usado
+
+---
+
+## 🎭 ROLES DEL SISTEMA
+
+### Arquitectura de Roles
+
+| Rol | Requiere Empresa | Scope | Dashboard |
+|-----|------------------|-------|-----------|
+| USER | ❌ NO | Global | `/tickets` |
+| PLATFORM_ADMIN | ❌ NO | Global | `/admin/dashboard` |
+| AGENT | ✅ SÍ | Por empresa | `/agent/dashboard` |
+| COMPANY_ADMIN | ✅ SÍ | Por empresa | `/empresa/dashboard` |
+
+### Permisos Implícitos por Rol
+
+**IMPORTANTE:** Los permisos están implementados en código mediante directivas `@auth`, NO en base de datos.
+
+#### USER
+```typescript
+// Puede:
+- Crear tickets
+- Ver sus propios tickets
+- Actualizar su perfil
+- Seguir empresas
+```
+
+#### AGENT
+```typescript
+// Puede:
+- Ver tickets de su empresa
+- Responder tickets
+- Resolver tickets
+- Asignarse tickets
+- Actualizar su perfil
+```
+
+#### COMPANY_ADMIN
+```typescript
+// Puede:
+- Administrar su empresa
+- Gestionar agentes
+- Ver todos los tickets de su empresa
+- Asignar tickets a cualquier agente
+- Gestionar categorías y macros
+- Actualizar su perfil
+```
+
+#### PLATFORM_ADMIN
+```typescript
+// Puede:
+- TODO (acceso completo al sistema)
+```
+
+---
+
+## 🔒 PERMISOS Y SEGURIDAD
+
+### Matriz de Permisos
+
+| Operación | USER | AGENT | COMPANY_ADMIN | PLATFORM_ADMIN |
+|-----------|------|-------|---------------|----------------|
+| `me` | ✅ | ✅ | ✅ | ✅ |
+| `myProfile` | ✅ | ✅ | ✅ | ✅ |
+| `updateMyProfile` | ✅ | ✅ | ✅ | ✅ |
+| `updateMyPreferences` | ✅ | ✅ | ✅ | ✅ |
+| `users` | ❌ | ❌ | ✅ (empresa) | ✅ (todos) |
+| `user(id)` | ❌ | ❌ | ✅ (empresa) | ✅ (todos) |
+| `suspendUser` | ❌ | ❌ | ❌ | ✅ |
+| `activateUser` | ❌ | ❌ | ❌ | ✅ |
+| `deleteUser` | ❌ | ❌ | ❌ | ✅ |
+| `assignRole` | ❌ | ❌ | ✅ (su empresa) | ✅ (todos) |
+| `removeRole` | ❌ | ❌ | ✅ (su empresa) | ✅ (todos) |
+
+### Rate Limiting
+
+| Endpoint | Máximo | Ventana |
+|----------|--------|---------|
+| `updateMyProfile` | 30 | 1 hora |
+| `updateMyPreferences` | 50 | 1 hora |
+| `assignRole` | 100 | 1 hora |
+
+---
+
+## 🚨 CÓDIGOS DE ERROR
+
+```typescript
+enum UserManagementErrors {
+    USER_NOT_FOUND = 'USER_NOT_FOUND',
+    EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS',
+    INVALID_ROLE_ASSIGNMENT = 'INVALID_ROLE_ASSIGNMENT',
+    ROLE_REQUIRES_COMPANY = 'ROLE_REQUIRES_COMPANY',
+    ROLE_SHOULD_NOT_HAVE_COMPANY = 'ROLE_SHOULD_NOT_HAVE_COMPANY',
+    INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
+    PROFILE_UPDATE_FAILED = 'PROFILE_UPDATE_FAILED',
+    USER_SUSPENDED = 'USER_SUSPENDED',
+    USER_ALREADY_HAS_ROLE = 'USER_ALREADY_HAS_ROLE',
+    CANNOT_REMOVE_LAST_ADMIN = 'CANNOT_REMOVE_LAST_ADMIN',
+    INVALID_INPUT = 'INVALID_INPUT'
+}
+```
+
+---
+
+## 💡 CASOS DE USO COMPLETOS
+
+### Caso 1: Actualizar Perfil Personal
+
+**Flujo:**
+```graphql
+# 1. Actualizar datos personales
+mutation UpdateProfile {
+    updateMyProfile(input: {
+        firstName: "María Alejandra"
+        phoneNumber: "+591 75987654"
+    })
+}
+
+# 2. Actualizar preferencias (separado)
+mutation UpdatePreferences {
+    updateMyPreferences(input: {
+        theme: "dark"
+        language: "es"
+    })
+}
+```
+
+---
+
+### Caso 2: Asignación de Rol de Agente
+
+**1. Admin busca usuario:**
+```graphql
+query SearchUser {
+    users(filters: { search: "juan" }) {
+        data { id, email, profile { displayName } }
+    }
+}
+```
+
+**2. Admin asigna rol AGENT:**
+```graphql
+mutation AssignAgentRole {
+    assignRole(input: {
+        userId: "usr-123"
+        roleCode: "AGENT"
+        companyId: "cmp-001"
+    }) {
+        success
+        message
+        role {
+            roleCode
+            company { name }
+        }
+    }
+}
+```
+
+**3. Usuario ahora tiene 2 roles activos:**
+- USER (global)
+- AGENT (en Universidad del Valle)
+
+---
+
+### Caso 3: Usuario Deja de Ser Agente
+
+**1. Admin remueve rol:**
+```graphql
+mutation RemoveAgentRole {
+    removeRole(
+        roleId: "role-002"
+        reason: "Usuario dejó de trabajar aquí"
+    )
+}
+```
+
+**2. Efectos:**
+- Rol se desactiva (soft delete)
+- Usuario pierde acceso al dashboard de agente
+- Próximo login solo muestra rol USER
+
+**3. Si vuelve a la empresa:**
+```graphql
+mutation ReassignAgentRole {
+    assignRole(input: {
+        userId: "usr-123"
+        roleCode: "AGENT"
+        companyId: "cmp-001"
+    }) {
+        message  # "Rol AGENT reactivado exitosamente"
+    }
+}
+```
+
+---
+
+## 📊 EVENTOS DE AUDITORÍA
+
+- `profile_update`: Perfil actualizado
+- `preferences_update`: Preferencias actualizadas
+- `user_suspend`: Usuario suspendido
+- `user_activate`: Usuario reactivado
+- `user_delete`: Usuario eliminado
+- `role_assign`: Rol asignado
+- `role_remove`: Rol removido
+
+---
+
+## 🔄 MIGRACIÓN DESDE V9.0
+
+### Backend (Laravel)
+
+**1. Eliminar Resolvers:**
+```bash
+# Eliminar archivos
+rm app/Features/UserManagement/GraphQL/Queries/MyRoleHistoryQuery.php
+rm app/Features/UserManagement/GraphQL/Mutations/RevokeRoleMutation.php
+rm app/Features/UserManagement/GraphQL/Mutations/UpdateUserRoleMutation.php
+rm app/Features/UserManagement/GraphQL/Mutations/CompleteMyProfileMutation.php
+rm app/Features/UserManagement/GraphQL/Queries/CompanyUsersQuery.php
+rm app/Features/UserManagement/GraphQL/Mutations/CreateUserMutation.php
+rm app/Features/UserManagement/GraphQL/Mutations/UpdateUserMutation.php
+```
+
+**2. Crear Nuevos Resolvers:**
+```bash
+# Crear
+php artisan lighthouse:mutation RemoveRoleMutation
+```
+
+**3. Actualizar AssignRole Service:**
+```php
+// app/Features/UserManagement/Services/RoleService.php
+public function assign($userId, $roleCode, $companyId = null)
+{
+    // Buscar rol existente
+    $existing = UserRole::where([
+        'user_id' => $userId,
+        'role_code' => $roleCode,
+        'company_id' => $companyId
+    ])->first();
+    
+    if ($existing) {
+        if (!$existing->is_active) {
+            // Reactivar
+            $existing->update([
+                'is_active' => true,
+                'revoked_at' => null,
+                'revocation_reason' => null
+            ]);
+            
+            return [
+                'success' => true,
+                'message' => "Rol {$roleCode} reactivado exitosamente",
+                'role' => $existing
+            ];
+        }
+        
+        throw new UserAlreadyHasRoleException();
+    }
+    
+    // Crear nuevo
+    $role = UserRole::create([...]);
+    
+    return [
+        'success' => true,
+        'message' => "Rol {$roleCode} asignado exitosamente",
+        'role' => $role
+    ];
+}
+```
+
+**4. Actualizar User Query:**
+```php
+// Ahora retorna User completo
+public function resolve($root, array $args)
+{
+    return User::with(['profile', 'roleContexts.company'])
+        ->findOrFail($args['id']);
+}
+```
+
+### Frontend (React + TypeScript)
+
+**1. Actualizar Interfaces:**
+```typescript
+// Eliminar
+interface User {
+    roleHistory: UserRole[];      // ❌ Eliminar
+    companies: CompanyMinimal[];   // ❌ Eliminar
+    isAdmin: boolean;              // ❌ Eliminar
+    canCreateTickets: boolean;     // ❌ Eliminar
+}
+
+// Mantener solo
+interface User {
+    roleContexts: RoleContext[];   // ✅ Solo esto
+}
+```
+
+**2. Actualizar Queries:**
+```typescript
+// ELIMINAR
+export const GET_MY_ROLE_HISTORY = gql`...`;
+export const COMPLETE_MY_PROFILE = gql`...`;
+
+// MANTENER (sin cambios)
+export const GET_ME = gql`...`;
+export const UPDATE_MY_PROFILE = gql`...`;
+export const UPDATE_MY_PREFERENCES = gql`...`;
+```
+
+**3. Actualizar Mutations:**
+```typescript
+// ELIMINAR
+export const REVOKE_ROLE = gql`...`;
+export const UPDATE_USER_ROLE = gql`...`;
+
+// NUEVO
+export const REMOVE_ROLE = gql`
+    mutation RemoveRole($roleId: UUID!, $reason: String) {
+        removeRole(roleId: $roleId, reason: $reason)
+    }
+`;
+
+// ACTUALIZAR
+export const ASSIGN_ROLE = gql`
+    mutation AssignRole($input: AssignRoleInput!) {
+        assignRole(input: $input) {
+            success
+            message
+            role {
+                id
+                roleCode
+                roleName
+                company { name }
+            }
+        }
+    }
+`;
+```
+
+### Checklist de Migración
+
+**Backend:**
+- [ ] Eliminar queries/mutations obsoletas
+- [ ] Actualizar `AssignRoleService` con lógica de reactivación
+- [ ] Crear `RemoveRoleService`
+- [ ] Actualizar `UserQuery` para retornar User completo
+- [ ] Eliminar referencias a `permissions` en schema
+- [ ] Actualizar tests
+
+**Frontend:**
+- [ ] Eliminar queries/mutations obsoletas
+- [ ] Actualizar interfaces TypeScript
+- [ ] Implementar helpers (isAdmin, canCreateTickets, etc.)
+- [ ] Actualizar componentes que usan campos eliminados
+- [ ] Actualizar tests
+
+---
+
+## 🎯 RESUMEN FINAL
+
+### API V10.1 - Números Finales
+
+**Queries: 5**
+- `me`
+- `myProfile`
+- `users`
+- `user`
+- `availableRoles`
+
+**Mutations: 6**
+- `updateMyProfile`
+- `updateMyPreferences`
+- `suspendUser`
+- `activateUser`
+- `deleteUser`
+- `assignRole` (inteligente: crea o reactiva)
+- `removeRole` (soft delete)
+
+**Resultado:** 11 operaciones vs 23 en V9.0 (52% más eficiente)
+
+---
+
+**Fin de la Documentación V10.1**
+
+> **MEJORAS CLAVE:**
+> - ✅ API minimalista y profesional
+> - ✅ Nomenclatura 100% consistente
+> - ✅ Mutations inteligentes (menos código)
+> - ✅ Separación clara de concerns
+> - ✅ Sin redundancia ni over-engineering
+> - ✅ Lista para implementar en producción
+>
+> **SIGUIENTE PASO:** Implementación backend siguiendo estructura feature-first
