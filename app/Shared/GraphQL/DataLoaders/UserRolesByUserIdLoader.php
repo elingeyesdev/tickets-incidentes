@@ -2,9 +2,8 @@
 
 namespace App\Shared\GraphQL\DataLoaders;
 
-use Closure;
+use App\Features\UserManagement\Models\UserRole;
 use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
 
 /**
  * DataLoader para cargar roles activos de usuarios por user_id
@@ -23,27 +22,29 @@ use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
  * }
  * ```
  */
-class UserRolesByUserIdLoader extends BatchLoader
+class UserRolesByUserIdLoader
 {
     /**
      * Resuelve múltiples user_ids a sus roles activos en una sola query
      *
+     * Incluye eager loading de:
+     * - role: Información del rol (role_code, role_name, default_dashboard)
+     * - company: Empresa asociada al rol (nullable para USER y PLATFORM_ADMIN)
+     *
      * @param array<string> $keys Array de UUIDs de usuarios
-     * @return Closure
+     * @return array<Collection>
      */
-    public function resolve(array $keys): Closure
+    public function __invoke(array $keys): array
     {
-        return function () use ($keys): Collection {
-            // Cargar roles activos con la relación al modelo Role
-            $userRoles = \App\Features\UserManagement\Models\UserRole::query()
-                ->whereIn('user_id', $keys)
-                ->where('is_active', true)
-                ->with('role')
-                ->get()
-                ->groupBy('user_id');
+        // Cargar roles activos con relaciones necesarias
+        $userRoles = UserRole::query()
+            ->whereIn('user_id', $keys)
+            ->where('is_active', true)
+            ->with(['role', 'company']) // Eager load role AND company
+            ->get()
+            ->groupBy('user_id');
 
-            // Retornar en el mismo orden que los keys (array de roles por usuario)
-            return collect($keys)->map(fn($key) => $userRoles->get($key, collect()));
-        };
+        // Retornar en el mismo orden que los keys (array de roles por usuario)
+        return array_map(fn($key) => $userRoles->get($key, collect()), $keys);
     }
 }

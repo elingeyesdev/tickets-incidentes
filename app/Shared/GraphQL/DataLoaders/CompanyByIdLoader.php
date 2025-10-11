@@ -2,9 +2,7 @@
 
 namespace App\Shared\GraphQL\DataLoaders;
 
-use Closure;
-use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
+use App\Features\CompanyManagement\Models\Company;
 
 /**
  * DataLoader para cargar empresas por ID
@@ -22,25 +20,23 @@ use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
  * }
  * ```
  */
-class CompanyByIdLoader extends BatchLoader
+class CompanyByIdLoader
 {
     /**
      * Resuelve múltiples IDs de empresas en una sola query
      *
      * @param array<string> $keys Array de UUIDs de empresas
-     * @return Closure
+     * @return array<Company|null>
      */
-    public function resolve(array $keys): Closure
+    public function __invoke(array $keys): array
     {
-        return function () use ($keys): Collection {
-            // Cargar empresas por IDs en una sola query
-            $companies = \App\Features\CompanyManagement\Models\Company::query()
-                ->whereIn('id', $keys)
-                ->get()
-                ->keyBy('id');
+        // Cargar empresas por IDs en una sola query
+        $companies = Company::query()
+            ->whereIn('id', $keys)
+            ->get()
+            ->keyBy('id');
 
-            // Retornar en el mismo orden que los keys (puede haber nulls)
-            return collect($keys)->map(fn($key) => $companies->get($key));
-        };
+        // Retornar en el mismo orden que los keys (puede haber nulls)
+        return array_map(fn($key) => $companies->get($key), $keys);
     }
 }

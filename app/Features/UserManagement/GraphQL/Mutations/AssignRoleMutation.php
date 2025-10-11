@@ -24,9 +24,24 @@ class AssignRoleMutation extends BaseMutation
      * @param array{input: array{userId: string, roleCode: string, companyId: string|null}} $args
      * @param mixed|null $context
      * @return array{success: bool, message: string, role: \App\Features\UserManagement\Models\UserRole}
+     * @throws \Illuminate\Auth\AuthenticationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function __invoke($root, array $args, $context = null)
     {
+        // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
+        $user = Auth::user();
+
+        if (!$user) {
+            throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');
+        }
+
+        if (!$user->hasRole('PLATFORM_ADMIN') && !$user->hasRole('COMPANY_ADMIN')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'Solo administradores pueden asignar roles'
+            );
+        }
+
         $input = $args['input'];
 
         $result = $this->roleService->assignRoleToUser(
@@ -36,7 +51,7 @@ class AssignRoleMutation extends BaseMutation
             assignedBy: Auth::id()
         );
 
-        // Retorna formato UserRoleResult
+        // Field resolvers handle loading relationships via DataLoaders
         return [
             'success' => $result['success'],
             'message' => $result['message'],

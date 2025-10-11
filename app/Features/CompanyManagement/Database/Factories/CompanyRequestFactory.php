@@ -16,7 +16,7 @@ class CompanyRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'request_code' => CodeGenerator::generate('REQ'),
+            'request_code' => CodeGenerator::generate('business.company_requests', CodeGenerator::COMPANY_REQUEST, 'request_code'),
             'company_name' => $this->faker->company(),
             'legal_name' => $this->faker->company() . ' SRL',
             'admin_email' => $this->faker->companyEmail(),

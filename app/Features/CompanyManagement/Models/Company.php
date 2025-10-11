@@ -16,6 +16,15 @@ class Company extends Model
     use HasFactory, HasUuid;
 
     /**
+     * Factory para el modelo
+     * Feature-first: Factory está en app/Features/CompanyManagement/Database/Factories
+     */
+    protected static function newFactory()
+    {
+        return \App\Features\CompanyManagement\Database\Factories\CompanyFactory::new();
+    }
+
+    /**
      * The table associated with the model.
      */
     protected $table = 'business.companies';

@@ -325,6 +325,9 @@ class User extends Model implements Authenticatable
     /**
      * Asignar un rol al usuario (V10.1)
      *
+     * IMPORTANTE: Normaliza automáticamente roleCode a UPPERCASE_SNAKE_CASE
+     * para consistencia con la BD.
+     *
      * @param string $roleCode Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
      * @param string|null $companyId ID de la empresa (requerido para AGENT y COMPANY_ADMIN)
      * @return \App\Features\UserManagement\Models\UserRole
@@ -333,9 +336,13 @@ class User extends Model implements Authenticatable
     {
         $roleService = app(\App\Features\UserManagement\Services\RoleService::class);
 
+        // Normalizar roleCode a UPPERCASE_SNAKE_CASE para consistencia
+        // Acepta: 'agent', 'Agent', 'AGENT', 'platform_admin', etc.
+        $normalizedRoleCode = strtoupper($roleCode);
+
         $result = $roleService->assignRoleToUser(
             userId: $this->id,
-            roleCode: strtolower($roleCode), // Normalizar a lowercase (BD usa lowercase)
+            roleCode: $normalizedRoleCode,
             companyId: $companyId,
             assignedBy: null
         );

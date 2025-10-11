@@ -54,6 +54,87 @@ class ProfileService
     }
 
     /**
+     * Actualizar perfil completo (V10.1 - unificado para UpdateMyProfile)
+     * Actualiza SOLO datos personales: firstName, lastName, phoneNumber, avatarUrl
+     *
+     * @param string $userId
+     * @param array $data
+     * @return UserProfile
+     * @throws NotFoundException
+     */
+    public function updateProfile(string $userId, array $data): UserProfile
+    {
+        $profile = $this->getProfileByUserId($userId);
+
+        // Campos permitidos (snake_case para BD)
+        $allowedFields = ['first_name', 'last_name', 'phone_number', 'avatar_url'];
+
+        // Convertir de camelCase a snake_case si es necesario
+        $snakeData = [];
+        foreach ($data as $key => $value) {
+            $snakeKey = match($key) {
+                'firstName' => 'first_name',
+                'lastName' => 'last_name',
+                'phoneNumber' => 'phone_number',
+                'avatarUrl' => 'avatar_url',
+                default => $key
+            };
+            $snakeData[$snakeKey] = $value;
+        }
+
+        $updateData = array_intersect_key($snakeData, array_flip($allowedFields));
+
+        $profile->update($updateData);
+
+        return $profile->fresh();
+    }
+
+    /**
+     * Actualizar preferencias completas (V10.1 - unificado para UpdateMyPreferences)
+     * Actualiza preferencias de UI y notificaciones
+     *
+     * @param string $userId
+     * @param array $data
+     * @return UserProfile
+     * @throws NotFoundException
+     * @throws ValidationException
+     */
+    public function updatePreferences(string $userId, array $data): UserProfile
+    {
+        $profile = $this->getProfileByUserId($userId);
+
+        // Validar tema
+        if (isset($data['theme']) && !in_array($data['theme'], ['light', 'dark'])) {
+            throw ValidationException::withField('theme', 'El tema debe ser "light" o "dark"');
+        }
+
+        // Validar idioma
+        if (isset($data['language']) && !in_array($data['language'], ['es', 'en'])) {
+            throw ValidationException::withField('language', 'El idioma debe ser "es" o "en"');
+        }
+
+        // Campos permitidos (snake_case para BD)
+        $allowedFields = ['theme', 'language', 'timezone', 'push_web_notifications', 'notifications_tickets'];
+
+        // Convertir de camelCase a snake_case si es necesario
+        $snakeData = [];
+        foreach ($data as $key => $value) {
+            $snakeKey = match($key) {
+                'pushWebNotifications' => 'push_web_notifications',
+                'notificationsTickets' => 'notifications_tickets',
+                default => $key
+            };
+            $snakeData[$snakeKey] = $value;
+        }
+
+        $updateData = array_intersect_key($snakeData, array_flip($allowedFields));
+
+        $profile->update($updateData);
+
+        return $profile->fresh();
+    }
+
+    /**
      * Actualizar avatar del usuario
      *
      * @param string $userId

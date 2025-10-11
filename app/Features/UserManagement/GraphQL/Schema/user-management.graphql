@@ -164,29 +164,45 @@ type User implements Node & Timestamped {
     authProvider: AuthProvider!
 
     # ===== PERFIL =====
-    """Perfil del usuario con información personal y preferencias"""
+    """
+    Perfil del usuario con información personal y preferencias
+    Usa DataLoader para prevenir N+1 queries
+    """
     profile: UserProfile!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@profile")
 
     # ===== ROLES (CONSISTENTE con Authentication) =====
     """
     Contextos de roles ACTIVOS únicamente
     Misma estructura que login/register para consistencia 100%
     Reutiliza RoleContext de shared types
+    Usa DataLoader para prevenir N+1 queries
     """
     roleContexts: [RoleContext!]!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@roleContexts")
 
     # ===== ESTADÍSTICAS =====
-    """Total de tickets creados por el usuario"""
+    """
+    Total de tickets creados por el usuario
+    TODO: Implementar DataLoader cuando exista feature Ticketing
+    """
     ticketsCount: Int!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@ticketsCount")
 
-    """Total de tickets resueltos (solo agentes)"""
+    """
+    Total de tickets resueltos (solo agentes)
+    TODO: Implementar DataLoader cuando exista feature Ticketing
+    """
     resolvedTicketsCount: Int!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@resolvedTicketsCount")
 
     """
     Rating promedio (solo para agentes con tickets resueltos)
     Null para usuarios sin rating
+    TODO: Implementar DataLoader cuando exista feature Ratings
     """
     averageRating: Float
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@averageRating")
 
     # ===== ACTIVIDAD =====
     """Última vez que el usuario inició sesión"""
@@ -325,9 +341,11 @@ type UserRoleInfo {
     # ===== ROL (campos planos, NO nested) =====
     """Código del rol"""
     roleCode: RoleCode!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserRoleInfoFieldResolvers@roleCode")
 
     """Nombre del rol"""
     roleName: String!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserRoleInfoFieldResolvers@roleName")
 
     # ===== EMPRESA (opcional, reutiliza CompanyMinimal) =====
     """
@@ -337,14 +355,17 @@ type UserRoleInfo {
     Reutiliza CompanyMinimal de shared types
     """
     company: CompanyMinimal
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserRoleInfoFieldResolvers@company")
 
     # ===== ESTADO =====
     """Si el rol está activo"""
     isActive: Boolean!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserRoleInfoFieldResolvers@isActive")
 
     # ===== METADATA =====
     """Cuándo fue asignado el rol"""
     assignedAt: DateTime!
+        @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserRoleInfoFieldResolvers@assignedAt")
 
     """
     Quién asignó el rol
@@ -437,7 +458,7 @@ Validación crítica: roles que requieren empresa deben tener companyId
 input AssignRoleInput {
     """ID del usuario"""
     userId: UUID!
-        @rules(apply: ["required", "exists:auth.users,id"])
+        @rules(apply: ["required", "exists:users,id"])
 
     """Código del rol a asignar"""
     roleCode: RoleCode!

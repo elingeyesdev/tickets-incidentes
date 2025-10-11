@@ -76,11 +76,14 @@ class Role extends Model
 
     /**
      * Constantes de códigos de roles
+     *
+     * IMPORTANTE: Todos los role_codes están en UPPERCASE_SNAKE_CASE
+     * para consistencia en toda la aplicación.
      */
-    public const PLATFORM_ADMIN = 'platform_admin';
-    public const COMPANY_ADMIN = 'company_admin';
-    public const AGENT = 'agent';
-    public const USER = 'user';
+    public const PLATFORM_ADMIN = 'PLATFORM_ADMIN';
+    public const COMPANY_ADMIN = 'COMPANY_ADMIN';
+    public const AGENT = 'AGENT';
+    public const USER = 'USER';
 
     /**
      * Relación 1:N con UserRole

@@ -16,8 +16,13 @@ class CompanyFactory extends Factory
      */
     public function definition(): array
     {
+        // Use faker unique to avoid race conditions in parallel tests
+        $uniqueNumber = fake()->unique()->numberBetween(1, 99999);
+        $year = now()->year;
+        $companyCode = CodeGenerator::format(CodeGenerator::COMPANY, $year, $uniqueNumber);
+
         return [
-            'company_code' => CodeGenerator::generate('CMP'),
+            'company_code' => $companyCode,
             'name' => $this->faker->company(),
             'legal_name' => $this->faker->company() . ' SRL',
             'support_email' => $this->faker->companyEmail(),

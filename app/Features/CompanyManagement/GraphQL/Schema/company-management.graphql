@@ -336,7 +336,7 @@ input CreateCompanyInput {
         @rules(apply: ["max:250"])
 
     adminUserId: UUID!
-        @rules(apply: ["required", "exists:auth.users,id"])
+        @rules(apply: ["required", "exists:users,id"])
 
     supportEmail: Email
         @rules(apply: ["email"])

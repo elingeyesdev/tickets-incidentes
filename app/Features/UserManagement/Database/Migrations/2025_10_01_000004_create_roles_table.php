@@ -54,12 +54,13 @@ return new class extends Migration
         DB::statement('CREATE INDEX idx_roles_is_system ON auth.roles(is_system)');
 
         // Insertar roles fijos del sistema
+        // IMPORTANTE: role_code en UPPERCASE_SNAKE_CASE para consistencia
         DB::statement("
             INSERT INTO auth.roles (role_code, role_name, description, is_system) VALUES
-            ('platform_admin', 'Administrador de Plataforma', 'Acceso total al sistema', true),
-            ('company_admin', 'Administrador de Empresa', 'Gestiona una empresa específica', true),
-            ('agent', 'Agente de Soporte', 'Atiende tickets de soporte de una empresa', true),
-            ('user', 'Cliente', 'Usuario que crea tickets', true)
+            ('PLATFORM_ADMIN', 'Administrador de Plataforma', 'Acceso total al sistema', true),
+            ('COMPANY_ADMIN', 'Administrador de Empresa', 'Gestiona una empresa específica', true),
+            ('AGENT', 'Agente de Soporte', 'Atiende tickets de soporte de una empresa', true),
+            ('USER', 'Cliente', 'Usuario que crea tickets', true)
         ");
     }
 

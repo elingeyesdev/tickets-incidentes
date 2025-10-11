@@ -175,16 +175,20 @@ class UserService
      * Suspender usuario
      *
      * @param string $userId
+     * @param string|null $reason Motivo de la suspensión
      * @return User
      * @throws NotFoundException
      */
-    public function suspendUser(string $userId): User
+    public function suspendUser(string $userId, ?string $reason = null): User
     {
         $user = $this->getUserById($userId);
 
         $user->update([
             'status' => UserStatus::SUSPENDED,
         ]);
+
+        // TODO: Registrar reason en tabla de auditoría cuando esté implementada
+        // Por ahora, la directiva @audit en el schema se encargará de registrarlo
 
         return $user;
     }

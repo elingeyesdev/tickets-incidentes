@@ -92,13 +92,13 @@ type CompanyMinimal {
   id: UUID!
 
   """Código único legible de la empresa"""
-  companyCode: String!
+  companyCode: String! @rename(attribute: "company_code")
 
   """Nombre comercial de la empresa"""
   name: String!
 
   """URL del logo de la empresa"""
-  logoUrl: URL
+  logoUrl: URL @rename(attribute: "logo_url")
 }
 
 """
@@ -131,7 +131,10 @@ type RoleContext {
   """Nombre del rol"""
   roleName: String!
 
-  """Información de empresa (presente SOLO si el rol requiere empresa)"""
+  """
+  Información de empresa (presente SOLO si el rol requiere empresa)
+  Campo resuelto manualmente en cada feature
+  """
   company: RoleCompanyContext
 
   """Ruta del dashboard correspondiente al rol"""

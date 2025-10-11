@@ -30,8 +30,14 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Generate unique user_code for testing using faker sequence
+        // Format: USR-YYYY-XXXXX where XXXXX is unique in test context
+        $uniqueNumber = fake()->unique()->numberBetween(1, 99999);
+        $year = now()->year;
+        $userCode = CodeGenerator::format(CodeGenerator::USER, $year, $uniqueNumber);
+
         return [
-            'user_code' => CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code'),
+            'user_code' => $userCode,
             'email' => fake()->unique()->safeEmail(),
             'password_hash' => Hash::make('password'), // Default password for testing
             'email_verified' => true,

@@ -2,9 +2,7 @@
 
 namespace App\Shared\GraphQL\DataLoaders;
 
-use Closure;
-use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
+use App\Features\UserManagement\Models\UserProfile;
 
 /**
  * DataLoader para cargar perfiles de usuarios por user_id
@@ -22,25 +20,23 @@ use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
  * }
  * ```
  */
-class UserProfileByUserIdLoader extends BatchLoader
+class UserProfileByUserIdLoader
 {
     /**
      * Resuelve múltiples user_ids a sus perfiles en una sola query
      *
      * @param array<string> $keys Array de UUIDs de usuarios
-     * @return Closure
+     * @return array<UserProfile|null>
      */
-    public function resolve(array $keys): Closure
+    public function __invoke(array $keys): array
     {
-        return function () use ($keys): Collection {
-            // Cargar perfiles por user_id en una sola query
-            $profiles = \App\Features\UserManagement\Models\UserProfile::query()
-                ->whereIn('user_id', $keys)
-                ->get()
-                ->keyBy('user_id');
+        // Cargar perfiles por user_id en una sola query
+        $profiles = UserProfile::query()
+            ->whereIn('user_id', $keys)
+            ->get()
+            ->keyBy('user_id');
 
-            // Retornar en el mismo orden que los keys (puede haber nulls)
-            return collect($keys)->map(fn($key) => $profiles->get($key));
-        };
+        // Retornar en el mismo orden que los keys (puede haber nulls)
+        return array_map(fn($key) => $profiles->get($key), $keys);
     }
 }

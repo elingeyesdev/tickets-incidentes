@@ -26,7 +26,7 @@ class RolesSeeder extends Seeder
 
         foreach ($roles as $role) {
             DB::table('auth.roles')->updateOrInsert(
-                ['name' => $role['name']], // Condición de búsqueda
+                ['role_code' => $role['role_code']], // Condición de búsqueda
                 $role // Datos a insertar/actualizar
             );
         }
@@ -37,74 +37,36 @@ class RolesSeeder extends Seeder
     /**
      * Obtener datos de roles del sistema
      *
+     * IMPORTANTE: role_code en UPPERCASE_SNAKE_CASE para consistencia
+     *
      * @return array
      */
     private function getRolesData(): array
     {
         return [
             [
-                'id' => DB::raw('gen_random_uuid()'),
-                'name' => 'USER',
-                'display_name' => 'Usuario',
+                'role_code' => 'USER',
+                'role_name' => 'Cliente',
                 'description' => 'Usuario final que puede crear tickets y ver su historial',
-                'permissions' => json_encode([
-                    'tickets.create',
-                    'tickets.view_own',
-                    'profile.edit',
-                ]),
-                'requires_company' => false,
-                'default_dashboard' => '/dashboard/user',
-                'priority' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'is_system' => true,
             ],
             [
-                'id' => DB::raw('gen_random_uuid()'),
-                'name' => 'AGENT',
-                'display_name' => 'Agente',
+                'role_code' => 'AGENT',
+                'role_name' => 'Agente de Soporte',
                 'description' => 'Agente de soporte que responde tickets de una empresa',
-                'permissions' => json_encode([
-                    'tickets.*',
-                    'users.view',
-                    'macros.use',
-                    'company.view',
-                ]),
-                'requires_company' => true,
-                'default_dashboard' => '/dashboard/agent',
-                'priority' => 2,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'is_system' => true,
             ],
             [
-                'id' => DB::raw('gen_random_uuid()'),
-                'name' => 'COMPANY_ADMIN',
-                'display_name' => 'Administrador de Empresa',
+                'role_code' => 'COMPANY_ADMIN',
+                'role_name' => 'Administrador de Empresa',
                 'description' => 'Administrador de una empresa, gestiona agentes y configuración',
-                'permissions' => json_encode([
-                    'company.*',
-                    'users.manage',
-                    'agents.manage',
-                    'tickets.*',
-                    'macros.*',
-                    'categories.*',
-                ]),
-                'requires_company' => true,
-                'default_dashboard' => '/dashboard/company-admin',
-                'priority' => 3,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'is_system' => true,
             ],
             [
-                'id' => DB::raw('gen_random_uuid()'),
-                'name' => 'PLATFORM_ADMIN',
-                'display_name' => 'Administrador de Plataforma',
+                'role_code' => 'PLATFORM_ADMIN',
+                'role_name' => 'Administrador de Plataforma',
                 'description' => 'Administrador global con acceso total al sistema',
-                'permissions' => json_encode(['*']),
-                'requires_company' => false,
-                'default_dashboard' => '/dashboard/admin',
-                'priority' => 100,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'is_system' => true,
             ],
         ];
     }
