@@ -22,9 +22,24 @@ class SuspendUserMutation extends BaseMutation
      * @param array{id: string, reason?: string} $args
      * @param mixed|null $context
      * @return array{userId: string, status: string, updatedAt: string}
+     * @throws \Illuminate\Auth\AuthenticationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function __invoke($root, array $args, $context = null): array
     {
+        // Authorization: Require PLATFORM_ADMIN only
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$authUser) {
+            throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');
+        }
+
+        if (!$authUser->hasRole('PLATFORM_ADMIN')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'Solo administradores de plataforma pueden suspender usuarios'
+            );
+        }
+
         $user = $this->userService->suspendUser(
             userId: $args['id'],
             reason: $args['reason'] ?? null

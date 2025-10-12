@@ -66,7 +66,6 @@ class MyProfileQueryTest extends TestCase
                     timezone
                     pushWebNotifications
                     notificationsTickets
-                    lastActivityAt
                     createdAt
                     updatedAt
                 }
@@ -295,20 +294,24 @@ class MyProfileQueryTest extends TestCase
 
     /**
      * @test
-     * lastActivityAt puede ser null si nunca hubo actividad
+     * phoneNumber y avatarUrl pueden ser null
      */
-    public function last_activity_at_can_be_null(): void
+    public function optional_fields_can_be_null(): void
     {
-        // Arrange - Usuario recién creado sin actividad
+        // Arrange - Usuario sin teléfono ni avatar
         $newUser = User::factory()
-            ->withProfile(['last_activity_at' => null])
+            ->withProfile([
+                'phone_number' => null,
+                'avatar_url' => null,
+            ])
             ->withRole('USER')
             ->create();
 
         $query = '
             query MyProfile {
                 myProfile {
-                    lastActivityAt
+                    phoneNumber
+                    avatarUrl
                 }
             }
         ';
@@ -318,7 +321,8 @@ class MyProfileQueryTest extends TestCase
 
         // Assert
         $profile = $response->json('data.myProfile');
-        $this->assertNull($profile['lastActivityAt']);
+        $this->assertNull($profile['phoneNumber']);
+        $this->assertNull($profile['avatarUrl']);
     }
 
     /**

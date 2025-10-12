@@ -172,7 +172,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
 
         // Assert
-        $response->assertGraphQLValidationError('input.theme');
+        $response->assertGraphQLValidationKeys(['theme']);
     }
 
     /**
@@ -200,7 +200,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
 
         // Assert
-        $response->assertGraphQLValidationError('input.language');
+        $response->assertGraphQLValidationKeys(['language']);
     }
 
     /**

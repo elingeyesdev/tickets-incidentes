@@ -23,9 +23,24 @@ class DeleteUserMutation extends BaseMutation
      * @param array{id: string, reason?: string} $args
      * @param mixed|null $context
      * @return bool
+     * @throws \Illuminate\Auth\AuthenticationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     public function __invoke($root, array $args, $context = null): bool
     {
+        // Authorization: Require PLATFORM_ADMIN only
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$user) {
+            throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');
+        }
+
+        if (!$user->hasRole('PLATFORM_ADMIN')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'Solo administradores de plataforma pueden eliminar usuarios'
+            );
+        }
+
         return $this->userService->deleteUser($args['id']);
 
         // Nota: El reason se registra automáticamente por la directiva @audit en el schema

@@ -167,7 +167,7 @@ class UpdateMyProfileMutationTest extends TestCase
         $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
 
         // Assert
-        $response->assertGraphQLValidationError('input.firstName');
+        $response->assertGraphQLValidationKeys(['firstName']);
     }
 
     /**
@@ -195,7 +195,7 @@ class UpdateMyProfileMutationTest extends TestCase
         $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
 
         // Assert
-        $response->assertGraphQLValidationError('input.phoneNumber');
+        $response->assertGraphQLValidationKeys(['phoneNumber']);
     }
 
     /**

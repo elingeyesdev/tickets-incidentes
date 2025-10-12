@@ -155,13 +155,13 @@ NO usado en mutations (usan Payloads específicos)
 type User implements Node & Timestamped {
     # ===== IDENTIFICADORES =====
     id: UUID!
-    userCode: String!
+    userCode: String! @rename(attribute: "user_code")
 
     # ===== AUTENTICACIÓN =====
     email: Email!
-    emailVerified: Boolean!
+    emailVerified: Boolean! @rename(attribute: "email_verified")
     status: UserStatus!
-    authProvider: AuthProvider!
+    authProvider: AuthProvider! @rename(attribute: "auth_provider")
 
     # ===== PERFIL =====
     """
@@ -206,17 +206,17 @@ type User implements Node & Timestamped {
 
     # ===== ACTIVIDAD =====
     """Última vez que el usuario inició sesión"""
-    lastLoginAt: DateTime
+    lastLoginAt: DateTime @rename(attribute: "last_login_at")
 
     """Última actividad registrada en el sistema"""
-    lastActivityAt: DateTime
+    lastActivityAt: DateTime @rename(attribute: "last_activity_at")
 
     # ===== AUDITORÍA =====
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
+    updatedAt: DateTime! @rename(attribute: "updated_at")
 
     """Fecha de eliminación (soft delete)"""
-    deletedAt: DateTime
+    deletedAt: DateTime @rename(attribute: "deleted_at")
 }
 
 """
@@ -225,11 +225,11 @@ Solo DATOS PERSONALES (sin preferencias)
 """
 type UserProfile {
     # ===== INFORMACIÓN PERSONAL =====
-    firstName: String!
-    lastName: String!
-    displayName: String!
-    phoneNumber: String
-    avatarUrl: URL
+    firstName: String! @rename(attribute: "first_name")
+    lastName: String! @rename(attribute: "last_name")
+    displayName: String! @rename(attribute: "display_name")
+    phoneNumber: String @rename(attribute: "phone_number")
+    avatarUrl: URL @rename(attribute: "avatar_url")
 
     # ===== PREFERENCIAS (SEPARADAS en UserPreferences) =====
     # Nota: Para obtener preferencias, usar UserPreferences
@@ -237,15 +237,12 @@ type UserProfile {
     theme: String!
     language: String!
     timezone: String!
-    pushWebNotifications: Boolean!
-    notificationsTickets: Boolean!
-
-    # ===== ACTIVIDAD =====
-    lastActivityAt: DateTime
+    pushWebNotifications: Boolean! @rename(attribute: "push_web_notifications")
+    notificationsTickets: Boolean! @rename(attribute: "notifications_tickets")
 
     # ===== AUDITORÍA =====
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
+    updatedAt: DateTime! @rename(attribute: "updated_at")
 }
 
 """
@@ -275,13 +272,13 @@ Retorna SOLO el perfil actualizado (sin roleContexts, tickets, etc.)
 """
 type ProfileUpdatePayload {
     """ID del usuario"""
-    userId: UUID!
+    userId: UUID! @rename(attribute: "userId")
 
     """Perfil actualizado con datos personales"""
     profile: UserProfile!
 
     """Timestamp de la actualización"""
-    updatedAt: DateTime!
+    updatedAt: DateTime! @rename(attribute: "updatedAt")
 }
 
 """
@@ -429,7 +426,6 @@ input UpdateProfileInput {
         @rules(apply: ["min:10", "max:20"])
 
     avatarUrl: URL
-        @rules(apply: ["url"])
 }
 
 """

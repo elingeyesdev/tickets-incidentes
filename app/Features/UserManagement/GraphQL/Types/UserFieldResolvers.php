@@ -2,8 +2,9 @@
 
 namespace App\Features\UserManagement\GraphQL\Types;
 
-use App\Shared\GraphQL\DataLoaders\UserProfileByUserIdLoader;
-use App\Shared\GraphQL\DataLoaders\UserRolesByUserIdLoader;
+use App\Shared\GraphQL\DataLoaders\UserProfileBatchLoader;
+use App\Shared\GraphQL\DataLoaders\UserRoleContextsBatchLoader;
+use Nuwave\Lighthouse\Execution\BatchLoader\BatchLoaderRegistry;
 use Nuwave\Lighthouse\Execution\ResolveInfo;
 use GraphQL\Type\Definition\ResolveInfo as GraphQLResolveInfo;
 
@@ -26,92 +27,56 @@ class UserFieldResolvers
     /**
      * Resuelve el campo 'profile' del tipo User
      *
-     * Utiliza UserProfileByUserIdLoader para batching automático.
-     * Si GraphQL solicita profile de 50 usuarios, ejecuta UNA sola query.
+     * Utiliza BatchLoader para prevenir N+1 queries cuando se cargan
+     * múltiples usuarios con sus perfiles en una sola operación GraphQL.
      *
      * @param \App\Features\UserManagement\Models\User $root
      * @param array $args
      * @param \Nuwave\Lighthouse\Support\Contracts\GraphQLContext $context
      * @param ResolveInfo|GraphQLResolveInfo $resolveInfo
-     * @return \Illuminate\Support\Promise|\App\Features\UserManagement\Models\UserProfile
+     * @return \GraphQL\Deferred
      */
     public function profile($root, array $args, $context, $resolveInfo)
     {
-        return $context->dataLoader(UserProfileByUserIdLoader::class)
-            ->load($root->id);
+        // Get or create BatchLoader instance for this field path
+        $batchLoader = BatchLoaderRegistry::instance(
+            $resolveInfo->path,
+            static fn (): UserProfileBatchLoader => new UserProfileBatchLoader(),
+        );
+
+        return $batchLoader->load($root);
     }
 
     /**
      * Resuelve el campo 'roleContexts' del tipo User
      *
-     * Utiliza UserRolesByUserIdLoader para batching automático.
-     * Solo carga roles ACTIVOS (is_active = true).
-     * El DataLoader ya incluye las relaciones con Role y Company (eager loading).
+     * Utiliza BatchLoader para prevenir N+1 queries cuando se cargan
+     * múltiples usuarios con sus roles en una sola operación GraphQL.
+     * Solo retorna roles ACTIVOS (is_active = true).
      *
      * Transforma los UserRole en formato RoleContext según schema:
      * - roleCode: del UserRole
      * - roleName: del Role relacionado
-     * - company: del UserRole (nullable, ya resuelto por el DataLoader)
+     * - company: del UserRole (nullable)
      * - dashboardPath: del Role relacionado
-     *
-     * IMPORTANTE: El UserRolesByUserIdLoader ya carga las relaciones con
-     * ->with(['role', 'company']), por lo que NO necesitamos otro DataLoader.
      *
      * @param \App\Features\UserManagement\Models\User $root
      * @param array $args
      * @param \Nuwave\Lighthouse\Support\Contracts\GraphQLContext $context
      * @param ResolveInfo|GraphQLResolveInfo $resolveInfo
-     * @return \Illuminate\Support\Promise|array
+     * @return \GraphQL\Deferred
      */
     public function roleContexts($root, array $args, $context, $resolveInfo)
     {
-        return $context->dataLoader(UserRolesByUserIdLoader::class)
-            ->load($root->id)
-            ->then(function ($userRoles) {
-                // Transformar colección de UserRole a formato RoleContext
-                // Misma estructura que Authentication para consistencia
-                return $userRoles->map(function ($userRole) {
-                    $roleCode = strtoupper($userRole->role_code);
+        // Get or create BatchLoader instance for this field path
+        // This BatchLoader already transforms UserRole to RoleContext format
+        $batchLoader = BatchLoaderRegistry::instance(
+            $resolveInfo->path,
+            static fn (): UserRoleContextsBatchLoader => new UserRoleContextsBatchLoader(),
+        );
 
-                    // Mapear dashboard paths según rol
-                    $dashboardPaths = [
-                        'USER' => '/tickets',
-                        'AGENT' => '/agent/dashboard',
-                        'COMPANY_ADMIN' => '/admin/dashboard',
-                        'PLATFORM_ADMIN' => '/platform/dashboard',
-                    ];
-
-                    // Mapear nombres legibles de roles
-                    $roleNames = [
-                        'USER' => 'Cliente',
-                        'AGENT' => 'Agente de Soporte',
-                        'COMPANY_ADMIN' => 'Administrador de Empresa',
-                        'PLATFORM_ADMIN' => 'Administrador de Plataforma',
-                    ];
-
-                    $context = [
-                        'roleCode' => $roleCode,
-                        'roleName' => $roleNames[$roleCode] ?? ($userRole->role->role_name ?? 'Unknown'),
-                        'dashboardPath' => $dashboardPaths[$roleCode] ?? '/dashboard',
-                    ];
-
-                    // Agregar company solo si el rol requiere empresa
-                    // USER y PLATFORM_ADMIN: company es null
-                    // AGENT y COMPANY_ADMIN: company tiene datos
-                    if ($userRole->company) {
-                        $context['company'] = [
-                            'id' => $userRole->company->id,
-                            'companyCode' => $userRole->company->company_code,
-                            'name' => $userRole->company->name,
-                            'logoUrl' => $userRole->company->logo_url,
-                        ];
-                    } else {
-                        $context['company'] = null;
-                    }
-
-                    return $context;
-                })->values()->toArray();
-            });
+        // Return the Deferred directly - it already contains the transformed data
+        return $batchLoader->load($root);
     }
 
     /**
