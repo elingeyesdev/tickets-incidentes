@@ -180,9 +180,10 @@ class DeleteUserMutationTest extends TestCase
     public function company_admin_cannot_delete_users(): void
     {
         // Arrange
+        $company = \App\Features\CompanyManagement\Models\Company::factory()->create();
         $companyAdmin = User::factory()
             ->withProfile()
-            ->withRole('COMPANY_ADMIN', null)
+            ->withRole('COMPANY_ADMIN', $company->id)
             ->create();
 
         $query = '

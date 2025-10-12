@@ -68,6 +68,7 @@ class UserRole extends Model
         'assigned_at',
         'assigned_by',
         'revoked_at',
+        'revocation_reason',
     ];
 
     /**

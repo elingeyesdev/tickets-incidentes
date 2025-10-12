@@ -202,9 +202,10 @@ class SuspendAndActivateUserMutationsTest extends TestCase
     public function company_admin_cannot_suspend_users(): void
     {
         // Arrange - Company admin sin permisos de suspender
+        $company = \App\Features\CompanyManagement\Models\Company::factory()->create();
         $companyAdmin = User::factory()
             ->withProfile()
-            ->withRole('COMPANY_ADMIN', null)
+            ->withRole('COMPANY_ADMIN', $company->id)
             ->create();
 
         $query = '

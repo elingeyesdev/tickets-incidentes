@@ -41,6 +41,13 @@ class DeleteUserMutation extends BaseMutation
             );
         }
 
+        // No puede eliminarse a sí mismo
+        if ($user->id === $args['id']) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'No puedes eliminarte a ti mismo'
+            );
+        }
+
         return $this->userService->deleteUser($args['id']);
 
         // Nota: El reason se registra automáticamente por la directiva @audit en el schema
