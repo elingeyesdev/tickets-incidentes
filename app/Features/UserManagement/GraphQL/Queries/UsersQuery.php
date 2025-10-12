@@ -17,16 +17,32 @@ class UsersQuery extends BaseQuery
 {
     public function __invoke($root, array $args)
     {
+        // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
+        $authUser = Auth::user();
+
+        if (!$authUser) {
+            throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');
+        }
+
+        if (!$authUser->hasRole('PLATFORM_ADMIN') && !$authUser->hasRole('COMPANY_ADMIN')) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'Solo administradores pueden listar usuarios'
+            );
+        }
+
         $perPage = min($args['first'] ?? 15, 50); // Máximo 50 (definido en schema)
         $page = $args['page'] ?? 1;
         $filters = $args['filters'] ?? [];
         $orderBy = $args['orderBy'] ?? [];
 
         // Iniciar query
-        $query = User::query()->with('profile');
+        // IMPORTANTE: Filtrar solo usuarios con profile (User.profile es non-nullable en schema)
+        $query = User::query()
+            ->has('profile') // Solo usuarios con profile
+            ->with('profile');
 
         // Aplicar filtros
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $authUser);
 
         // Aplicar ordenamiento
         $this->applyOrdering($query, $orderBy);
@@ -49,7 +65,7 @@ class UsersQuery extends BaseQuery
     /**
      * Aplica filtros al query de usuarios
      */
-    private function applyFilters($query, array $filters): void
+    private function applyFilters($query, array $filters, $authUser): void
     {
         // Búsqueda de texto (email, nombre, código)
         if (!empty($filters['search'])) {
@@ -106,8 +122,7 @@ class UsersQuery extends BaseQuery
         }
 
         // Si es COMPANY_ADMIN, filtrar solo usuarios de su empresa
-        $authUser = Auth::user();
-        if ($authUser && !$this->isPlatformAdmin($authUser)) {
+        if (!$this->isPlatformAdmin($authUser)) {
             $companyIds = $this->getUserCompanyIds($authUser);
             if (!empty($companyIds)) {
                 $query->whereHas('userRoles', function ($q) use ($companyIds) {

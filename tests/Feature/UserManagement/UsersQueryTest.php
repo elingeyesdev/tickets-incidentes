@@ -170,7 +170,7 @@ class UsersQueryTest extends TestCase
         // Assert
         $users = $response->json('data.users.data');
         $this->assertCount(1, $users);
-        $this->assertEquals('maría@example.com', strtolower($users[0]['email']));
+        $this->assertEquals('maria@example.com', strtolower($users[0]['email']));
     }
 
     /**

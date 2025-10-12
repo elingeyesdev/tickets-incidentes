@@ -261,9 +261,11 @@ class AvailableRolesQueryTest extends TestCase
     public function company_admin_can_also_access_list(): void
     {
         // Arrange
+        $company = \App\Features\CompanyManagement\Models\Company::factory()->create();
+
         $companyAdmin = User::factory()
             ->withProfile()
-            ->withRole('COMPANY_ADMIN', null) // Sin empresa para simplificar
+            ->withRole('COMPANY_ADMIN', $company->id)
             ->create();
 
         $query = '
