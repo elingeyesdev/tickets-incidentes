@@ -1,0 +1,419 @@
+---
+alwaysApply: false
+---
+# Sistema de Skeleton Loading - Reglas de Uso
+
+## 🎯 Propósito
+Sistema profesional y escalable de skeleton screens (loading states) para React + Tailwind CSS.
+Organizado según mejores prácticas de empresas como Airbnb, Shopify, GitHub y Material-UI.
+
+## 📁 Estructura Completa
+
+```
+Components/Skeleton/
+├── index.ts                  # ✅ Barrel export - SIEMPRE importar desde aquí
+├── README.md                 # Documentación completa del sistema
+├── EXAMPLES.tsx              # 9 ejemplos prácticos de uso
+│
+├── base/                     # Componentes fundamentales (atómicos)
+│   ├── Skeleton.tsx          # Componente base con animación shimmer
+│   ├── Input.tsx             # InputSkeleton
+│   ├── Button.tsx            # ButtonSkeleton
+│   ├── Avatar.tsx            # AvatarSkeleton (circular)
+│   └── Badge.tsx             # BadgeSkeleton
+│
+├── forms/                    # Skeletons de formularios completos
+│   ├── FormSkeleton.tsx      # Formulario genérico configurable
+│   └── OnboardingForm.tsx    # Formulario específico de onboarding
+│
+├── cards/                    # Skeletons de tarjetas y listas
+│   ├── Card.tsx              # CardSkeleton (3 variantes)
+│   ├── CardGrid.tsx          # CardGridSkeleton (grid responsive)
+│   └── ListItem.tsx          # ListItemSkeleton (items de lista)
+│
+└── data-display/             # Para futuros skeletons de datos
+    └── .gitkeep              # TODO: Table, Chart, Stats, etc.
+```
+
+## 🚀 Importación (OBLIGATORIO)
+
+### ✅ CORRECTO - Importar desde barrel export
+```tsx
+// Opción 1: Directamente desde Skeleton (recomendado)
+import { 
+  Skeleton, 
+  InputSkeleton, 
+  FormSkeleton, 
+  CardSkeleton 
+} from '@/Components/Skeleton';
+
+// Opción 2: Desde ui (también válido, hay re-export)
+import { 
+  OnboardingFormSkeleton, 
+  CardGridSkeleton 
+} from '@/Components/ui';
+```
+
+### ❌ INCORRECTO - NO importar directamente
+```tsx
+// ❌ NO HACER ESTO
+import { Skeleton } from '@/Components/Skeleton/base/Skeleton';
+import { FormSkeleton } from '@/Components/Skeleton/forms/FormSkeleton';
+```
+
+## 📋 Componentes Disponibles
+
+### 1. Base Components (Atómicos)
+
+#### `Skeleton` - Componente Base
+```tsx
+interface SkeletonProps {
+  variant?: 'rectangular' | 'circular' | 'rounded' | 'text';
+  className?: string;
+  lines?: number;           // Solo para variant="text"
+  lastLineWidth?: string;   // Solo para variant="text"
+}
+
+// Ejemplos
+<Skeleton className="h-4 w-full" />
+<Skeleton variant="circular" className="w-12 h-12" />
+<Skeleton variant="text" lines={3} lastLineWidth="70%" />
+```
+
+#### `InputSkeleton`
+```tsx
+interface InputSkeletonProps {
+  className?: string;
+  withLabel?: boolean;      // Default: true
+}
+
+// Ejemplos
+<InputSkeleton />
+<InputSkeleton withLabel={false} />
+```
+
+#### `ButtonSkeleton`
+```tsx
+interface ButtonSkeletonProps {
+  className?: string;
+  fullWidth?: boolean;      // Default: false
+}
+
+// Ejemplos
+<ButtonSkeleton />
+<ButtonSkeleton fullWidth />
+```
+
+#### `AvatarSkeleton`
+```tsx
+interface AvatarSkeletonProps {
+  size?: 'sm' | 'md' | 'lg';  // Default: 'md'
+  className?: string;
+}
+
+// Ejemplos
+<AvatarSkeleton size="lg" />
+```
+
+#### `BadgeSkeleton`
+```tsx
+interface BadgeSkeletonProps {
+  className?: string;
+}
+
+// Ejemplo
+<BadgeSkeleton className="w-32" />
+```
+
+### 2. Form Skeletons (Complejos)
+
+#### `FormSkeleton` - Formulario Genérico
+```tsx
+interface FormSkeletonProps {
+  fields?: number;              // Default: 3
+  layout?: 'vertical' | 'grid'; // Default: 'vertical'
+  columns?: 2 | 3;              // Default: 2 (solo si layout="grid")
+  withButton?: boolean;         // Default: true
+  withMultipleButtons?: boolean;// Default: false
+  withHeader?: boolean;         // Default: false
+  className?: string;
+}
+
+// Ejemplos
+<FormSkeleton fields={5} />
+<FormSkeleton fields={6} layout="grid" columns={2} />
+<FormSkeleton fields={3} withHeader withMultipleButtons />
+```
+
+#### `OnboardingFormSkeleton` - Onboarding Específico
+```tsx
+interface OnboardingFormSkeletonProps {
+  fields?: number;    // Default: 3
+  columns?: 1 | 2;    // Default: 2
+}
+
+// Ejemplos
+<OnboardingFormSkeleton />
+<OnboardingFormSkeleton fields={4} columns={1} />
+```
+
+### 3. Card Skeletons
+
+#### `CardSkeleton`
+```tsx
+interface CardSkeletonProps {
+  withImage?: boolean;          // Default: false
+  withBadge?: boolean;          // Default: false
+  withActions?: boolean;        // Default: false
+  lines?: number;               // Default: 3
+  variant?: 'default' | 'horizontal' | 'compact'; // Default: 'default'
+  className?: string;
+}
+
+// Ejemplos
+<CardSkeleton />
+<CardSkeleton withImage withActions />
+<CardSkeleton variant="horizontal" withBadge />
+<CardSkeleton variant="compact" />
+```
+
+#### `CardGridSkeleton`
+```tsx
+interface CardGridSkeletonProps {
+  count?: number;               // Default: 6
+  columns?: 1 | 2 | 3 | 4;      // Default: 3
+  cardProps?: CardSkeletonProps;
+}
+
+// Ejemplos
+<CardGridSkeleton />
+<CardGridSkeleton count={8} columns={4} />
+<CardGridSkeleton 
+  count={6} 
+  columns={3}
+  cardProps={{ withImage: true, withBadge: true }} 
+/>
+```
+
+#### `ListItemSkeleton`
+```tsx
+interface ListItemSkeletonProps {
+  withAvatar?: boolean;   // Default: true
+  withActions?: boolean;  // Default: false
+  className?: string;
+}
+
+// Ejemplo
+<ListItemSkeleton withActions />
+```
+
+## 🎨 Diseño y Animación
+
+### Animación Shimmer (Definida en app.css)
+```css
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+```
+- **Duración**: 2 segundos
+- **Loop**: Infinito
+- **Efecto**: Brillo de izquierda a derecha
+
+### Colores Consistentes
+- **Light mode**: `bg-gray-200`, shimmer `via-white/20`
+- **Dark mode**: `bg-gray-700`, shimmer `via-white/10`
+- **Bordes**: `border-gray-200 dark:border-gray-700`
+
+## 📐 Patrones de Uso (BEST PRACTICES)
+
+### ✅ Patrón 1: Loading State Simple
+```tsx
+export const MyComponent = () => {
+  const { data, loading } = useQuery(MY_QUERY);
+
+  if (loading) {
+    return <FormSkeleton fields={5} withButton />;
+  }
+
+  return <ActualForm data={data} />;
+};
+```
+
+### ✅ Patrón 2: Loading State en Página
+```tsx
+export default function Dashboard() {
+  const { data, loading } = useQuery(DASHBOARD_QUERY);
+
+  if (loading) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-8">
+          <CardGridSkeleton count={3} columns={3} />
+          <ListItemSkeleton withActions />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  return <ActualDashboard data={data} />;
+}
+```
+
+### ✅ Patrón 3: Skeleton Personalizado (Composición)
+```tsx
+export const MyCustomSkeleton = () => (
+  <div className="flex gap-4">
+    <AvatarSkeleton size="lg" />
+    <div className="flex-1 space-y-3">
+      <Skeleton className="h-6 w-48" />
+      <Skeleton variant="text" lines={2} />
+      <div className="flex gap-2">
+        <BadgeSkeleton />
+        <BadgeSkeleton />
+      </div>
+    </div>
+    <ButtonSkeleton className="w-24" />
+  </div>
+);
+```
+
+## 🛠️ Creación de Nuevos Skeletons
+
+### Paso 1: Determinar la Carpeta Correcta
+- **Atómico (button, input, icon)** → `base/`
+- **Formulario completo** → `forms/`
+- **Tarjeta/Card** → `cards/`
+- **Tabla, gráfico, estadísticas** → `data-display/`
+
+### Paso 2: Crear el Componente
+```tsx
+// Components/Skeleton/data-display/Table.tsx
+import React from 'react';
+import { Skeleton } from '../base/Skeleton';
+
+interface TableSkeletonProps {
+  rows?: number;
+  columns?: number;
+}
+
+export const TableSkeleton: React.FC<TableSkeletonProps> = ({ 
+  rows = 5, 
+  columns = 4 
+}) => (
+  <div className="bg-white rounded-lg border">
+    <table className="w-full">
+      <thead>
+        <tr>
+          {Array.from({ length: columns }).map((_, i) => (
+            <th key={i} className="p-4">
+              <Skeleton className="h-4 w-24" />
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Array.from({ length: rows }).map((_, i) => (
+          <tr key={i}>
+            {Array.from({ length: columns }).map((_, j) => (
+              <td key={j} className="p-4">
+                <Skeleton className="h-4 w-32" />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+```
+
+### Paso 3: Exportar en index.ts
+```tsx
+// Components/Skeleton/index.ts
+
+// ===== DATA DISPLAY SKELETONS =====
+export { TableSkeleton } from './data-display/Table';
+```
+
+## 🚫 Reglas PROHIBIDAS
+
+### ❌ NO Duplicar Código
+```tsx
+// ❌ MAL - Crear skeleton inline repetido
+const MyComponent = () => {
+  if (loading) {
+    return (
+      <div className="bg-gray-200 h-4 w-full animate-pulse" />
+    );
+  }
+};
+
+// ✅ BIEN - Usar componente existente
+const MyComponent = () => {
+  if (loading) {
+    return <Skeleton className="h-4 w-full" />;
+  }
+};
+```
+
+### ❌ NO Crear Skeletons Fuera de la Carpeta
+```tsx
+// ❌ MAL - Skeleton en Components/ui/
+// Components/ui/MyFormSkeleton.tsx
+
+// ✅ BIEN - Skeleton en carpeta dedicada
+// Components/Skeleton/forms/MyForm.tsx
+```
+
+### ❌ NO Usar Estilos Inconsistentes
+```tsx
+// ❌ MAL - Colores diferentes
+<div className="bg-blue-200 animate-pulse" />
+
+// ✅ BIEN - Usar componente con estilos consistentes
+<Skeleton className="h-4 w-full" />
+```
+
+## 📚 Documentación de Referencia
+
+1. **README.md** - Guía completa con todos los detalles
+2. **EXAMPLES.tsx** - 9 ejemplos prácticos (Login, Dashboard, Tickets, etc.)
+3. Esta regla - Referencia rápida para uso diario
+
+## 🎯 Checklist de Implementación
+
+Cuando implementes loading states:
+- [ ] ¿Usé un skeleton existente en lugar de crear uno nuevo?
+- [ ] ¿Importé desde `@/Components/Skeleton`?
+- [ ] ¿El skeleton mantiene la estructura visual del componente real?
+- [ ] ¿El skeleton tiene animación shimmer?
+- [ ] ¿Funciona correctamente en dark mode?
+- [ ] ¿Es responsive (mobile, tablet, desktop)?
+
+## 💡 Tips Profesionales
+
+1. **Mantén la estructura visual** - El skeleton debe parecerse al componente real
+2. **Usa el más específico** - Prefiere `FormSkeleton` sobre componer múltiples `InputSkeleton`
+3. **Composición para casos únicos** - Combina componentes base para layouts especiales
+4. **Consistencia** - Siempre usa los colores y animaciones del sistema
+5. **Performance** - Los skeletons son CSS puro (GPU accelerated)
+
+## 🔄 Mantenimiento
+
+### Al Agregar Nuevos Componentes UI
+Si creas un nuevo componente en `Components/ui/`, considera:
+1. ¿Necesita un skeleton? → Créalo en `Components/Skeleton/`
+2. ¿Es un componente complejo? → Usa composición de skeletons base
+3. ¿Es reutilizable? → Agrégalo al barrel export
+
+### Al Refactorizar
+- Mantén backward compatibility con `Components/ui/index.ts`
+- Actualiza `EXAMPLES.tsx` si cambias props
+- Actualiza `README.md` con nuevos componentes
+
+---
+
+**Sistema implementado el 13 de Octubre, 2025**  
+**Última actualización**: 13 de Octubre, 2025  
+**Versión**: 1.0.0

@@ -37,7 +37,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            // Auth se maneja desde frontend con GraphQL
+            // No usamos sesiones de Laravel, usamos JWT
         ];
     }
 }

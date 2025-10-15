@@ -6,13 +6,35 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": false,
+    
+    /* Strict Type-Checking - PROFESIONAL */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    
+    /* Path Aliases - IMPORTACIONES LIMPIAS */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["resources/js/*"],
+      "@/components/*": ["resources/js/components/*"],
+      "@/layouts/*": ["resources/js/layouts/*"],
+      "@/pages/*": ["resources/js/pages/*"],
+      "@/features/*": ["resources/js/features/*"],
+      "@/lib/*": ["resources/js/lib/*"],
+      "@/hooks/*": ["resources/js/hooks/*"],
+      "@/contexts/*": ["resources/js/contexts/*"],
+      "@/types/*": ["resources/js/types/*"]
+    },
+    
     "types": ["vite/client"]
   },
   "include": ["resources/js/**/*"],

@@ -120,7 +120,7 @@ class RegisterMutationTest extends TestCase
         // ✅ NUEVO: Verificar que se asignó rol USER automáticamente
         $this->assertDatabaseHas('auth.user_roles', [
             'user_id' => $user->id,
-            'role_code' => 'user',
+            'role_code' => 'USER',  // UPPERCASE según RolesSeeder
             'company_id' => null,  // USER no requiere empresa según constraint de BD
             'is_active' => true,
         ]);

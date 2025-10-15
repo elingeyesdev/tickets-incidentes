@@ -51,11 +51,11 @@ extend type Query {
     """
     Roles disponibles en el sistema
     Lista estática de roles con sus descripciones
-    Cache de 1 hora para performance
+    Solo accesible por PLATFORM_ADMIN y COMPANY_ADMIN (validado en resolver)
+    Cache de 1 hora para performance (cache privada por usuario)
     """
     availableRoles: [RoleInfo!]!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
-        @cache(ttl: 3600, key: "available_roles")
+        @guard
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\AvailableRolesQuery")
 }
 

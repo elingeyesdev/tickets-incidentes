@@ -85,7 +85,7 @@ class UserRoleContextsBatchLoader
                 $dashboardPaths = [
                     'USER' => '/tickets',
                     'AGENT' => '/agent/dashboard',
-                    'COMPANY_ADMIN' => '/admin/dashboard',
+                    'COMPANY_ADMIN' => '/empresa/dashboard',
                     'PLATFORM_ADMIN' => '/platform/dashboard',
                 ];
 
