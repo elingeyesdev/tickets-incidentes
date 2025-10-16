@@ -3,6 +3,7 @@
 namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Features\Authentication\Services\AuthService;
+use App\Features\Authentication\GraphQL\Mutations\Concerns\SetsRefreshTokenCookie;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
  * LogoutMutation
  *
  * Cierra sesión del usuario autenticado.
+ * Limpia la cookie HttpOnly del refresh token.
  * - everywhere=false: solo sesión actual (default)
  * - everywhere=true: todas las sesiones (todos los dispositivos)
  *
@@ -31,6 +33,7 @@ use Illuminate\Support\Facades\Log;
  */
 class LogoutMutation extends BaseMutation
 {
+    use SetsRefreshTokenCookie;
     /**
      * Constructor con dependency injection
      */
@@ -102,6 +105,9 @@ class LogoutMutation extends BaseMutation
                 'email' => $user->email,
             ]);
         }
+
+        // Limpiar cookie HttpOnly del refresh token
+        $this->clearRefreshTokenCookie();
 
         return true;
     }

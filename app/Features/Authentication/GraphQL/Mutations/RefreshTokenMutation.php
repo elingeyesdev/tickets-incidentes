@@ -4,6 +4,7 @@ namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Exceptions\RefreshTokenRequiredException;
+use App\Features\Authentication\GraphQL\Mutations\Concerns\SetsRefreshTokenCookie;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Helpers\DeviceInfoParser;
@@ -31,6 +32,8 @@ use App\Shared\Helpers\DeviceInfoParser;
  */
 class RefreshTokenMutation extends BaseMutation
 {
+    use SetsRefreshTokenCookie;
+
     /**
      * Constructor con dependency injection
      */
@@ -79,10 +82,14 @@ class RefreshTokenMutation extends BaseMutation
         // El servicio valida el refresh token y obtiene el usuario internamente
         $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
 
+        // Establecer el nuevo refresh token en cookie HttpOnly (más seguro)
+        $this->setRefreshTokenCookie($result['refresh_token']);
+
         // Retornar en formato RefreshPayload (más simple que AuthPayload)
+        // NOTA: No retornamos el refresh token real, está en cookie HttpOnly
         return [
             'accessToken' => $result['access_token'],
-            'refreshToken' => $result['refresh_token'],
+            'refreshToken' => 'Token stored in secure HttpOnly cookie',
             'tokenType' => 'Bearer',
             'expiresIn' => $result['expires_in'],
         ];

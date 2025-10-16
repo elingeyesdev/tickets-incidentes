@@ -79,7 +79,12 @@ class RefreshTokenAndLogoutTest extends TestCase
         ]);
 
         $newAccessToken = $response->json('data.refreshToken.accessToken');
-        $newRefreshToken = $response->json('data.refreshToken.refreshToken');
+
+        // El refreshToken en JSON es ahora un mensaje informativo
+        $this->assertEquals('Token stored in secure HttpOnly cookie', $response->json('data.refreshToken.refreshToken'));
+
+        // El refresh token real está almacenado en el trait para tests
+        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
 
         // El nuevo access token debe ser diferente
         $this->assertNotEquals($oldAccessToken, $newAccessToken);
@@ -124,7 +129,8 @@ class RefreshTokenAndLogoutTest extends TestCase
             ->withRefreshToken($oldRefreshToken)
             ->graphQL($refreshQuery);
 
-        $newRefreshToken = $firstRefresh->json('data.refreshToken.refreshToken');
+        // El nuevo refresh token está almacenado en el trait
+        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
 
         // Assert - El token viejo ya NO debe funcionar
         $secondRefresh = $this->withJWT($firstRefresh->json('data.refreshToken.accessToken'))
@@ -139,9 +145,9 @@ class RefreshTokenAndLogoutTest extends TestCase
 
     /**
      * @test
-     * RefreshToken requiere el refresh token en el header
+     * RefreshToken requiere el refresh token en cookie o header
      */
-    public function refresh_token_requires_refresh_token_header(): void
+    public function refresh_token_requires_refresh_token_cookie_or_header(): void
     {
         // Arrange
         $loginResponse = $this->loginUser();
@@ -154,7 +160,7 @@ class RefreshTokenAndLogoutTest extends TestCase
             }
         ';
 
-        // Act - Con access token pero SIN refresh token
+        // Act - Con access token pero SIN refresh token (ni cookie ni header)
         $response = $this->withJWT($loginResponse['accessToken'])->graphQL($query);
 
         // Assert
@@ -423,6 +429,7 @@ class RefreshTokenAndLogoutTest extends TestCase
 
     /**
      * Helper: Login and get tokens
+     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
      */
     private function loginUser(): array
     {
@@ -443,9 +450,12 @@ class RefreshTokenAndLogoutTest extends TestCase
             ],
         ]);
 
+        // El refresh token real está almacenado en el trait para tests
+        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
+
         return [
             'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $response->json('data.login.refreshToken'),
+            'refreshToken' => $refreshToken,
         ];
     }
 
@@ -460,10 +470,13 @@ class RefreshTokenAndLogoutTest extends TestCase
     }
 
     /**
-     * Helper: Add refresh token header
+     * Helper: Add refresh token via header (for tests)
+     * Nota: En tests usamos header porque las cookies con ->withCookie() no funcionan con Lighthouse.
+     * En producción, el frontend usa cookies HttpOnly que sí funcionan correctamente.
      */
     private function withRefreshToken(string $token): self
     {
+        // En tests usamos header porque withCookie() no funciona con Lighthouse
         return $this->withHeaders([
             'X-Refresh-Token' => $token,
         ]);

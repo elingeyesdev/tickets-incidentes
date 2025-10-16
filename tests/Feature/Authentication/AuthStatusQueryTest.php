@@ -214,7 +214,8 @@ class AuthStatusQueryTest extends TestCase
             ->graphQL($refreshQuery);
 
         $newAccessToken = $refreshResponse->json('data.refreshToken.accessToken');
-        $newRefreshToken = $refreshResponse->json('data.refreshToken.refreshToken');
+        // El refresh token real está almacenado en el trait para tests
+        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
 
         // Act - Consultar estado con nuevo token
         $query = '
@@ -369,6 +370,7 @@ class AuthStatusQueryTest extends TestCase
 
     /**
      * Helper: Login and get tokens
+     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
      */
     private function loginUser(): array
     {
@@ -389,9 +391,12 @@ class AuthStatusQueryTest extends TestCase
             ],
         ]);
 
+        // El refresh token real está almacenado en el trait para tests
+        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
+
         return [
             'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $response->json('data.login.refreshToken'),
+            'refreshToken' => $refreshToken,
         ];
     }
 

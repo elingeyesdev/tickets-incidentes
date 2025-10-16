@@ -33,6 +33,10 @@ return [
             // Always set the `Accept: application/json` header.
             Nuwave\Lighthouse\Http\Middleware\AcceptJson::class,
 
+            // IMPORTANT: Adds queued cookies to the response
+            // This is required for HttpOnly cookie support (refresh tokens)
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+
             // JWT Authentication Middleware - Extracts and validates JWT tokens
             // Adds user to context for @jwt directive validation
             \App\Http\Middleware\GraphQLJWTMiddleware::class,

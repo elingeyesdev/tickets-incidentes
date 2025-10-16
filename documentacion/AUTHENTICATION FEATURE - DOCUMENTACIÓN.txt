@@ -1,9 +1,9 @@
-# 📘 AUTHENTICATION API V9.0 - DOCUMENTACIÓN COMPLETA
+# 📘 AUTHENTICATION API V10.0 - DOCUMENTACIÓN COMPLETA
 
 > Sistema Helpdesk Multi-Tenant
 > Feature: Authentication
-> Schema Version: 9.0 (Refactorizado - Reutiliza Shared Types)
-> Última actualización: 2025
+> Schema Version: 10.0 (HttpOnly Cookies para Refresh Tokens)
+> Última actualización: 15 Octubre 2025
 
 ---
 
@@ -35,11 +35,13 @@ El **Authentication Feature** gestiona todo el ciclo de autenticación y autoriz
 
 ### Características Principales
 ✅ **JWT Tokens**: Access tokens de corta duración (15-60 min)
+✅ **HttpOnly Cookies**: Refresh tokens en cookies seguras (V10.0)
 ✅ **Refresh Tokens**: Tokens de larga duración (30 días) en BD
 ✅ **Multi-device Sessions**: Tracking de sesiones por dispositivo
 ✅ **OAuth Integration**: Google OAuth2 para SSO
 ✅ **Rate Limiting**: Protección contra ataques de fuerza bruta
 ✅ **Email Verification**: Verificación obligatoria de emails
+✅ **REST Endpoint**: `/auth/refresh` para renovación de tokens con cookies
 
 ---
 
@@ -111,6 +113,82 @@ type RoleContext {
     dashboardPath: String!
 }
 ```
+
+### Cambios Clave en V10.0 (HttpOnly Cookies)
+
+#### 🔒 **Refresh Tokens en HttpOnly Cookies**
+
+**Antes V9.0 (Inseguro - Token en JSON):**
+```json
+{
+    "data": {
+        "login": {
+            "accessToken": "eyJ0eXA...",
+            "refreshToken": "def50200a1b2c3d4...",  // ❌ Expuesto en JavaScript
+            "tokenType": "Bearer"
+        }
+    }
+}
+```
+
+**Ahora V10.0 (Seguro - Cookie HttpOnly):**
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=e66b223b211990da...;
+            HttpOnly;
+            SameSite=Lax;
+            Secure;
+            Max-Age=1209600;
+            Path=/
+
+{
+    "data": {
+        "login": {
+            "accessToken": "eyJ0eXA...",
+            "refreshToken": "Token stored in secure HttpOnly cookie",  // ✅ Mensaje informativo
+            "tokenType": "Bearer"
+        }
+    }
+}
+```
+
+**Ventajas de Seguridad:**
+- ✅ **Protección XSS**: JavaScript no puede acceder al refresh token
+- ✅ **Protección CSRF**: `SameSite=Lax` previene ataques cross-site
+- ✅ **HTTPS Only**: Flag `Secure` en producción
+- ✅ **Token Rotation**: Los tokens siguen rotando en cada refresh
+
+**Mutations Afectadas:**
+- `login`: Establece refresh token en cookie HttpOnly
+- `register`: Establece refresh token en cookie HttpOnly
+- `refreshToken`: Lee y establece refresh token en cookie HttpOnly
+- `logout`: Limpia la cookie HttpOnly del refresh token
+
+#### 🌐 **Nuevo Endpoint REST: /auth/refresh**
+
+**Recomendación**: Usar endpoint REST en lugar de mutation GraphQL para refresh.
+
+```http
+POST /auth/refresh
+Cookie: refresh_token=e66b223b211990da...
+
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=f77c334c322001eb...; HttpOnly; SameSite=Lax
+Content-Type: application/json
+
+{
+    "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresIn": 3600,
+    "message": "Token refreshed successfully. New refresh token set in HttpOnly cookie."
+}
+```
+
+**Ventajas del Endpoint REST:**
+- ✅ Más simple para implementar en clientes
+- ✅ Usa cookies automáticamente (no requiere headers manuales)
+- ✅ Estándar de la industria para refresh tokens
+- ✅ Compatible con todos los navegadores y frameworks
 
 ---
 
@@ -747,25 +825,26 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
 
 ---
 
-### 4. `refreshToken` - Renovar Token
+### 4. `refreshToken` - Renovar Token (GraphQL)
+
+**⚠️ RECOMENDACIÓN V10.0**: Usar endpoint REST `/auth/refresh` en lugar de esta mutation GraphQL.
 
 **Descripción**: Genera nuevo access token usando refresh token válido.
 
 **Firma:**
 ```graphql
-refreshToken: RefreshPayload!
+refreshToken(refreshToken: String): RefreshPayload!
 ```
 
 **Directivas:**
-- `@auth`: Requiere refresh token válido en headers
 - `@audit(action: "token_refresh")`: Auditoría automática
 
-**Headers Requeridos:**
-```
-Authorization: Bearer <refresh_token>
-```
+**Métodos de Envío del Refresh Token (Orden de prioridad):**
+1. **Cookie HttpOnly** `refresh_token` (Recomendado - V10.0)
+2. Header `X-Refresh-Token`
+3. Argumento `refreshToken` en la mutation
 
-**Request:**
+**Request (Con Cookie HttpOnly):**
 ```graphql
 mutation RefreshToken {
     refreshToken {
@@ -777,13 +856,31 @@ mutation RefreshToken {
 }
 ```
 
-**Response:**
-```json
+**Request (Con Header - Retrocompatibilidad):**
+```graphql
+# Header: X-Refresh-Token: def50200e5f6g7h8i9j0...
+
+mutation RefreshToken {
+    refreshToken {
+        accessToken
+        refreshToken
+        tokenType
+        expiresIn
+    }
+}
+```
+
+**Response V10.0:**
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=f77c334c322001eb...; HttpOnly; SameSite=Lax
+Content-Type: application/json
+
 {
     "data": {
         "refreshToken": {
             "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
-            "refreshToken": "def50200e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9...",
+            "refreshToken": "Token stored in secure HttpOnly cookie",
             "tokenType": "Bearer",
             "expiresIn": 3600
         }
@@ -791,26 +888,43 @@ mutation RefreshToken {
 }
 ```
 
-**Flujo de Refresh Automático:**
+**Flujo de Refresh Automático (V10.0):**
 1. Access token expira (15-60 min)
 2. Frontend detecta 401 en requests
-3. Frontend automáticamente llama `refreshToken`
-4. Nuevo access token obtenido
-5. Request original se reintenta con nuevo token
+3. Frontend llama `/auth/refresh` (REST) o `refreshToken` (GraphQL)
+4. Cookie HttpOnly se envía automáticamente
+5. Nuevo access token obtenido
+6. Nueva cookie HttpOnly establecida
+7. Request original se reintenta con nuevo token
 
-**Seguridad:**
-- Refresh token anterior se invalida
-- Nuevo refresh token generado
-- Registro en auditoría
+**Seguridad V10.0:**
+- ✅ Refresh token anterior se invalida (Token Rotation)
+- ✅ Nuevo refresh token generado
+- ✅ Nuevo refresh token en cookie HttpOnly
+- ✅ Registro en auditoría
+- ✅ Protección XSS automática
 
 **Errores:**
 ```json
 {
     "errors": [
         {
-            "message": "Refresh token inválido o expirado",
+            "message": "Refresh token required. Send it via X-Refresh-Token header or refresh_token cookie.",
             "extensions": {
-                "code": "INVALID_REFRESH_TOKEN"
+                "code": "REFRESH_TOKEN_REQUIRED"
+            }
+        }
+    ]
+}
+```
+
+```json
+{
+    "errors": [
+        {
+            "message": "Refresh token is invalid or has been revoked.",
+            "extensions": {
+                "code": "INVALID_TOKEN"
             }
         }
     ]
@@ -821,7 +935,7 @@ mutation RefreshToken {
 
 ### 5. `logout` - Cerrar Sesión
 
-**Descripción**: Cierra sesión. Puede cerrar solo sesión actual o todas.
+**Descripción**: Cierra sesión. Puede cerrar solo sesión actual o todas. **V10.0**: Limpia cookie HttpOnly automáticamente.
 
 **Firma:**
 ```graphql
@@ -853,8 +967,12 @@ mutation Logout($everywhere: Boolean) {
 }
 ```
 
-**Response:**
-```json
+**Response V10.0:**
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0
+Content-Type: application/json
+
 {
     "data": {
         "logout": true
@@ -862,13 +980,14 @@ mutation Logout($everywhere: Boolean) {
 }
 ```
 
-**Efectos por Tipo:**
+**Efectos por Tipo V10.0:**
 
 | Tipo | `everywhere: false` | `everywhere: true` |
 |------|---------------------|-------------------|
 | Revoca | Solo sesión actual | TODAS las sesiones |
 | Access token | Actual se invalida | Todos se invalidan |
 | Refresh token | Actual se revoca | Todos se revocan |
+| Cookie HttpOnly | Se limpia | Se limpia |
 | Otros dispositivos | Permanecen activos | Deben re-loguearse |
 
 **Casos de Uso:**
@@ -1396,13 +1515,25 @@ type UserMinimal {
 }
 ```
 
-### Refresh Token Storage
+### Refresh Token Storage V10.0
 
+**Backend (Base de Datos):**
 - Almacenado en BD (`auth.refresh_tokens`)
 - Hash SHA-256 para seguridad
 - Asociado a dispositivo específico
 - Expiración: 30 días (configurable)
 - Un usuario puede tener múltiples refresh tokens (multi-device)
+
+**Frontend (HttpOnly Cookie):**
+- Cookie Name: `refresh_token`
+- Attributes:
+  - `HttpOnly`: ✅ (No accesible desde JavaScript)
+  - `SameSite`: `Lax` (Protección CSRF)
+  - `Secure`: ✅ En producción (Solo HTTPS)
+  - `Path`: `/`
+  - `Max-Age`: 1209600 segundos (14 días)
+- El navegador envía la cookie automáticamente en requests
+- No requiere manejo manual de storage en JavaScript
 
 ---
 
@@ -1418,6 +1549,7 @@ enum AuthenticationErrors {
     INVALID_TOKEN = 'INVALID_TOKEN',
     TOKEN_EXPIRED = 'TOKEN_EXPIRED',
     INVALID_REFRESH_TOKEN = 'INVALID_REFRESH_TOKEN',
+    REFRESH_TOKEN_REQUIRED = 'REFRESH_TOKEN_REQUIRED',  // V10.0
     RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
     GOOGLE_OAUTH_ERROR = 'GOOGLE_OAUTH_ERROR',
     PASSWORD_RESET_FAILED = 'PASSWORD_RESET_FAILED',
@@ -1521,29 +1653,38 @@ mutation VerifyEmail {
 
 ---
 
-### Caso 3: Refresh Token Automático
+### Caso 3: Refresh Token Automático (V10.0 HttpOnly Cookies)
 
 **1. Access token expira (15-60 min después):**
 - Frontend detecta 401 en requests
 
-**2. Frontend automáticamente:**
-```graphql
-mutation RefreshToken {
-    refreshToken {
-        accessToken
-        refreshToken
-    }
+**2. Frontend automáticamente llama REST endpoint:**
+```http
+POST /auth/refresh
+Cookie: refresh_token=e66b223b211990da... (enviada automáticamente)
+```
+
+**3. Backend responde con nuevo access token:**
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=f77c334c322001eb...; HttpOnly; SameSite=Lax
+
+{
+    "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresIn": 3600
 }
 ```
 
-**3. Tokens actualizados:**
-- Nuevo access token guardado
-- Nuevo refresh token guardado
-- Request original se reintenta
+**4. Frontend actualiza solo el access token:**
+- Nuevo access token guardado en localStorage/memory
+- Cookie HttpOnly actualizada automáticamente por el navegador
+- Request original se reintenta con nuevo access token
 
-**4. Transparente para el usuario:**
+**5. Transparente para el usuario:**
 - No pierde contexto
 - No necesita re-loguearse
+- No manejo manual de refresh tokens (más seguro)
 
 ---
 

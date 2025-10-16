@@ -93,9 +93,15 @@ class RegisterMutationTest extends TestCase
         // Verificar que tiene tokens
         $data = $response->json('data.register');
         $this->assertNotEmpty($data['accessToken']);
-        $this->assertNotEmpty($data['refreshToken']);
+        // RefreshToken ahora devuelve mensaje informativo (no el token real)
+        $this->assertEquals('Token stored in secure HttpOnly cookie', $data['refreshToken']);
         $this->assertNotEmpty($data['sessionId']);
         $this->assertIsInt($data['expiresIn']);
+
+        // ✅ NUEVO: Verificar que el refresh token fue almacenado para tests
+        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\RegisterMutation::getLastRefreshToken();
+        $this->assertNotEmpty($refreshToken, 'Refresh token debe estar almacenado para tests');
+        $this->assertGreaterThan(40, strlen($refreshToken), 'Refresh token debe tener longitud válida');
 
         // Verificar que se creó en la base de datos
         $this->assertDatabaseHas('auth.users', [

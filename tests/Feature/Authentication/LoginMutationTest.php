@@ -131,9 +131,15 @@ class LoginMutationTest extends TestCase
 
         // Verificar tokens
         $this->assertNotEmpty($loginData['accessToken']);
-        $this->assertNotEmpty($loginData['refreshToken']);
+        // RefreshToken ahora devuelve mensaje informativo (no el token real)
+        $this->assertEquals('Token stored in secure HttpOnly cookie', $loginData['refreshToken']);
         $this->assertEquals('Bearer', $loginData['tokenType']);
         $this->assertEquals(3600, $loginData['expiresIn']); // 1 hora
+
+        // ✅ NUEVO: Verificar que el refresh token fue almacenado para tests
+        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
+        $this->assertNotEmpty($refreshToken, 'Refresh token debe estar almacenado para tests');
+        $this->assertGreaterThan(40, strlen($refreshToken), 'Refresh token debe tener longitud válida');
 
         // Verificar datos del usuario
         $this->assertEquals($this->testUser->id, $loginData['user']['id']);
@@ -427,8 +433,13 @@ class LoginMutationTest extends TestCase
         // Verificar formato JWT (3 partes separadas por puntos)
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/', $accessToken);
 
-        // Refresh token es un hash largo (no JWT en esta implementación)
-        $this->assertGreaterThan(40, strlen($refreshToken));
+        // RefreshToken ahora es un mensaje informativo (el token real está en cookie)
+        $this->assertEquals('Token stored in secure HttpOnly cookie', $refreshToken);
+
+        // Verificar que el token real está almacenado para tests
+        $actualRefreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
+        $this->assertNotEmpty($actualRefreshToken);
+        $this->assertGreaterThan(40, strlen($actualRefreshToken));
     }
 
     /**

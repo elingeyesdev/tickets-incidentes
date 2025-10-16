@@ -41,6 +41,9 @@ extend type Mutation {
     """
     Registra un nuevo usuario en el sistema
     Genera tokens automáticamente tras registro exitoso
+
+    SEGURIDAD (V10.0+): El refresh token se establece en cookie HttpOnly
+    y no se devuelve en el JSON response por seguridad.
     """
     register(input: RegisterInput!): AuthPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\RegisterMutation")
@@ -50,6 +53,9 @@ extend type Mutation {
     """
     Autentica usuario con email y contraseña
     Retorna tokens y roles disponibles para selector
+
+    SEGURIDAD (V10.0+): El refresh token se establece en cookie HttpOnly
+    y no se devuelve en el JSON response por seguridad.
     """
     login(input: LoginInput!): AuthPayload!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\LoginMutation")
@@ -68,13 +74,19 @@ extend type Mutation {
     # ===== GESTIÓN DE TOKENS =====
 
     """
+    ⚠️ DEPRECADO: Usar endpoint REST POST /auth/refresh (más seguro con HttpOnly cookies)
+
     Genera nuevo access token usando refresh token válido
     Invalida refresh token anterior por seguridad
 
-    El refresh token se puede enviar de 3 formas (en orden de prioridad):
-    1. Header X-Refresh-Token (recomendado)
-    2. Cookie refresh_token (para web)
-    3. Argumento refreshToken en body (para Apollo Studio/clientes que no permiten headers personalizados)
+    SEGURIDAD MEJORADA (V10.0+):
+    - El refresh token se lee desde cookie HttpOnly (más seguro)
+    - También soporta Header X-Refresh-Token (compatibilidad)
+    - Argumento refreshToken en body mantiene compatibilidad con Apollo Studio
+
+    RECOMENDACIÓN: Usar endpoint REST POST /auth/refresh en su lugar
+    El endpoint REST lee el refresh token exclusivamente desde cookie HttpOnly,
+    lo cual es más seguro que enviarlo en el body o headers.
 
     NO requiere access token - solo refresh token (el access token puede estar expirado)
     """
@@ -149,12 +161,20 @@ extend type Mutation {
 """
 Response de login/register
 Contiene SOLO lo necesario para autenticación inicial
+
+SEGURIDAD (V10.0+):
+El campo refreshToken devuelve un mensaje informativo.
+El refresh token real se establece en una cookie HttpOnly por seguridad.
 """
 type AuthPayload {
     """Token de acceso JWT (corta duración: 15-60 min)"""
     accessToken: String!
 
-    """Token de refresh (larga duración: 30 días)"""
+    """
+    NOTA: Este campo devuelve un mensaje informativo.
+    El refresh token real se establece en cookie HttpOnly por seguridad.
+    No es accesible desde JavaScript (previene XSS).
+    """
     refreshToken: String!
 
     """Tipo de token (siempre "Bearer")"""

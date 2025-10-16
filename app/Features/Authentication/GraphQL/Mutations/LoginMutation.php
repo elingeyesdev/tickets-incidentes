@@ -3,6 +3,7 @@
 namespace App\Features\Authentication\GraphQL\Mutations;
 
 use App\Features\Authentication\Services\AuthService;
+use App\Features\Authentication\GraphQL\Mutations\Concerns\SetsRefreshTokenCookie;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Helpers\DeviceInfoParser;
 use Illuminate\Support\Str;
@@ -11,14 +12,13 @@ use Illuminate\Support\Str;
  * LoginMutation
  *
  * Autentica usuario con email y contraseña.
- * Retorna el mismo payload que RegisterMutation (AuthPayload).
+ * El refresh token se establece en una cookie HttpOnly por seguridad.
  *
  * @usage GraphQL
  * ```graphql
  * mutation Login($input: LoginInput!) {
  *   login(input: $input) {
  *     accessToken
- *     refreshToken
  *     user { email displayName }
  *     roleContexts { roleCode roleName }
  *   }
@@ -27,6 +27,7 @@ use Illuminate\Support\Str;
  */
 class LoginMutation extends BaseMutation
 {
+    use SetsRefreshTokenCookie;
     /**
      * Constructor con dependency injection
      */
@@ -60,7 +61,10 @@ class LoginMutation extends BaseMutation
         // 3. Llamar al servicio (TODA la lógica de negocio está aquí)
         $result = $this->authService->login($email, $password, $deviceInfo);
 
-        // 4. Transformar respuesta del servicio a formato GraphQL (mismo que RegisterMutation)
+        // 4. Establecer refresh token en cookie HttpOnly (más seguro)
+        $this->setRefreshTokenCookie($result['refresh_token']);
+
+        // 5. Transformar respuesta del servicio a formato GraphQL (sin refresh token en JSON)
         return $this->mapToGraphQLResponse($result);
     }
 
@@ -69,6 +73,9 @@ class LoginMutation extends BaseMutation
      *
      * IMPORTANTE: Esta estructura debe ser IDÉNTICA a RegisterMutation
      * para que el cliente pueda manejar ambos casos de la misma forma.
+     *
+     * NOTA: El refresh token NO se incluye en el JSON response por seguridad.
+     * Se establece en una cookie HttpOnly en su lugar.
      *
      * @param array{user: \App\Features\UserManagement\Models\User, access_token: string, refresh_token: string, expires_in: int, session_id: string} $result
      * @return array AuthPayload compatible con GraphQL schema
@@ -83,7 +90,7 @@ class LoginMutation extends BaseMutation
         return [
             // Tokens
             'accessToken' => $result['access_token'],
-            'refreshToken' => $result['refresh_token'],
+            'refreshToken' => 'Token stored in secure HttpOnly cookie', // Mensaje informativo
             'tokenType' => 'Bearer',
             'expiresIn' => $result['expires_in'],
 

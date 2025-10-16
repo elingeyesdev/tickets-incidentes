@@ -3,6 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Features\Authentication\Http\Controllers\RefreshTokenController;
+
+// ================================================================================
+// REST API ENDPOINTS - Authentication
+// ================================================================================
+
+// Endpoint REST para renovar access token usando refresh token en cookie HttpOnly
+Route::post('/auth/refresh', [RefreshTokenController::class, 'refresh'])
+    ->name('auth.refresh');
 
 // ================================================================================
 // PÁGINAS PÚBLICAS

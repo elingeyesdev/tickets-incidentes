@@ -1,6 +1,6 @@
 /**
  * AuthContext - Gestión Global de Autenticación con GraphQL
- * 
+ *
  * Responsabilidades:
  * - Estado de autenticación mediante GraphQL
  * - Usuario actual desde accessToken + authStatus query
@@ -46,11 +46,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Al montar, verificar si hay accessToken y obtener usuario
     useEffect(() => {
         const token = TokenStorage.getAccessToken();
-        
+
         if (token) {
             // Primero intentar leer datos temporales (recién logueado/registrado)
             const tempData = getTempUserData();
-            
+
             if (tempData && tempData.user && tempData.roleContexts) {
                 // Usar datos temporales y construir el usuario completo
                 const fullUser: User = {
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 };
                 setUser(fullUser);
                 setLoading(false);
-                
+
                 // Limpiar datos temporales después de usarlos
                 clearTempUserData();
             } else {
@@ -126,13 +126,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } finally {
             // Limpiar tokens locales
             TokenStorage.clearTokens();
-            
+
             // Limpiar caché de Apollo
             await apolloClient.clearStore();
-            
+
             // Limpiar estado
             setUser(null);
-            
+
             // Redirigir a login
             window.location.href = '/login';
         }

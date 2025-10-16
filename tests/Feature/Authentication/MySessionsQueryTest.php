@@ -409,6 +409,7 @@ class MySessionsQueryTest extends TestCase
 
     /**
      * Helper: Login and get tokens
+     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
      */
     private function loginUser(): array
     {
@@ -429,9 +430,12 @@ class MySessionsQueryTest extends TestCase
             ],
         ]);
 
+        // El refresh token real está almacenado en el trait para tests
+        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
+
         return [
             'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $response->json('data.login.refreshToken'),
+            'refreshToken' => $refreshToken,
         ];
     }
 
@@ -446,10 +450,13 @@ class MySessionsQueryTest extends TestCase
     }
 
     /**
-     * Helper: Add refresh token header
+     * Helper: Add refresh token via header (for tests)
+     * Nota: En tests usamos header porque las cookies con ->withCookie() no funcionan con Lighthouse.
+     * En producción, el frontend usa cookies HttpOnly que sí funcionan correctamente.
      */
     private function withRefreshToken(string $token): self
     {
+        // En tests usamos header porque withCookie() no funciona con Lighthouse
         return $this->withHeaders([
             'X-Refresh-Token' => $token,
         ]);
