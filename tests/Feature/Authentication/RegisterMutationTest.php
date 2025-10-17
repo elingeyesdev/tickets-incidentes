@@ -40,14 +40,14 @@ class RegisterMutationTest extends TestCase
                         avatarUrl
                         theme
                         language
-                    }
-                    roleContexts {
-                        roleCode
-                        roleName
-                        dashboardPath
-                        company {
-                            id
-                            name
+                        roleContexts {
+                            roleCode
+                            roleName
+                            dashboardPath
+                            company {
+                                id
+                                name
+                            }
                         }
                     }
                     sessionId
@@ -83,10 +83,10 @@ class RegisterMutationTest extends TestCase
         $response->assertJsonPath('data.register.user.displayName', 'John Doe');
         $response->assertJsonPath('data.register.user.theme', 'light');
         $response->assertJsonPath('data.register.user.language', 'es');
-        $response->assertJsonPath('data.register.roleContexts.0.roleCode', 'USER');
-        $response->assertJsonPath('data.register.roleContexts.0.roleName', 'Cliente');
-        $response->assertJsonPath('data.register.roleContexts.0.dashboardPath', '/tickets');
-        $response->assertJsonPath('data.register.roleContexts.0.company', null); // USER no tiene empresa
+        $response->assertJsonPath('data.register.user.roleContexts.0.roleCode', 'USER');
+        $response->assertJsonPath('data.register.user.roleContexts.0.roleName', 'Cliente');
+        $response->assertJsonPath('data.register.user.roleContexts.0.dashboardPath', '/tickets');
+        $response->assertJsonPath('data.register.user.roleContexts.0.company', null); // USER no tiene empresa
 
         // Verificar que tiene tokens
         $data = $response->json('data.register');
@@ -105,12 +105,16 @@ class RegisterMutationTest extends TestCase
         $this->assertDatabaseHas('auth.users', [
             'email' => 'newuser@example.com',
             'email_verified' => false,
-            'onboarding_completed' => false, // Usuario recién registrado
             'status' => 'active',  // PostgreSQL ENUM usa lowercase
         ]);
 
-        // Verificar que se creó el perfil
+        // Obtener usuario para verificaciones adicionales
         $user = User::where('email', 'newuser@example.com')->first();
+
+        // Verificar onboarding_completed_at es null (usuario recién registrado no ha completado onboarding)
+        $this->assertNull($user->onboarding_completed_at);
+
+        // Verificar que se creó el perfil
         $this->assertNotNull($user->profile);
         $this->assertEquals('John', $user->profile->first_name);
         $this->assertEquals('Doe', $user->profile->last_name);
@@ -146,7 +150,7 @@ class RegisterMutationTest extends TestCase
             'password_hash' => password_hash('password', PASSWORD_BCRYPT),
             'status' => UserStatus::ACTIVE,
             'terms_accepted' => true,
-            'onboarding_completed' => false, // Agregar campo nuevo
+            'onboarding_completed_at' => null, // Usuario sin onboarding completado
         ]);
 
         $response = $this->graphQL('

@@ -198,12 +198,6 @@ type AuthPayload {
     """Información básica del usuario autenticado"""
     user: UserAuthInfo!
 
-    """
-    Contextos de roles disponibles
-    Para selector de roles si tiene más de uno
-    """
-    roleContexts: [RoleContext!]!
-
     """ID de sesión único"""
     sessionId: String!
 

@@ -69,7 +69,8 @@ export const useRegister = (options?: UseRegisterOptions) => {
 
     const [register, { loading, error }] = useMutation(REGISTER_MUTATION, {
         onCompleted: (data: any) => {
-            const { accessToken, expiresIn, user, roleContexts } = data.register;
+            const { accessToken, expiresIn, user } = data.register;
+            const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
 
             // Guardar tokens (refresh token ya está en httpOnly cookie)
             saveAuthTokens(accessToken, expiresIn);

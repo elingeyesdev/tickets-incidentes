@@ -51,23 +51,9 @@ class AuthStatusQuery extends BaseQuery
             throw AuthenticationException::unauthenticated();
         }
 
-        // Eager load profile for UserAuthInfo fields
-        $user->load('profile');
-
-        // Formatear user para UserAuthInfo type (manual para evitar conflictos con accessors)
-        $userInfo = [
-            'id' => $user->id,
-            'userCode' => $user->user_code,
-            'email' => $user->email,
-            'emailVerified' => $user->email_verified,
-            'status' => $user->status->value ?? 'active',
-            'displayName' => $user->profile
-                ? trim("{$user->profile->first_name} {$user->profile->last_name}")
-                : $user->email,
-            'avatarUrl' => $user->profile?->avatar_url,
-            'theme' => $user->profile?->theme ?? 'light',
-            'language' => $user->profile?->language ?? 'es',
-        ];
+        // NO hacer eager loading aquí - dejar que los DataLoaders lo manejen
+        // profile y roleContexts se cargarán SOLO si el frontend los solicita
+        // Los DataLoaders previenen N+1 queries automáticamente
 
         // Obtener access token del header
         $request = $context->request();
@@ -107,9 +93,11 @@ class AuthStatusQuery extends BaseQuery
         }
 
         // Construir respuesta AuthStatus
+        // NOTA: roleContexts ahora se resuelve automáticamente por UserAuthInfoRoleContextsResolver
+        // IMPORTANTE: Devolver el modelo User, no un array manual, para que los field resolvers funcionen
         return [
             'isAuthenticated' => true,
-            'user' => $userInfo,
+            'user' => $user, // Devolver modelo completo para que los resolvers funcionen
             'currentSession' => $currentSession,
             'tokenInfo' => [
                 'expiresIn' => $tokenExpiresAt ? max(0, $tokenExpiresAt - time()) : 0,

@@ -57,6 +57,17 @@ class AuthStatusQueryTest extends TestCase
                         avatarUrl
                         theme
                         language
+                        roleContexts {
+                            roleCode
+                            roleName
+                            dashboardPath
+                            company {
+                                id
+                                companyCode
+                                name
+                                logoUrl
+                            }
+                        }
                     }
                     tokenInfo {
                         expiresIn
@@ -81,7 +92,14 @@ class AuthStatusQueryTest extends TestCase
             'data' => [
                 'authStatus' => [
                     'isAuthenticated',
-                    'user' => ['id', 'email', 'displayName'],
+                    'user' => [
+                        'id',
+                        'email',
+                        'displayName',
+                        'roleContexts' => [
+                            '*' => ['roleCode', 'roleName', 'dashboardPath', 'company'],
+                        ],
+                    ],
                     'tokenInfo' => ['expiresIn', 'tokenType'],
                     'currentSession' => ['sessionId', 'deviceName', 'isCurrent'],
                 ],
@@ -97,6 +115,25 @@ class AuthStatusQueryTest extends TestCase
         $expiresIn = $response->json('data.authStatus.tokenInfo.expiresIn');
         $this->assertGreaterThan(0, $expiresIn);
         $this->assertLessThanOrEqual(config('jwt.ttl') * 60, $expiresIn);
+
+        // Validar roleContexts (ahora dentro de user)
+        $user = $response->json('data.authStatus.user');
+        $this->assertArrayHasKey('roleContexts', $user);
+        $this->assertIsArray($user['roleContexts']);
+        $this->assertNotEmpty($user['roleContexts']);
+
+        // Verificar estructura del primer rol (USER por defecto)
+        $firstRole = $user['roleContexts'][0];
+        $this->assertArrayHasKey('roleCode', $firstRole);
+        $this->assertArrayHasKey('roleName', $firstRole);
+        $this->assertArrayHasKey('dashboardPath', $firstRole);
+        $this->assertArrayHasKey('company', $firstRole);
+
+        // USER no tiene empresa
+        $this->assertEquals('USER', $firstRole['roleCode']);
+        $this->assertEquals('Cliente', $firstRole['roleName']);
+        $this->assertEquals('/tickets', $firstRole['dashboardPath']);
+        $this->assertNull($firstRole['company']);
     }
 
     /**

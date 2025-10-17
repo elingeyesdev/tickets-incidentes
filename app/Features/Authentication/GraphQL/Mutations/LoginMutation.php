@@ -77,6 +77,9 @@ class LoginMutation extends BaseMutation
      * NOTA: El refresh token NO se incluye en el JSON response por seguridad.
      * Se establece en una cookie HttpOnly en su lugar.
      *
+     * OPTIMIZACIÓN: No hace eager loading aquí. Los DataLoaders cargarán
+     * profile y roleContexts SOLO si el frontend los solicita, previniendo N+1.
+     *
      * @param array{user: \App\Features\UserManagement\Models\User, access_token: string, refresh_token: string, expires_in: int, session_id: string} $result
      * @return array AuthPayload compatible con GraphQL schema
      */
@@ -84,8 +87,9 @@ class LoginMutation extends BaseMutation
     {
         $user = $result['user'];
 
-        // Cargar roles activos del usuario con relaciones necesarias
-        $userRoles = $user->activeRoles()->with(['role', 'company'])->get();
+        // NO hacer eager loading aquí - dejar que los DataLoaders lo manejen
+        // Si el frontend NO pide profile/roleContexts, no se cargarán (lazy loading)
+        // Si el frontend SÍ los pide, los DataLoaders los cargarán eficientemente
 
         return [
             // Tokens
@@ -94,21 +98,9 @@ class LoginMutation extends BaseMutation
             'tokenType' => 'Bearer',
             'expiresIn' => $result['expires_in'],
 
-            // Usuario - Estructura UserAuthInfo (campos planos, NO nested profile)
-            'user' => [
-                'id' => $user->id,
-                'userCode' => $user->user_code,
-                'email' => $user->email,
-                'emailVerified' => $user->email_verified,
-                'status' => $user->status->value,
-                'displayName' => $user->profile->display_name,
-                'avatarUrl' => $user->profile->avatar_url,
-                'theme' => $user->profile->theme,
-                'language' => $user->profile->language,
-            ],
-
-            // Contextos de roles (con company que puede ser null)
-            'roleContexts' => $this->buildRoleContexts($userRoles),
+            // Usuario - Devolver modelo User para que los field resolvers funcionen
+            // (displayName, avatarUrl, theme, language, roleContexts, onboardingCompleted)
+            'user' => $user,
 
             // Metadata de sesión
             'sessionId' => $result['session_id'],
@@ -117,6 +109,10 @@ class LoginMutation extends BaseMutation
     }
 
     /**
+     * @deprecated Este método ya no se usa. La lógica se movió a UserAuthInfoRoleContextsResolver.
+     *             roleContexts ahora se resuelve automáticamente como campo de UserAuthInfo.
+     *             Método conservado temporalmente para referencia histórica.
+     *
      * Construye array de roleContexts según estructura GraphQL
      *
      * Cada roleContext incluye:

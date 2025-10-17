@@ -81,6 +81,8 @@ export const USER_FULL_FRAGMENT = gql`
 // ============================================
 
 export const USER_AUTH_INFO_FRAGMENT = gql`
+    ${ROLE_CONTEXT_FRAGMENT}
+    
     fragment UserAuthInfoFields on UserAuthInfo {
         id
         userCode
@@ -91,12 +93,14 @@ export const USER_AUTH_INFO_FRAGMENT = gql`
         avatarUrl
         theme
         language
+        roleContexts {
+            ...RoleContextFields
+        }
     }
 `;
 
 export const AUTH_PAYLOAD_FRAGMENT = gql`
     ${USER_AUTH_INFO_FRAGMENT}
-    ${ROLE_CONTEXT_FRAGMENT}
 
     fragment AuthPayloadFields on AuthPayload {
         accessToken
@@ -105,9 +109,6 @@ export const AUTH_PAYLOAD_FRAGMENT = gql`
         expiresIn
         user {
             ...UserAuthInfoFields
-        }
-        roleContexts {
-            ...RoleContextFields
         }
         sessionId
         loginTimestamp

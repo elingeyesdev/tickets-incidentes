@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Registrar middleware aliases para protección de rutas
         $middleware->alias([
+            'auth' => \App\Http\Middleware\GraphQLJWTMiddleware::class,
             'role' => \App\Shared\Http\Middleware\EnsureUserHasRole::class,
             'onboarding.completed' => \App\Shared\Http\Middleware\EnsureOnboardingCompleted::class,
             'guest' => \App\Shared\Http\Middleware\RedirectIfAuthenticated::class,

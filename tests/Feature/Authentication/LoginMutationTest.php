@@ -68,15 +68,15 @@ class LoginMutationTest extends TestCase
                         avatarUrl
                         theme
                         language
-                    }
-                    roleContexts {
-                        roleCode
-                        roleName
-                        dashboardPath
-                        company {
-                            id
-                            companyCode
-                            name
+                        roleContexts {
+                            roleCode
+                            roleName
+                            dashboardPath
+                            company {
+                                id
+                                companyCode
+                                name
+                            }
                         }
                     }
                     sessionId
@@ -114,12 +114,12 @@ class LoginMutationTest extends TestCase
                         'avatarUrl',
                         'theme',
                         'language',
-                    ],
-                    'roleContexts' => [
-                        '*' => [
-                            'roleCode',
-                            'roleName',
-                            'dashboardPath',
+                        'roleContexts' => [
+                            '*' => [
+                                'roleCode',
+                                'roleName',
+                                'dashboardPath',
+                            ],
                         ],
                     ],
                     'sessionId',
@@ -148,10 +148,10 @@ class LoginMutationTest extends TestCase
         $this->assertTrue($loginData['user']['emailVerified']);
         $this->assertEquals('ACTIVE', $loginData['user']['status']);
 
-        // Verificar roleContexts
-        $this->assertCount(1, $loginData['roleContexts']);
-        $this->assertEquals('USER', $loginData['roleContexts'][0]['roleCode']);
-        $this->assertEquals('/tickets', $loginData['roleContexts'][0]['dashboardPath']);
+        // Verificar roleContexts (ahora dentro de user)
+        $this->assertCount(1, $loginData['user']['roleContexts']);
+        $this->assertEquals('USER', $loginData['user']['roleContexts'][0]['roleCode']);
+        $this->assertEquals('/tickets', $loginData['user']['roleContexts'][0]['dashboardPath']);
 
         // Verificar sessionId y timestamp
         $this->assertNotEmpty($loginData['sessionId']);
@@ -455,10 +455,12 @@ class LoginMutationTest extends TestCase
         $query = '
             mutation Login($input: LoginInput!) {
                 login(input: $input) {
-                    roleContexts {
-                        roleCode
-                        roleName
-                        dashboardPath
+                    user {
+                        roleContexts {
+                            roleCode
+                            roleName
+                            dashboardPath
+                        }
                     }
                 }
             }
@@ -476,7 +478,7 @@ class LoginMutationTest extends TestCase
         $response = $this->graphQL($query, $variables);
 
         // Assert
-        $roleContexts = $response->json('data.login.roleContexts');
+        $roleContexts = $response->json('data.login.user.roleContexts');
 
         $this->assertCount(2, $roleContexts);
 
@@ -512,15 +514,15 @@ class LoginMutationTest extends TestCase
                         avatarUrl
                         theme
                         language
-                    }
-                    roleContexts {
-                        roleCode
-                        roleName
-                        dashboardPath
-                        company {
-                            id
-                            companyCode
-                            name
+                        roleContexts {
+                            roleCode
+                            roleName
+                            dashboardPath
+                            company {
+                                id
+                                companyCode
+                                name
+                            }
                         }
                     }
                     sessionId
@@ -548,8 +550,9 @@ class LoginMutationTest extends TestCase
                     'refreshToken',
                     'tokenType',
                     'expiresIn',
-                    'user',
-                    'roleContexts',
+                    'user' => [
+                        'roleContexts',
+                    ],
                     'sessionId',
                     'loginTimestamp',
                 ],
@@ -563,7 +566,7 @@ class LoginMutationTest extends TestCase
         $this->assertIsString($loginData['tokenType']);
         $this->assertIsInt($loginData['expiresIn']);
         $this->assertIsArray($loginData['user']);
-        $this->assertIsArray($loginData['roleContexts']);
+        $this->assertIsArray($loginData['user']['roleContexts']);
         $this->assertIsString($loginData['sessionId']);
         $this->assertIsString($loginData['loginTimestamp']);
     }

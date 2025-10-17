@@ -12,13 +12,13 @@ type UserAuthInfo {
   id: UUID!
 
   """Código único legible del usuario"""
-  userCode: String!
+  userCode: String! @rename(attribute: "user_code")
 
   """Email del usuario"""
   email: Email!
 
   """Email verificado"""
-  emailVerified: Boolean!
+  emailVerified: Boolean! @rename(attribute: "email_verified")
 
   """Onboarding completado (completar perfil + configurar preferencias)"""
   onboardingCompleted: Boolean! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\OnboardingCompletedResolver")
@@ -27,16 +27,23 @@ type UserAuthInfo {
   status: UserStatus!
 
   """Nombre para mostrar (firstName + lastName)"""
-  displayName: String!
+  displayName: String! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\DisplayNameResolver")
 
   """URL del avatar del usuario"""
-  avatarUrl: URL
+  avatarUrl: URL @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\AvatarUrlResolver")
 
   """Tema de interfaz preferido"""
-  theme: String!
+  theme: String! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\ThemeResolver")
 
   """Idioma preferido"""
-  language: String!
+  language: String! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\LanguageResolver")
+
+  """
+  Contextos de roles disponibles del usuario
+  Resuelve automáticamente los roles activos con sus empresas asociadas
+  Usa DataLoader para prevenir N+1 queries
+  """
+  roleContexts: [RoleContext!]! @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@roleContexts")
 }
 
 """

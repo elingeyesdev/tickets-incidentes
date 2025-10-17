@@ -47,7 +47,8 @@ export const useLogin = (options?: UseLoginOptions) => {
 
     const [login, { loading, error }] = useMutation(LOGIN_MUTATION, {
         onCompleted: (data: any) => {
-            const { accessToken, expiresIn, user, roleContexts } = data.login;
+            const { accessToken, expiresIn, user } = data.login;
+            const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
 
             console.log('✅ useLogin: Login exitoso', {
                 email: user.email,
@@ -84,8 +85,8 @@ export const useLogin = (options?: UseLoginOptions) => {
                 console.log('🔄 useLogin: Redirigiendo a role selector');
             }
 
-            // Usar window.location.href para recargar completamente y activar AuthContext
-            window.location.href = redirectPath;
+            // Usar router.visit para redirección suave sin recargar página
+            router.visit(redirectPath);
         },
         onError: (err: any) => {
             const errorMessage = err.message || 'Error al iniciar sesión';

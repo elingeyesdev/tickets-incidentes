@@ -43,7 +43,7 @@ class EnsureUserHasRole
         }
 
         // Obtener roles del usuario desde la relación
-        $userRoles = $user->roles->pluck('role_code')->toArray();
+        $userRoles = $user->userRoles->pluck('role_code')->toArray();
 
         // Verificar si el usuario tiene al menos uno de los roles requeridos
         $hasRole = count(array_intersect($roles, $userRoles)) > 0;

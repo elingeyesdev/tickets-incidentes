@@ -42,7 +42,6 @@ class UserFactory extends Factory
             'password_hash' => Hash::make('password'), // Default password for testing
             'email_verified' => true,
             'email_verified_at' => now(),
-            'onboarding_completed' => true,
             'onboarding_completed_at' => now()->subDays(rand(1, 30)),
             'status' => UserStatus::ACTIVE,
             'auth_provider' => 'local',
@@ -172,7 +171,6 @@ class UserFactory extends Factory
     public function onboardingPending(): static
     {
         return $this->state(fn (array $attributes) => [
-            'onboarding_completed' => false,
             'onboarding_completed_at' => null,
         ]);
     }
@@ -185,7 +183,6 @@ class UserFactory extends Factory
     public function onboardingCompleted(): static
     {
         return $this->state(fn (array $attributes) => [
-            'onboarding_completed' => true,
             'onboarding_completed_at' => now()->subDays(rand(1, 30)),
         ]);
     }
