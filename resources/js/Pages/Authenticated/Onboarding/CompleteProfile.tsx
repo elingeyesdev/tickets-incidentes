@@ -12,6 +12,7 @@ import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Input, Alert, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale } from '@/contexts';
 import { UPDATE_MY_PROFILE_MUTATION } from '@/lib/graphql/mutations/users.mutations';
+import type { UpdateMyProfileMutation, UpdateMyProfileMutationVariables, UpdateProfileInput } from '@/types/graphql-generated';
 
 export default function CompleteProfile() {
     const [progressPercentage, setProgressPercentage] = useState(0);
@@ -58,7 +59,7 @@ function CompleteProfileContent({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Mutation para actualizar perfil
-    const [updateProfile, { loading: mutationLoading }] = useMutation(UPDATE_MY_PROFILE_MUTATION);
+    const [updateProfile, { loading: mutationLoading }] = useMutation<UpdateMyProfileMutation, UpdateMyProfileMutationVariables>(UPDATE_MY_PROFILE_MUTATION);
     
     // Actualizar formData cuando user cambie (útil si refreshUser trae nuevos datos)
     useEffect(() => {
@@ -157,7 +158,7 @@ function CompleteProfileContent({
 
         try {
             // Construir input dinámicamente - solo enviar campos que tienen valor
-            const input: any = {
+            const input: UpdateProfileInput = {
                 firstName: formData.firstName.trim(),
                 lastName: formData.lastName.trim(),
             };
@@ -197,13 +198,14 @@ function CompleteProfileContent({
                     router.visit('/onboarding/preferences');
                 }, 800);
             }
-        } catch (error: any) {
+        } catch (error) {
             // Detener el intervalo en caso de error
             clearInterval(progressInterval);
             setProgressPercentage(0); // Resetear barra
-            
+
             console.error('Error updating profile:', error);
-            showError(error.message || 'Error al actualizar el perfil');
+            const errorMessage = error instanceof Error ? error.message : 'Error al actualizar el perfil';
+            showError(errorMessage);
             // Desactivar loading solo si hay error
             setIsSubmitting(false);
         }

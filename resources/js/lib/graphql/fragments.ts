@@ -48,7 +48,6 @@ export const ROLE_CONTEXT_FRAGMENT = gql`
 
 export const USER_FULL_FRAGMENT = gql`
     ${USER_PROFILE_FRAGMENT}
-    ${USER_PREFERENCES_FRAGMENT}
     ${ROLE_CONTEXT_FRAGMENT}
 
     fragment UserFullFields on User {
@@ -60,9 +59,6 @@ export const USER_FULL_FRAGMENT = gql`
         authProvider
         profile {
             ...UserProfileFields
-        }
-        preferences {
-            ...UserPreferencesFields
         }
         roleContexts {
             ...RoleContextFields

@@ -6,9 +6,15 @@
  * - Usuario actual desde accessToken + authStatus query
  * - Roles y permisos
  * - Login/Logout con GraphQL mutations
+ *
+ * Optimizaciones:
+ * - Estado de 3 fases: 'initializing' | 'authenticated' | 'unauthenticated'
+ * - Caché de datos temporales (post-login/register)
+ * - Ejecución única del useEffect (sin re-verificaciones innecesarias)
+ * - Fullscreen loader durante inicialización
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { apolloClient, TokenStorage, getTempUserData, clearTempUserData } from '@/lib/apollo/client';
 import { AUTH_STATUS_QUERY } from '@/lib/graphql/queries/auth.queries';
@@ -16,9 +22,13 @@ import { LOGOUT_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { canAccessRoute as checkRoutePermission } from '@/config/permissions';
 import { hasCompletedOnboarding as checkOnboardingCompleted } from '@/lib/utils/onboarding';
 import type { User, RoleCode } from '@/types';
+import type { AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables } from '@/types/graphql-generated';
+
+type AuthState = 'initializing' | 'authenticated' | 'unauthenticated';
 
 interface AuthContextType {
     user: User | null;
+    authState: AuthState;
     isAuthenticated: boolean;
     loading: boolean;
     hasRole: (role: RoleCode | RoleCode[]) => boolean;
@@ -37,70 +47,84 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [authState, setAuthState] = useState<AuthState>('initializing');
 
-    const [getAuthStatus] = useLazyQuery(AUTH_STATUS_QUERY, {
+    const [getAuthStatus] = useLazyQuery<AuthStatusQuery, AuthStatusQueryVariables>(AUTH_STATUS_QUERY, {
         fetchPolicy: 'network-only',
     });
 
-    const [logoutMutation] = useMutation(LOGOUT_MUTATION);
+    const [logoutMutation] = useMutation<LogoutMutation, LogoutMutationVariables>(LOGOUT_MUTATION);
 
-    // Al montar, verificar si hay accessToken y obtener usuario
+    // Computed values
+    const isAuthenticated = authState === 'authenticated';
+    const loading = authState === 'initializing';
+
+    // Inicialización de autenticación (ejecuta UNA SOLA VEZ al montar)
     useEffect(() => {
-        console.log('🔄 AuthContext: Inicializando...');
-        const token = TokenStorage.getAccessToken();
+        let isMounted = true;
 
-        if (token) {
-            console.log('🔑 AuthContext: Token encontrado');
-            // Primero intentar leer datos temporales (recién logueado/registrado)
-            const tempData = getTempUserData();
+        const initializeAuth = async () => {
+            setAuthState('initializing');
 
-            if (tempData && tempData.user && tempData.roleContexts) {
-                console.log('✅ AuthContext: Usando datos temporales', {
-                    email: tempData.user.email,
-                    roles: tempData.roleContexts.map((rc: any) => rc.roleCode),
-                    onboardingCompleted: tempData.user.onboardingCompletedAt
-                });
-                // Usar datos temporales y construir el usuario completo
-                const fullUser: User = {
-                    ...tempData.user,
-                    roleContexts: tempData.roleContexts,
-                };
-                setUser(fullUser);
-                setLoading(false);
+            const token = TokenStorage.getAccessToken();
 
-                // Limpiar datos temporales después de usarlos
-                clearTempUserData();
-            } else {
-                console.log('🔍 AuthContext: Obteniendo usuario desde backend...');
-                // No hay datos temporales, obtener usuario actual desde el backend
-                getAuthStatus().then((result: any) => {
-                    if (result.data?.authStatus?.isAuthenticated) {
-                        console.log('✅ AuthContext: Usuario autenticado', {
-                            email: result.data.authStatus.user.email,
-                            onboardingCompleted: result.data.authStatus.user.onboardingCompletedAt
-                        });
-                        setUser(result.data.authStatus.user);
-                    } else {
-                        console.log('❌ AuthContext: Usuario no autenticado');
-                        setUser(null);
-                    }
-                    setLoading(false);
-                }).catch((error) => {
-                    console.error('❌ AuthContext: Error obteniendo usuario', error);
+            if (!token) {
+                // Sin token = no autenticado
+                if (isMounted) {
                     setUser(null);
-                    setLoading(false);
-                });
+                    setAuthState('unauthenticated');
+                }
+                return;
             }
-        } else {
-            console.log('❌ AuthContext: No hay token');
-            // No hay token, no autenticado
-            setUser(null);
-            setLoading(false);
-        }
-    }, [getAuthStatus]);
 
-    const isAuthenticated = user !== null;
+            // Tiene token - primero intentar usar caché temporal
+            try {
+                const tempData = getTempUserData();
+
+                if (tempData && tempData.user && tempData.roleContexts) {
+                    // Usar datos temporales inmediatamente (sin llamada al servidor)
+                    const fullUser: User = {
+                        ...tempData.user,
+                        roleContexts: tempData.roleContexts,
+                    };
+
+                    if (isMounted) {
+                        setUser(fullUser);
+                        setAuthState('authenticated');
+                    }
+
+                    // Limpiar caché después de usarlo
+                    clearTempUserData();
+                    return;
+                }
+
+                // No hay caché temporal, consultar servidor
+                const result = await getAuthStatus();
+
+                if (isMounted) {
+                    if (result.data?.authStatus?.isAuthenticated) {
+                        setUser(result.data.authStatus.user as User);
+                        setAuthState('authenticated');
+                    } else {
+                        setUser(null);
+                        setAuthState('unauthenticated');
+                    }
+                }
+            } catch (error) {
+                console.error('Error initializing auth:', error);
+                if (isMounted) {
+                    setUser(null);
+                    setAuthState('unauthenticated');
+                }
+            }
+        };
+
+        initializeAuth();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []); // Array vacío = ejecuta UNA SOLA VEZ al montar
 
     /**
      * Verifica si el usuario tiene un rol específico o alguno de una lista
@@ -147,8 +171,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Limpiar caché de Apollo
             await apolloClient.clearStore();
 
-            // Limpiar estado
+            // Actualizar estado
             setUser(null);
+            setAuthState('unauthenticated');
 
             // Redirigir a login
             window.location.href = '/login';
@@ -161,6 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      */
     const updateUser = (updatedUser: User) => {
         setUser(updatedUser);
+        setAuthState('authenticated');
     };
 
     /**
@@ -169,9 +195,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const refreshUser = async () => {
         const token = TokenStorage.getAccessToken();
         if (token) {
-            const result: any = await getAuthStatus();
+            const result = await getAuthStatus();
             if (result.data?.authStatus?.isAuthenticated) {
-                setUser(result.data.authStatus.user);
+                setUser(result.data.authStatus.user as User);
+                setAuthState('authenticated');
+            } else {
+                setUser(null);
+                setAuthState('unauthenticated');
             }
         }
     };
@@ -185,8 +215,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return checkOnboardingCompleted(user);
     };
 
-    const value: AuthContextType = {
+    // Memoizar el contexto para prevenir re-renderizados innecesarios
+    const value: AuthContextType = useMemo(() => ({
         user,
+        authState,
         isAuthenticated,
         loading,
         hasRole,
@@ -195,7 +227,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         updateUser,
         refreshUser,
-    };
+    }), [user, authState]);
+
+    // Mostrar fullscreen loader durante inicialización
+    if (authState === 'initializing') {
+        return (
+            <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 z-50">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+                    <p className="text-lg text-gray-700 dark:text-gray-300 font-medium">
+                        Inicializando...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

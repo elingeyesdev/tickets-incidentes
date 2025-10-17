@@ -10,25 +10,14 @@ import {
     from,
     Observable,
 } from '@apollo/client';
-import { onError } from '@apollo/client/link/error';
+import { onError, ErrorResponse } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 
 // ============================================
 // TOKEN STORAGE (Profesional y Seguro)
 // ============================================
 
-/**
- * Manejo de tokens SEGURO:
- * - Access Token: localStorage (corta duración 15-60 min)
- * - Refresh Token: httpOnly cookie (Laravel lo maneja automáticamente)
- * 
- * ¿Por qué es seguro?
- * - Access token en localStorage es aceptable porque:
- *   1. Expira rápido (15-60 min)
- *   2. No puede hacer refresh automático sin el cookie
- * - Refresh token NUNCA se expone a JavaScript
- * - CSRF protection automático con Inertia
- */
+
 
 const TOKEN_KEY = 'helpdesk_access_token';
 const TOKEN_EXPIRY_KEY = 'helpdesk_token_expiry';
@@ -149,7 +138,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 // ERROR LINK - Manejo automático de refresh
 // ============================================
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }: any) => {
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }: ErrorResponse) => {
     if (graphQLErrors && graphQLErrors.length > 0) {
         for (const err of graphQLErrors) {
             // Si el error es de autenticación inválida
@@ -212,7 +201,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }: 
     if (networkError) {
         console.error(`[Network error]: ${networkError}`);
     }
-    
+
     return undefined;
 });
 
@@ -276,10 +265,22 @@ export const saveAuthTokens = (accessToken: string, expiresIn: number) => {
     // El refresh token ya está guardado como httpOnly cookie por Laravel
 };
 
+interface TempUserData {
+    user: {
+        id: string;
+        email: string;
+        [key: string]: unknown;
+    };
+    roleContexts: Array<{
+        roleCode: string;
+        [key: string]: unknown;
+    }>;
+}
+
 /**
  * Guarda el usuario completo en localStorage (temporal hasta que AuthContext cargue)
  */
-export const saveUserData = (user: any, roleContexts: any[]) => {
+export const saveUserData = (user: TempUserData['user'], roleContexts: TempUserData['roleContexts']) => {
     localStorage.setItem('helpdesk_user_temp', JSON.stringify({ user, roleContexts }));
 };
 

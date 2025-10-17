@@ -8,9 +8,13 @@
  * - Verificar si es admin/agente/usuario
  */
 
-import { useAuth } from '@/contexts';
 import { canAccessRoute } from '@/config/permissions';
 import type { RoleCode } from '@/types';
+import type { User } from '@/types';
+
+// Import useAuth from contexts directly to avoid circular dependency
+// Since this file is exported from hooks/index.ts
+import { useAuth } from '@/contexts';
 
 export function usePermissions() {
     const { user, hasRole } = useAuth();

@@ -9,11 +9,10 @@
  * Usado en: Welcome, Login, Register, RequestCompany
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
-import { useAuth } from '@/contexts';
-import { getDefaultDashboard } from '@/config/permissions';
-import type { RoleCode } from '@/types';
+import { useAuth } from '@/hooks';
+import { getUserDashboardUrl } from '@/lib/utils';
 
 interface PublicRouteProps {
     children: React.ReactNode;
@@ -21,37 +20,31 @@ interface PublicRouteProps {
 
 export function PublicRoute({ children }: PublicRouteProps) {
     const { user, loading, hasCompletedOnboarding } = useAuth();
+    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (loading) return;
+        if (hasRedirected.current) return; // Ya redirigió, evitar re-ejecuciones
 
         if (user) {
             const currentPath = window.location.pathname;
-
-            // Debug log
-            console.log('🔵 PublicRoute: Usuario autenticado detectado', {
-                currentPath,
-                hasOnboarding: hasCompletedOnboarding(),
-                roles: user.roleContexts.map(rc => rc.roleCode)
-            });
 
             // Usuario autenticado, verificar onboarding
             if (!hasCompletedOnboarding()) {
                 // Redirigir a onboarding solo si no está ya ahí
                 if (currentPath !== '/onboarding/profile') {
-                    console.log('🔵 PublicRoute: Redirigiendo a onboarding');
+                    hasRedirected.current = true; // Marcar como redirigido
                     router.visit('/onboarding/profile');
                 }
                 return;
             }
 
             // Tiene onboarding completo, redirigir a su dashboard
-            const userRoles = user.roleContexts.map((rc) => rc.roleCode as RoleCode);
-            const dashboardPath = getDefaultDashboard(userRoles);
+            const dashboardPath = getUserDashboardUrl(user);
 
             // Solo redirigir si no está ya en la ruta de destino
             if (currentPath !== dashboardPath && !currentPath.startsWith(dashboardPath)) {
-                console.log('🔵 PublicRoute: Redirigiendo a dashboard', dashboardPath);
+                hasRedirected.current = true; // Marcar como redirigido
                 router.visit(dashboardPath);
             }
         }

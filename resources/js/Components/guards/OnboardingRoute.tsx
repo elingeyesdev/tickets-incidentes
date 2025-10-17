@@ -10,11 +10,10 @@
  * NO se usa en RoleSelector (esa página requiere onboarding completo)
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
-import { useAuth } from '@/contexts';
-import { getDefaultDashboard } from '@/config/permissions';
-import type { RoleCode } from '@/types';
+import { useAuth } from '@/hooks';
+import { getUserDashboardUrl } from '@/lib/utils';
 
 interface OnboardingRouteProps {
     children: React.ReactNode;
@@ -22,23 +21,18 @@ interface OnboardingRouteProps {
 
 export function OnboardingRoute({ children }: OnboardingRouteProps) {
     const { user, loading, hasCompletedOnboarding } = useAuth();
+    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (loading) return;
+        if (hasRedirected.current) return; // Ya redirigió, evitar re-ejecuciones
 
         const currentPath = window.location.pathname;
-
-        // Debug log
-        console.log('🟢 OnboardingRoute: Verificando acceso', {
-            currentPath,
-            authenticated: !!user,
-            hasOnboarding: user ? hasCompletedOnboarding() : false
-        });
 
         if (!user) {
             // No autenticado, redirigir a login solo si no está ya ahí
             if (currentPath !== '/login') {
-                console.log('🟢 OnboardingRoute: No autenticado, redirigiendo a login');
+                hasRedirected.current = true; // Marcar como redirigido
                 router.visit('/login');
             }
             return;
@@ -46,12 +40,11 @@ export function OnboardingRoute({ children }: OnboardingRouteProps) {
 
         if (hasCompletedOnboarding()) {
             // Onboarding ya completo, redirigir a dashboard
-            const userRoles = user.roleContexts.map((rc) => rc.roleCode as RoleCode);
-            const dashboardPath = getDefaultDashboard(userRoles);
+            const dashboardPath = getUserDashboardUrl(user);
 
             // Solo redirigir si no está ya en la ruta de destino
             if (currentPath !== dashboardPath && !currentPath.startsWith(dashboardPath)) {
-                console.log('🟢 OnboardingRoute: Onboarding completo, redirigiendo a dashboard', dashboardPath);
+                hasRedirected.current = true; // Marcar como redirigido
                 router.visit(dashboardPath);
             }
         }

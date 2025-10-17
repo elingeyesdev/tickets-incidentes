@@ -15,6 +15,15 @@ export {
     getOnboardingStatus,
 } from './onboarding';
 
+// Re-export routing helpers
+export {
+    getUserDashboardUrl,
+    isOnboardingRoute,
+    isPublicRoute,
+    isAuthRoute,
+    getRouteName,
+} from './routing';
+
 /**
  * Formatea una fecha en formato legible
  */

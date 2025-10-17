@@ -11,8 +11,8 @@ import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Alert, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
-import { UPDATE_MY_PREFERENCES_MUTATION } from '@/lib/graphql/mutations/users.mutations';
 import { MARK_ONBOARDING_COMPLETED_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
+import type { MarkOnboardingCompletedMutation, MarkOnboardingCompletedMutationVariables } from '@/types/graphql-generated';
 
 export default function ConfigurePreferences() {
     const [progressPercentage, setProgressPercentage] = useState(50); // Empieza en 50% (paso anterior completado)
@@ -55,12 +55,9 @@ function ConfigurePreferencesContent({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessScreen, setShowSuccessScreen] = useState(false);
     const [isProgressComplete, setIsProgressComplete] = useState(false); // Para controlar el color verde
-    
-    // Mutation para actualizar preferencias
-    const [updatePreferences, { loading: mutationLoading }] = useMutation(UPDATE_MY_PREFERENCES_MUTATION);
 
     // Mutation para marcar onboarding como completado
-    const [markOnboardingCompleted, { loading: markingCompleted }] = useMutation(MARK_ONBOARDING_COMPLETED_MUTATION);
+    const [markOnboardingCompleted, { loading: markingCompleted }] = useMutation<MarkOnboardingCompletedMutation, MarkOnboardingCompletedMutationVariables>(MARK_ONBOARDING_COMPLETED_MUTATION);
 
     // Actualizar formData cuando user cambie
     useEffect(() => {
@@ -142,9 +139,10 @@ function ConfigurePreferencesContent({
                         window.location.href = '/tickets';
                     }
                 }, 3500);
-            } catch (error: any) {
+            } catch (error) {
                 console.error('Error marking onboarding as completed:', error);
-                showError(error.message || 'Error al completar onboarding');
+                const errorMessage = error instanceof Error ? error.message : 'Error al completar onboarding';
+                showError(errorMessage);
                 setIsSubmitting(false);
             }
             return;
@@ -164,24 +162,10 @@ function ConfigurePreferencesContent({
         }, 50); // Incrementar cada 50ms
 
         try {
-            // PASO 1: Actualizar preferencias
-            const preferencesResult = await updatePreferences({
-                variables: {
-                    input: {
-                        theme: formData.theme,
-                        language: formData.language,
-                        timezone: formData.timezone,
-                        pushWebNotifications: formData.pushWebNotifications,
-                        notificationsTickets: formData.notificationsTickets,
-                    },
-                },
-            });
+            // TODO: Implementar mutation para actualizar preferencias cuando esté disponible
+            // Por ahora, solo marcamos onboarding como completado
 
-            if (!preferencesResult.data) {
-                throw new Error('Error al actualizar preferencias');
-            }
-
-            // PASO 2: Marcar onboarding como completado
+            // Marcar onboarding como completado
             const onboardingResult = await markOnboardingCompleted();
 
             if (!onboardingResult.data?.markOnboardingCompleted?.success) {
@@ -242,13 +226,14 @@ function ConfigurePreferencesContent({
                     window.location.href = '/tickets';
                 }
             }, 3500);
-        } catch (error: any) {
+        } catch (error) {
             // Detener el intervalo en caso de error
             clearInterval(progressInterval);
             setProgressPercentage(50); // Volver al 50% (inicio de este paso)
 
             console.error('Error completing onboarding:', error);
-            showError(error.message || 'Error al completar configuración');
+            const errorMessage = error instanceof Error ? error.message : 'Error al completar configuración';
+            showError(errorMessage);
             // Desactivar loading solo si hay error
             setIsSubmitting(false);
         }
@@ -503,8 +488,8 @@ function ConfigurePreferencesContent({
                             
                             <Button
                                 type="submit"
-                                isLoading={isSubmitting || mutationLoading || markingCompleted}
-                                disabled={isSubmitting || mutationLoading || markingCompleted}
+                                isLoading={isSubmitting || markingCompleted}
+                                disabled={isSubmitting || markingCompleted}
                                 className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all"
                             >
                                 {(isSubmitting || markingCompleted) ? t('onboarding.preferences.completing') : t('onboarding.preferences.continue')}

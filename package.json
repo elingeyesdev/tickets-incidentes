@@ -4,9 +4,15 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "codegen": "graphql-codegen --config codegen.ts",
+        "codegen:watch": "graphql-codegen --config codegen.ts --watch"
     },
     "devDependencies": {
+        "@graphql-codegen/cli": "^6.0.0",
+        "@graphql-codegen/typescript": "^5.0.2",
+        "@graphql-codegen/typescript-operations": "^5.0.2",
+        "@graphql-codegen/typescript-react-apollo": "^4.3.3",
         "@tailwindcss/vite": "^4.0.0",
         "@types/node": "^24.7.2",
         "@types/react": "^19.2.2",

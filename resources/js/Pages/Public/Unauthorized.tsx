@@ -7,20 +7,14 @@ import { Head, Link } from '@inertiajs/react';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { ShieldX, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/Components/ui';
-import { useAuth } from '@/contexts';
-import { getDefaultDashboard } from '@/config/permissions';
-import type { RoleCode } from '@/types';
+import { useAuth } from '@/hooks';
+import { getUserDashboardUrl } from '@/lib/utils';
 
 export default function Unauthorized() {
     const { user } = useAuth();
 
-    // Determinar URL de retorno según el usuario
-    const getReturnUrl = () => {
-        if (!user) return '/login';
-
-        const userRoles = user.roleContexts.map((rc) => rc.roleCode as RoleCode);
-        return getDefaultDashboard(userRoles);
-    };
+    // Determinar URL de retorno según el usuario usando el helper centralizado
+    const returnUrl = getUserDashboardUrl(user);
 
     return (
         <PublicLayout title="Acceso Denegado" showNavbar={false} showFooter={false}>
@@ -68,7 +62,7 @@ export default function Unauthorized() {
 
                     {/* Acciones */}
                     <div className="space-y-3">
-                        <Link href={getReturnUrl()}>
+                        <Link href={returnUrl}>
                             <Button className="w-full" size="lg">
                                 <Home className="mr-2 h-5 w-5" />
                                 Ir a mi Dashboard

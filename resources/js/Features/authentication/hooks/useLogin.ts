@@ -9,6 +9,8 @@ import { LOGIN_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { saveAuthTokens, saveUserData } from '@/lib/apollo/client';
 import { useNotification } from '@/contexts';
 import type { LoginInput } from '../types';
+import type { LoginMutation, LoginMutationVariables } from '@/types/graphql-generated';
+import { router } from '@inertiajs/react';
 
 interface UseLoginOptions {
     onSuccess?: () => void;
@@ -45,14 +47,14 @@ export const useLogin = (options?: UseLoginOptions) => {
         });
     }, [formData.email, formData.password]);
 
-    const [login, { loading, error }] = useMutation(LOGIN_MUTATION, {
-        onCompleted: (data: any) => {
+    const [login, { loading, error }] = useMutation<LoginMutation, LoginMutationVariables>(LOGIN_MUTATION, {
+        onCompleted: (data) => {
             const { accessToken, expiresIn, user } = data.login;
             const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
 
             console.log('✅ useLogin: Login exitoso', {
                 email: user.email,
-                roles: roleContexts.map((rc: any) => rc.roleCode),
+                roles: roleContexts.map((rc) => rc.roleCode),
                 onboardingCompleted: user.onboardingCompletedAt
             });
 
@@ -88,7 +90,7 @@ export const useLogin = (options?: UseLoginOptions) => {
             // Usar router.visit para redirección suave sin recargar página
             router.visit(redirectPath);
         },
-        onError: (err: any) => {
+        onError: (err) => {
             const errorMessage = err.message || 'Error al iniciar sesión';
             showError(errorMessage);
 

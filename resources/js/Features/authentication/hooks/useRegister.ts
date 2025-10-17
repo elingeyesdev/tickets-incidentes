@@ -9,6 +9,7 @@ import { REGISTER_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { saveAuthTokens, saveUserData } from '@/lib/apollo/client';
 import { useNotification } from '@/contexts';
 import type { RegisterInput } from '../types';
+import type { RegisterMutation, RegisterMutationVariables } from '@/types/graphql-generated';
 
 interface UseRegisterOptions {
     onSuccess?: () => void;
@@ -67,8 +68,8 @@ export const useRegister = (options?: UseRegisterOptions) => {
         formData.lastName,
     ]);
 
-    const [register, { loading, error }] = useMutation(REGISTER_MUTATION, {
-        onCompleted: (data: any) => {
+    const [register, { loading, error }] = useMutation<RegisterMutation, RegisterMutationVariables>(REGISTER_MUTATION, {
+        onCompleted: (data) => {
             const { accessToken, expiresIn, user } = data.register;
             const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
 
@@ -87,7 +88,7 @@ export const useRegister = (options?: UseRegisterOptions) => {
             // Redirigir a verificación de email
             window.location.href = '/verify-email';
         },
-        onError: (err: any) => {
+        onError: (err) => {
             const errorMessage = err.message || 'Error al registrar usuario';
             showError(errorMessage);
 

@@ -11,6 +11,7 @@ import { Card, Button, Alert } from '@/Components/ui';
 import { useAuth, useLocale } from '@/contexts';
 import { VERIFY_EMAIL_MUTATION, RESEND_VERIFICATION_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { AlertTriangle } from 'lucide-react';
+import type { VerifyEmailMutation, VerifyEmailMutationVariables, ResendVerificationMutation, ResendVerificationMutationVariables } from '@/types/graphql-generated';
 
 interface VerifyEmailPageProps {
     token?: string;
@@ -27,8 +28,8 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
     const [countdown, setCountdown] = useState(60); // Empieza con 60s de cooldown
     const [isShaking, setIsShaking] = useState(false);
 
-    const [verifyEmail] = useMutation(VERIFY_EMAIL_MUTATION, {
-        onCompleted: (data: any) => {
+    const [verifyEmail] = useMutation<VerifyEmailMutation, VerifyEmailMutationVariables>(VERIFY_EMAIL_MUTATION, {
+        onCompleted: (data) => {
             if (data.verifyEmail.success) {
                 setVerificationStatus('success');
                 setMessage(data.verifyEmail.message || 'Email verificado exitosamente');
@@ -50,8 +51,8 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         },
     });
 
-    const [resendVerification, { loading: resending }] = useMutation(RESEND_VERIFICATION_MUTATION, {
-        onCompleted: (data: any) => {
+    const [resendVerification, { loading: resending }] = useMutation<ResendVerificationMutation, ResendVerificationMutationVariables>(RESEND_VERIFICATION_MUTATION, {
+        onCompleted: (data) => {
             if (data.resendVerification.success) {
                 setMessage(data.resendVerification.message || t('onboarding.verify.resend_success'));
                 setCanResend(false);

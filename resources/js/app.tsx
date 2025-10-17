@@ -8,10 +8,12 @@ import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from '@/lib/apollo/client';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { LocaleProvider } from '@/contexts/LocaleContext';
-import { NotificationProvider } from '@/contexts/NotificationContext';
+import {
+    AuthProvider,
+    ThemeProvider,
+    LocaleProvider,
+    NotificationProvider,
+} from '@/contexts';
 
 /**
  * Inicialización de Inertia

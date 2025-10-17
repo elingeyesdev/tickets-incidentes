@@ -10,9 +10,9 @@
  * Usado en: Todos los dashboards y páginas de zona authenticated
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
-import { useAuth } from '@/contexts';
+import { useAuth } from '@/hooks';
 import type { RoleCode } from '@/types';
 
 interface ProtectedRouteProps {
@@ -27,25 +27,19 @@ export function ProtectedRoute({
     redirectTo = '/login'
 }: ProtectedRouteProps) {
     const { user, loading, hasCompletedOnboarding, hasRole } = useAuth();
+    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (loading) return;
+        if (hasRedirected.current) return; // Ya redirigió, evitar re-ejecuciones
 
         const currentPath = window.location.pathname;
-
-        // Debug log
-        console.log('🟡 ProtectedRoute: Verificando acceso', {
-            currentPath,
-            authenticated: !!user,
-            hasOnboarding: user ? hasCompletedOnboarding() : false,
-            allowedRoles
-        });
 
         // 1. Verificar autenticación
         if (!user) {
             // Solo redirigir si no está ya en la ruta de destino
             if (currentPath !== redirectTo) {
-                console.log('🟡 ProtectedRoute: No autenticado, redirigiendo a', redirectTo);
+                hasRedirected.current = true; // Marcar como redirigido
                 router.visit(redirectTo);
             }
             return;
@@ -55,7 +49,7 @@ export function ProtectedRoute({
         if (!hasCompletedOnboarding()) {
             // Solo redirigir si no está ya en onboarding
             if (currentPath !== '/onboarding/profile' && !currentPath.startsWith('/onboarding/')) {
-                console.log('🟡 ProtectedRoute: Onboarding incompleto, redirigiendo a onboarding');
+                hasRedirected.current = true; // Marcar como redirigido
                 router.visit('/onboarding/profile');
             }
             return;
@@ -67,7 +61,7 @@ export function ProtectedRoute({
             if (!hasPermission) {
                 // Solo redirigir si no está ya en unauthorized
                 if (currentPath !== '/unauthorized') {
-                    console.log('🟡 ProtectedRoute: Sin permisos, redirigiendo a unauthorized');
+                    hasRedirected.current = true; // Marcar como redirigido
                     router.visit('/unauthorized');
                 }
                 return;

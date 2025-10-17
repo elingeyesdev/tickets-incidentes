@@ -14,7 +14,21 @@ interface FormErrors {
     [key: string]: string;
 }
 
-export const useForm = <T extends Record<string, any>>({
+interface GraphQLErrorExtensions {
+    field?: string;
+    [key: string]: unknown;
+}
+
+interface GraphQLErrorWithExtensions {
+    message: string;
+    extensions?: GraphQLErrorExtensions;
+}
+
+interface GraphQLErrorLike {
+    graphQLErrors?: GraphQLErrorWithExtensions[];
+}
+
+export const useForm = <T extends Record<string, unknown>>({
     initialValues,
     onSubmit,
 }: UseFormOptions<T>) => {
@@ -23,7 +37,7 @@ export const useForm = <T extends Record<string, any>>({
     const [processing, setProcessing] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
-    const handleChange = (field: keyof T, value: any) => {
+    const handleChange = <K extends keyof T>(field: K, value: T[K]) => {
         setData((prev) => ({ ...prev, [field]: value }));
         setIsDirty(true);
         // Clear error for this field
@@ -47,11 +61,12 @@ export const useForm = <T extends Record<string, any>>({
         try {
             await onSubmit(data);
             setIsDirty(false);
-        } catch (error: any) {
+        } catch (error) {
             // Parse GraphQL errors
-            if (error.graphQLErrors) {
+            const graphQLError = error as GraphQLErrorLike;
+            if (graphQLError?.graphQLErrors) {
                 const newErrors: FormErrors = {};
-                error.graphQLErrors.forEach((err: any) => {
+                graphQLError.graphQLErrors.forEach((err: GraphQLErrorWithExtensions) => {
                     if (err.extensions?.field) {
                         newErrors[err.extensions.field] = err.message;
                     }

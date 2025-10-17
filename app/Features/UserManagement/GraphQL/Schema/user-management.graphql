@@ -204,6 +204,10 @@ type User implements Node & Timestamped {
     averageRating: Float
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Types\\UserFieldResolvers@averageRating")
 
+    # ===== ONBOARDING =====
+    """Timestamp cuando se completó el onboarding (null si no se ha completado)"""
+    onboardingCompletedAt: DateTime @rename(attribute: "onboarding_completed_at")
+
     # ===== ACTIVIDAD =====
     """Última vez que el usuario inició sesión"""
     lastLoginAt: DateTime @rename(attribute: "last_login_at")

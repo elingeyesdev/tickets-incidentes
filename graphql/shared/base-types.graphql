@@ -23,6 +23,9 @@ type UserAuthInfo {
   """Onboarding completado (completar perfil + configurar preferencias)"""
   onboardingCompleted: Boolean! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\OnboardingCompletedResolver")
 
+  """Timestamp cuando se completó el onboarding (null si no se ha completado)"""
+  onboardingCompletedAt: DateTime @rename(attribute: "onboarding_completed_at")
+
   """Estado actual del usuario"""
   status: UserStatus!
 
