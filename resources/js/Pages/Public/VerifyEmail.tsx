@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
+import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Alert } from '@/Components/ui';
 import { useAuth, useLocale } from '@/contexts';
@@ -386,9 +387,11 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
 
 export default function VerifyEmail(props: VerifyEmailPageProps) {
     return (
-        <OnboardingLayout title="Verificar Email">
-            <VerifyEmailContent {...props} />
-        </OnboardingLayout>
+        <OnboardingRoute>
+            <OnboardingLayout title="Verificar Email">
+                <VerifyEmailContent {...props} />
+            </OnboardingLayout>
+        </OnboardingRoute>
     );
 }
 

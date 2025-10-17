@@ -138,7 +138,7 @@ class LoginMutation extends BaseMutation
                 'USER' => '/tickets',
                 'AGENT' => '/agent/dashboard',
                 'COMPANY_ADMIN' => '/empresa/dashboard',
-                'PLATFORM_ADMIN' => '/platform/dashboard',
+                'PLATFORM_ADMIN' => '/admin/dashboard',
             ];
 
             // Mapear nombres legibles de roles

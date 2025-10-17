@@ -1,85 +1,91 @@
 /**
- * Company Admin Dashboard - Dashboard para rol COMPANY_ADMIN
+ * Company Admin Dashboard - Dashboard para administradores de empresa
+ * Permite gestionar empresa, agentes, configuraciones y contenido
  */
 
-import { DashboardLayout } from '@/Layouts/DashboardLayout';
-import { useAuth } from '@/contexts';
-import { Shield, Ticket, UserPlus, Bell, Building, Sparkles } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { ProtectedRoute } from '@/Components/guards';
+import { CompanyAdminLayout } from '@/Layouts/CompanyAdmin/CompanyAdminLayout';
+import { Card } from '@/Components/ui';
+import { Users, Ticket, TrendingUp, Settings } from 'lucide-react';
 
-export default function Dashboard() {
-    const { user } = useAuth();
-
+export default function CompanyAdminDashboard() {
     return (
-        <DashboardLayout title="Dashboard - Administrador de Empresa">
-            <div className="p-8">
-                {/* Welcome Header */}
+        <ProtectedRoute allowedRoles={['COMPANY_ADMIN']}>
+            <CompanyAdminLayout title="Dashboard de Administración">
+                <Head title="Dashboard - Admin de Empresa" />
+
+                {/* Header */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                        <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                            Dashboard de Administrador de Empresa
-                        </span>
-                    </div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        ¡Bienvenido, {user?.displayName || user?.profile?.firstName || 'Administrador'}!
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        Panel de Administración
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Administra tu empresa, equipo y configuraciones
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Gestiona tu empresa, equipo y configuraciones
                     </p>
                 </div>
 
-                {/* Coming Soon Section */}
-                <div className="max-w-4xl">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
-                        <div className="text-center">
-                            <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                                <Building className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <Card>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                                <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                             </div>
-                            
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                                Próximamente
-                            </h2>
-                            
-                            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-8">
-                                Panel de control empresarial completo para gestionar tu equipo y operaciones.
-                            </p>
-
-                            {/* Features Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                                <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                        <Ticket className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Todos los Tickets</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Supervisa todos los tickets de la empresa
-                                    </p>
-                                </div>
-                                
-                                <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                        <UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Gestionar Agentes</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Administra tu equipo de soporte
-                                    </p>
-                                </div>
-                                
-                                <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                        <Bell className="w-6 h-6 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Anuncios</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Comunica novedades a tus usuarios
-                                    </p>
-                                </div>
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Agentes</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
                             </div>
                         </div>
-                    </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <Ticket className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Tickets Totales</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Tasa Resolución</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">-%</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                                <Settings className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Categorías</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+                        </div>
+                    </Card>
                 </div>
-            </div>
-        </DashboardLayout>
+
+                {/* Placeholder para contenido futuro */}
+                <Card>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                        Resumen de Actividad
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Configura tu empresa para comenzar.
+                    </p>
+                </Card>
+            </CompanyAdminLayout>
+        </ProtectedRoute>
     );
 }

@@ -7,21 +7,25 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { Settings, Globe, Palette, Bell, CheckCircle2 } from 'lucide-react';
+import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Alert, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
 import { UPDATE_MY_PREFERENCES_MUTATION } from '@/lib/graphql/mutations/users.mutations';
+import { MARK_ONBOARDING_COMPLETED_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 
 export default function ConfigurePreferences() {
     const [progressPercentage, setProgressPercentage] = useState(50); // Empieza en 50% (paso anterior completado)
-    
+
     return (
-        <OnboardingLayout title="Configurar Preferencias">
-            <ConfigurePreferencesContent 
-                setProgressPercentage={setProgressPercentage} 
-                progressPercentage={progressPercentage}
-            />
-        </OnboardingLayout>
+        <OnboardingRoute>
+            <OnboardingLayout title="Configurar Preferencias">
+                <ConfigurePreferencesContent
+                    setProgressPercentage={setProgressPercentage}
+                    progressPercentage={progressPercentage}
+                />
+            </OnboardingLayout>
+        </OnboardingRoute>
     );
 }
 
@@ -54,7 +58,10 @@ function ConfigurePreferencesContent({
     
     // Mutation para actualizar preferencias
     const [updatePreferences, { loading: mutationLoading }] = useMutation(UPDATE_MY_PREFERENCES_MUTATION);
-    
+
+    // Mutation para marcar onboarding como completado
+    const [markOnboardingCompleted, { loading: markingCompleted }] = useMutation(MARK_ONBOARDING_COMPLETED_MUTATION);
+
     // Actualizar formData cuando user cambie
     useEffect(() => {
         if (user) {
@@ -93,26 +100,53 @@ function ConfigurePreferencesContent({
             formData.notificationsTickets !== currentNotifTickets
         );
 
-        // Si no hay cambios, omitir mutation y continuar directamente
+        // Si no hay cambios, omitir mutation de preferencias pero SÍ marcar onboarding completado
         if (!hasChanges) {
-            console.log('ℹ️ No hay cambios en las preferencias, omitiendo mutation...');
-            
-            // Simular éxito sin llamar a la API
-            setProgressPercentage(100);
-            setTimeout(() => setIsProgressComplete(true), 300);
-            setTimeout(() => setShowSuccessScreen(true), 1000);
-            
-            setTimeout(() => {
-                const roleContexts = user?.roleContexts || [];
-                
-                if (roleContexts.length === 1) {
-                    window.location.href = roleContexts[0].dashboardPath;
-                } else if (roleContexts.length > 1) {
-                    window.location.href = '/role-selector';
-                } else {
-                    window.location.href = '/tickets';
+            console.log('ℹ️ No hay cambios en las preferencias, omitiendo mutation de preferencias...');
+
+            // Activar loading
+            setIsSubmitting(true);
+
+            try {
+                // Marcar onboarding como completado aunque no se actualicen preferencias
+                const onboardingResult = await markOnboardingCompleted();
+
+                if (!onboardingResult.data?.markOnboardingCompleted?.success) {
+                    throw new Error('Error al completar onboarding');
                 }
-            }, 3500);
+
+                // Simular éxito visual
+                setProgressPercentage(100);
+                setTimeout(() => setIsProgressComplete(true), 300);
+                setTimeout(() => setShowSuccessScreen(true), 1000);
+
+                // Refrescar usuario
+                try {
+                    const refreshPromise = refreshUser();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+                    );
+                    await Promise.race([refreshPromise, timeoutPromise]);
+                } catch (refreshError) {
+                    console.warn('Refresh user timeout, continuing anyway');
+                }
+
+                setTimeout(() => {
+                    const roleContexts = user?.roleContexts || [];
+
+                    if (roleContexts.length === 1) {
+                        window.location.href = roleContexts[0].dashboardPath;
+                    } else if (roleContexts.length > 1) {
+                        window.location.href = '/role-selector';
+                    } else {
+                        window.location.href = '/tickets';
+                    }
+                }, 3500);
+            } catch (error: any) {
+                console.error('Error marking onboarding as completed:', error);
+                showError(error.message || 'Error al completar onboarding');
+                setIsSubmitting(false);
+            }
             return;
         }
 
@@ -130,7 +164,8 @@ function ConfigurePreferencesContent({
         }, 50); // Incrementar cada 50ms
 
         try {
-            const result = await updatePreferences({
+            // PASO 1: Actualizar preferencias
+            const preferencesResult = await updatePreferences({
                 variables: {
                     input: {
                         theme: formData.theme,
@@ -142,58 +177,78 @@ function ConfigurePreferencesContent({
                 },
             });
 
+            if (!preferencesResult.data) {
+                throw new Error('Error al actualizar preferencias');
+            }
+
+            // PASO 2: Marcar onboarding como completado
+            const onboardingResult = await markOnboardingCompleted();
+
+            if (!onboardingResult.data?.markOnboardingCompleted?.success) {
+                throw new Error('Error al completar onboarding');
+            }
+
             // Detener el intervalo de progreso
             clearInterval(progressInterval);
 
-            if (result.data) {
-                // 1. Completar barra al 100% (azul)
-                setProgressPercentage(100);
-                
-                // 2. Esperar 300ms, luego cambiar a verde
-                setTimeout(() => {
-                    setIsProgressComplete(true); // Barra se vuelve verde
-                }, 300);
-                
-                // 3. Refrescar datos del usuario
-                const refreshPromise = refreshUser();
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Refresh timeout')), 5000)
-                );
-                
-                try {
-                    await Promise.race([refreshPromise, timeoutPromise]);
-                } catch (refreshError) {
-                    console.warn('Refresh user timeout, continuing anyway');
-                }
-                
-                // 4. Esperar 1 segundo con barra verde, luego mostrar éxito
-                setTimeout(() => {
-                    setShowSuccessScreen(true);
-                }, 1000);
-                
-                // 5. Redirigir después de 2.5 segundos adicionales
-                setTimeout(() => {
-                    const roleContexts = user?.roleContexts || [];
-                    
-                    if (roleContexts.length === 1) {
-                        // Un solo rol: redirigir directamente
-                        window.location.href = roleContexts[0].dashboardPath;
-                    } else if (roleContexts.length > 1) {
-                        // Múltiples roles: mostrar selector
-                        window.location.href = '/role-selector';
-                    } else {
-                        // Sin roles: redirigir a /tickets por defecto
-                        window.location.href = '/tickets';
-                    }
-                }, 3500);
+            // 1. Completar barra al 100% (azul)
+            setProgressPercentage(100);
+
+            // 2. Esperar 300ms, luego cambiar a verde
+            setTimeout(() => {
+                setIsProgressComplete(true); // Barra se vuelve verde
+            }, 300);
+
+            // 3. Actualizar usuario en contexto con los datos del onboarding
+            if (onboardingResult.data.markOnboardingCompleted.user && user) {
+                // Actualizar el user en AuthContext con los datos más recientes
+                const updatedUser = {
+                    ...user,
+                    ...onboardingResult.data.markOnboardingCompleted.user,
+                };
+                // Si tienes una función updateUser en el contexto, úsala aquí
+                // updateUser(updatedUser);
             }
+
+            // 4. Refrescar datos del usuario
+            const refreshPromise = refreshUser();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Refresh timeout')), 5000)
+            );
+
+            try {
+                await Promise.race([refreshPromise, timeoutPromise]);
+            } catch (refreshError) {
+                console.warn('Refresh user timeout, continuing anyway');
+            }
+
+            // 5. Esperar 1 segundo con barra verde, luego mostrar éxito
+            setTimeout(() => {
+                setShowSuccessScreen(true);
+            }, 1000);
+
+            // 6. Redirigir después de 2.5 segundos adicionales
+            setTimeout(() => {
+                const roleContexts = user?.roleContexts || [];
+
+                if (roleContexts.length === 1) {
+                    // Un solo rol: redirigir directamente
+                    window.location.href = roleContexts[0].dashboardPath;
+                } else if (roleContexts.length > 1) {
+                    // Múltiples roles: mostrar selector
+                    window.location.href = '/role-selector';
+                } else {
+                    // Sin roles: redirigir a /tickets por defecto
+                    window.location.href = '/tickets';
+                }
+            }, 3500);
         } catch (error: any) {
             // Detener el intervalo en caso de error
             clearInterval(progressInterval);
             setProgressPercentage(50); // Volver al 50% (inicio de este paso)
-            
-            console.error('Error updating preferences:', error);
-            showError(error.message || 'Error al actualizar las preferencias');
+
+            console.error('Error completing onboarding:', error);
+            showError(error.message || 'Error al completar configuración');
             // Desactivar loading solo si hay error
             setIsSubmitting(false);
         }
@@ -448,11 +503,11 @@ function ConfigurePreferencesContent({
                             
                             <Button
                                 type="submit"
-                                isLoading={isSubmitting}
-                                disabled={isSubmitting}
+                                isLoading={isSubmitting || mutationLoading || markingCompleted}
+                                disabled={isSubmitting || mutationLoading || markingCompleted}
                                 className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all"
                             >
-                                {isSubmitting ? t('onboarding.preferences.finalizing') : t('onboarding.preferences.continue')}
+                                {(isSubmitting || markingCompleted) ? t('onboarding.preferences.completing') : t('onboarding.preferences.continue')}
                             </Button>
                         </div>
                         

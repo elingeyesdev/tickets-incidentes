@@ -49,6 +49,12 @@ export const useLogin = (options?: UseLoginOptions) => {
         onCompleted: (data: any) => {
             const { accessToken, expiresIn, user, roleContexts } = data.login;
 
+            console.log('✅ useLogin: Login exitoso', {
+                email: user.email,
+                roles: roleContexts.map((rc: any) => rc.roleCode),
+                onboardingCompleted: user.onboardingCompletedAt
+            });
+
             // Guardar tokens (refresh token ya está en httpOnly cookie)
             saveAuthTokens(accessToken, expiresIn);
 
@@ -61,12 +67,25 @@ export const useLogin = (options?: UseLoginOptions) => {
                 return;
             }
 
-            // Redirigir según roles
-            if (roleContexts.length === 1) {
-                window.location.href = roleContexts[0].dashboardPath;
+            // Determinar redirección según estado del onboarding
+            let redirectPath: string;
+
+            if (!user.onboardingCompletedAt) {
+                // Usuario sin onboarding completo → ir a onboarding
+                redirectPath = '/onboarding/profile';
+                console.log('🔄 useLogin: Redirigiendo a onboarding');
+            } else if (roleContexts.length === 1) {
+                // Usuario con 1 rol → ir directo a su dashboard
+                redirectPath = roleContexts[0].dashboardPath;
+                console.log('🔄 useLogin: Redirigiendo a dashboard único', redirectPath);
             } else {
-                window.location.href = '/role-selector';
+                // Usuario con múltiples roles → ir a role selector
+                redirectPath = '/role-selector';
+                console.log('🔄 useLogin: Redirigiendo a role selector');
             }
+
+            // Usar window.location.href para recargar completamente y activar AuthContext
+            window.location.href = redirectPath;
         },
         onError: (err: any) => {
             const errorMessage = err.message || 'Error al iniciar sesión';

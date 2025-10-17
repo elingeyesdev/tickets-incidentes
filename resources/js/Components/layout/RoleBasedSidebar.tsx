@@ -41,9 +41,9 @@ export function RoleBasedSidebar() {
     // Obtener el rol activo actual
     const getActiveRole = (): string => {
         if (!user?.roleContexts || user.roleContexts.length === 0) return 'USER';
-        
+
         // Determinar rol activo según la URL actual
-        if (currentPath.startsWith('/platform')) return 'PLATFORM_ADMIN';
+        if (currentPath.startsWith('/admin')) return 'PLATFORM_ADMIN';
         if (currentPath.startsWith('/empresa')) return 'COMPANY_ADMIN';
         if (currentPath.startsWith('/agent')) return 'AGENT';
         return 'USER';
@@ -80,12 +80,12 @@ export function RoleBasedSidebar() {
     ];
 
     const platformAdminItems: SidebarItem[] = [
-        { icon: Shield, href: '/platform/dashboard', label: 'Dashboard' },
-        { icon: Building, href: '/platform/companies', label: 'Empresas' },
-        { icon: Users, href: '/platform/users', label: 'Usuarios' },
-        { icon: Ticket, href: '/platform/tickets', label: 'Todos los Tickets' },
-        { icon: FileText, href: '/platform/requests', label: 'Solicitudes' },
-        { icon: Settings, href: '/platform/settings', label: 'Config. Sistema' },
+        { icon: Shield, href: '/admin/dashboard', label: 'Dashboard' },
+        { icon: Building, href: '/admin/companies', label: 'Empresas' },
+        { icon: Users, href: '/admin/users', label: 'Usuarios' },
+        { icon: Ticket, href: '/admin/tickets', label: 'Todos los Tickets' },
+        { icon: FileText, href: '/admin/requests', label: 'Solicitudes' },
+        { icon: Settings, href: '/admin/settings', label: 'Config. Sistema' },
     ];
 
     // Obtener items según el rol activo

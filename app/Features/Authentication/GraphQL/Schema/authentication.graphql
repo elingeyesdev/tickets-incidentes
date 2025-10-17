@@ -152,6 +152,18 @@ extend type Mutation {
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ResendVerificationMutation")
         @rateLimit(max: 3, window: 300, message: "Debes esperar antes de reenviar")
         @audit(action: "email_verification_resend")
+
+    # ===== ONBOARDING =====
+
+    """
+    Marca el onboarding como completado para el usuario autenticado.
+    Se llama automáticamente al finalizar ConfigurePreferences (paso 2).
+    Establece onboarding_completed_at timestamp en la BD.
+    """
+    markOnboardingCompleted: MarkOnboardingCompletedResponse!
+        @jwt
+        @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\MarkOnboardingCompletedMutation")
+        @audit(action: "onboarding_completed")
 }
 
 # ================================================================================
@@ -360,6 +372,20 @@ type EmailVerificationResult {
 
     """Cuándo puede reenviar"""
     resendAvailableAt: DateTime
+}
+
+"""
+Response de marcar onboarding como completado
+"""
+type MarkOnboardingCompletedResponse {
+    """Si la operación fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo"""
+    message: String!
+
+    """Usuario actualizado con onboarding completado"""
+    user: UserAuthInfo
 }
 
 # ================================================================================

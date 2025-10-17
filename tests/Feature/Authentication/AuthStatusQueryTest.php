@@ -51,6 +51,8 @@ class AuthStatusQueryTest extends TestCase
                     user {
                         id
                         email
+                        emailVerified
+                        onboardingCompleted
                         displayName
                         avatarUrl
                         theme
@@ -113,6 +115,7 @@ class AuthStatusQueryTest extends TestCase
                     isAuthenticated
                     user {
                         email
+                        onboardingCompleted
                     }
                 }
             }
@@ -167,6 +170,7 @@ class AuthStatusQueryTest extends TestCase
                     isAuthenticated
                     user {
                         email
+                        onboardingCompleted
                     }
                     currentSession {
                         sessionId
@@ -296,6 +300,7 @@ class AuthStatusQueryTest extends TestCase
                         userCode
                         status
                         emailVerified
+                        onboardingCompleted
                         displayName
                         avatarUrl
                         theme
@@ -318,6 +323,7 @@ class AuthStatusQueryTest extends TestCase
                         'userCode',
                         'status',
                         'emailVerified',
+                        'onboardingCompleted',
                         'displayName',
                         'theme',
                         'language',

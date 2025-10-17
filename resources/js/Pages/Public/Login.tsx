@@ -4,6 +4,7 @@
  */
 
 import { Link } from '@inertiajs/react';
+import { PublicRoute } from '@/Components';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { Card, Button, Input, Alert, GoogleLogo } from '@/Components/ui';
 import { useLocale } from '@/contexts';
@@ -197,8 +198,10 @@ function LoginContent() {
 
 export default function Login() {
     return (
-        <PublicLayout title="Iniciar Sesión">
-            <LoginContent />
-        </PublicLayout>
+        <PublicRoute>
+            <PublicLayout title="Iniciar Sesión">
+                <LoginContent />
+            </PublicLayout>
+        </PublicRoute>
     );
 }

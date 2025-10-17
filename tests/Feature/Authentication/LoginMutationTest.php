@@ -62,6 +62,7 @@ class LoginMutationTest extends TestCase
                         userCode
                         email
                         emailVerified
+                        onboardingCompleted
                         status
                         displayName
                         avatarUrl
@@ -505,6 +506,7 @@ class LoginMutationTest extends TestCase
                         userCode
                         email
                         emailVerified
+                        onboardingCompleted
                         status
                         displayName
                         avatarUrl

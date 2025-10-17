@@ -4,6 +4,7 @@
  */
 
 import { Link } from '@inertiajs/react';
+import { PublicRoute } from '@/Components';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { Card, Button, Input, Alert, GoogleLogo } from '@/Components/ui';
 import { useLocale } from '@/contexts';
@@ -342,8 +343,10 @@ function RegisterContent() {
 
 export default function Register() {
     return (
-        <PublicLayout title="Registrarse">
-            <RegisterContent />
-        </PublicLayout>
+        <PublicRoute>
+            <PublicLayout title="Registrarse">
+                <RegisterContent />
+            </PublicLayout>
+        </PublicRoute>
     );
 }

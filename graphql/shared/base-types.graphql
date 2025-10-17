@@ -20,6 +20,9 @@ type UserAuthInfo {
   """Email verificado"""
   emailVerified: Boolean!
 
+  """Onboarding completado (completar perfil + configurar preferencias)"""
+  onboardingCompleted: Boolean! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\OnboardingCompletedResolver")
+
   """Estado actual del usuario"""
   status: UserStatus!
 

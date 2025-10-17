@@ -59,6 +59,7 @@ class AuthService
             'email' => $data['email'],
             'password' => $data['password'],
             'email_verified' => false,
+            'onboarding_completed' => false,  // Usuario recién registrado NO ha completado onboarding
             'terms_accepted' => $data['terms_accepted'] ?? true,
             'terms_version' => 'v2.1',
         ];

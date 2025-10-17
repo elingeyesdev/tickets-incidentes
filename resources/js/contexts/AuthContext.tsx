@@ -14,6 +14,7 @@ import { apolloClient, TokenStorage, getTempUserData, clearTempUserData } from '
 import { AUTH_STATUS_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { LOGOUT_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { canAccessRoute as checkRoutePermission } from '@/config/permissions';
+import { hasCompletedOnboarding as checkOnboardingCompleted } from '@/lib/utils/onboarding';
 import type { User, RoleCode } from '@/types';
 
 interface AuthContextType {
@@ -22,6 +23,7 @@ interface AuthContextType {
     loading: boolean;
     hasRole: (role: RoleCode | RoleCode[]) => boolean;
     canAccessRoute: (path: string) => boolean;
+    hasCompletedOnboarding: () => boolean;
     logout: (everywhere?: boolean) => Promise<void>;
     updateUser: (user: User) => void;
     refreshUser: () => Promise<void>;
@@ -45,13 +47,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Al montar, verificar si hay accessToken y obtener usuario
     useEffect(() => {
+        console.log('🔄 AuthContext: Inicializando...');
         const token = TokenStorage.getAccessToken();
 
         if (token) {
+            console.log('🔑 AuthContext: Token encontrado');
             // Primero intentar leer datos temporales (recién logueado/registrado)
             const tempData = getTempUserData();
 
             if (tempData && tempData.user && tempData.roleContexts) {
+                console.log('✅ AuthContext: Usando datos temporales', {
+                    email: tempData.user.email,
+                    roles: tempData.roleContexts.map((rc: any) => rc.roleCode),
+                    onboardingCompleted: tempData.user.onboardingCompletedAt
+                });
                 // Usar datos temporales y construir el usuario completo
                 const fullUser: User = {
                     ...tempData.user,
@@ -63,20 +72,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 // Limpiar datos temporales después de usarlos
                 clearTempUserData();
             } else {
+                console.log('🔍 AuthContext: Obteniendo usuario desde backend...');
                 // No hay datos temporales, obtener usuario actual desde el backend
                 getAuthStatus().then((result: any) => {
                     if (result.data?.authStatus?.isAuthenticated) {
+                        console.log('✅ AuthContext: Usuario autenticado', {
+                            email: result.data.authStatus.user.email,
+                            onboardingCompleted: result.data.authStatus.user.onboardingCompletedAt
+                        });
                         setUser(result.data.authStatus.user);
                     } else {
+                        console.log('❌ AuthContext: Usuario no autenticado');
                         setUser(null);
                     }
                     setLoading(false);
-                }).catch(() => {
+                }).catch((error) => {
+                    console.error('❌ AuthContext: Error obteniendo usuario', error);
                     setUser(null);
                     setLoading(false);
                 });
             }
         } else {
+            console.log('❌ AuthContext: No hay token');
             // No hay token, no autenticado
             setUser(null);
             setLoading(false);
@@ -159,12 +176,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    /**
+     * Verifica si el usuario ha completado el proceso de onboarding
+     * (VerifyEmail → CompleteProfile → ConfigurePreferences)
+     * Usa el helper centralizado de onboarding
+     */
+    const hasCompletedOnboarding = (): boolean => {
+        return checkOnboardingCompleted(user);
+    };
+
     const value: AuthContextType = {
         user,
         isAuthenticated,
         loading,
         hasRole,
         canAccessRoute,
+        hasCompletedOnboarding,
         logout,
         updateUser,
         refreshUser,

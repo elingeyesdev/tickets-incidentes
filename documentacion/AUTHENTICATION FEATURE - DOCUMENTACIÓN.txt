@@ -216,6 +216,7 @@ query AuthStatus {
             userCode
             email
             emailVerified
+            onboardingCompleted
             status
             displayName
             avatarUrl
@@ -250,6 +251,7 @@ query AuthStatus {
                 "userCode": "USR-2025-00123",
                 "email": "maria.garcia@empresa.com",
                 "emailVerified": true,
+                "onboardingCompleted": true,
                 "status": "ACTIVE",
                 "displayName": "María García",
                 "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
@@ -488,6 +490,7 @@ mutation Register($input: RegisterInput!) {
             userCode
             email
             emailVerified
+            onboardingCompleted
             displayName
             theme
             language
@@ -538,6 +541,7 @@ mutation Register($input: RegisterInput!) {
                 "userCode": "USR-2025-00124",
                 "email": "carlos.mendoza@empresa.com",
                 "emailVerified": false,
+                "onboardingCompleted": false,
                 "displayName": "Carlos Mendoza",
                 "theme": "light",
                 "language": "es"
@@ -605,6 +609,7 @@ mutation Login($input: LoginInput!) {
             userCode
             email
             emailVerified
+            onboardingCompleted
             status
             displayName
             avatarUrl
@@ -654,6 +659,7 @@ mutation Login($input: LoginInput!) {
                 "userCode": "USR-2025-00123",
                 "email": "maria.garcia@empresa.com",
                 "emailVerified": true,
+                "onboardingCompleted": true,
                 "status": "ACTIVE",
                 "displayName": "María García",
                 "avatarUrl": "https://storage.helpdesk.com/avatars/usr_123.jpg",
@@ -755,6 +761,7 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
             id
             email
             emailVerified
+            onboardingCompleted
             displayName
             avatarUrl
         }
@@ -800,6 +807,7 @@ mutation LoginWithGoogle($input: GoogleLoginInput!) {
                 "id": "550e8400-e29b-41d4-a716-446655440003",
                 "email": "usuario.google@gmail.com",
                 "emailVerified": true,
+                "onboardingCompleted": false,
                 "displayName": "Ana López",
                 "avatarUrl": "https://lh3.googleusercontent.com/a/photo.jpg"
             },
@@ -1397,6 +1405,7 @@ type UserAuthInfo {
     userCode: String!
     email: Email!
     emailVerified: Boolean!
+    onboardingCompleted: Boolean!
     status: UserStatus!
     displayName: String!
     avatarUrl: URL
@@ -1610,7 +1619,7 @@ mutation Register {
         acceptsPrivacyPolicy: true
     }) {
         accessToken
-        user { email, emailVerified }
+        user { email, emailVerified, onboardingCompleted }
         roleContexts { roleCode, dashboardPath }
     }
 }
@@ -1618,6 +1627,7 @@ mutation Register {
 
 **2. Response:**
 - `emailVerified: false`
+- `onboardingCompleted: false`
 - `roleContexts: [{ roleCode: "USER", dashboardPath: "/tickets" }]`
 
 **3. Frontend:**
@@ -1815,3 +1825,43 @@ Todos los eventos se registran automáticamente:
 
 > Para implementación backend, ver `app/Features/Authentication/`
 > Para integración con otros features, consultar documentación de UserManagement
+
+---
+
+## 🆕 ACTUALIZACIÓN V10.2 - Campo onboardingCompleted
+
+### Cambio en UserAuthInfo (V10.2)
+
+**Campo agregado:**
+- `onboardingCompleted: Boolean!` - Indica si el usuario completó el flujo de onboarding
+
+**⚠️ IMPORTANTE: Email Verification NO es prerequisito para Onboarding**
+
+Email verification es OPCIONAL y puede hacerse en cualquier momento. El usuario puede completar el onboarding SIN verificar su email.
+
+**Flujo Completo:**
+1. **Register** → `emailVerified: false`, `onboardingCompleted: false`
+2. **Complete Profile** (first_name, last_name) → `onboardingCompleted: false` (puede hacerse SIN verificar email) **(ONBOARDING PASO 1)**
+3. **Configure Preferences** (theme, language) → `onboardingCompleted: true` **(ONBOARDING PASO 2)**
+4. **Verify Email** → OPCIONAL, puede hacerse en cualquier momento
+
+**Onboarding = Solo pasos 2 y 3**
+
+**Uso en Frontend (3 Zonas):**
+- **Zona PUBLIC**: `!isAuthenticated`
+- **Zona ONBOARDING**: `isAuthenticated && !onboardingCompleted`
+- **Zona AUTHENTICATED**: `isAuthenticated && onboardingCompleted`
+
+**Base de Datos:**
+- Tabla: `auth.users`
+- Campo: `onboarding_completed BOOLEAN DEFAULT FALSE NOT NULL`
+- Campo: `onboarding_completed_at TIMESTAMPTZ`
+
+**Migration:** `2025_10_16_000001_add_onboarding_fields_to_users_table.php`
+
+**Model Methods:**
+- `hasCompletedOnboarding(): bool`
+- `markOnboardingAsCompleted(): void`
+- `canAccessAuthenticatedZone(): bool`
+- `scopeOnboardingCompleted($query)`
+- `scopeOnboardingPending($query)`

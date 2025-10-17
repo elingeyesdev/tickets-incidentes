@@ -54,10 +54,10 @@ class AvailableRolesQuery extends BaseQuery
     private function getDefaultDashboard(string $roleCode): string
     {
         return match($roleCode) {
-            'PLATFORM_ADMIN' => '/platform/dashboard',
-            'COMPANY_ADMIN' => '/company/dashboard',
-            'AGENT' => '/company/tickets',
-            'USER' => '/my/tickets',
+            'PLATFORM_ADMIN' => '/admin/dashboard',
+            'COMPANY_ADMIN' => '/empresa/dashboard',
+            'AGENT' => '/agent/dashboard',
+            'USER' => '/tickets',
             default => '/dashboard',
         };
     }

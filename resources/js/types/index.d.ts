@@ -1,72 +1,39 @@
 /**
  * Global TypeScript Definitions
  * Helpdesk System - Professional Types
+ *
+ * Este archivo re-exporta tipos de models.ts y define tipos específicos de Inertia.js
+ * NO duplicar definiciones aquí - usar models.ts como fuente única de verdad
  */
+
+// ============================================
+// RE-EXPORTS FROM MODELS.TS
+// ============================================
+
+export type {
+    User,
+    UserProfile,
+    UserPreferences,
+    UserStatus,
+    AuthProvider,
+    RoleCode,
+    RoleContext,
+    Company,
+    CompanyBasicInfo,
+    CompanyStatus,
+    CompanyPlan,
+    CompanyRequest,
+    CompanyRequestStatus,
+    AuthPayload,
+    SessionInfo,
+} from './models';
 
 // ============================================
 // INERTIA.JS TYPES
 // ============================================
 
 import { Config } from 'ziggy-js';
-
-export interface User {
-    id: string;
-    userCode: string;
-    email: string;
-    emailVerified: boolean;
-    status: UserStatus;
-    authProvider: AuthProvider;
-    profile: UserProfile;
-    preferences: UserPreferences;
-    roleContexts: RoleContext[];
-    ticketsCount: number;
-    resolvedTicketsCount: number;
-    averageRating: number | null;
-    lastLoginAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface UserProfile {
-    firstName: string;
-    lastName: string;
-    displayName: string;
-    phoneNumber: string | null;
-    avatarUrl: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface UserPreferences {
-    theme: 'light' | 'dark';
-    language: 'es' | 'en';
-    timezone: string;
-    pushWebNotifications: boolean;
-    notificationsTickets: boolean;
-    updatedAt: string;
-}
-
-export interface RoleContext {
-    roleCode: RoleCode;
-    roleName: string;
-    company: RoleCompanyContext | null;
-    dashboardPath: string;
-}
-
-export interface RoleCompanyContext {
-    id: string;
-    companyCode: string;
-    name: string;
-    logoUrl: string | null;
-}
-
-// ============================================
-// ENUMS
-// ============================================
-
-export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED';
-export type AuthProvider = 'EMAIL' | 'GOOGLE';
-export type RoleCode = 'USER' | 'AGENT' | 'COMPANY_ADMIN' | 'PLATFORM_ADMIN';
+import type { User } from './models';
 
 // ============================================
 // PAGE PROPS (Inertia)
@@ -85,31 +52,8 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
 };
 
 // ============================================
-// AUTHENTICATION
+// AUTHENTICATION INPUT TYPES
 // ============================================
-
-export interface AuthPayload {
-    accessToken: string;
-    refreshToken: string;
-    tokenType: string;
-    expiresIn: number;
-    user: UserAuthInfo;
-    roleContexts: RoleContext[];
-    sessionId: string;
-    loginTimestamp: string;
-}
-
-export interface UserAuthInfo {
-    id: string;
-    userCode: string;
-    email: string;
-    emailVerified: boolean;
-    status: UserStatus;
-    displayName: string;
-    avatarUrl: string | null;
-    theme: 'light' | 'dark';
-    language: 'es' | 'en';
-}
 
 export interface LoginInput {
     email: string;

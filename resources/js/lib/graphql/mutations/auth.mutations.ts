@@ -130,3 +130,36 @@ export const CONFIRM_PASSWORD_RESET_MUTATION = gql`
     }
 `;
 
+// ============================================
+// MARK ONBOARDING COMPLETED
+// ============================================
+
+export const MARK_ONBOARDING_COMPLETED_MUTATION = gql`
+    mutation MarkOnboardingCompleted {
+        markOnboardingCompleted {
+            success
+            message
+            user {
+                id
+                userCode
+                email
+                emailVerified
+                onboardingCompleted
+                displayName
+                avatarUrl
+                theme
+                language
+                roleContexts {
+                    roleCode
+                    roleName
+                    company {
+                        id
+                        name
+                    }
+                    dashboardPath
+                }
+            }
+        }
+    }
+`;
+

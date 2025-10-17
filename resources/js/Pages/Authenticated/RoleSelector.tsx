@@ -7,14 +7,15 @@
  */
 
 import { useState, useEffect } from 'react';
-import { 
-    User, 
-    Briefcase, 
-    Shield, 
-    ShieldCheck, 
+import {
+    User,
+    Briefcase,
+    Shield,
+    ShieldCheck,
     Building,
     Sparkles
 } from 'lucide-react';
+import { ProtectedRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { useAuth } from '@/contexts';
 import type { RoleContext } from '@/types/models';
@@ -241,9 +242,11 @@ function RoleSelectorContent() {
 // Exportación usando OnboardingLayout (igual que VerifyEmail, CompleteProfile, ConfigurePreferences)
 export default function RoleSelector() {
     return (
-        <OnboardingLayout title="Seleccionar Rol">
-            <RoleSelectorContent />
-        </OnboardingLayout>
+        <ProtectedRoute>
+            <OnboardingLayout title="Seleccionar Rol">
+                <RoleSelectorContent />
+            </OnboardingLayout>
+        </ProtectedRoute>
     );
 }
 

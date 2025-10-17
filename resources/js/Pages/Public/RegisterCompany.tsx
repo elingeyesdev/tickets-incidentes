@@ -6,11 +6,12 @@
 
 import React, { FormEvent, useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
+import { PublicRoute } from '@/Components';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { Card, Button, Input } from '@/Components/ui';
 import { useNotification } from '@/contexts';
-import { 
-    Building2, Mail, FileText, Globe, Users, MapPin, 
+import {
+    Building2, Mail, FileText, Globe, Users, MapPin,
     Hash, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft, Check,
     Briefcase, Contact, ShieldCheck, Zap, BarChart3
 } from 'lucide-react';
@@ -589,8 +590,10 @@ function RegisterCompanyContent() {
 
 export default function RegisterCompany() {
     return (
-        <PublicLayout title="Registrar Mi Empresa">
-            <RegisterCompanyContent />
-        </PublicLayout>
+        <PublicRoute>
+            <PublicLayout title="Registrar Mi Empresa">
+                <RegisterCompanyContent />
+            </PublicLayout>
+        </PublicRoute>
     );
 }

@@ -4,6 +4,7 @@
  */
 
 import { Link } from '@inertiajs/react';
+import { PublicRoute } from '@/Components';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { Card, Button, Badge } from '@/Components/ui';
 import { Headphones, Shield, Zap, Users, ArrowRight, CheckCircle } from 'lucide-react';
@@ -187,8 +188,10 @@ function WelcomeContent() {
 
 export default function Welcome() {
     return (
-        <PublicLayout title="Bienvenido">
-            <WelcomeContent />
-        </PublicLayout>
+        <PublicRoute>
+            <PublicLayout title="Bienvenido">
+                <WelcomeContent />
+            </PublicLayout>
+        </PublicRoute>
     );
 }

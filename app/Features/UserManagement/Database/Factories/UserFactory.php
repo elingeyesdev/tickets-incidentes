@@ -42,6 +42,8 @@ class UserFactory extends Factory
             'password_hash' => Hash::make('password'), // Default password for testing
             'email_verified' => true,
             'email_verified_at' => now(),
+            'onboarding_completed' => true,
+            'onboarding_completed_at' => now()->subDays(rand(1, 30)),
             'status' => UserStatus::ACTIVE,
             'auth_provider' => 'local',
             'last_login_at' => fake()->optional()->dateTimeBetween('-30 days', 'now'),
@@ -158,6 +160,33 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified' => true,
             'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Usuario con onboarding pendiente
+     *
+     * IMPORTANTE: Email verification NO es prerequisito para onboarding.
+     * Este estado simula un usuario que aún no completó su perfil y preferencias.
+     */
+    public function onboardingPending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'onboarding_completed' => false,
+            'onboarding_completed_at' => null,
+        ]);
+    }
+
+    /**
+     * Usuario con onboarding completado
+     *
+     * Usuario que ya completó profile + preferences
+     */
+    public function onboardingCompleted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'onboarding_completed' => true,
+            'onboarding_completed_at' => now()->subDays(rand(1, 30)),
         ]);
     }
 }

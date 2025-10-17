@@ -45,6 +45,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
                         id
                         email
                         emailVerified
+                        onboardingCompleted
                     }
                 }
             }

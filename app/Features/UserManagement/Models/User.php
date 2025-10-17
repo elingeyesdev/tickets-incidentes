@@ -11,7 +11,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * User Model
@@ -33,6 +35,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $terms_accepted
  * @property \DateTime|null $terms_accepted_at
  * @property string|null $terms_version
+ * @property bool $onboarding_completed
+ * @property \DateTime|null $onboarding_completed_at
  * @property \DateTime $created_at
  * @property \DateTime $updated_at
  * @property \DateTime|null $deleted_at
@@ -88,6 +92,7 @@ class User extends Model implements Authenticatable
         'terms_accepted',
         'terms_accepted_at',
         'terms_version',
+        'onboarding_completed_at',
     ];
 
     /**
@@ -111,6 +116,7 @@ class User extends Model implements Authenticatable
         'last_activity_at' => 'datetime',
         'terms_accepted' => 'boolean',
         'terms_accepted_at' => 'datetime',
+        'onboarding_completed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -212,12 +218,14 @@ class User extends Model implements Authenticatable
 
     /**
      * Verificar si puede acceder al sistema
+     *
+     * IMPORTANTE: Email verification NO es requerido para acceder.
+     * Solo requiere: usuario activo, no eliminado, y términos aceptados.
      */
     public function canAccess(): bool
     {
         return $this->isActive()
             && !$this->isDeleted()
-            && $this->hasVerifiedEmail()
             && $this->hasAcceptedTerms();
     }
 
@@ -322,6 +330,48 @@ class User extends Model implements Authenticatable
         ]);
     }
 
+    // ==================== MÉTODOS DE ONBOARDING ====================
+
+    /**
+     * Verificar si completó el onboarding
+     */
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed;
+    }
+
+    /**
+     * Marcar onboarding como completado
+     *
+     * IMPORTANTE: Email verification NO es prerequisito ni parte del onboarding.
+     * Este método debe ser llamado después de que el usuario complete:
+     * 1. Completar perfil (first_name, last_name) - PASO 1
+     * 2. Configurar preferencias (theme, language) - PASO 2
+     *
+     * Email verification es OPCIONAL y puede hacerse en cualquier momento.
+     */
+    public function markOnboardingAsCompleted(): void
+    {
+        $this->update([
+            'onboarding_completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Verificar si el usuario puede acceder a la zona authenticated
+     *
+     * Requiere:
+     * - Usuario activo
+     * - Términos aceptados
+     * - Onboarding completado
+     *
+     * IMPORTANTE: Email verification NO es requerido.
+     */
+    public function canAccessAuthenticatedZone(): bool
+    {
+        return $this->canAccess() && $this->hasCompletedOnboarding();
+    }
+
     /**
      * Asignar un rol al usuario (V10.1)
      *
@@ -392,6 +442,22 @@ class User extends Model implements Authenticatable
         return $this->profile?->language ?? 'es';
     }
 
+    /**
+     * Accessor booleano: onboardingComplete
+     *
+     * Se calcula dinámicamente desde onboarding_completed_at para compatibilidad con tests.
+     * La base de datos usa onboarding_completed_at (timestamp) que es profesional y auditable.
+     * Este accessor permite usar $user->onboarding_complete (booleano) en código y tests.
+     *
+     * Lógica: onboarding_complete = (onboarding_completed_at !== null)
+     */
+    protected function onboardingComplete(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->onboarding_completed_at !== null,
+        );
+    }
+
     // ==================== SCOPES ====================
 
     /**
@@ -419,5 +485,21 @@ class User extends Model implements Authenticatable
             $q->where('email', 'ILIKE', "%{$search}%")
               ->orWhere('user_code', 'ILIKE', "%{$search}%");
         });
+    }
+
+    /**
+     * Scope: Solo usuarios que completaron onboarding
+     */
+    public function scopeOnboardingCompleted($query)
+    {
+        return $query->whereNotNull('onboarding_completed_at');
+    }
+
+    /**
+     * Scope: Solo usuarios que NO completaron onboarding
+     */
+    public function scopeOnboardingPending($query)
+    {
+        return $query->whereNull('onboarding_completed_at');
     }
 }

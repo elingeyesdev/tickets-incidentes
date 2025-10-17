@@ -1,6 +1,19 @@
 /**
  * Utility Functions
+ * Barrel export para todos los helpers del sistema
  */
+
+// Re-export onboarding helpers
+export {
+    hasCompletedOnboarding,
+    hasVerifiedEmail,
+    hasCompletedProfile,
+    hasConfiguredPreferences,
+    getNextOnboardingStep,
+    needsOnboarding,
+    getOnboardingProgress,
+    getOnboardingStatus,
+} from './onboarding';
 
 /**
  * Formatea una fecha en formato legible

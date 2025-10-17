@@ -18,6 +18,20 @@ abstract class TestCase extends BaseTestCase
      */
 
     /**
+     * Setup the test environment.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Force JWT blacklist to be enabled in tests
+        // This ensures logout invalidation works correctly in tests
+        config(['jwt.blacklist_enabled' => true]);
+    }
+
+    /**
      * Authenticate a user for GraphQL testing
      *
      * This method simulates authentication by setting the user in Laravel's Auth,

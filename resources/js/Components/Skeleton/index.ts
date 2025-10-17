@@ -36,6 +36,9 @@ export { CardSkeleton } from './cards/Card';
 export { CardGridSkeleton } from './cards/CardGrid';
 export { ListItemSkeleton } from './cards/ListItem';
 
+// ===== PAGE SKELETONS =====
+export { PageSkeleton } from './page/PageSkeleton';
+
 // ===== DATA DISPLAY SKELETONS =====
 // TODO: Implementar TableSkeleton, ChartSkeleton, StatsSkeleton
 

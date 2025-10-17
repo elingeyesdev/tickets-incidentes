@@ -18,7 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
-        
+
+        // Registrar middleware aliases para protección de rutas
+        $middleware->alias([
+            'role' => \App\Shared\Http\Middleware\EnsureUserHasRole::class,
+            'onboarding.completed' => \App\Shared\Http\Middleware\EnsureOnboardingCompleted::class,
+            'guest' => \App\Shared\Http\Middleware\RedirectIfAuthenticated::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -34,6 +34,7 @@ class RegisterMutationTest extends TestCase
                         userCode
                         email
                         emailVerified
+                        onboardingCompleted
                         status
                         displayName
                         avatarUrl
@@ -65,30 +66,27 @@ class RegisterMutationTest extends TestCase
             ]
         ]);
 
-        // Verificar respuesta
-        $response->assertJson([
-            'data' => [
-                'register' => [
-                    'tokenType' => 'Bearer',
-                    'user' => [
-                        'email' => 'newuser@example.com',
-                        'emailVerified' => false,
-                        'status' => 'ACTIVE',
-                        'displayName' => 'John Doe',
-                        'theme' => 'light',
-                        'language' => 'es',
-                    ],
-                    'roleContexts' => [
-                        [
-                            'roleCode' => 'USER',
-                            'roleName' => 'Cliente',
-                            'dashboardPath' => '/tickets',
-                            'company' => null,  // USER no tiene empresa
-                        ]
-                    ]
-                ]
-            ]
-        ]);
+        // DEBUG: Ver si hay errores en GraphQL
+        if ($response->json('errors')) {
+            dump($response->json('errors'));
+        }
+
+        // Verificar que no haya errores
+        $this->assertNull($response->json('errors'), 'GraphQL returned errors: ' . json_encode($response->json('errors')));
+
+        // Verificar respuesta - Usar assertJsonPath para evitar problemas con null vs NULL
+        $response->assertJsonPath('data.register.tokenType', 'Bearer');
+        $response->assertJsonPath('data.register.user.email', 'newuser@example.com');
+        $response->assertJsonPath('data.register.user.emailVerified', false);
+        $response->assertJsonPath('data.register.user.onboardingCompleted', false); // Usuario recién registrado NO ha completado onboarding
+        $response->assertJsonPath('data.register.user.status', 'ACTIVE');
+        $response->assertJsonPath('data.register.user.displayName', 'John Doe');
+        $response->assertJsonPath('data.register.user.theme', 'light');
+        $response->assertJsonPath('data.register.user.language', 'es');
+        $response->assertJsonPath('data.register.roleContexts.0.roleCode', 'USER');
+        $response->assertJsonPath('data.register.roleContexts.0.roleName', 'Cliente');
+        $response->assertJsonPath('data.register.roleContexts.0.dashboardPath', '/tickets');
+        $response->assertJsonPath('data.register.roleContexts.0.company', null); // USER no tiene empresa
 
         // Verificar que tiene tokens
         $data = $response->json('data.register');
@@ -107,6 +105,7 @@ class RegisterMutationTest extends TestCase
         $this->assertDatabaseHas('auth.users', [
             'email' => 'newuser@example.com',
             'email_verified' => false,
+            'onboarding_completed' => false, // Usuario recién registrado
             'status' => 'active',  // PostgreSQL ENUM usa lowercase
         ]);
 
@@ -147,6 +146,7 @@ class RegisterMutationTest extends TestCase
             'password_hash' => password_hash('password', PASSWORD_BCRYPT),
             'status' => UserStatus::ACTIVE,
             'terms_accepted' => true,
+            'onboarding_completed' => false, // Agregar campo nuevo
         ]);
 
         $response = $this->graphQL('

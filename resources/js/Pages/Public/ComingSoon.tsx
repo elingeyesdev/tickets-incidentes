@@ -4,6 +4,7 @@
  */
 
 import { Link } from '@inertiajs/react';
+import { PublicRoute } from '@/Components';
 import { PublicLayout } from '@/Layouts/Public/PublicLayout';
 import { Card, Button } from '@/Components/ui';
 import { Construction, Home, ArrowLeft } from 'lucide-react';
@@ -77,9 +78,11 @@ function ComingSoonContent() {
 
 export default function ComingSoon() {
     return (
-        <PublicLayout title="Próximamente">
-            <ComingSoonContent />
-        </PublicLayout>
+        <PublicRoute>
+            <PublicLayout title="Próximamente">
+                <ComingSoonContent />
+            </PublicLayout>
+        </PublicRoute>
     );
 }
 

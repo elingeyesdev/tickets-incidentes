@@ -48,6 +48,7 @@ class UserService
                 'email' => $userData['email'],
                 'password_hash' => Hash::make($userData['password']),
                 'email_verified' => $userData['email_verified'] ?? false,
+                'onboarding_completed' => $userData['onboarding_completed'] ?? false,  // Nuevo campo de onboarding
                 'status' => $userData['status'] ?? UserStatus::ACTIVE,
                 'auth_provider' => $userData['auth_provider'] ?? 'local',
                 'terms_accepted' => $termsAccepted,

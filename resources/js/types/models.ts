@@ -1,18 +1,31 @@
 /**
  * Models - Tipos de modelos del dominio
  * Basados en la documentación de Features (Auth, User Management, Company Management)
+ *
+ * FUENTE ÚNICA DE VERDAD para tipos del sistema
  */
 
 // ============================================
 // USER & PROFILE
 // ============================================
 
+/**
+ * Perfil de usuario con información personal y preferencias
+ */
 export interface UserProfile {
     firstName: string;
     lastName: string;
     displayName: string;
     phoneNumber: string | null;
     avatarUrl: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/**
+ * Preferencias de usuario (tema, idioma, notificaciones)
+ */
+export interface UserPreferences {
     theme: 'light' | 'dark';
     language: 'es' | 'en';
     timezone: string;
@@ -21,30 +34,52 @@ export interface UserProfile {
     updatedAt: string;
 }
 
+/**
+ * Usuario completo del sistema
+ * Representa tanto usuarios finales como admins/agentes
+ */
 export interface User {
     id: string;
     userCode: string;
     email: string;
     emailVerified: boolean;
     status: UserStatus;
-    
-    // Datos del perfil (pueden venir directamente o en el objeto profile)
-    displayName?: string;
-    avatarUrl?: string | null;
-    theme?: 'light' | 'dark';
-    language?: 'es' | 'en';
-    
-    // Perfil completo (opcional, puede venir más tarde)
-    profile?: UserProfile;
-    
-    // Contextos de roles
+    authProvider: AuthProvider;
+
+    // Perfil y preferencias (siempre presentes después de registro)
+    profile: UserProfile;
+    preferences: UserPreferences;
+
+    // Contextos de roles (puede tener múltiples roles en diferentes empresas)
     roleContexts: RoleContext[];
-    
+
+    // Onboarding (null si no ha completado)
+    onboardingCompletedAt: string | null;
+
+    // Estadísticas de tickets (solo relevante para usuarios con tickets)
+    ticketsCount: number;
+    resolvedTicketsCount: number;
+    averageRating: number | null;
+
+    // Tracking
+    lastLoginAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
 
+/**
+ * Estados posibles del usuario
+ * - ACTIVE: Usuario activo y funcional
+ * - SUSPENDED: Usuario suspendido temporalmente
+ * - BANNED: Usuario baneado permanentemente
+ * - PENDING: Usuario pendiente de verificación
+ */
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'PENDING';
+
+/**
+ * Proveedores de autenticación soportados
+ */
+export type AuthProvider = 'EMAIL' | 'GOOGLE';
 
 // ============================================
 // ROLES & PERMISSIONS

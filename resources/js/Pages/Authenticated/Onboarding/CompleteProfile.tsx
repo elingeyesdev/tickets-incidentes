@@ -7,6 +7,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Input, Alert, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale } from '@/contexts';
@@ -14,14 +15,16 @@ import { UPDATE_MY_PROFILE_MUTATION } from '@/lib/graphql/mutations/users.mutati
 
 export default function CompleteProfile() {
     const [progressPercentage, setProgressPercentage] = useState(0);
-    
+
     return (
-        <OnboardingLayout title="Completar Perfil">
-            <CompleteProfileContent 
-                setProgressPercentage={setProgressPercentage}
-                progressPercentage={progressPercentage}
-            />
-        </OnboardingLayout>
+        <OnboardingRoute>
+            <OnboardingLayout title="Completar Perfil">
+                <CompleteProfileContent
+                    setProgressPercentage={setProgressPercentage}
+                    progressPercentage={progressPercentage}
+                />
+            </OnboardingLayout>
+        </OnboardingRoute>
     );
 }
 

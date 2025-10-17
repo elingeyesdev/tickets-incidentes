@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use App\Features\Authentication\Http\Controllers\RefreshTokenController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +17,14 @@ Route::get('healthgraphql', function () {
     return response('OK', 200)
         ->header('Content-Type', 'text/plain');
 });
+
+// ================================================================================
+// REST API ENDPOINTS - Authentication
+// ================================================================================
+
+// Endpoint REST para renovar access token usando refresh token en cookie HttpOnly
+Route::post('/auth/refresh', [RefreshTokenController::class, 'refresh'])
+    ->name('auth.refresh');
 
 // Aquí puedes agregar otras rutas de API si las necesitas
 // Route::get('/user', function (Request $request) {
