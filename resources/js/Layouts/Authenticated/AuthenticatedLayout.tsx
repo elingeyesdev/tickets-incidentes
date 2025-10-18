@@ -110,15 +110,15 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({
                             <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-gray-700">
                                 <div className="text-right hidden md:block">
                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {user.profile.displayName}
+                                        {user.displayName}
                                     </div>
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
                                         {roleIndicator.label}
                                     </div>
                                 </div>
                                 <img
-                                    src={user.profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.profile.displayName)}&background=random`}
-                                    alt={user.profile.displayName}
+                                    src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=random`}
+                                    alt={user.displayName}
                                     className={`h-9 w-9 rounded-full ring-2 ${roleIndicator.color.replace('bg-', 'ring-')}`}
                                 />
                             </div>

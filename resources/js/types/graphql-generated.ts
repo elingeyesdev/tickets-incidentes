@@ -1594,9 +1594,9 @@ export type RoleContextFieldsFragment = { __typename?: 'RoleContext', roleCode: 
 
 export type UserFullFieldsFragment = { __typename?: 'User', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, authProvider: AuthProvider, ticketsCount: number, resolvedTicketsCount: number, averageRating?: number | null, lastLoginAt?: string | null, createdAt: string, updatedAt: string, profile: { __typename?: 'UserProfile', firstName: string, lastName: string, displayName: string, phoneNumber?: string | null, avatarUrl?: any | null, createdAt: string, updatedAt: string }, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> };
 
-export type UserAuthInfoFieldsFragment = { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> };
+export type UserAuthInfoFieldsFragment = { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> };
 
-export type AuthPayloadFieldsFragment = { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } };
+export type AuthPayloadFieldsFragment = { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } };
 
 export type CompanyMinimalFieldsFragment = { __typename?: 'CompanyMinimal', id: string, companyCode: string, name: string, logoUrl?: any | null };
 
@@ -1605,21 +1605,21 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
 
 export type LoginWithGoogleMutationVariables = Exact<{
   input: GoogleLoginInput;
 }>;
 
 
-export type LoginWithGoogleMutation = { __typename?: 'Mutation', loginWithGoogle: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
+export type LoginWithGoogleMutation = { __typename?: 'Mutation', loginWithGoogle: { __typename?: 'AuthPayload', accessToken: string, refreshToken: string, tokenType: string, expiresIn: number, sessionId: string, loginTimestamp: string, user: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } } };
 
 export type LogoutMutationVariables = Exact<{
   everywhere?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1674,7 +1674,7 @@ export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile
 export type AuthStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AuthStatusQuery = { __typename?: 'Query', authStatus: { __typename?: 'AuthStatus', isAuthenticated: boolean, user?: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } | null, currentSession?: { __typename?: 'SessionInfo', sessionId: string, deviceName?: string | null, ipAddress?: string | null, lastUsedAt: string, expiresAt: string, isCurrent: boolean } | null, tokenInfo?: { __typename?: 'TokenInfo', expiresIn: number, issuedAt: string, tokenType: string } | null } };
+export type AuthStatusQuery = { __typename?: 'Query', authStatus: { __typename?: 'AuthStatus', isAuthenticated: boolean, user?: { __typename?: 'UserAuthInfo', id: string, userCode: string, email: string, emailVerified: boolean, onboardingCompleted: boolean, onboardingCompletedAt?: string | null, status: UserStatus, displayName: string, avatarUrl?: any | null, theme: string, language: string, roleContexts: Array<{ __typename?: 'RoleContext', roleCode: RoleCode, roleName: string, dashboardPath: string, company?: { __typename?: 'RoleCompanyContext', id: string, companyCode: string, name: string, logoUrl?: any | null } | null }> } | null, currentSession?: { __typename?: 'SessionInfo', sessionId: string, deviceName?: string | null, ipAddress?: string | null, lastUsedAt: string, expiresAt: string, isCurrent: boolean } | null, tokenInfo?: { __typename?: 'TokenInfo', expiresIn: number, issuedAt: string, tokenType: string } | null } };
 
 export type MySessionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1759,6 +1759,8 @@ export const UserAuthInfoFieldsFragmentDoc = gql`
   userCode
   email
   emailVerified
+  onboardingCompleted
+  onboardingCompletedAt
   status
   displayName
   avatarUrl

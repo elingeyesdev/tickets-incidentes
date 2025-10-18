@@ -4,7 +4,7 @@
  */
 
 import { getDefaultDashboard } from '@/config/permissions';
-import type { User, RoleCode } from '@/types';
+import type { UserAuthInfo, RoleCode } from '@/types';
 
 /**
  * Obtiene la URL de dashboard apropiada para un usuario
@@ -18,7 +18,7 @@ import type { User, RoleCode } from '@/types';
  * router.visit(dashboardUrl); // Redirige a /admin/dashboard, /empresa/dashboard, etc.
  * ```
  */
-export const getUserDashboardUrl = (user: User | null): string => {
+export const getUserDashboardUrl = (user: UserAuthInfo | null): string => {
     if (!user) return '/login';
 
     const userRoles = user.roleContexts.map((rc) => rc.roleCode as RoleCode);

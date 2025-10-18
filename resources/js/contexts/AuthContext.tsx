@@ -21,13 +21,13 @@ import { AUTH_STATUS_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { LOGOUT_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { canAccessRoute as checkRoutePermission } from '@/config/permissions';
 import { hasCompletedOnboarding as checkOnboardingCompleted } from '@/lib/utils/onboarding';
-import type { User, RoleCode } from '@/types';
-import type { AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables } from '@/types/graphql-generated';
+import type { RoleCode } from '@/types';
+import type { AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables, UserAuthInfo } from '@/types/graphql-generated';
 
 type AuthState = 'initializing' | 'authenticated' | 'unauthenticated';
 
 interface AuthContextType {
-    user: User | null;
+    user: UserAuthInfo | null;
     authState: AuthState;
     isAuthenticated: boolean;
     loading: boolean;
@@ -35,7 +35,7 @@ interface AuthContextType {
     canAccessRoute: (path: string) => boolean;
     hasCompletedOnboarding: () => boolean;
     logout: (everywhere?: boolean) => Promise<void>;
-    updateUser: (user: User) => void;
+    updateUser: (user: UserAuthInfo) => void;
     refreshUser: () => Promise<void>;
 }
 
@@ -46,7 +46,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<UserAuthInfo | null>(null);
     const [authState, setAuthState] = useState<AuthState>('initializing');
 
     const [getAuthStatus] = useLazyQuery<AuthStatusQuery, AuthStatusQueryVariables>(AUTH_STATUS_QUERY, {
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 if (tempData && tempData.user && tempData.roleContexts) {
                     // Usar datos temporales inmediatamente (sin llamada al servidor)
-                    const fullUser: User = {
+                    const fullUser: UserAuthInfo = {
                         ...tempData.user,
                         roleContexts: tempData.roleContexts,
                     };
@@ -101,9 +101,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 // No hay caché temporal, consultar servidor
                 const result = await getAuthStatus();
 
+                console.log('[AuthContext] Query response:', result.data);
+                console.log('[AuthContext] User object:', result.data?.authStatus?.user);
+                console.log('[AuthContext] onboardingCompleted:', result.data?.authStatus?.user?.onboardingCompleted);
+                console.log('[AuthContext] onboardingCompletedAt:', result.data?.authStatus?.user?.onboardingCompletedAt);
+
                 if (isMounted) {
-                    if (result.data?.authStatus?.isAuthenticated) {
-                        setUser(result.data.authStatus.user as User);
+                    if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
+                        setUser(result.data.authStatus.user);
                         setAuthState('authenticated');
                     } else {
                         setUser(null);
@@ -184,7 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      * Actualiza el usuario en el contexto
      * Útil después de actualizar perfil o preferencias
      */
-    const updateUser = (updatedUser: User) => {
+    const updateUser = (updatedUser: UserAuthInfo) => {
         setUser(updatedUser);
         setAuthState('authenticated');
     };
@@ -196,8 +201,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const token = TokenStorage.getAccessToken();
         if (token) {
             const result = await getAuthStatus();
-            if (result.data?.authStatus?.isAuthenticated) {
-                setUser(result.data.authStatus.user as User);
+            console.log('[refreshUser] Query response:', result.data);
+            console.log('[refreshUser] User object:', result.data?.authStatus?.user);
+            console.log('[refreshUser] onboardingCompletedAt:', result.data?.authStatus?.user?.onboardingCompletedAt);
+
+            if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
+                setUser(result.data.authStatus.user);
                 setAuthState('authenticated');
             } else {
                 setUser(null);
@@ -212,7 +221,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      * Usa el helper centralizado de onboarding
      */
     const hasCompletedOnboarding = (): boolean => {
-        return checkOnboardingCompleted(user);
+        console.log('[hasCompletedOnboarding] user:', user);
+        console.log('[hasCompletedOnboarding] onboardingCompletedAt:', user?.onboardingCompletedAt);
+        const result = checkOnboardingCompleted(user);
+        console.log('[hasCompletedOnboarding] result:', result);
+        return result;
     };
 
     // Memoizar el contexto para prevenir re-renderizados innecesarios

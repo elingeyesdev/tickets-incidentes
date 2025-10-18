@@ -78,12 +78,14 @@ export const USER_FULL_FRAGMENT = gql`
 
 export const USER_AUTH_INFO_FRAGMENT = gql`
     ${ROLE_CONTEXT_FRAGMENT}
-    
+
     fragment UserAuthInfoFields on UserAuthInfo {
         id
         userCode
         email
         emailVerified
+        onboardingCompleted
+        onboardingCompletedAt
         status
         displayName
         avatarUrl

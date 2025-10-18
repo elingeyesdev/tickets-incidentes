@@ -9,12 +9,12 @@
  * 4. Marcar onboarding como completado (onboardingCompletedAt)
  */
 
-import type { User } from '@/types';
+import type { UserAuthInfo } from '@/types';
 
 /**
  * Verifica si el usuario ha completado el proceso de onboarding
  */
-export function hasCompletedOnboarding(user: User | null): boolean {
+export function hasCompletedOnboarding(user: UserAuthInfo | null): boolean {
     if (!user) return false;
     return user.onboardingCompletedAt !== null && user.onboardingCompletedAt !== undefined;
 }
@@ -22,39 +22,38 @@ export function hasCompletedOnboarding(user: User | null): boolean {
 /**
  * Verifica si el usuario ha verificado su email
  */
-export function hasVerifiedEmail(user: User | null): boolean {
+export function hasVerifiedEmail(user: UserAuthInfo | null): boolean {
     if (!user) return false;
     return user.emailVerified === true;
 }
 
 /**
- * Verifica si el usuario tiene perfil completo (nombre y apellido)
+ * Verifica si el usuario tiene perfil completo
+ * Para UserAuthInfo, esto se verifica a través del campo onboardingCompleted
+ * ya que el perfil completo es prerequisito para completar onboarding
  */
-export function hasCompletedProfile(user: User | null): boolean {
+export function hasCompletedProfile(user: UserAuthInfo | null): boolean {
     if (!user) return false;
-    if (!user.profile) return false;
-    return !!(user.profile.firstName && user.profile.lastName);
+    // UserAuthInfo tiene displayName que es calculado desde firstName + lastName
+    // Si tiene displayName válido, asumimos perfil completo
+    return !!user.displayName && user.displayName.trim().length > 0;
 }
 
 /**
  * Verifica si el usuario tiene preferencias configuradas
+ * Para UserAuthInfo, las preferencias están como campos directos
  */
-export function hasConfiguredPreferences(user: User | null): boolean {
+export function hasConfiguredPreferences(user: UserAuthInfo | null): boolean {
     if (!user) return false;
-    if (!user.preferences) return false;
-    // Verificar que tenga al menos theme, language y timezone
-    return !!(
-        user.preferences.theme &&
-        user.preferences.language &&
-        user.preferences.timezone
-    );
+    // Verificar que tenga theme y language configurados
+    return !!(user.theme && user.language);
 }
 
 /**
  * Determina el siguiente paso del onboarding para el usuario
  * Retorna null si ya completó onboarding
  */
-export function getNextOnboardingStep(user: User | null): string | null {
+export function getNextOnboardingStep(user: UserAuthInfo | null): string | null {
     if (!user) return '/login';
 
     // Si ya completó onboarding, no hay siguiente paso
@@ -85,14 +84,14 @@ export function getNextOnboardingStep(user: User | null): string | null {
 /**
  * Determina si el usuario necesita completar onboarding
  */
-export function needsOnboarding(user: User | null): boolean {
+export function needsOnboarding(user: UserAuthInfo | null): boolean {
     return !hasCompletedOnboarding(user);
 }
 
 /**
  * Obtiene el progreso del onboarding en porcentaje (0-100)
  */
-export function getOnboardingProgress(user: User | null): number {
+export function getOnboardingProgress(user: UserAuthInfo | null): number {
     if (!user) return 0;
 
     let completed = 0;
@@ -116,7 +115,7 @@ export function getOnboardingProgress(user: User | null): number {
 /**
  * Obtiene información de estado del onboarding
  */
-export function getOnboardingStatus(user: User | null) {
+export function getOnboardingStatus(user: UserAuthInfo | null) {
     return {
         isCompleted: hasCompletedOnboarding(user),
         hasVerifiedEmail: hasVerifiedEmail(user),
