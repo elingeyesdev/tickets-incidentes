@@ -5,13 +5,11 @@
 import { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
-import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Alert } from '@/Components/ui';
 import { useAuth, useLocale } from '@/contexts';
 import { VERIFY_EMAIL_MUTATION, RESEND_VERIFICATION_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { AlertTriangle } from 'lucide-react';
-import type { VerifyEmailMutation, VerifyEmailMutationVariables, ResendVerificationMutation, ResendVerificationMutationVariables } from '@/types/graphql-generated';
 
 interface VerifyEmailPageProps {
     token?: string;
@@ -26,10 +24,9 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
     const [showSkipWarning, setShowSkipWarning] = useState(false);
     const [resendCount, setResendCount] = useState(1); // Comienza en 1
     const [countdown, setCountdown] = useState(60); // Empieza con 60s de cooldown
-    const [isShaking, setIsShaking] = useState(false);
 
-    const [verifyEmail] = useMutation<VerifyEmailMutation, VerifyEmailMutationVariables>(VERIFY_EMAIL_MUTATION, {
-        onCompleted: (data) => {
+    const [verifyEmail] = useMutation(VERIFY_EMAIL_MUTATION, {
+        onCompleted: (data: any) => {
             if (data.verifyEmail.success) {
                 setVerificationStatus('success');
                 setMessage(data.verifyEmail.message || 'Email verificado exitosamente');
@@ -51,16 +48,14 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         },
     });
 
-    const [resendVerification, { loading: resending }] = useMutation<ResendVerificationMutation, ResendVerificationMutationVariables>(RESEND_VERIFICATION_MUTATION, {
-        onCompleted: (data) => {
+    const [resendVerification, { loading: resending }] = useMutation(RESEND_VERIFICATION_MUTATION, {
+        onCompleted: (data: any) => {
             if (data.resendVerification.success) {
                 setMessage(data.resendVerification.message || t('onboarding.verify.resend_success'));
                 setCanResend(false);
                 setResendCount(prev => prev + 1);
                 setCountdown(60);
-                // Activar animación shake
-                setIsShaking(true);
-                setTimeout(() => setIsShaking(false), 600);
+                // Email reenviado exitosamente
             } else {
                 setMessage(data.resendVerification.message || t('onboarding.verify.resend_error'));
             }
@@ -80,6 +75,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         } else if (countdown === 0 && !canResend) {
             setCanResend(true);
         }
+        return undefined;
     }, [countdown, canResend]);
 
     // Si hay token en URL, verificar automáticamente SOLO si es de un link de email
@@ -93,6 +89,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
             }, 500);
             return () => clearTimeout(timer);
         }
+        return undefined;
     }, [token]);
     
     // Auto-cerrar pestaña después de verificación exitosa (si se abrió desde email)
@@ -121,9 +118,9 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         }
 
         // Verificar si el usuario ya completó el onboarding
-        const hasProfile = user.profile?.firstName && user.profile?.lastName;
+        const hasCompletedOnboarding = user.onboardingCompleted;
         
-        if (!hasProfile) {
+        if (!hasCompletedOnboarding) {
             // Usuario nuevo, ir a onboarding
             window.location.href = '/onboarding/profile';
         } else {
@@ -222,7 +219,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                             {/* Email pendiente minimalista */}
                             <div className="relative inline-flex items-center justify-center mb-6">
                                 <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center animate-shake-continuous">
-                                    <svg className="w-17 h-17 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-20 h-20 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -285,9 +282,9 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                             className="w-full bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700"
                             onClick={() => {
                                 // Verificar si ya completó onboarding
-                                const hasProfile = user?.profile?.firstName && user?.profile?.lastName;
+                                const hasCompletedOnboarding = user?.onboardingCompleted;
                                 
-                                if (!hasProfile) {
+                                if (!hasCompletedOnboarding) {
                                     // Usuario nuevo, ir a onboarding
                                     window.location.href = '/onboarding/profile';
                                 } else {
@@ -388,11 +385,9 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
 
 export default function VerifyEmail(props: VerifyEmailPageProps) {
     return (
-        <OnboardingRoute>
-            <OnboardingLayout title="Verificar Email">
-                <VerifyEmailContent {...props} />
-            </OnboardingLayout>
-        </OnboardingRoute>
+        <OnboardingLayout title="Verificar Email">
+            <VerifyEmailContent {...props} />
+        </OnboardingLayout>
     );
 }
 

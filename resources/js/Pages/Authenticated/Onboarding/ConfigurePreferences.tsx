@@ -3,13 +3,12 @@
  * Permite al usuario configurar sus preferencias de aplicación
  */
 
-import React, { useState, useEffect, FormEvent } from 'react';
-import { router } from '@inertiajs/react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useMutation } from '@apollo/client/react';
-import { Settings, Globe, Palette, Bell, CheckCircle2 } from 'lucide-react';
+import { Globe, Palette, Bell, CheckCircle2 } from 'lucide-react';
 import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
-import { Card, Button, Alert, OnboardingFormSkeleton } from '@/Components/ui';
+import { Card, Button, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
 import { MARK_ONBOARDING_COMPLETED_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import type { MarkOnboardingCompletedMutation, MarkOnboardingCompletedMutationVariables } from '@/types/graphql-generated';
@@ -37,18 +36,18 @@ function ConfigurePreferencesContent({
     progressPercentage: number;
 }) {
     const { user, refreshUser, loading: authLoading } = useAuth();
-    const { success: showSuccess, error: showError } = useNotification();
+    const { success: showError } = useNotification();
     const { locale, t } = useLocale();
     const { themeMode } = useTheme();
 
     // TODOS LOS HOOKS DEBEN IR ANTES DE CUALQUIER RETURN CONDICIONAL
     // Auto-completar con datos actuales del usuario o valores por defecto del sistema
     const [formData, setFormData] = useState({
-        theme: user?.theme || user?.profile?.theme || themeMode || 'light',
-        language: user?.language || user?.profile?.language || locale || 'es',
-        timezone: user?.profile?.timezone || 'America/La_Paz',
-        pushWebNotifications: user?.profile?.pushWebNotifications ?? true,
-        notificationsTickets: user?.profile?.notificationsTickets ?? true,
+        theme: user?.theme || themeMode || 'light',
+        language: user?.language || locale || 'es',
+        timezone: 'America/La_Paz', // Valor por defecto
+        pushWebNotifications: true, // Valor por defecto
+        notificationsTickets: true, // Valor por defecto
     });
     
     // Estado local para controlar el loading durante toda la operación
@@ -64,11 +63,12 @@ function ConfigurePreferencesContent({
         if (user) {
             setFormData(prev => ({
                 ...prev,
-                theme: user.theme || user.profile?.theme || prev.theme,
-                language: user.language || user.profile?.language || prev.language,
-                timezone: user.profile?.timezone || prev.timezone,
-                pushWebNotifications: user.profile?.pushWebNotifications ?? prev.pushWebNotifications,
-                notificationsTickets: user.profile?.notificationsTickets ?? prev.notificationsTickets,
+                theme: user.theme || prev.theme,
+                language: user.language || prev.language,
+                // Mantener valores por defecto para campos que no están en UserAuthInfo
+                timezone: prev.timezone,
+                pushWebNotifications: prev.pushWebNotifications,
+                notificationsTickets: prev.notificationsTickets,
             }));
         }
     }, [user]);
@@ -83,11 +83,11 @@ function ConfigurePreferencesContent({
         e.preventDefault();
 
         // Detectar si hay cambios comparando con los datos actuales del usuario
-        const currentTheme = user?.theme || user?.profile?.theme || themeMode || 'light';
-        const currentLanguage = user?.language || user?.profile?.language || locale || 'es';
-        const currentTimezone = user?.profile?.timezone || 'America/La_Paz';
-        const currentPushWeb = user?.profile?.pushWebNotifications ?? true;
-        const currentNotifTickets = user?.profile?.notificationsTickets ?? true;
+        const currentTheme = user?.theme || themeMode || 'light';
+        const currentLanguage = user?.language || locale || 'es';
+        const currentTimezone = 'America/La_Paz'; // Valor por defecto
+        const currentPushWeb = true; // Valor por defecto
+        const currentNotifTickets = true; // Valor por defecto
         
         const hasChanges = (
             formData.theme !== currentTheme ||
@@ -186,12 +186,8 @@ function ConfigurePreferencesContent({
             // 3. Actualizar usuario en contexto con los datos del onboarding
             if (onboardingResult.data.markOnboardingCompleted.user && user) {
                 // Actualizar el user en AuthContext con los datos más recientes
-                const updatedUser = {
-                    ...user,
-                    ...onboardingResult.data.markOnboardingCompleted.user,
-                };
                 // Si tienes una función updateUser en el contexto, úsala aquí
-                // updateUser(updatedUser);
+                // updateUser({ ...user, ...onboardingResult.data.markOnboardingCompleted.user });
             }
 
             // 4. Refrescar datos del usuario
