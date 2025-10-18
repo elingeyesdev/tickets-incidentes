@@ -1,5 +1,6 @@
 /**
  * OnboardingRoute - Protección para rutas de onboarding
+ * SOLUCIÓN ANTI-LOOP: Usa SessionStorage para persistir flag durante re-montajes
  *
  * Comportamiento:
  * - Si NO está autenticado: Redirigir a /login
@@ -10,10 +11,9 @@
  * NO se usa en RoleSelector (esa página requiere onboarding completo)
  */
 
-import { useEffect, useRef } from 'react';
-import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks';
-import { getUserDashboardUrl } from '@/lib/utils';
+import { getUserDashboardUrl, safeRedirect } from '@/lib/utils';
 
 interface OnboardingRouteProps {
     children: React.ReactNode;
@@ -21,19 +21,17 @@ interface OnboardingRouteProps {
 
 export function OnboardingRoute({ children }: OnboardingRouteProps) {
     const { user, loading, hasCompletedOnboarding } = useAuth();
-    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (loading) return;
-        if (hasRedirected.current) return; // Ya redirigió, evitar re-ejecuciones
 
         const currentPath = window.location.pathname;
 
         if (!user) {
             // No autenticado, redirigir a login solo si no está ya ahí
             if (currentPath !== '/login') {
-                hasRedirected.current = true; // Marcar como redirigido
-                router.visit('/login');
+                console.log('[OnboardingRoute] Usuario no autenticado, redirigiendo a /login');
+                safeRedirect('/login', { replace: true });
             }
             return;
         }
@@ -41,14 +39,16 @@ export function OnboardingRoute({ children }: OnboardingRouteProps) {
         if (hasCompletedOnboarding()) {
             // Onboarding ya completo, redirigir a dashboard
             const dashboardPath = getUserDashboardUrl(user);
+            console.log('[OnboardingRoute] Onboarding completo, redirigiendo a dashboard:', dashboardPath);
 
             // Solo redirigir si no está ya en la ruta de destino
             if (currentPath !== dashboardPath && !currentPath.startsWith(dashboardPath)) {
-                hasRedirected.current = true; // Marcar como redirigido
-                router.visit(dashboardPath);
+                safeRedirect(dashboardPath, { replace: true });
             }
         }
-    }, [user, loading, hasCompletedOnboarding]);
+        // IMPORTANTE: hasCompletedOnboarding está memoizado en AuthContext con useCallback
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, loading]);
 
     // Mostrar loading mientras verifica
     if (loading) {

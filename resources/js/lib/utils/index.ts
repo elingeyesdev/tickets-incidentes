@@ -24,6 +24,12 @@ export {
     getRouteName,
 } from './routing';
 
+// Re-export navigation helpers
+export {
+    safeRedirect,
+    clearRedirectFlag,
+} from './navigation';
+
 /**
  * Formatea una fecha en formato legible
  */

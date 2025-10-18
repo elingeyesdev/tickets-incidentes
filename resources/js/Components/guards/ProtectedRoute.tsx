@@ -1,5 +1,6 @@
 /**
  * ProtectedRoute - Protección para rutas autenticadas
+ * SOLUCIÓN ANTI-LOOP: Usa SessionStorage para persistir flag durante re-montajes
  *
  * Comportamiento:
  * - Si NO está autenticado: Redirigir a /login
@@ -10,9 +11,9 @@
  * Usado en: Todos los dashboards y páginas de zona authenticated
  */
 
-import { useEffect, useRef } from 'react';
-import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks';
+import { safeRedirect } from '@/lib/utils';
 import type { RoleCode } from '@/types';
 
 interface ProtectedRouteProps {
@@ -27,11 +28,9 @@ export function ProtectedRoute({
     redirectTo = '/login'
 }: ProtectedRouteProps) {
     const { user, loading, hasCompletedOnboarding, hasRole } = useAuth();
-    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (loading) return;
-        if (hasRedirected.current) return; // Ya redirigió, evitar re-ejecuciones
 
         const currentPath = window.location.pathname;
 
@@ -39,8 +38,8 @@ export function ProtectedRoute({
         if (!user) {
             // Solo redirigir si no está ya en la ruta de destino
             if (currentPath !== redirectTo) {
-                hasRedirected.current = true; // Marcar como redirigido
-                router.visit(redirectTo);
+                console.log('[ProtectedRoute] Usuario no autenticado, redirigiendo a:', redirectTo);
+                safeRedirect(redirectTo, { replace: true });
             }
             return;
         }
@@ -49,8 +48,8 @@ export function ProtectedRoute({
         if (!hasCompletedOnboarding()) {
             // Solo redirigir si no está ya en onboarding
             if (currentPath !== '/onboarding/profile' && !currentPath.startsWith('/onboarding/')) {
-                hasRedirected.current = true; // Marcar como redirigido
-                router.visit('/onboarding/profile');
+                console.log('[ProtectedRoute] Onboarding incompleto, redirigiendo a /onboarding/profile');
+                safeRedirect('/onboarding/profile', { replace: true });
             }
             return;
         }
@@ -61,13 +60,15 @@ export function ProtectedRoute({
             if (!hasPermission) {
                 // Solo redirigir si no está ya en unauthorized
                 if (currentPath !== '/unauthorized') {
-                    hasRedirected.current = true; // Marcar como redirigido
-                    router.visit('/unauthorized');
+                    console.log('[ProtectedRoute] Sin permisos, redirigiendo a /unauthorized');
+                    safeRedirect('/unauthorized', { replace: true });
                 }
                 return;
             }
         }
-    }, [user, loading, allowedRoles, redirectTo, hasCompletedOnboarding, hasRole]);
+        // IMPORTANTE: hasCompletedOnboarding y hasRole están memoizados en AuthContext con useCallback
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, loading, allowedRoles, redirectTo]);
 
     // Mostrar loading mientras verifica
     if (loading) {

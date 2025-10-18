@@ -14,13 +14,14 @@
  * - Fullscreen loader durante inicialización
  */
 
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { apolloClient, TokenStorage, getTempUserData, clearTempUserData } from '@/lib/apollo/client';
 import { AUTH_STATUS_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { LOGOUT_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { canAccessRoute as checkRoutePermission } from '@/config/permissions';
 import { hasCompletedOnboarding as checkOnboardingCompleted } from '@/lib/utils/onboarding';
+import { clearRedirectFlag } from '@/lib/utils/navigation';
 import type { RoleCode } from '@/types';
 import type { AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables, UserAuthInfo } from '@/types/graphql-generated';
 
@@ -133,21 +134,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     /**
      * Verifica si el usuario tiene un rol específico o alguno de una lista
+     * IMPORTANTE: Memoizada con useCallback para evitar loops en useEffect
      */
-    const hasRole = (role: RoleCode | RoleCode[]): boolean => {
+    const hasRole = useCallback((role: RoleCode | RoleCode[]): boolean => {
         if (!user) return false;
 
         const roles = Array.isArray(role) ? role : [role];
         const userRoles = user.roleContexts.map((rc) => rc.roleCode);
 
         return roles.some((r) => userRoles.includes(r));
-    };
+    }, [user]);
 
     /**
      * Verifica si el usuario puede acceder a una ruta específica
      * Usa la configuración centralizada de permisos
+     * IMPORTANTE: Memoizada con useCallback para evitar loops en useEffect
      */
-    const canAccessRoute = (path: string): boolean => {
+    const canAccessRoute = useCallback((path: string): boolean => {
         if (!user) return false;
 
         // Rutas públicas (accesibles sin autenticación)
@@ -159,7 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Usar configuración centralizada de permisos
         const userRoles = user.roleContexts.map((rc) => rc.roleCode);
         return checkRoutePermission(userRoles, path);
-    };
+    }, [user]);
 
     /**
      * Cierra sesión del usuario mediante GraphQL
@@ -172,6 +175,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } finally {
             // Limpiar tokens locales
             TokenStorage.clearTokens();
+
+            // Limpiar flag de redirección de SessionStorage
+            clearRedirectFlag();
 
             // Limpiar caché de Apollo
             await apolloClient.clearStore();
@@ -219,14 +225,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      * Verifica si el usuario ha completado el proceso de onboarding
      * (VerifyEmail → CompleteProfile → ConfigurePreferences)
      * Usa el helper centralizado de onboarding
+     * IMPORTANTE: Memoizada con useCallback para evitar loops en useEffect
      */
-    const hasCompletedOnboarding = (): boolean => {
+    const hasCompletedOnboarding = useCallback((): boolean => {
         console.log('[hasCompletedOnboarding] user:', user);
         console.log('[hasCompletedOnboarding] onboardingCompletedAt:', user?.onboardingCompletedAt);
         const result = checkOnboardingCompleted(user);
         console.log('[hasCompletedOnboarding] result:', result);
         return result;
-    };
+    }, [user]);
 
     // Memoizar el contexto para prevenir re-renderizados innecesarios
     const value: AuthContextType = useMemo(() => ({
@@ -240,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         updateUser,
         refreshUser,
-    }), [user, authState]);
+    }), [user, authState, isAuthenticated, loading, hasRole, canAccessRoute, hasCompletedOnboarding]);
 
     // Mostrar fullscreen loader durante inicialización
     if (authState === 'initializing') {
