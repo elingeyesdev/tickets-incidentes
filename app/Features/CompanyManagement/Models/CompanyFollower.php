@@ -22,17 +22,17 @@ class CompanyFollower extends Model
     }
 
     /**
-     * The table associated with the model.
+     * La tabla asociada con el modelo.
      */
     protected $table = 'business.user_company_followers';
 
     /**
-     * Indicates if the model should be timestamped.
+     * Indica si el modelo debe ser timestamped.
      */
     public $timestamps = false;
 
     /**
-     * The attributes that are mass assignable.
+     * Los atributos que son asignables en masa.
      */
     protected $fillable = [
         'user_id',
@@ -41,7 +41,7 @@ class CompanyFollower extends Model
     ];
 
     /**
-     * The attributes that should be cast.
+     * Los atributos que deben ser convertidos.
      */
     protected $casts = [
         'id' => 'string',
@@ -49,7 +49,7 @@ class CompanyFollower extends Model
     ];
 
     /**
-     * Get the user who follows the company.
+     * Obtener el usuario que sigue la empresa.
      */
     public function user(): BelongsTo
     {
@@ -57,7 +57,7 @@ class CompanyFollower extends Model
     }
 
     /**
-     * Get the company being followed.
+     * Obtener la empresa que está siendo seguida.
      */
     public function company(): BelongsTo
     {
@@ -65,17 +65,44 @@ class CompanyFollower extends Model
     }
 
     /**
-     * Boot the model.
+     * Inicializar el modelo.
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Auto-set followed_at timestamp on creation
+        // Auto-establecer timestamp followed_at en la creación
         static::creating(function ($model) {
             if (!$model->followed_at) {
                 $model->followed_at = now();
             }
         });
+    }
+
+    /**
+     * Obtener conteo de mis tickets para esta empresa (calculado).
+     * TODO: Implementar cuando la funcionalidad de tickets esté lista
+     */
+    public function getMyTicketsCountAttribute(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Obtener último ticket creado para esta empresa (calculado).
+     * TODO: Implementar cuando la funcionalidad de tickets esté lista
+     */
+    public function getLastTicketCreatedAtAttribute(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Verificar si tiene anuncios no leídos (calculado).
+     * TODO: Implementar cuando la funcionalidad de anuncios esté lista
+     */
+    public function getHasUnreadAnnouncementsAttribute(): bool
+    {
+        return false;
     }
 }

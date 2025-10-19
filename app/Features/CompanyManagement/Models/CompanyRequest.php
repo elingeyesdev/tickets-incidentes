@@ -22,12 +22,12 @@ class CompanyRequest extends Model
     }
 
     /**
-     * The table associated with the model.
+     * La tabla asociada con el modelo.
      */
     protected $table = 'business.company_requests';
 
     /**
-     * The attributes that are mass assignable.
+     * Los atributos que son asignables en masa.
      */
     protected $fillable = [
         'request_code',
@@ -51,7 +51,7 @@ class CompanyRequest extends Model
     ];
 
     /**
-     * The attributes that should be cast.
+     * Los atributos que deben ser convertidos.
      */
     protected $casts = [
         'id' => 'string',
@@ -61,7 +61,7 @@ class CompanyRequest extends Model
     ];
 
     /**
-     * Get the admin user who reviewed this request.
+     * Obtener el usuario admin que revisó esta solicitud.
      */
     public function reviewer(): BelongsTo
     {
@@ -69,7 +69,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Get the company that was created from this request (if approved).
+     * Obtener la empresa que fue creada desde esta solicitud (si fue aprobada).
      */
     public function createdCompany(): BelongsTo
     {
@@ -77,7 +77,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Scope: Pending requests only.
+     * Scope: Solo solicitudes pendientes.
      */
     public function scopePending($query)
     {
@@ -85,7 +85,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Scope: Approved requests only.
+     * Scope: Solo solicitudes aprobadas.
      */
     public function scopeApproved($query)
     {
@@ -93,7 +93,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Scope: Rejected requests only.
+     * Scope: Solo solicitudes rechazadas.
      */
     public function scopeRejected($query)
     {
@@ -101,7 +101,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Check if request is pending.
+     * Verificar si la solicitud está pendiente.
      */
     public function isPending(): bool
     {
@@ -109,7 +109,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Check if request is approved.
+     * Verificar si la solicitud está aprobada.
      */
     public function isApproved(): bool
     {
@@ -117,7 +117,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Check if request is rejected.
+     * Verificar si la solicitud está rechazada.
      */
     public function isRejected(): bool
     {
@@ -125,7 +125,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Mark request as approved.
+     * Marcar solicitud como aprobada.
      */
     public function markAsApproved(User $reviewer, Company $createdCompany): void
     {
@@ -138,7 +138,7 @@ class CompanyRequest extends Model
     }
 
     /**
-     * Mark request as rejected.
+     * Marcar solicitud como rechazada.
      */
     public function markAsRejected(User $reviewer, string $reason): void
     {

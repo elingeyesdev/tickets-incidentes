@@ -25,12 +25,12 @@ class Company extends Model
     }
 
     /**
-     * The table associated with the model.
+     * La tabla asociada con el modelo.
      */
     protected $table = 'business.companies';
 
     /**
-     * The attributes that are mass assignable.
+     * Los atributos que son asignables en masa.
      */
     protected $fillable = [
         'company_code',
@@ -59,7 +59,7 @@ class Company extends Model
     ];
 
     /**
-     * The attributes that should be cast.
+     * Los atributos que deben ser convertidos.
      */
     protected $casts = [
         'id' => 'string',
@@ -70,7 +70,7 @@ class Company extends Model
     ];
 
     /**
-     * Get the admin user of this company.
+     * Obtener el usuario admin de esta empresa.
      */
     public function admin(): BelongsTo
     {
@@ -78,7 +78,7 @@ class Company extends Model
     }
 
     /**
-     * Get the company request that created this company.
+     * Obtener la solicitud de empresa que creó esta empresa.
      */
     public function createdFromRequest(): BelongsTo
     {
@@ -86,7 +86,7 @@ class Company extends Model
     }
 
     /**
-     * Get all user roles associated with this company (agents, company_admins).
+     * Obtener todos los roles de usuario asociados con esta empresa (agentes, company_admins).
      */
     public function userRoles(): HasMany
     {
@@ -94,7 +94,7 @@ class Company extends Model
     }
 
     /**
-     * Get all followers of this company.
+     * Obtener todos los seguidores de esta empresa.
      */
     public function followers(): BelongsToMany
     {
@@ -107,7 +107,7 @@ class Company extends Model
     }
 
     /**
-     * Get follower records (with full pivot data).
+     * Obtener registros de seguidores (con datos completos del pivot).
      */
     public function followerRecords(): HasMany
     {
@@ -115,7 +115,7 @@ class Company extends Model
     }
 
     /**
-     * Scope: Active companies only.
+     * Scope: Solo empresas activas.
      */
     public function scopeActive($query)
     {
@@ -123,7 +123,7 @@ class Company extends Model
     }
 
     /**
-     * Scope: Suspended companies only.
+     * Scope: Solo empresas suspendidas.
      */
     public function scopeSuspended($query)
     {
@@ -131,7 +131,7 @@ class Company extends Model
     }
 
     /**
-     * Check if company is active.
+     * Verificar si la empresa está activa.
      */
     public function isActive(): bool
     {
@@ -139,7 +139,7 @@ class Company extends Model
     }
 
     /**
-     * Check if company is suspended.
+     * Verificar si la empresa está suspendida.
      */
     public function isSuspended(): bool
     {
@@ -147,7 +147,7 @@ class Company extends Model
     }
 
     /**
-     * Get active agents count (calculated).
+     * Obtener conteo de agentes activos (calculado).
      */
     public function getActiveAgentsCountAttribute(): int
     {
@@ -158,10 +158,81 @@ class Company extends Model
     }
 
     /**
-     * Get followers count (calculated).
+     * Obtener conteo total de usuarios (calculado).
+     */
+    public function getTotalUsersCountAttribute(): int
+    {
+        return $this->userRoles()
+            ->where('is_active', true)
+            ->distinct('user_id')
+            ->count('user_id');
+    }
+
+    /**
+     * Obtener conteo de seguidores (calculado).
      */
     public function getFollowersCountAttribute(): int
     {
         return $this->followers()->count();
+    }
+
+    /**
+     * Obtener conteo total de tickets (calculado).
+     * TODO: Implementar cuando la funcionalidad de tickets esté lista
+     */
+    public function getTotalTicketsCountAttribute(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Obtener conteo de tickets abiertos (calculado).
+     * TODO: Implementar cuando la funcionalidad de tickets esté lista
+     */
+    public function getOpenTicketsCountAttribute(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Obtener nombre del admin (calculado desde la relación).
+     */
+    public function getAdminNameAttribute(): string
+    {
+        if (!$this->relationLoaded('admin')) {
+            $this->load('admin.profile');
+        }
+
+        $admin = $this->admin;
+        if (!$admin) {
+            return 'Unknown';
+        }
+
+        $profile = $admin->profile;
+        if (!$profile) {
+            return $admin->email;
+        }
+
+        return $profile->first_name . ' ' . $profile->last_name;
+    }
+
+    /**
+     * Obtener email del admin (calculado desde la relación).
+     */
+    public function getAdminEmailAttribute(): string
+    {
+        if (!$this->relationLoaded('admin')) {
+            $this->load('admin');
+        }
+
+        return $this->admin?->email ?? 'unknown@example.com';
+    }
+
+    /**
+     * Obtener ID del admin (alias para consistencia con schema GraphQL).
+     */
+    public function getAdminIdAttribute(): string
+    {
+        return $this->admin_user_id;
     }
 }
