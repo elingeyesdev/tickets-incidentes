@@ -12,7 +12,7 @@ class SendApprovalEmail
      */
     public function handle(CompanyRequestApproved $event): void
     {
-        // Dispatch job to send approval email
+        // Despachar job para enviar email de aprobación
         SendCompanyApprovalEmailJob::dispatch(
             $event->request,
             $event->company,

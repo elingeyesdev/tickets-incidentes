@@ -15,7 +15,7 @@ class CreateCompanyFromRequest
      */
     public function handle(CompanyRequestApproved $event): void
     {
-        // Log the successful creation
+        // Registrar la creación exitosa
         Log::info('Company created from request', [
             'request_id' => $event->request->id,
             'request_code' => $event->request->request_code,
@@ -24,7 +24,7 @@ class CreateCompanyFromRequest
             'admin_user_id' => $event->adminUser->id,
         ]);
 
-        // Additional post-processing can be added here:
+        // Procesamiento posterior adicional se puede agregar aquí:
         // - Send welcome email
         // - Create default categories
         // - Set up initial configurations

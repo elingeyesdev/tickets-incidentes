@@ -12,7 +12,7 @@ class SendCompanyRequestConfirmationEmail
      */
     public function handle(CompanyRequestSubmitted $event): void
     {
-        // Dispatch job to send confirmation email to requester
+        // Despachar job para enviar email de confirmación al solicitante
         SendCompanyRequestEmailJob::dispatch($event->request);
     }
 }

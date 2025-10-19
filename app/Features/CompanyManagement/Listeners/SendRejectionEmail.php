@@ -12,7 +12,7 @@ class SendRejectionEmail
      */
     public function handle(CompanyRequestRejected $event): void
     {
-        // Dispatch job to send rejection email
+        // Despachar job para enviar email de rechazo
         SendCompanyRejectionEmailJob::dispatch($event->request, $event->reason);
     }
 }

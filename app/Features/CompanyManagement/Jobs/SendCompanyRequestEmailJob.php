@@ -27,14 +27,14 @@ class SendCompanyRequestEmailJob implements ShouldQueue
     public function handle(): void
     {
         // TODO: Send confirmation email to requester
-        // For now, just log it
+        // Por ahora, solo registrarlo
         Log::info('Company request confirmation email would be sent', [
             'request_code' => $this->request->request_code,
             'company_name' => $this->request->company_name,
             'admin_email' => $this->request->admin_email,
         ]);
 
-        // Future implementation:
+        // Implementación futura:
         // Mail::to($this->request->admin_email)
         //     ->send(new CompanyRequestConfirmationMail($this->request));
     }

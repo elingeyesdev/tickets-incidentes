@@ -28,7 +28,7 @@ class SendCompanyRejectionEmailJob implements ShouldQueue
     public function handle(): void
     {
         // TODO: Send rejection email with reason
-        // For now, just log it
+        // Por ahora, solo registrarlo
         Log::info('Company request rejection email would be sent', [
             'request_code' => $this->request->request_code,
             'company_name' => $this->request->company_name,
@@ -36,7 +36,7 @@ class SendCompanyRejectionEmailJob implements ShouldQueue
             'reason' => $this->reason,
         ]);
 
-        // Future implementation:
+        // Implementación futura:
         // Mail::to($this->request->admin_email)
         //     ->send(new CompanyRejectionMail($this->request, $this->reason));
     }

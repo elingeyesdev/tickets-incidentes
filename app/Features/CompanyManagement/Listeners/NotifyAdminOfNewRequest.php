@@ -13,7 +13,7 @@ class NotifyAdminOfNewRequest
     public function handle(CompanyRequestSubmitted $event): void
     {
         // TODO: Send notification to PLATFORM_ADMIN users
-        // For now, just log it
+        // Por ahora, solo registrarlo
         Log::info('New company request submitted', [
             'request_id' => $event->request->id,
             'request_code' => $event->request->request_code,
@@ -21,7 +21,7 @@ class NotifyAdminOfNewRequest
             'admin_email' => $event->request->admin_email,
         ]);
 
-        // Future: Dispatch notification job
+        // Futuro: Despachar job de notificación
         // NotifyPlatformAdminsJob::dispatch($event->request);
     }
 }

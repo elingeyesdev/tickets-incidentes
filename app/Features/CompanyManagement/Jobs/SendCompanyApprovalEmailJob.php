@@ -31,7 +31,7 @@ class SendCompanyApprovalEmailJob implements ShouldQueue
     public function handle(): void
     {
         // TODO: Send approval email with company credentials
-        // For now, just log it
+        // Por ahora, solo registrarlo
         Log::info('Company request approval email would be sent', [
             'request_code' => $this->request->request_code,
             'company_code' => $this->company->company_code,
@@ -39,7 +39,7 @@ class SendCompanyApprovalEmailJob implements ShouldQueue
             'admin_email' => $this->adminUser->email,
         ]);
 
-        // Future implementation:
+        // Implementación futura:
         // Mail::to($this->adminUser->email)
         //     ->send(new CompanyApprovalMail($this->request, $this->company, $this->adminUser));
     }
