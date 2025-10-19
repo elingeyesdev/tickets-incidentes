@@ -1,7 +1,11 @@
 # 📘 GUÍA DE DATALOADERS - Sistema Helpdesk
 
-**Fecha:** 01 de Octubre de 2025
+**Fecha:** 01 de Octubre de 2025  
+**Última Actualización:** 16 de Enero de 2025  
 **Estado:** ✅ 6 DataLoaders implementados
+
+> ⚠️ **IMPORTANTE**: Esta guía contiene información de Lighthouse 5 (deprecada).  
+> 📖 **Ver guía actualizada**: [DATALOADERS_LIGHTHOUSE_6_GUIA_COMPLETA.md](./DATALOADERS_LIGHTHOUSE_6_GUIA_COMPLETA.md)
 
 ---
 
