@@ -15,17 +15,17 @@ class DemoCompaniesSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get existing demo users (created by DemoUsersSeeder)
+        // Obtener usuarios demo existentes (creados por DemoUsersSeeder)
         $platformAdmin = User::where('email', 'admin@helpdesk.com')->first();
 
-        // Use platform admin as company admin for demo purposes
-        // In a real scenario, each company would have its own admin created via CompanyRequestService
+        // Usar platform admin como company admin para propósitos de demo
+        // En un escenario real, cada empresa tendría su propio admin creado via CompanyRequestService
         if (!$platformAdmin) {
             $this->command->warn('⚠️  Demo users not found. Run DemoUsersSeeder first.');
             return;
         }
 
-        // Create 2 demo companies with specific data
+        // Crear 2 empresas demo con datos específicos
         $companies = [
             [
                 'name' => 'Tech Solutions Inc.',
@@ -34,7 +34,7 @@ class DemoCompaniesSeeder extends Seeder
                 'website' => 'https://techsolutions.com',
                 'contact_city' => 'Santa Cruz de la Sierra',
                 'contact_country' => 'Bolivia',
-                'admin_user_id' => $platformAdmin->id, // Using platform admin for demo
+                'admin_user_id' => $platformAdmin->id, // Usando platform admin para demo
             ],
             [
                 'name' => 'Innovate Soft',
@@ -43,7 +43,7 @@ class DemoCompaniesSeeder extends Seeder
                 'website' => 'https://innovatesoft.com',
                 'contact_city' => 'La Paz',
                 'contact_country' => 'Bolivia',
-                'admin_user_id' => $platformAdmin->id, // Using platform admin for demo
+                'admin_user_id' => $platformAdmin->id, // Usando platform admin para demo
             ],
         ];
 
@@ -51,20 +51,20 @@ class DemoCompaniesSeeder extends Seeder
             Company::factory()->create($companyData);
         }
 
-        // Create 3 more random companies
+        // Crear 3 empresas aleatorias más
         Company::factory()->count(3)->create();
 
-        // Create 1 suspended company
+        // Crear 1 empresa suspendida
         Company::factory()->suspended()->create();
 
-        // Create some pending company requests
+        // Crear algunas solicitudes de empresa pendientes
         CompanyRequest::factory()->count(3)->create();
 
-        // Create 1 approved and 1 rejected request
+        // Crear 1 solicitud aprobada y 1 rechazada
         CompanyRequest::factory()->approved()->create();
         CompanyRequest::factory()->rejected()->create();
 
-        // Create some followers (users following companies)
+        // Crear algunos seguidores (usuarios siguiendo empresas)
         $users = User::limit(5)->get();
         $allCompanies = Company::active()->limit(3)->get();
 
@@ -76,7 +76,7 @@ class DemoCompaniesSeeder extends Seeder
                         'company_id' => $company->id,
                     ]);
                 } catch (\Exception $e) {
-                    // Skip duplicates
+                    // Omitir duplicados
                     continue;
                 }
             }

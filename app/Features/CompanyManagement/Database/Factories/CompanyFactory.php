@@ -12,11 +12,11 @@ class CompanyFactory extends Factory
     protected $model = Company::class;
 
     /**
-     * Define the model's default state.
+     * Definir el estado por defecto del modelo.
      */
     public function definition(): array
     {
-        // Use faker unique to avoid race conditions in parallel tests
+        // Usar faker unique para evitar condiciones de carrera en pruebas paralelas
         $uniqueNumber = fake()->unique()->numberBetween(1, 99999);
         $year = now()->year;
         $companyCode = CodeGenerator::format(CodeGenerator::COMPANY, $year, $uniqueNumber);
@@ -54,7 +54,7 @@ class CompanyFactory extends Factory
     }
 
     /**
-     * Indicate that the company is suspended.
+     * Indicar que la empresa está suspendida.
      */
     public function suspended(): static
     {
