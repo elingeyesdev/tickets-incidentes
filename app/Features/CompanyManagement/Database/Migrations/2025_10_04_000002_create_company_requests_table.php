@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create company_requests table in business schema
+        // Crear tabla company_requests en schema business
         DB::statement("
             CREATE TABLE business.company_requests (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -48,12 +48,12 @@ return new class extends Migration
             )
         ");
 
-        // Create indexes
+        // Crear índices
         DB::statement('CREATE INDEX idx_company_requests_status ON business.company_requests(status)');
         DB::statement('CREATE INDEX idx_company_requests_admin_email ON business.company_requests(admin_email)');
         DB::statement('CREATE INDEX idx_company_requests_created_at ON business.company_requests(created_at DESC)');
 
-        // Create trigger for updated_at
+        // Crear trigger para updated_at
         DB::statement("
             CREATE TRIGGER trigger_update_company_requests_updated_at
             BEFORE UPDATE ON business.company_requests

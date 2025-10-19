@@ -10,7 +10,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create companies table in business schema
+        // Crear tabla companies en schema business
         DB::statement("
             CREATE TABLE business.companies (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -69,20 +69,20 @@ return new class extends Migration
             )
         ");
 
-        // Create indexes for performance
+        // Crear índices para rendimiento
         DB::statement('CREATE INDEX idx_companies_status ON business.companies(status)');
         DB::statement('CREATE INDEX idx_companies_admin_user_id ON business.companies(admin_user_id)');
         DB::statement('CREATE INDEX idx_companies_company_code ON business.companies(company_code)');
         DB::statement('CREATE INDEX idx_companies_created_at ON business.companies(created_at DESC)');
 
-        // Create trigger for updated_at
+        // Crear trigger para updated_at
         DB::statement("
             CREATE TRIGGER trigger_update_companies_updated_at
             BEFORE UPDATE ON business.companies
             FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column()
         ");
 
-        // Add FK to company_requests.created_company_id (now that companies table exists)
+        // Agregar FK a company_requests.created_company_id (ahora que la tabla companies existe)
         DB::statement('
             ALTER TABLE business.company_requests
             ADD CONSTRAINT fk_company_requests_created_company
@@ -91,8 +91,8 @@ return new class extends Migration
             ON DELETE SET NULL
         ');
 
-        // Add FK from auth.user_roles.company_id to companies (was pending)
-        // Check if constraint already exists before adding
+        // Agregar FK desde auth.user_roles.company_id a companies (estaba pendiente)
+        // Verificar si la restricción ya existe antes de agregar
         $constraintExists = DB::select("
             SELECT 1 FROM information_schema.table_constraints
             WHERE constraint_name = 'fk_user_roles_company'
@@ -116,13 +116,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove FK from user_roles
+        // Eliminar FK desde user_roles
         DB::statement('ALTER TABLE auth.user_roles DROP CONSTRAINT IF EXISTS fk_user_roles_company');
 
-        // Remove FK from company_requests
+        // Eliminar FK desde company_requests
         DB::statement('ALTER TABLE business.company_requests DROP CONSTRAINT IF EXISTS fk_company_requests_created_company');
 
-        // Drop table
+        // Eliminar tabla
         DB::statement('DROP TABLE IF EXISTS business.companies CASCADE');
     }
 };

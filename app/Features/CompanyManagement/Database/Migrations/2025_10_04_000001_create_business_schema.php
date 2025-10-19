@@ -10,11 +10,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create business schema for company management
+        // Crear schema business para gestión de empresas
         DB::statement('CREATE SCHEMA IF NOT EXISTS business');
 
-        // Create enums in business schema
-        // Drop first to make migration idempotent (can run multiple times)
+        // Crear enums en schema business
+        // Eliminar primero para hacer la migración idempotente (puede ejecutarse múltiples veces)
         DB::statement("DROP TYPE IF EXISTS business.request_status CASCADE");
         DB::statement("
             CREATE TYPE business.request_status AS ENUM (
@@ -39,11 +39,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop enums
+        // Eliminar enums
         DB::statement('DROP TYPE IF EXISTS business.publication_status');
         DB::statement('DROP TYPE IF EXISTS business.request_status');
 
-        // Drop schema (CASCADE drops all objects within it)
+        // Eliminar schema (CASCADE elimina todos los objetos dentro de él)
         DB::statement('DROP SCHEMA IF EXISTS business CASCADE');
     }
 };

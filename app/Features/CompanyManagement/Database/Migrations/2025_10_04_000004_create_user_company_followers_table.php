@@ -10,7 +10,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create user_company_followers table in business schema
+        // Crear tabla user_company_followers en schema business
         DB::statement("
             CREATE TABLE business.user_company_followers (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -23,7 +23,7 @@ return new class extends Migration
             )
         ");
 
-        // Create indexes for performance
+        // Crear índices para rendimiento
         DB::statement('CREATE INDEX idx_user_company_followers_user_id ON business.user_company_followers(user_id)');
         DB::statement('CREATE INDEX idx_user_company_followers_company_id ON business.user_company_followers(company_id)');
     }
