@@ -40,14 +40,14 @@ class TokenService
         $ttl = (int) config('jwt.ttl') * 60; // TTL en segundos
 
         $payload = [
-            // Standard claims
+            // Claims estándar
             'iss' => config('jwt.issuer'),
             'aud' => config('jwt.audience'),
             'iat' => $now,
             'exp' => $now + $ttl,
             'sub' => $user->id,
 
-            // Custom claims
+            // Claims personalizados
             'user_id' => $user->id,
             'email' => $user->email,
             'session_id' => $sessionId ?? Str::uuid()->toString(),
@@ -85,7 +85,7 @@ class TokenService
         ]);
 
         return [
-            'token' => $token, // Plain token (se envía al cliente UNA VEZ)
+            'token' => $token, // Token plano (se envía al cliente UNA VEZ)
             'model' => $refreshToken,
         ];
     }
@@ -399,7 +399,7 @@ class TokenService
             return 'Unknown Device';
         }
 
-        // Browser detection
+        // Detección de navegador
         $browser = 'Unknown Browser';
         if (str_contains($userAgent, 'Chrome')) {
             $browser = 'Chrome';
@@ -411,7 +411,7 @@ class TokenService
             $browser = 'Edge';
         }
 
-        // OS detection
+        // Detección de sistema operativo
         $os = 'Unknown OS';
         if (str_contains($userAgent, 'Windows')) {
             $os = 'Windows';

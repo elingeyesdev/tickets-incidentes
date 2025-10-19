@@ -165,7 +165,7 @@ class CreateCompanyMutationTest extends TestCase
 
         $this->assertDatabaseHas('auth.user_roles', [
             'user_id' => $adminUser->id,
-            'role_code' => 'company_admin',
+            'role_code' => 'COMPANY_ADMIN',
             'company_id' => $companyId,
             'is_active' => true,
         ]);

@@ -28,7 +28,7 @@ class CompanyRequestService
     {
         return DB::transaction(function () use ($data) {
             // Generar código único de solicitud
-            $requestCode = CodeGenerator::generate('REQ');
+            $requestCode = CodeGenerator::generate('business.company_requests', 'REQ', 'request_code');
 
             // Crear solicitud
             $request = CompanyRequest::create([
@@ -101,7 +101,7 @@ class CompanyRequestService
             // 3. Asignar rol COMPANY_ADMIN al usuario admin
             $this->roleService->assignRoleToUser(
                 userId: $adminUser->id,
-                roleCode: 'company_admin',
+                roleCode: 'COMPANY_ADMIN',
                 companyId: $company->id,
                 assignedBy: $reviewer->id
             );

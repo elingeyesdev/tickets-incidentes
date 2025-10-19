@@ -15,8 +15,13 @@ class CompanyRequestFactory extends Factory
      */
     public function definition(): array
     {
+        // Usar faker unique para evitar condiciones de carrera en pruebas paralelas
+        $uniqueNumber = fake()->unique()->numberBetween(1, 99999);
+        $year = now()->year;
+        $requestCode = CodeGenerator::format(CodeGenerator::COMPANY_REQUEST, $year, $uniqueNumber);
+
         return [
-            'request_code' => CodeGenerator::generate('business.company_requests', CodeGenerator::COMPANY_REQUEST, 'request_code'),
+            'request_code' => $requestCode,
             'company_name' => $this->faker->company(),
             'legal_name' => $this->faker->company() . ' SRL',
             'admin_email' => $this->faker->companyEmail(),

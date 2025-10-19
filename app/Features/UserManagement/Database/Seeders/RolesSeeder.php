@@ -37,7 +37,9 @@ class RolesSeeder extends Seeder
     /**
      * Obtener datos de roles del sistema
      *
-     * IMPORTANTE: role_code en UPPERCASE_SNAKE_CASE para consistencia
+     * IMPORTANTE: Solo versiones en UPPERCASE_SNAKE_CASE
+     * - Role.php normaliza automáticamente en assignRole()
+     * - Tests deben usar UPPERCASE o delegar a User::assignRole()
      *
      * @return array
      */

@@ -132,7 +132,7 @@ class AuthStatusQuery extends BaseQuery
             'userAgent' => $session->user_agent,
             'lastUsedAt' => $session->last_used_at?->toIso8601String() ?? $session->created_at->toIso8601String(),
             'expiresAt' => $session->expires_at->toIso8601String(),
-            'isCurrent' => true, // Always true since we're querying with current token
+            'isCurrent' => true, // Siempre true ya que estamos consultando con el token actual
             'location' => null, // TODO: Implement GeoIP later
         ];
     }

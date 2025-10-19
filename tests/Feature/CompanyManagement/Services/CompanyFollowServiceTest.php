@@ -52,7 +52,7 @@ class CompanyFollowServiceTest extends TestCase
         $this->assertEquals($user->id, $follower->user_id);
         $this->assertEquals($company->id, $follower->company_id);
 
-        $this->assertDatabaseHas('business.company_followers', [
+        $this->assertDatabaseHas('business.user_company_followers', [
             'user_id' => $user->id,
             'company_id' => $company->id,
         ]);
@@ -119,7 +119,7 @@ class CompanyFollowServiceTest extends TestCase
         // Assert
         $this->assertTrue($result);
 
-        $this->assertDatabaseMissing('business.company_followers', [
+        $this->assertDatabaseMissing('business.user_company_followers', [
             'user_id' => $user->id,
             'company_id' => $company->id,
         ]);

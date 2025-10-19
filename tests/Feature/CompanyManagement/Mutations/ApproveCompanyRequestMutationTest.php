@@ -172,7 +172,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
 
         $this->assertDatabaseHas('auth.user_roles', [
             'user_id' => $adminUserId,
-            'role_code' => 'company_admin',
+            'role_code' => 'COMPANY_ADMIN',
             'company_id' => $companyId,
             'is_active' => true,
         ]);

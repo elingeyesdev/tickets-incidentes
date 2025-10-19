@@ -13,8 +13,19 @@ abstract class TestCase extends BaseTestCase
     use MakesGraphQLRequests;
 
     /**
-     * NOTE: Roles are automatically inserted by the create_roles_table migration
-     * No need to manually seed them here.
+     * Indicates whether the default seeder should run before each test.
+     *
+     * IMPORTANT: Set to true to ensure roles are seeded in test database.
+     * The create_roles_table migration inserts roles, but RefreshDatabase
+     * drops all tables before tests. The DatabaseSeeder re-seeds essential data.
+     *
+     * @var bool
+     */
+    protected $seed = true;
+
+    /**
+     * NOTE: Roles are seeded via DatabaseSeeder (calls RolesSeeder)
+     * This ensures auth.roles table has data after RefreshDatabase runs.
      */
 
     /**

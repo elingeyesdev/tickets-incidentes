@@ -83,7 +83,7 @@ class CreateCompanyMutation extends BaseMutation
             // Asignar rol COMPANY_ADMIN al usuario admin
             $this->roleService->assignRoleToUser(
                 userId: $adminUser->id,
-                roleCode: 'company_admin',
+                roleCode: 'COMPANY_ADMIN',
                 companyId: $company->id,
                 assignedBy: $authenticatedUser->id
             );

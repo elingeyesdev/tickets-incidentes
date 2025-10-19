@@ -20,7 +20,7 @@ class CompanyService
     {
         return DB::transaction(function () use ($data, $adminUser) {
             // Generar código único de empresa
-            $companyCode = CodeGenerator::generate('CMP');
+            $companyCode = CodeGenerator::generate('business.companies', 'CMP', 'company_code');
 
             // Crear empresa
             $company = Company::create([
@@ -102,7 +102,7 @@ class CompanyService
 
             // Desactivar todos los agentes y company_admins de esta empresa
             $company->userRoles()
-                ->whereIn('role_code', ['agent', 'company_admin'])
+                ->whereIn('role_code', ['AGENT', 'COMPANY_ADMIN'])
                 ->where('is_active', true)
                 ->update(['is_active' => false]);
 

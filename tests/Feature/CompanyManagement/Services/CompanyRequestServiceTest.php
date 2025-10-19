@@ -95,7 +95,7 @@ class CompanyRequestServiceTest extends TestCase
         $adminUser = User::where('email', 'newadmin@company.com')->first();
         $this->assertDatabaseHas('auth.user_roles', [
             'user_id' => $adminUser->id,
-            'role_code' => 'company_admin',
+            'role_code' => 'COMPANY_ADMIN',
             'company_id' => $company->id,
             'is_active' => true,
         ]);

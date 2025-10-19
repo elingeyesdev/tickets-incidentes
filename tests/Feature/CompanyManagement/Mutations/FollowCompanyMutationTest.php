@@ -76,7 +76,7 @@ class FollowCompanyMutationTest extends TestCase
         $this->assertNotEmpty($result['followedAt']);
 
         // Verificar que se creó el registro en BD
-        $this->assertDatabaseHas('business.company_followers', [
+        $this->assertDatabaseHas('business.user_company_followers', [
             'user_id' => $user->id,
             'company_id' => $company->id,
         ]);

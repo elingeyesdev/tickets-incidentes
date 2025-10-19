@@ -26,10 +26,19 @@ class CompanyQuery extends BaseQuery
             }
 
             // Los permisos son validados por la directiva @can en el schema
-            // Calcular isFollowedByMe si el usuario está autenticado
+
+            // Eager load admin con profile para evitar N+1 en getters
+            $company->load('admin.profile');
+
+            // Calcular isFollowedByMe si el usuario está autenticado usando DataLoader
             if (auth()->check()) {
                 $user = auth()->user();
-                $company->isFollowedByMe = $this->followService->isFollowing($user, $company);
+
+                // Usar DataLoader para evitar query individual
+                $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);
+                $followedIds = $loader->load($user->id);
+
+                $company->isFollowedByMe = in_array($company->id, $followedIds);
             } else {
                 $company->isFollowedByMe = false;
             }

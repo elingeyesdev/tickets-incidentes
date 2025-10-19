@@ -4,27 +4,27 @@ namespace App\Features\CompanyManagement\GraphQL\DataLoaders;
 
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use GraphQL\Deferred;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
- * BatchLoader para cargar followers de empresas por company_id
+ * BatchLoader para cargar conteo de followers por empresa
  *
  * Implementa el patrón de Lighthouse 6 usando GraphQL\Deferred
- * para prevenir N+1 queries al cargar followers de múltiples empresas.
+ * para prevenir N+1 queries al obtener followersCount en listas de empresas.
  *
  * Usado en:
- * - Company.followers (relación) cuando se necesita la colección completa
- * - Resolvers que necesitan verificar si un usuario específico sigue la empresa
+ * - Company.followersCount (schema GraphQL)
+ * - CompanyForFollowing.followersCount (schema GraphQL)
+ * - Model getter getFollowersCountAttribute()
  *
  * @example
  * ```php
- * // En un resolver de Company.isFollowedByMe:
- * $loader = app(CompanyFollowersByCompanyIdBatchLoader::class);
- * $followers = $loader->load($root->id);
- * return $followers->contains('user_id', $userId);
+ * // En un resolver field de Company.followersCount:
+ * $loader = app(FollowersCountByCompanyIdBatchLoader::class);
+ * return $loader->load($root->id);
  * ```
  */
-class CompanyFollowersByCompanyIdLoader
+class FollowersCountByCompanyIdBatchLoader
 {
     /**
      * Map from company_id to company IDs that need loading
@@ -34,9 +34,9 @@ class CompanyFollowersByCompanyIdLoader
     protected array $companyIds = [];
 
     /**
-     * Map from company_id to Collection of CompanyFollower models
+     * Map from company_id to follower count
      *
-     * @var array<string, \Illuminate\Support\Collection>
+     * @var array<string, int>
      */
     protected array $results = [];
 
@@ -44,11 +44,11 @@ class CompanyFollowersByCompanyIdLoader
     protected bool $hasResolved = false;
 
     /**
-     * Schedule loading followers for a company
+     * Schedule loading follower count for a company
      *
-     * Returns a Deferred that resolves to a Collection of CompanyFollower.
+     * Returns a Deferred that resolves to an integer count.
      *
-     * @param string $companyId Company ID to load followers for
+     * @param string $companyId Company ID to load follower count for
      * @return \GraphQL\Deferred
      */
     public function load(string $companyId): Deferred
@@ -60,26 +60,28 @@ class CompanyFollowersByCompanyIdLoader
                 $this->resolve();
             }
 
-            return $this->results[$companyId] ?? collect();
+            return $this->results[$companyId] ?? 0;
         });
     }
 
     /**
-     * Resolve all queued company IDs to their followers in a single batch query
+     * Resolve all queued company IDs to their follower counts in a single batch query
      */
     protected function resolve(): void
     {
         $companyIds = array_keys($this->companyIds);
 
-        // Batch load all followers in one query
-        $followers = CompanyFollower::query()
+        // Batch load all counts with GROUP BY in one query
+        $counts = CompanyFollower::query()
             ->whereIn('company_id', $companyIds)
+            ->select('company_id', DB::raw('COUNT(*) as count'))
+            ->groupBy('company_id')
             ->get()
-            ->groupBy('company_id');
+            ->pluck('count', 'company_id');
 
         // Map results back to company IDs
         foreach ($companyIds as $companyId) {
-            $this->results[$companyId] = $followers->get($companyId, collect());
+            $this->results[$companyId] = (int) ($counts->get($companyId) ?? 0);
         }
 
         $this->hasResolved = true;

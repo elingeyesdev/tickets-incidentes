@@ -54,7 +54,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Verificar que se eliminó el registro de BD
-        $this->assertDatabaseMissing('business.company_followers', [
+        $this->assertDatabaseMissing('business.user_company_followers', [
             'user_id' => $user->id,
             'company_id' => $company->id,
         ]);

@@ -1,0 +1,41 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Features\UserManagement\Database\Seeders\RolesSeeder;
+use Illuminate\Database\Seeder;
+
+/**
+ * DatabaseSeeder - Master seeder for testing environment
+ *
+ * IMPORTANT: This seeder is executed automatically in testing when using:
+ * - RefreshDatabase trait with $seed = true
+ * - php artisan db:seed in testing environment
+ *
+ * Purpose:
+ * - Seed essential data required for all tests (roles, system config, etc.)
+ * - DO NOT seed feature-specific data here (use feature seeders instead)
+ *
+ * Why is this needed?
+ * - The roles are inserted in the migration (create_roles_table)
+ * - BUT RefreshDatabase drops all tables before each test
+ * - Some tests might run before migrations complete, causing FK violations
+ * - This seeder ensures roles exist AFTER migrations run
+ */
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        // Seed roles ALWAYS (required for FK constraints in user_roles table)
+        // This ensures auth.roles has the 4 system roles: USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN
+        $this->call(RolesSeeder::class);
+
+        // Future: Add other essential seeders here
+        // Example:
+        // $this->call(SystemConfigSeeder::class);
+        // $this->call(DefaultPermissionsSeeder::class);
+    }
+}

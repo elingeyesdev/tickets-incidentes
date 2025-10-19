@@ -1,79 +1,119 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace App\Features\CompanyManagement\GraphQL\DataLoaders;
 
-use Closure;
+use App\Features\CompanyManagement\Models\CompanyFollower;
+use GraphQL\Deferred;
 use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
 
 /**
- * DataLoader para cargar empresas seguidas por un usuario
+ * BatchLoader para cargar empresas seguidas por usuarios
  *
- * Evita N+1 queries al obtener myFollowedCompanies.
- * Retorna CompanyFollowInfo completo con estadísticas personalizadas.
+ * Implementa el patrón de Lighthouse 6 usando GraphQL\Deferred
+ * para prevenir N+1 queries al obtener myFollowedCompanies.
+ *
+ * Retorna CompanyFollower con Company eager loaded y estadísticas personalizadas.
+ *
+ * Usado en:
+ * - MyFollowedCompaniesQuery
+ * - CompanyFollowInfo resolver
  *
  * @example
  * ```php
- * // En un resolver de myFollowedCompanies:
- * public function myFollowedCompanies($root, array $args, GraphQLContext $context)
- * {
- *     return $context->dataLoader(FollowedCompaniesByUserIdLoader::class)
- *         ->load($context->user()->id);
- * }
+ * // En MyFollowedCompaniesQuery.php:
+ * $loader = app(FollowedCompaniesByUserIdBatchLoader::class);
+ * return $loader->load($user->id);
  * ```
  */
-class FollowedCompaniesByUserIdLoader extends BatchLoader
+class FollowedCompaniesByUserIdLoader
 {
     /**
-     * Resuelve múltiples user_ids a sus empresas seguidas en una sola query
+     * Map from user_id to user IDs that need loading
      *
-     * @param array<string> $keys Array de UUIDs de usuarios
-     * @return Closure
+     * @var array<string, string>
      */
-    public function resolve(array $keys): Closure
+    protected array $userIds = [];
+
+    /**
+     * Map from user_id to Collection of CompanyFollower models with Company eager loaded
+     *
+     * @var array<string, \Illuminate\Support\Collection>
+     */
+    protected array $results = [];
+
+    /** Marks when the actual batch loading happened */
+    protected bool $hasResolved = false;
+
+    /**
+     * Schedule loading followed companies for a user
+     *
+     * Returns a Deferred that resolves to a Collection of CompanyFollower.
+     *
+     * @param string $userId User ID to load followed companies for
+     * @return \GraphQL\Deferred
+     */
+    public function load(string $userId): Deferred
     {
-        return function () use ($keys): Collection {
-            use App\Features\CompanyManagement\Models\CompanyFollower;
+        $this->userIds[$userId] = $userId;
 
-            // Cargar follows con companies relacionadas
-            $follows = CompanyFollower::query()
-                ->whereIn('user_id', $keys)
-                ->with('company')
-                ->orderBy('followed_at', 'desc')
-                ->get()
-                ->groupBy('user_id');
+        return new Deferred(function () use ($userId) {
+            if (! $this->hasResolved) {
+                $this->resolve();
+            }
 
-            // Para cada follow, agregar estadísticas del usuario
-            $followsWithStats = $follows->map(function ($userFollows) {
-                return $userFollows->map(function ($follow) {
-                    // TODO: Implementar cuando TicketManagement esté listo
-                    /*
-                    $myTicketsCount = \App\Features\TicketManagement\Models\Ticket::query()
-                        ->where('author_id', $follow->user_id)
-                        ->where('company_id', $follow->company_id)
-                        ->count();
+            return $this->results[$userId] ?? collect();
+        });
+    }
 
-                    $lastTicket = \App\Features\TicketManagement\Models\Ticket::query()
-                        ->where('author_id', $follow->user_id)
-                        ->where('company_id', $follow->company_id)
-                        ->latest()
-                        ->first();
+    /**
+     * Resolve all queued user IDs to their followed companies in a single batch query
+     */
+    protected function resolve(): void
+    {
+        $userIds = array_keys($this->userIds);
 
-                    $follow->my_tickets_count = $myTicketsCount;
-                    $follow->last_ticket_created_at = $lastTicket?->created_at;
-                    */
+        // Batch load all follows with companies in one query
+        $follows = CompanyFollower::query()
+            ->whereIn('user_id', $userIds)
+            ->with('company') // Eager load to prevent N+1
+            ->orderBy('followed_at', 'desc')
+            ->get();
 
-                    // Valores temporales hasta que TicketManagement esté implementado
-                    $follow->my_tickets_count = 0;
-                    $follow->last_ticket_created_at = null;
-                    $follow->has_unread_announcements = false; // TODO: implementar cuando Announcements esté listo
+        // Add user-specific stats to each follow
+        $followsWithStats = $follows->map(function ($follow) {
+            // TODO: Implement when TicketManagement is ready
+            /*
+            $myTicketsCount = \App\Features\TicketManagement\Models\Ticket::query()
+                ->where('author_id', $follow->user_id)
+                ->where('company_id', $follow->company_id)
+                ->count();
 
-                    return $follow;
-                });
-            });
+            $lastTicket = \App\Features\TicketManagement\Models\Ticket::query()
+                ->where('author_id', $follow->user_id)
+                ->where('company_id', $follow->company_id)
+                ->latest()
+                ->first();
 
-            // Retornar en el mismo orden que las claves
-            return collect($keys)->map(fn($key) => $followsWithStats->get($key, collect()));
-        };
+            $follow->my_tickets_count = $myTicketsCount;
+            $follow->last_ticket_created_at = $lastTicket?->created_at;
+            */
+
+            // Temporary values until TicketManagement is implemented
+            $follow->my_tickets_count = 0;
+            $follow->last_ticket_created_at = null;
+            $follow->has_unread_announcements = false; // TODO: implement when Announcements is ready
+
+            return $follow;
+        });
+
+        // Group by user_id
+        $followsByUser = $followsWithStats->groupBy('user_id');
+
+        // Map results back to user IDs
+        foreach ($userIds as $userId) {
+            $this->results[$userId] = $followsByUser->get($userId, collect());
+        }
+
+        $this->hasResolved = true;
     }
 }

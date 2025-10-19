@@ -90,10 +90,13 @@ class CompaniesQuery extends BaseQuery
             $offset = ($page - 1) * $first;
             $companies = $query->skip($offset)->take($first)->get();
 
-            // Calcular isFollowedByMe para contexto EXPLORE
+            // Calcular isFollowedByMe para contexto EXPLORE usando DataLoader (evita N+1)
             if ($context === 'EXPLORE' && auth()->check()) {
                 $user = auth()->user();
-                $followedIds = $this->followService->getFollowedCompanies($user)->pluck('id')->toArray();
+
+                // Usar DataLoader para cargar todos los company IDs seguidos en 1 query
+                $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);
+                $followedIds = $loader->load($user->id);
 
                 $companies = $companies->map(function($company) use ($followedIds) {
                     $company->isFollowedByMe = in_array($company->id, $followedIds);

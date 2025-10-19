@@ -1,46 +1,89 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace App\Shared\GraphQL\DataLoaders;
 
-use Closure;
-use Illuminate\Support\Collection;
-use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
+use App\Features\UserManagement\Models\User;
+use GraphQL\Deferred;
 
 /**
- * DataLoader para cargar usuarios por ID
+ * BatchLoader para cargar usuarios por ID
  *
- * Evita N+1 queries al cargar múltiples usuarios en una sola consulta.
- * Usado en resolvers que necesitan cargar usuarios relacionados (created_by, assigned_to, etc.)
+ * Implementa el patrón de Lighthouse 6 usando GraphQL\Deferred
+ * para prevenir N+1 queries al cargar usuarios en múltiples contextos.
+ *
+ * Usado en:
+ * - Company.admin (admin_user_id)
+ * - CompanyRequest.reviewer (reviewed_by_user_id)
+ * - Ticket.author, assignee, etc. (futuro)
  *
  * @example
  * ```php
  * // En un resolver:
- * public function user($root, array $args, GraphQLContext $context)
- * {
- *     return $context->dataLoader(UserByIdLoader::class)
- *         ->load($root->user_id);
- * }
+ * $loader = app(\App\Shared\GraphQL\DataLoaders\UserByIdBatchLoader::class);
+ * return $loader->load($root->user_id);
  * ```
  */
-class UserByIdLoader extends BatchLoader
+class UserByIdLoader
 {
     /**
-     * Resuelve múltiples IDs de usuarios en una sola query
+     * Map from user_id to user IDs that need loading
      *
-     * @param array<string> $keys Array de UUIDs de usuarios
-     * @return Closure
+     * @var array<string, string>
      */
-    public function resolve(array $keys): Closure
-    {
-        return function () use ($keys): Collection {
-            // Cargar usuarios por IDs en una sola query
-            $users = \App\Features\UserManagement\Models\User::query()
-                ->whereIn('id', $keys)
-                ->get()
-                ->keyBy('id');
+    protected array $users = [];
 
-            // Retornar en el mismo orden que los keys (puede haber nulls)
-            return collect($keys)->map(fn($key) => $users->get($key));
-        };
+    /**
+     * Map from user_id to loaded User models
+     *
+     * @var array<string, \App\Features\UserManagement\Models\User|null>
+     */
+    protected array $results = [];
+
+    /** Marks when the actual batch loading happened */
+    protected bool $hasResolved = false;
+
+    /**
+     * Schedule loading a user by ID
+     *
+     * Returns a Deferred that resolves to the User when executed.
+     *
+     * @param string $userId User ID to load
+     * @return \GraphQL\Deferred
+     */
+    public function load(string $userId): Deferred
+    {
+        $this->users[$userId] = $userId;
+
+        return new Deferred(function () use ($userId) {
+            if (! $this->hasResolved) {
+                $this->resolve();
+            }
+
+            return $this->results[$userId] ?? null;
+        });
+    }
+
+    /**
+     * Resolve all queued users in a single batch query
+     *
+     * Eagerly loads user profiles to prevent additional N+1
+     */
+    protected function resolve(): void
+    {
+        $userIds = array_keys($this->users);
+
+        // Batch load all users with profiles in one query
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->with('profile') // Eager load profiles to prevent N+1
+            ->get()
+            ->keyBy('id');
+
+        // Map results back to user IDs
+        foreach ($userIds as $userId) {
+            $this->results[$userId] = $users->get($userId);
+        }
+
+        $this->hasResolved = true;
     }
 }

@@ -2,7 +2,8 @@
 
 namespace App\Features\UserManagement\GraphQL\Types;
 
-use App\Shared\GraphQL\DataLoaders\CompanyByIdLoader;
+use App\Shared\GraphQL\DataLoaders\CompanyByIdBatchLoader;
+use Nuwave\Lighthouse\Execution\BatchLoader\BatchLoaderRegistry;
 use Nuwave\Lighthouse\Execution\ResolveInfo;
 use GraphQL\Type\Definition\ResolveInfo as GraphQLResolveInfo;
 
@@ -18,14 +19,14 @@ use GraphQL\Type\Definition\ResolveInfo as GraphQLResolveInfo;
  * - AuthStatusResponse.roleContexts (Authentication)
  *
  * @see graphql/shared/base-types.graphql (línea 127-139)
- * @see app/Shared/GraphQL/DataLoaders/CompanyByIdLoader.php
+ * @see app/Shared/GraphQL/DataLoaders/CompanyByIdBatchLoader.php
  */
 class RoleContextFieldResolvers
 {
     /**
      * Resuelve el campo 'company' del tipo RoleContext
      *
-     * Utiliza CompanyByIdLoader para batching automático.
+     * Utiliza CompanyByIdBatchLoader para batching automático.
      * Si GraphQL solicita company de N roles, ejecuta UNA sola query.
      *
      * Lógica:
@@ -48,8 +49,12 @@ class RoleContextFieldResolvers
             return null;
         }
 
-        // Usar DataLoader para cargar la empresa
-        return $context->dataLoader(CompanyByIdLoader::class)
-            ->load($root['company_id']);
+        // Get or create BatchLoader instance for this field path
+        $batchLoader = BatchLoaderRegistry::instance(
+            $resolveInfo->path,
+            static fn (): CompanyByIdBatchLoader => new CompanyByIdBatchLoader(),
+        );
+
+        return $batchLoader->load($root['company_id']);
     }
 }

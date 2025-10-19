@@ -2,7 +2,7 @@
 
 namespace App\Features\UserManagement\GraphQL\Types;
 
-use App\Shared\GraphQL\DataLoaders\CompanyByIdLoader;
+use App\Shared\GraphQL\DataLoaders\CompanyByIdBatchLoader;
 use Nuwave\Lighthouse\Execution\ResolveInfo;
 use GraphQL\Type\Definition\ResolveInfo as GraphQLResolveInfo;
 
