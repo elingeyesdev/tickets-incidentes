@@ -22,15 +22,15 @@ class CompanyRequestService
     ) {}
 
     /**
-     * Submit a new company request.
+     * Enviar una nueva solicitud de empresa.
      */
     public function submit(array $data): CompanyRequest
     {
         return DB::transaction(function () use ($data) {
-            // Generate unique request code
+            // Generar código único de solicitud
             $requestCode = CodeGenerator::generate('REQ');
 
-            // Create request
+            // Crear solicitud
             $request = CompanyRequest::create([
                 'request_code' => $requestCode,
                 'company_name' => $data['company_name'],
@@ -48,7 +48,7 @@ class CompanyRequestService
                 'status' => 'pending',
             ]);
 
-            // Fire event
+            // Disparar evento
             event(new CompanyRequestSubmitted($request));
 
             return $request;
@@ -56,35 +56,35 @@ class CompanyRequestService
     }
 
     /**
-     * Approve a company request.
+     * Aprobar una solicitud de empresa.
      *
-     * This is a complex process:
-     * 1. Find or create admin user
-     * 2. Create company
-     * 3. Assign COMPANY_ADMIN role to admin user
-     * 4. Mark request as approved
-     * 5. Fire event (sends email)
+     * Este es un proceso complejo:
+     * 1. Buscar o crear usuario admin
+     * 2. Crear empresa
+     * 3. Asignar rol COMPANY_ADMIN al usuario admin
+     * 4. Marcar solicitud como aprobada
+     * 5. Disparar evento (envía email)
      */
     public function approve(CompanyRequest $request, User $reviewer): Company
     {
-        // Validate request is pending
+        // Validar que la solicitud esté pendiente
         if (!$request->isPending()) {
             throw new \Exception('Only pending requests can be approved');
         }
 
         return DB::transaction(function () use ($request, $reviewer) {
-            // 1. Find or create admin user
+            // 1. Buscar o crear usuario admin
             $adminUser = User::where('email', $request->admin_email)->first();
 
             if (!$adminUser) {
-                // Create new user from request data
+                // Crear nuevo usuario desde datos de solicitud
                 $adminUser = $this->userService->createFromCompanyRequest(
                     $request->admin_email,
                     $request->company_name
                 );
             }
 
-            // 2. Create company
+            // 2. Crear empresa
             $company = $this->companyService->create([
                 'name' => $request->company_name,
                 'legal_name' => $request->legal_name,
@@ -98,7 +98,7 @@ class CompanyRequestService
                 'created_from_request_id' => $request->id,
             ], $adminUser);
 
-            // 3. Assign COMPANY_ADMIN role to admin user
+            // 3. Asignar rol COMPANY_ADMIN al usuario admin
             $this->roleService->assignRoleToUser(
                 userId: $adminUser->id,
                 roleCode: 'company_admin',
@@ -106,10 +106,10 @@ class CompanyRequestService
                 assignedBy: $reviewer->id
             );
 
-            // 4. Mark request as approved
+            // 4. Marcar solicitud como aprobada
             $request->markAsApproved($reviewer, $company);
 
-            // 5. Fire event (triggers email sending)
+            // 5. Disparar evento (dispara envío de email)
             event(new CompanyRequestApproved($request, $company, $adminUser));
 
             return $company;
@@ -117,20 +117,20 @@ class CompanyRequestService
     }
 
     /**
-     * Reject a company request.
+     * Rechazar una solicitud de empresa.
      */
     public function reject(CompanyRequest $request, User $reviewer, string $reason): CompanyRequest
     {
-        // Validate request is pending
+        // Validar que la solicitud esté pendiente
         if (!$request->isPending()) {
             throw new \Exception('Only pending requests can be rejected');
         }
 
         DB::transaction(function () use ($request, $reviewer, $reason) {
-            // Mark as rejected
+            // Marcar como rechazada
             $request->markAsRejected($reviewer, $reason);
 
-            // Fire event (triggers email sending)
+            // Disparar evento (dispara envío de email)
             event(new CompanyRequestRejected($request, $reason));
         });
 
@@ -138,7 +138,7 @@ class CompanyRequestService
     }
 
     /**
-     * Get pending requests.
+     * Obtener solicitudes pendientes.
      */
     public function getPending(int $limit = 15): \Illuminate\Database\Eloquent\Collection
     {
@@ -149,7 +149,7 @@ class CompanyRequestService
     }
 
     /**
-     * Get all requests (for admin).
+     * Obtener todas las solicitudes (para admin).
      */
     public function getAll(?string $status = null, int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
@@ -165,7 +165,7 @@ class CompanyRequestService
     }
 
     /**
-     * Check if email already has a pending request.
+     * Verificar si el email ya tiene una solicitud pendiente.
      */
     public function hasPendingRequest(string $email): bool
     {

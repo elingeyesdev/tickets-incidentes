@@ -14,15 +14,15 @@ use Illuminate\Support\Facades\DB;
 class CompanyService
 {
     /**
-     * Create a new company.
+     * Crear una nueva empresa.
      */
     public function create(array $data, User $adminUser): Company
     {
         return DB::transaction(function () use ($data, $adminUser) {
-            // Generate unique company code
+            // Generar código único de empresa
             $companyCode = CodeGenerator::generate('CMP');
 
-            // Create company
+            // Crear empresa
             $company = Company::create([
                 'company_code' => $companyCode,
                 'name' => $data['name'],
@@ -49,7 +49,7 @@ class CompanyService
                 'created_from_request_id' => $data['created_from_request_id'] ?? null,
             ]);
 
-            // Fire event
+            // Disparar evento
             event(new CompanyCreated($company));
 
             return $company;
@@ -57,7 +57,7 @@ class CompanyService
     }
 
     /**
-     * Update an existing company.
+     * Actualizar una empresa existente.
      */
     public function update(Company $company, array $data): Company
     {
@@ -84,7 +84,7 @@ class CompanyService
                 'settings' => $data['settings'] ?? null,
             ], fn($value) => $value !== null));
 
-            // Fire event
+            // Disparar evento
             event(new CompanyUpdated($company));
         });
 
@@ -92,21 +92,21 @@ class CompanyService
     }
 
     /**
-     * Suspend a company (deactivate).
+     * Suspender una empresa (desactivar).
      */
     public function suspend(Company $company, ?string $reason = null): Company
     {
         DB::transaction(function () use ($company, $reason) {
-            // Update status
+            // Actualizar estado
             $company->update(['status' => 'suspended']);
 
-            // Deactivate all agents and company_admins of this company
+            // Desactivar todos los agentes y company_admins de esta empresa
             $company->userRoles()
                 ->whereIn('role_code', ['agent', 'company_admin'])
                 ->where('is_active', true)
                 ->update(['is_active' => false]);
 
-            // Fire event
+            // Disparar evento
             event(new CompanySuspended($company, $reason));
         });
 
@@ -114,18 +114,18 @@ class CompanyService
     }
 
     /**
-     * Activate a suspended company.
+     * Activar una empresa suspendida.
      */
     public function activate(Company $company): Company
     {
         DB::transaction(function () use ($company) {
-            // Update status
+            // Actualizar estado
             $company->update(['status' => 'active']);
 
-            // Note: We don't auto-reactivate user roles
-            // They must be manually reactivated
+            // Nota: No reactivamos automáticamente los roles de usuario
+            // Deben ser reactivados manualmente
 
-            // Fire event
+            // Disparar evento
             event(new CompanyActivated($company));
         });
 
@@ -133,7 +133,7 @@ class CompanyService
     }
 
     /**
-     * Get company statistics.
+     * Obtener estadísticas de la empresa.
      */
     public function getStats(Company $company): array
     {
@@ -147,14 +147,14 @@ class CompanyService
                 ->distinct('user_id')
                 ->count('user_id'),
             'followers_count' => $company->followers()->count(),
-            'total_tickets_count' => 0, // TODO: Implement when tickets feature is ready
-            'open_tickets_count' => 0,  // TODO: Implement when tickets feature is ready
-            'average_rating' => 0.0,    // TODO: Implement when ratings feature is ready
+            'total_tickets_count' => 0, // TODO: Implementar cuando la funcionalidad de tickets esté lista
+            'open_tickets_count' => 0,  // TODO: Implementar cuando la funcionalidad de tickets esté lista
+            'average_rating' => 0.0,    // TODO: Implementar cuando la funcionalidad de calificaciones esté lista
         ];
     }
 
     /**
-     * Find company by ID.
+     * Buscar empresa por ID.
      */
     public function findById(string $id): ?Company
     {
@@ -162,7 +162,7 @@ class CompanyService
     }
 
     /**
-     * Find company by code.
+     * Buscar empresa por código.
      */
     public function findByCode(string $code): ?Company
     {
@@ -170,7 +170,7 @@ class CompanyService
     }
 
     /**
-     * Get all active companies.
+     * Obtener todas las empresas activas.
      */
     public function getActive(int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
@@ -181,7 +181,7 @@ class CompanyService
     }
 
     /**
-     * Check if user is admin of company.
+     * Verificar si el usuario es admin de la empresa.
      */
     public function isAdmin(Company $company, User $user): bool
     {
