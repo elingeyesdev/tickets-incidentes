@@ -63,7 +63,7 @@ class FollowedCompaniesByUserIdLoader extends BatchLoader
                     $follow->last_ticket_created_at = $lastTicket?->created_at;
                     */
 
-                    // Temporary values until TicketManagement is implemented
+                    // Valores temporales hasta que TicketManagement esté implementado
                     $follow->my_tickets_count = 0;
                     $follow->last_ticket_created_at = null;
                     $follow->has_unread_announcements = false; // TODO: implementar cuando Announcements esté listo
@@ -72,7 +72,7 @@ class FollowedCompaniesByUserIdLoader extends BatchLoader
                 });
             });
 
-            // Retornar en el mismo orden que los keys
+            // Retornar en el mismo orden que las claves
             return collect($keys)->map(fn($key) => $followsWithStats->get($key, collect()));
         };
     }
