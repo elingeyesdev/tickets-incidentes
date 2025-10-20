@@ -70,6 +70,7 @@ GRAPHQL;
             // Obtener request
             $request = $context->request();
 
+
             // Verificar si hubo error en la validación del token (middleware)
             $jwtError = $request->attributes->get('jwt_error');
             if ($jwtError) {

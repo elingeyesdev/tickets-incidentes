@@ -73,7 +73,7 @@ class UpdateMyProfileMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertJsonStructure([
@@ -133,7 +133,7 @@ class UpdateMyProfileMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $profile = $response->json('data.updateMyProfile.profile');
@@ -164,7 +164,7 @@ class UpdateMyProfileMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertGraphQLValidationKeys(['firstName']);
@@ -192,7 +192,7 @@ class UpdateMyProfileMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertGraphQLValidationKeys(['phoneNumber']);
@@ -253,7 +253,7 @@ class UpdateMyProfileMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $profile = $response->json('data.updateMyProfile.profile');

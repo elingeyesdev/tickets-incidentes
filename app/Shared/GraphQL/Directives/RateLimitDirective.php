@@ -64,16 +64,14 @@ GRAPHQL;
      */
     private function generateRateLimitKey(GraphQLContext $context, string $fieldName): string
     {
-        $user = $context->user();
-
-        if ($user !== null) {
+        try {
+            $user = \App\Shared\Helpers\JWTHelper::getAuthenticatedUser();
             return "graphql.rate_limit.{$fieldName}.user.{$user->id}";
+        } catch (\Illuminate\Auth\AuthenticationException $e) {
+            // Si no está autenticado, usar IP
+            $request = $context->request();
+            $ip = $request?->ip() ?? 'unknown';
+            return "graphql.rate_limit.{$fieldName}.ip.{$ip}";
         }
-
-        // Si no está autenticado, usar IP
-        $request = $context->request();
-        $ip = $request?->ip() ?? 'unknown';
-
-        return "graphql.rate_limit.{$fieldName}.ip.{$ip}";
     }
 }

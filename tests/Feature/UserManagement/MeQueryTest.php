@@ -90,7 +90,7 @@ class MeQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert - Estructura completa
         $response->assertJsonStructure([
@@ -186,7 +186,7 @@ class MeQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $roleContexts = $response->json('data.me.roleContexts');
@@ -214,7 +214,7 @@ class MeQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $me = $response->json('data.me');

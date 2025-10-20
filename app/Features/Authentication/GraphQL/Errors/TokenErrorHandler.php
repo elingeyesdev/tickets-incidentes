@@ -83,7 +83,7 @@ class TokenErrorHandler extends BaseErrorHandler
     protected function getProductionMessage(\Throwable $exception): string
     {
         return match(true) {
-            $exception instanceof TokenInvalidException => 'Token inválido o ya revocado',
+            $exception instanceof TokenInvalidException => 'Refresh token is invalid or has been revoked.',
             $exception instanceof TokenExpiredException => 'Your session has expired. Please login again.',
             $exception instanceof RefreshTokenRequiredException => 'Refresh token is required to perform this operation.',
             $exception instanceof SessionNotFoundException => 'Session not found or already revoked.',

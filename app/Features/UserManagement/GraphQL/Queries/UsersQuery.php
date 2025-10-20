@@ -4,7 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Queries;
 
 use App\Features\UserManagement\Models\User;
 use App\Shared\GraphQL\Queries\BaseQuery;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Users Query V10.1
@@ -18,7 +18,7 @@ class UsersQuery extends BaseQuery
     public function __invoke($root, array $args)
     {
         // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
-        $authUser = Auth::user();
+        $authUser = JWTHelper::getAuthenticatedUser();
 
         if (!$authUser) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');

@@ -5,6 +5,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Services\CompanyRequestService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class RejectCompanyRequestMutation extends BaseMutation
@@ -17,7 +18,7 @@ class RejectCompanyRequestMutation extends BaseMutation
     {
         try {
             // Obtener revisor (usuario autenticado - permisos manejados por directiva @auth)
-            $reviewer = auth()->user();
+            $reviewer = JWTHelper::getAuthenticatedUser();
 
             if (!$reviewer) {
                 throw new Error('Usuario no autenticado', null, null, null, null, null, [

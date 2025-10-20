@@ -4,6 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Mutations;
 
 use App\Features\UserManagement\Services\UserService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Delete User Mutation V10.1
@@ -29,7 +30,7 @@ class DeleteUserMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null): bool
     {
         // Authorization: Require PLATFORM_ADMIN only
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
 
         if (!$user) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');

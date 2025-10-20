@@ -33,7 +33,7 @@ extend type Query {
     Detalle completo de una empresa específica
     """
     company(id: UUID!): Company
-        @guard
+        @jwt
         @can(ability: "view", model: "Company", find: "id")
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompanyQuery")
 
@@ -41,14 +41,14 @@ extend type Query {
     Mis empresas seguidas con estadísticas personales
     """
     myFollowedCompanies: [CompanyFollowInfo!]!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\MyFollowedCompaniesQuery")
 
     """
     Verificación rápida de seguimiento
     """
     isFollowingCompany(companyId: UUID!): Boolean!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\IsFollowingCompanyQuery")
 
     """
@@ -58,7 +58,7 @@ extend type Query {
         status: CompanyRequestStatus
         first: Int = 15
     ): [CompanyRequest!]!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompanyRequestsQuery")
 }
 
@@ -69,12 +69,12 @@ extend type Query {
 extend type Mutation {
     # Company Followers
     followCompany(companyId: UUID!): CompanyFollowResult!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\FollowCompanyMutation")
         @audit(action: "company_follow")
 
     unfollowCompany(companyId: UUID!): Boolean!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\UnfollowCompanyMutation")
         @audit(action: "company_unfollow")
 
@@ -86,23 +86,23 @@ extend type Mutation {
 
     # Admin
     approveCompanyRequest(requestId: UUID!): Company!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\ApproveCompanyRequestMutation")
         @audit(action: "company_request_approve", includePayload: true)
 
     rejectCompanyRequest(requestId: UUID!, reason: String!): Boolean!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\RejectCompanyRequestMutation")
         @audit(action: "company_request_reject", includePayload: true)
 
     createCompany(input: CreateCompanyInput!): Company!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\CreateCompanyMutation")
         @rateLimit(max: 10, window: 3600)
         @audit(action: "company_create", includePayload: true)
 
     updateCompany(id: UUID!, input: UpdateCompanyInput!): Company!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @can(ability: "update", model: "Company", find: "id")
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\UpdateCompanyMutation")
         @audit(action: "company_update", includePayload: true)
@@ -234,7 +234,7 @@ type Company implements Node & Timestamped {
     followersCount: Int!
 
     # Flags contextuales
-    isFollowedByMe: Boolean @guard
+    isFollowedByMe: Boolean @jwt
 
     # Auditoría
     createdAt: DateTime!

@@ -37,14 +37,10 @@ return [
             // This is required for HttpOnly cookie support (refresh tokens)
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
 
-            // JWT Authentication Middleware - Extracts and validates JWT tokens
-            // Adds user to context for @jwt directive validation
-            \App\Http\Middleware\GraphQLJWTMiddleware::class,
-
-            // Logs in a user if they are authenticated. In contrast to Laravel's 'auth'
-            // middleware, this delegates auth and permission checks to the field level.
-            // NOTE: Keep this for backward compatibility with @guard directive
-            Nuwave\Lighthouse\Http\Middleware\AttemptAuthentication::class,
+            // JWT Authentication Middleware - Pure JWT validation (no session)
+            // NOTE: GraphQL uses JWT directives (@jwt) for field-level authentication
+            // Web routes use jwt.auth middleware in routes/web-jwt-pure.php
+            \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,
 
             // Logs every incoming GraphQL query.
             // Nuwave\Lighthouse\Http\Middleware\LogGraphQLQueries::class,
@@ -60,16 +56,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Guards
+    | Authentication Guards - LEGACY (NO USAR)
     |--------------------------------------------------------------------------
     |
-    | The guards to use for authenticating GraphQL requests, if needed.
-    | Used in directives such as `@guard` or the `AttemptAuthentication` middleware.
-    | Falls back to the Laravel default if `null`.
+    | ⚠️  IMPORTANTE: NO USAR - SISTEMA JWT PURO IMPLEMENTADO
+    | 
+    | Esta configuración es LEGACY y NO debe usarse. El sistema ahora usa JWT puro
+    | con middleware personalizado y directivas @jwt.
+    | 
+    | ❌ NO USAR: @guard directive
+    | ✅ USAR: @jwt directive + JWT middleware
+    | 
+    | Configuración legacy (mantener null para compatibilidad):
+    | - The guards to use for authenticating GraphQL requests, if needed.
+    | - Used in directives such as `@guard` or the `AttemptAuthentication` middleware.
+    | - Falls back to the Laravel default if `null`.
     |
     */
 
-    'guards' => null,
+    'guards' => null, // LEGACY - NO USAR
 
     /*
     |--------------------------------------------------------------------------
@@ -343,10 +348,13 @@ return [
         // Custom handlers profesionales (Chain of Responsibility)
         // Orden importante: del más específico al más genérico
 
-        // 0. Errores específicos de tokens JWT (más específico)
+        // 0. Errores específicos de tokens JWT (Authentication Feature) - MÁS ESPECÍFICO
         \App\Features\Authentication\GraphQL\Errors\TokenErrorHandler::class,
 
-        // 1. Errores de autenticación genéricos (401)
+        // 1. Errores específicos de JWT Authentication (menos específico)
+        \App\Shared\GraphQL\Errors\JWTAuthenticationErrorHandler::class,
+
+        // 2. Errores de autenticación genéricos (401)
         \App\Shared\GraphQL\Errors\CustomAuthenticationErrorHandler::class,
 
         // 2. Errores de autorización (403)

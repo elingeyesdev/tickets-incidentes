@@ -4,7 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Mutations;
 
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Assign Role Mutation V10.1
@@ -30,7 +30,7 @@ class AssignRoleMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null)
     {
         // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
-        $user = Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
 
         if (!$user) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');
@@ -48,7 +48,7 @@ class AssignRoleMutation extends BaseMutation
             userId: $input['userId'],
             roleCode: $input['roleCode'],
             companyId: $input['companyId'] ?? null,
-            assignedBy: Auth::id()
+            assignedBy: JWTHelper::getUserId()
         );
 
         // Field resolvers handle loading relationships via DataLoaders

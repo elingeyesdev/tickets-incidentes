@@ -4,6 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Queries;
 
 use App\Features\UserManagement\Services\UserService;
 use App\Shared\GraphQL\Queries\BaseQuery;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * User Query
@@ -20,7 +21,7 @@ class UserQuery extends BaseQuery
 
     public function __invoke($root, array $args)
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
         $targetUser = $this->userService->getUserById($args['id']);
 
         // Company admin solo puede ver usuarios de su empresa

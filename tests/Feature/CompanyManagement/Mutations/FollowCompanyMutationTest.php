@@ -34,7 +34,7 @@ class FollowCompanyMutationTest extends TestCase
         $company = Company::factory()->create(['status' => 'active']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -90,7 +90,7 @@ class FollowCompanyMutationTest extends TestCase
         $company = Company::factory()->create(['name' => 'Tech Solutions Inc.']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -134,7 +134,7 @@ class FollowCompanyMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -161,7 +161,7 @@ class FollowCompanyMutationTest extends TestCase
         $company = Company::factory()->suspended()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -198,7 +198,7 @@ class FollowCompanyMutationTest extends TestCase
         $company51 = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -227,7 +227,7 @@ class FollowCompanyMutationTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -277,7 +277,7 @@ class FollowCompanyMutationTest extends TestCase
         $initialFollowersCount = CompanyFollower::where('company_id', $company->id)->count();
 
         // Act
-        $this->actingAs($user)->graphQL('
+        $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success
@@ -300,7 +300,7 @@ class FollowCompanyMutationTest extends TestCase
         $company = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     followedAt

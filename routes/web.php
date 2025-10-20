@@ -1,12 +1,27 @@
 <?php
 
+/**
+ * DEPRECATED: This file is replaced by routes/web-jwt-pure.php
+ *
+ * All web routes now use pure JWT authentication with new middleware:
+ * - jwt.auth (replaces 'auth')
+ * - jwt.role (replaces 'role')
+ * - jwt.onboarding (replaces 'onboarding.completed')
+ * - jwt.guest (replaces 'guest')
+ *
+ * See: routes/web-jwt-pure.php for active routes
+ *
+ * This file is preserved for reference only.
+ * These routes are NO LONGER ACTIVE.
+ */
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Sistema de 3 Zonas con Protección por Middleware
+| Web Routes - Sistema de 3 Zonas con Protección por Middleware (DEPRECATED)
 |--------------------------------------------------------------------------
 |
 | Arquitectura de seguridad:

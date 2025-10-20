@@ -93,7 +93,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJsonStructure([
@@ -165,7 +165,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $users = $response->json('data.users.data');
@@ -207,7 +207,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $users = $response->json('data.users.data');
@@ -253,7 +253,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $users = $response->json('data.users.data');
@@ -301,7 +301,7 @@ class UsersQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->companyAdmin)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->companyAdmin)->graphQL($query);
 
         // Assert
         $users = $response->json('data.users.data');
@@ -342,7 +342,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $users = $response->json('data.users.data');
@@ -375,7 +375,7 @@ class UsersQueryTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $perPage = $response->json('data.users.paginatorInfo.perPage');
@@ -405,7 +405,7 @@ class UsersQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query);
 
         // Assert
         $this->assertNotNull($response->json('errors'));

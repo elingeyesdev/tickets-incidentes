@@ -12,7 +12,7 @@ use App\Shared\Exceptions\AuthenticationException as BaseAuthenticationException
  */
 class TokenInvalidException extends BaseAuthenticationException
 {
-    protected string $errorCode = 'TOKEN_INVALID';
+    protected string $errorCode = 'INVALID_TOKEN';
 
     public function __construct(string $message = 'Token inválido o ya revocado')
     {

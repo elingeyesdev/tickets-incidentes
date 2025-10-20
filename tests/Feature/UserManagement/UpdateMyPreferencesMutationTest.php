@@ -77,7 +77,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertJsonStructure([
@@ -138,7 +138,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $preferences = $response->json('data.updateMyPreferences.preferences');
@@ -169,7 +169,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertGraphQLValidationKeys(['theme']);
@@ -197,7 +197,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertGraphQLValidationKeys(['language']);
@@ -227,7 +227,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $theme = $response->json('data.updateMyPreferences.preferences.theme');
@@ -258,7 +258,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $language = $response->json('data.updateMyPreferences.preferences.language');
@@ -289,7 +289,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $pushEnabled = $response->json('data.updateMyPreferences.preferences.pushWebNotifications');
@@ -320,7 +320,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $ticketsEnabled = $response->json('data.updateMyPreferences.preferences.notificationsTickets');
@@ -382,7 +382,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert - NO tiene roleContexts, profile completo, tickets, etc.
         $result = $response->json('data.updateMyPreferences');
@@ -421,7 +421,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert
         $newUpdatedAt = $response->json('data.updateMyPreferences.preferences.updatedAt');
@@ -460,7 +460,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
             ];
 
             // Act
-            $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+            $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
             // Assert
             $result = $response->json('data.updateMyPreferences.preferences.timezone');
@@ -495,7 +495,7 @@ class UpdateMyPreferencesMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query, $variables);
 
         // Assert - Datos personales no cambiaron
         $this->testUser->profile->refresh();

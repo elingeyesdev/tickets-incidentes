@@ -39,7 +39,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -89,7 +89,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -127,7 +127,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act
-        $this->actingAs($admin)->graphQL('
+        $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -155,7 +155,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -186,7 +186,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $this->actingAs($admin)->graphQL('
+        $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -216,7 +216,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -243,7 +243,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'approved']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -270,7 +270,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($companyAdmin)->graphQL('
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -292,7 +292,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -335,7 +335,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     id
@@ -392,7 +392,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $initialUserCount = User::count();
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
                     adminId

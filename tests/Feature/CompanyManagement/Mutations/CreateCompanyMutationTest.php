@@ -43,7 +43,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -113,7 +113,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -149,7 +149,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -184,7 +184,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -225,7 +225,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -252,7 +252,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($companyAdmin)->graphQL('
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -279,7 +279,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -302,7 +302,7 @@ class CreateCompanyMutationTest extends TestCase
         $adminUser2 = User::factory()->create();
 
         // Act - Crear dos empresas
-        $response1 = $this->actingAs($admin)->graphQL('
+        $response1 = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     companyCode
@@ -315,7 +315,7 @@ class CreateCompanyMutationTest extends TestCase
             ]
         ]);
 
-        $response2 = $this->actingAs($admin)->graphQL('
+        $response2 = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     companyCode
@@ -355,7 +355,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id
@@ -389,7 +389,7 @@ class CreateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation CreateCompany($input: CreateCompanyInput!) {
                 createCompany(input: $input) {
                     id

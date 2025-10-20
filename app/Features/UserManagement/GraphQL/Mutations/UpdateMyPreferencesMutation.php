@@ -4,7 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Mutations;
 
 use App\Features\UserManagement\Services\ProfileService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Update My Preferences Mutation V10.1
@@ -26,7 +26,7 @@ class UpdateMyPreferencesMutation extends BaseMutation
      */
     public function __invoke($root, array $args, $context = null): array
     {
-        $user = Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
 
         // Actualizar solo preferencias
         $profile = $this->profileService->updatePreferences($user->id, $args['input']);

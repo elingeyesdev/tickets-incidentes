@@ -73,7 +73,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $response->assertJsonStructure([
@@ -160,7 +160,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($user)->graphQL($query);
+        $response = $this->authenticateWithJWT($user)->graphQL($query);
 
         // Assert
         $profile = $response->json('data.myProfile');
@@ -188,7 +188,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $profile = $response->json('data.myProfile');
@@ -221,7 +221,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($newUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($newUser)->graphQL($query);
 
         // Assert
         $profile = $response->json('data.myProfile');
@@ -251,7 +251,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert - Todos los campos necesarios para formulario están presentes
         $profile = $response->json('data.myProfile');
@@ -281,7 +281,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert - Todos los campos de preferencias están presentes
         $profile = $response->json('data.myProfile');
@@ -317,7 +317,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($newUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($newUser)->graphQL($query);
 
         // Assert
         $profile = $response->json('data.myProfile');
@@ -342,7 +342,7 @@ class MyProfileQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $profile = $response->json('data.myProfile');

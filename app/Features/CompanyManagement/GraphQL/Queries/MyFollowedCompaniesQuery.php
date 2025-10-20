@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Queries;
 
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Shared\GraphQL\Queries\BaseQuery;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class MyFollowedCompaniesQuery extends BaseQuery
@@ -16,7 +17,7 @@ class MyFollowedCompaniesQuery extends BaseQuery
     {
         try {
             // Obtener usuario autenticado
-            $user = auth()->user();
+            $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
                 throw new Error('Usuario no autenticado', null, null, null, null, null, [

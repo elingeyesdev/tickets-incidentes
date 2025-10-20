@@ -35,7 +35,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $reason = 'Insufficient business information provided';
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -61,7 +61,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $reason = 'Business description is too vague';
 
         // Act
-        $this->actingAs($admin)->graphQL('
+        $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -91,7 +91,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $reason = 'The company does not meet our minimum requirements for business verification';
 
         // Act
-        $this->actingAs($admin)->graphQL('
+        $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -118,7 +118,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -139,7 +139,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -162,7 +162,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'approved']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -185,7 +185,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($companyAdmin)->graphQL('
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -206,7 +206,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
                 rejectCompanyRequest(requestId: $requestId, reason: $reason)
             }
@@ -227,7 +227,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act - Sin razón (GraphQL schema lo requiere)
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!) {
                 rejectCompanyRequest(requestId: $requestId, reason: "")
             }

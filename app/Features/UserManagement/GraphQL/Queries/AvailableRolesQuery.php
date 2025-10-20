@@ -4,7 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Queries;
 
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\GraphQL\Queries\BaseQuery;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Available Roles Query
@@ -21,7 +21,7 @@ class AvailableRolesQuery extends BaseQuery
     public function __invoke($root, array $args)
     {
         // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
-        $user = Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
 
         if (!$user) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');

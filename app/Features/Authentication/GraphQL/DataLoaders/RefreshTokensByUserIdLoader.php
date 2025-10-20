@@ -17,8 +17,9 @@ use Nuwave\Lighthouse\Execution\DataLoader\BatchLoader;
  * // En un resolver de mySessions:
  * public function mySessions($root, array $args, GraphQLContext $context)
  * {
+ *     $user = \App\Shared\Helpers\JWTHelper::getAuthenticatedUser();
  *     return $context->dataLoader(RefreshTokensByUserIdLoader::class)
- *         ->load($context->user()->id);
+ *         ->load($user->id);
  * }
  * ```
  */

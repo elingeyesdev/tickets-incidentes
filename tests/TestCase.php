@@ -75,4 +75,30 @@ abstract class TestCase extends BaseTestCase
         $tokenService = app(TokenService::class);
         return $tokenService->generateAccessToken($user);
     }
+
+    /**
+     * Authenticate a user for testing using JWT token
+     *
+     * This method generates a real JWT token and adds it to the Authorization header
+     * for all subsequent requests. This is the recommended way to authenticate users
+     * in tests as it matches production authentication flow.
+     *
+     * @param User $user The user to authenticate
+     * @return $this
+     */
+    protected function authenticateWithJWT(User $user): self
+    {
+        // Generate a real JWT token using TokenService
+        $tokenService = app(TokenService::class);
+
+        // Generate access token with test session ID
+        $token = $tokenService->generateAccessToken($user, 'test_session_' . uniqid());
+
+        // Add Authorization header to all subsequent requests
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        return $this;
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Features\CompanyManagement\Services\CompanyService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class UnfollowCompanyMutation extends BaseMutation
@@ -18,7 +19,7 @@ class UnfollowCompanyMutation extends BaseMutation
     {
         try {
             // Obtener usuario autenticado
-            $user = auth()->user();
+            $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
                 throw new Error('Usuario no autenticado', null, null, null, null, null, [

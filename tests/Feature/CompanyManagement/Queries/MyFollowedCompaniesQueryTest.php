@@ -31,7 +31,7 @@ class MyFollowedCompaniesQueryTest extends TestCase
         Company::factory()->count(3)->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 myFollowedCompanies {
                     id
@@ -73,7 +73,7 @@ class MyFollowedCompaniesQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 myFollowedCompanies {
                     id
@@ -166,7 +166,7 @@ class MyFollowedCompaniesQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 myFollowedCompanies {
                     company {
@@ -201,7 +201,7 @@ class MyFollowedCompaniesQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 myFollowedCompanies {
                     id
@@ -263,7 +263,7 @@ class MyFollowedCompaniesQueryTest extends TestCase
         ]);
 
         // Act - user1 consulta sus empresas seguidas
-        $response = $this->actingAs($user1)->graphQL('
+        $response = $this->authenticateWithJWT($user1)->graphQL('
             query {
                 myFollowedCompanies {
                     company {

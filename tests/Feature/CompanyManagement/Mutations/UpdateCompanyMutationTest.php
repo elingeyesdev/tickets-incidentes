@@ -41,7 +41,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -85,7 +85,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -120,7 +120,7 @@ class UpdateCompanyMutationTest extends TestCase
         $input = ['name' => 'Hacked Name'];
 
         // Act
-        $response = $this->actingAs($companyAdmin)->graphQL('
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -146,7 +146,7 @@ class UpdateCompanyMutationTest extends TestCase
         $input = ['name' => 'New Name'];
 
         // Act
-        $response = $this->actingAs($agent)->graphQL('
+        $response = $this->authenticateWithJWT($agent)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -171,7 +171,7 @@ class UpdateCompanyMutationTest extends TestCase
         $input = ['name' => 'New Name'];
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -202,7 +202,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     name
@@ -251,7 +251,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     contactAddress
@@ -296,7 +296,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     businessHours
@@ -335,7 +335,7 @@ class UpdateCompanyMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     logoUrl
@@ -377,7 +377,7 @@ class UpdateCompanyMutationTest extends TestCase
         $input = ['name' => 'New Name'];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id
@@ -404,7 +404,7 @@ class UpdateCompanyMutationTest extends TestCase
         $input = ['name' => 'Updated Company'];
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation UpdateCompany($id: UUID!, $input: UpdateCompanyInput!) {
                 updateCompany(id: $id, input: $input) {
                     id

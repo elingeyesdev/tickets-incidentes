@@ -32,7 +32,7 @@ class CompanyQueryTest extends TestCase
         $company = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -88,7 +88,7 @@ class CompanyQueryTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -115,7 +115,7 @@ class CompanyQueryTest extends TestCase
         $company = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -146,7 +146,7 @@ class CompanyQueryTest extends TestCase
         $admin->assignRole('COMPANY_ADMIN', $company->id);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -178,7 +178,7 @@ class CompanyQueryTest extends TestCase
         $agent->assignRole('AGENT', $company->id);
 
         // Act
-        $response = $this->actingAs($agent)->graphQL('
+        $response = $this->authenticateWithJWT($agent)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -207,7 +207,7 @@ class CompanyQueryTest extends TestCase
         $company = Company::factory()->create(['status' => 'active']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -236,7 +236,7 @@ class CompanyQueryTest extends TestCase
         $company = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -329,7 +329,7 @@ class CompanyQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id
@@ -358,7 +358,7 @@ class CompanyQueryTest extends TestCase
         $company = Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query GetCompany($id: UUID!) {
                 company(id: $id) {
                     id

@@ -4,7 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Mutations;
 
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Remove Role Mutation
@@ -29,7 +29,7 @@ class RemoveRoleMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null)
     {
         // Authorization: Require PLATFORM_ADMIN or COMPANY_ADMIN
-        $user = Auth::user();
+        $user = JWTHelper::getAuthenticatedUser();
 
         if (!$user) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');

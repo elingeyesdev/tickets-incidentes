@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\Services\CompanyService;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class CreateCompanyMutation extends BaseMutation
@@ -19,7 +20,7 @@ class CreateCompanyMutation extends BaseMutation
     {
         try {
             // Obtener usuario autenticado (permisos manejados por directiva @auth)
-            $authenticatedUser = auth()->user();
+            $authenticatedUser = JWTHelper::getAuthenticatedUser();
 
             if (!$authenticatedUser) {
                 throw new Error('Usuario no autenticado', null, null, null, null, null, [

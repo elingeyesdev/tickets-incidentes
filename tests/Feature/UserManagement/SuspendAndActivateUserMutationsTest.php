@@ -70,7 +70,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJsonStructure([
@@ -115,7 +115,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJsonStructure([
@@ -156,7 +156,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $result = $response->json('data.suspendUser');
@@ -185,7 +185,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $result = $response->json('data.suspendUser');
@@ -219,7 +219,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -248,7 +248,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -325,7 +325,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -351,7 +351,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - SOLO userId, status, updatedAt
         $result = $response->json('data.suspendUser');
@@ -380,7 +380,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $fakeId];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -405,7 +405,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $fakeId];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -433,7 +433,7 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $newUpdatedAt = $response->json('data.suspendUser.updatedAt');
@@ -466,13 +466,13 @@ class SuspendAndActivateUserMutationsTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act - Suspender
-        $suspendResponse = $this->actingAsGraphQL($this->platformAdmin)
+        $suspendResponse = $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($suspendQuery, $variables);
 
         $this->assertEquals('SUSPENDED', $suspendResponse->json('data.suspendUser.status'));
 
         // Act - Activar
-        $activateResponse = $this->actingAsGraphQL($this->platformAdmin)
+        $activateResponse = $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($activateQuery, $variables);
 
         // Assert

@@ -81,7 +81,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([
@@ -133,7 +133,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -165,7 +165,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -205,7 +205,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([
@@ -252,7 +252,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -289,7 +289,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -360,7 +360,7 @@ class AssignRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([

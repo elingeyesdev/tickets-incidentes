@@ -93,7 +93,7 @@ class CompaniesQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query CompaniesExplore {
                 companies(context: EXPLORE, first: 10) {
                     ... on CompanyExploreList {
@@ -159,7 +159,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query CompaniesManagement {
                 companies(context: MANAGEMENT, first: 10) {
                     ... on CompanyFullList {
@@ -222,7 +222,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->count(2)->suspended()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query CompaniesFiltered {
                 companies(
                     context: EXPLORE
@@ -259,7 +259,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->create(['contact_country' => 'Peru']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query CompaniesFiltered($filters: CompanyFilters) {
                 companies(
                     context: EXPLORE
@@ -298,7 +298,7 @@ class CompaniesQueryTest extends TestCase
         CompanyFollower::create(['user_id' => $user->id, 'company_id' => $company2->id]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query FollowedCompanies($filters: CompanyFilters) {
                 companies(
                     context: EXPLORE
@@ -336,7 +336,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->create(['name' => 'Hardware Store']);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query SearchCompanies($search: String) {
                 companies(
                     context: EXPLORE
@@ -369,7 +369,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->count(25)->create();
 
         // Act - Primera página
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query CompaniesPaginated($first: Int, $page: Int) {
                 companies(
                     context: EXPLORE
@@ -404,7 +404,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->count(25)->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 companies(context: EXPLORE, first: 20) {
                     ... on CompanyExploreList {
@@ -428,7 +428,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->count(5)->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 companies(context: EXPLORE, first: 20) {
                     ... on CompanyExploreList {
@@ -457,7 +457,7 @@ class CompaniesQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 companies(context: EXPLORE) {
                     ... on CompanyExploreList {
@@ -483,7 +483,7 @@ class CompaniesQueryTest extends TestCase
         Company::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 companies(context: EXPLORE) {
                     ... on CompanyExploreList {

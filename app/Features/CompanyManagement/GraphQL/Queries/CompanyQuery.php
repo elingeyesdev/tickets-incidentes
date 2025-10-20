@@ -5,6 +5,7 @@ namespace App\Features\CompanyManagement\GraphQL\Queries;
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Features\CompanyManagement\Services\CompanyService;
 use App\Shared\GraphQL\Queries\BaseQuery;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class CompanyQuery extends BaseQuery
@@ -31,8 +32,8 @@ class CompanyQuery extends BaseQuery
             $company->load('admin.profile');
 
             // Calcular isFollowedByMe si el usuario está autenticado usando DataLoader
-            if (auth()->check()) {
-                $user = auth()->user();
+            if (JWTHelper::isAuthenticated()) {
+                $user = JWTHelper::getAuthenticatedUser();
 
                 // Usar DataLoader para evitar query individual
                 $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);

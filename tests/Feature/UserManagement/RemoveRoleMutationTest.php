@@ -75,7 +75,7 @@ class RemoveRoleMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([
@@ -110,7 +110,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Rol todavía existe en BD
         $roleStillExists = \App\Features\UserManagement\Models\UserRole::find($agentRole->id);
@@ -138,7 +138,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertTrue($response->json('data.removeRole'));
@@ -169,7 +169,7 @@ class RemoveRoleMutationTest extends TestCase
         ];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $agentRole->refresh();
@@ -197,7 +197,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->companyAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertTrue($response->json('data.removeRole'));
@@ -230,7 +230,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $otherRole->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->companyAdmin)->graphQL($query, $variables);
 
         // Assert - Debería fallar por permisos
         $this->assertNotNull($response->json('errors'));
@@ -261,7 +261,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -310,7 +310,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $fakeId];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -338,7 +338,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $agentRole->refresh();
@@ -363,7 +363,7 @@ class RemoveRoleMutationTest extends TestCase
             }
         ';
 
-        $this->actingAsGraphQL($this->platformAdmin)
+        $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($removeQuery, ['roleId' => $agentRole->id]);
 
         // Assert - Rol inactivo
@@ -391,7 +391,7 @@ class RemoveRoleMutationTest extends TestCase
             ],
         ];
 
-        $assignResponse = $this->actingAsGraphQL($this->platformAdmin)
+        $assignResponse = $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($assignQuery, $assignVariables);
 
         // Assert - Rol reactivado
@@ -421,7 +421,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Solo tiene rol USER activo
         $activeRoles = $this->targetUser->userRoles()
@@ -452,7 +452,7 @@ class RemoveRoleMutationTest extends TestCase
             ->where('role_code', 'AGENT')
             ->first();
 
-        $response1 = $this->actingAsGraphQL($this->platformAdmin)
+        $response1 = $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($query, ['roleId' => $agentRole->id]);
 
         $this->assertTrue($response1->json('data.removeRole'));
@@ -462,7 +462,7 @@ class RemoveRoleMutationTest extends TestCase
             ->where('role_code', 'PLATFORM_ADMIN')
             ->first();
 
-        $response2 = $this->actingAsGraphQL($this->platformAdmin)
+        $response2 = $this->authenticateWithJWT($this->platformAdmin)
             ->graphQL($query, ['roleId' => $adminRole->id]);
 
         // Assert
@@ -512,7 +512,7 @@ class RemoveRoleMutationTest extends TestCase
             ];
 
             // Act
-            $response = $this->actingAsGraphQL($this->platformAdmin)
+            $response = $this->authenticateWithJWT($this->platformAdmin)
                 ->graphQL($query, $variables);
 
             // Assert
@@ -543,7 +543,7 @@ class RemoveRoleMutationTest extends TestCase
         $variables = ['roleId' => $agentRole->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $result = $response->json('data.removeRole');

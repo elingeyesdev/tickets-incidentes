@@ -9,7 +9,7 @@ extend type Query {
     Incluye perfil, roles activos (roleContexts) y estadísticas
     """
     me: User!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\MeQuery")
 
     """
@@ -17,7 +17,7 @@ extend type Query {
     Para páginas de configuración y edición
     """
     myProfile: UserProfile!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\MyProfileQuery")
 
     """
@@ -35,7 +35,7 @@ extend type Query {
         """Registros por página"""
         first: Int = 15
     ): UserPaginator!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UsersQuery")
 
     """
@@ -44,7 +44,7 @@ extend type Query {
     Acceso según permisos del usuario autenticado
     """
     user(id: UUID!): User
-        @guard
+        @jwt
         @can(ability: "view", model: "User", find: "id")
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\UserQuery")
 
@@ -55,7 +55,7 @@ extend type Query {
     Cache de 1 hora para performance (cache privada por usuario)
     """
     availableRoles: [RoleInfo!]!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Queries\\AvailableRolesQuery")
 }
 
@@ -68,7 +68,7 @@ extend type Mutation {
     Rate limit: 30 actualizaciones por hora
     """
     updateMyProfile(input: UpdateProfileInput!): ProfileUpdatePayload!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyProfileMutation")
         @rateLimit(max: 30, window: 3600)
         @audit(action: "profile_update")
@@ -79,7 +79,7 @@ extend type Mutation {
     Rate limit: 50 actualizaciones por hora (más frecuente que perfil)
     """
     updateMyPreferences(input: PreferencesInput!): PreferencesUpdatePayload!
-        @guard
+        @jwt
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\UpdateMyPreferencesMutation")
         @rateLimit(max: 50, window: 3600)
         @audit(action: "preferences_update")
@@ -93,7 +93,7 @@ extend type Mutation {
     Solo accesible por platform admins
     """
     suspendUser(id: UUID!, reason: String): UserStatusPayload!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\SuspendUserMutation")
         @audit(action: "user_suspend", includePayload: true)
 
@@ -103,7 +103,7 @@ extend type Mutation {
     Solo accesible por platform admins
     """
     activateUser(id: UUID!): UserStatusPayload!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\ActivateUserMutation")
         @audit(action: "user_activate")
 
@@ -113,7 +113,7 @@ extend type Mutation {
     Solo accesible por platform admins
     """
     deleteUser(id: UUID!, reason: String): Boolean!
-        @guard(requires: [PLATFORM_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\DeleteUserMutation")
         @audit(action: "user_delete", includePayload: true)
 
@@ -127,7 +127,7 @@ extend type Mutation {
     - Retorna información completa del resultado
     """
     assignRole(input: AssignRoleInput!): UserRoleResult!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\AssignRoleMutation")
         @rateLimit(max: 100, window: 3600)
         @audit(action: "role_assign", includePayload: true)
@@ -138,7 +138,7 @@ extend type Mutation {
     Para reactivarlo, usar assignRole con los mismos parámetros
     """
     removeRole(roleId: UUID!, reason: String): Boolean!
-        @guard(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
+        @jwt(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
         @field(resolver: "App\\Features\\UserManagement\\GraphQL\\Mutations\\RemoveRoleMutation")
         @audit(action: "role_remove", includePayload: true)
 }

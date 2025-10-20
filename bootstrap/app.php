@@ -7,7 +7,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
+        web: __DIR__.'/../routes/web-jwt-pure.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
@@ -19,12 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
-        // Registrar middleware aliases para protección de rutas
+        // Registrar middleware aliases para protección de rutas (JWT Pure)
         $middleware->alias([
-            'auth' => \App\Http\Middleware\GraphQLJWTMiddleware::class,
-            'role' => \App\Shared\Http\Middleware\EnsureUserHasRole::class,
-            'onboarding.completed' => \App\Shared\Http\Middleware\EnsureOnboardingCompleted::class,
-            'guest' => \App\Shared\Http\Middleware\RedirectIfAuthenticated::class,
+            'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,
+            'jwt.role' => \App\Http\Middleware\JWT\JWTRoleMiddleware::class,
+            'jwt.onboarding' => \App\Http\Middleware\JWT\JWTOnboardingMiddleware::class,
+            'jwt.guest' => \App\Http\Middleware\JWT\JWTGuestMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

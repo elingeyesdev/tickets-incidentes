@@ -66,7 +66,7 @@ class DeleteUserMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([
@@ -97,7 +97,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $response->assertJson([
@@ -139,7 +139,7 @@ class DeleteUserMutationTest extends TestCase
             ];
 
             // Act
-            $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+            $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
             // Assert
             $this->assertTrue($response->json('data.deleteUser'));
@@ -162,7 +162,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertTrue($response->json('data.deleteUser'));
@@ -195,7 +195,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -222,7 +222,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -267,7 +267,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $fakeId];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -289,7 +289,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->platformAdmin->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Debería fallar por lógica de negocio
         // TODO: Implementar esta validación en el service si aún no existe
@@ -312,7 +312,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $result = $response->json('data.deleteUser');
@@ -336,7 +336,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Perfil todavía accesible
         $deletedUser = User::withTrashed()->find($this->targetUser->id);
@@ -359,7 +359,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Roles todavía accesibles
         $deletedUser = User::withTrashed()->find($this->targetUser->id);
@@ -385,7 +385,7 @@ class DeleteUserMutationTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertTrue($response->json('data.deleteUser'));
@@ -413,7 +413,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertTrue($response->json('data.deleteUser'));
@@ -441,7 +441,7 @@ class DeleteUserMutationTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->targetUser->refresh();

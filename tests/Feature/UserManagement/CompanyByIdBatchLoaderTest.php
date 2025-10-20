@@ -75,7 +75,7 @@ class CompanyByIdBatchLoaderTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $response->assertOk();
@@ -158,7 +158,7 @@ class CompanyByIdBatchLoaderTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $response->assertOk();
@@ -209,7 +209,7 @@ class CompanyByIdBatchLoaderTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->testUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->testUser)->graphQL($query);
 
         // Assert
         $response->assertOk();

@@ -2,9 +2,9 @@
 
 namespace App\Shared\Http\Middleware;
 
+use App\Shared\Helpers\JWTHelper;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Redirige usuarios ya autenticados lejos de páginas públicas (login, register, etc.)
  * hacia su dashboard apropiado según su rol principal.
+ *
+ * Uses JWT authentication via JWTHelper.
  *
  * Uso en rutas:
  * Route::middleware(['guest'])->group(function () { ... });
@@ -28,20 +30,18 @@ class RedirectIfAuthenticated
      */
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
-        $guards = empty($guards) ? [null] : $guards;
+        // Check if user is authenticated via JWT
+        try {
+            $user = JWTHelper::getAuthenticatedUser();
 
-        foreach ($guards as $guard) {
-            if (Auth::guard($guard)->check()) {
-                $user = Auth::guard($guard)->user();
+            // User is authenticated, redirect to dashboard
+            $dashboardPath = $this->getDashboardPath($user);
+            return redirect($dashboardPath);
 
-                // Obtener el dashboard path según el rol principal del usuario
-                $dashboardPath = $this->getDashboardPath($user);
-
-                return redirect($dashboardPath);
-            }
+        } catch (\Exception $e) {
+            // User not authenticated, allow access to guest route
+            return $next($request);
         }
-
-        return $next($request);
     }
 
     /**

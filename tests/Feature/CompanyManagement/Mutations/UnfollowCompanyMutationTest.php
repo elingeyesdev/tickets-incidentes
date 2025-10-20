@@ -38,7 +38,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -73,7 +73,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -95,7 +95,7 @@ class UnfollowCompanyMutationTest extends TestCase
         // Usuario NO sigue la empresa
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -120,7 +120,7 @@ class UnfollowCompanyMutationTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -168,7 +168,7 @@ class UnfollowCompanyMutationTest extends TestCase
         $initialFollowersCount = CompanyFollower::where('company_id', $company->id)->count();
 
         // Act
-        $this->actingAs($user)->graphQL('
+        $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -195,7 +195,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Dejar de seguir
-        $this->actingAs($user)->graphQL('
+        $this->authenticateWithJWT($user)->graphQL('
             mutation UnfollowCompany($companyId: UUID!) {
                 unfollowCompany(companyId: $companyId)
             }
@@ -204,7 +204,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Act - Seguir nuevamente
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             mutation FollowCompany($companyId: UUID!) {
                 followCompany(companyId: $companyId) {
                     success

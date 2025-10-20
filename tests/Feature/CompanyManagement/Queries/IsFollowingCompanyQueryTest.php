@@ -35,7 +35,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }
@@ -61,7 +61,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         // No crear CompanyFollower
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }
@@ -104,7 +104,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         $fakeId = '550e8400-e29b-41d4-a716-446655440999';
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }
@@ -136,7 +136,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         ]);
 
         // Act - Verificar company2
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }
@@ -167,7 +167,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         ]);
 
         // Act - user1 consulta
-        $response1 = $this->actingAs($user1)->graphQL('
+        $response1 = $this->authenticateWithJWT($user1)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }
@@ -176,7 +176,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         ]);
 
         // Act - user2 consulta
-        $response2 = $this->actingAs($user2)->graphQL('
+        $response2 = $this->authenticateWithJWT($user2)->graphQL('
             query IsFollowing($companyId: UUID!) {
                 isFollowingCompany(companyId: $companyId)
             }

@@ -2,14 +2,15 @@
 
 namespace App\Shared\Traits;
 
+use App\Shared\Helpers\JWTHelper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Trait Auditable
  *
  * Rastrea automáticamente quién creó/actualizó/eliminó un registro.
  * Guarda user_id del usuario autenticado en campos específicos.
+ * Uses JWT authentication via JWTHelper.
  *
  * @usage
  * ```php
@@ -33,23 +34,38 @@ trait Auditable
     {
         // Registrar quién creó el registro
         static::creating(function (Model $model) {
-            if (Auth::check() && $model->hasAttribute('created_by_id')) {
-                $model->created_by_id = Auth::id();
+            if ($model->hasAttribute('created_by_id')) {
+                try {
+                    $userId = JWTHelper::getUserId();
+                    $model->created_by_id = $userId;
+                } catch (\Exception $e) {
+                    // Allow creation without authenticated user (e.g., seeders, console commands)
+                }
             }
         });
 
         // Registrar quién actualizó el registro
         static::updating(function (Model $model) {
-            if (Auth::check() && $model->hasAttribute('updated_by_id')) {
-                $model->updated_by_id = Auth::id();
+            if ($model->hasAttribute('updated_by_id')) {
+                try {
+                    $userId = JWTHelper::getUserId();
+                    $model->updated_by_id = $userId;
+                } catch (\Exception $e) {
+                    // Allow updates without authenticated user
+                }
             }
         });
 
         // Registrar quién eliminó el registro (soft delete)
         static::deleting(function (Model $model) {
-            if (Auth::check() && $model->hasAttribute('deleted_by_id')) {
-                $model->deleted_by_id = Auth::id();
-                $model->save();
+            if ($model->hasAttribute('deleted_by_id')) {
+                try {
+                    $userId = JWTHelper::getUserId();
+                    $model->deleted_by_id = $userId;
+                    $model->save();
+                } catch (\Exception $e) {
+                    // Allow deletes without authenticated user
+                }
             }
         });
     }

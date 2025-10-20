@@ -5,6 +5,7 @@ namespace App\Features\CompanyManagement\GraphQL\Queries;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Shared\GraphQL\Queries\BaseQuery;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class CompaniesQuery extends BaseQuery
@@ -69,8 +70,8 @@ class CompaniesQuery extends BaseQuery
                 // TODO: Implementar cuando la funcionalidad de tickets esté lista
             }
 
-            if (isset($filters['followedByMe']) && $filters['followedByMe'] === true && auth()->check()) {
-                $user = auth()->user();
+            if (isset($filters['followedByMe']) && $filters['followedByMe'] === true && JWTHelper::isAuthenticated()) {
+                $user = JWTHelper::getAuthenticatedUser();
                 $followedIds = $this->followService->getFollowedCompanies($user)->pluck('id')->toArray();
                 $query->whereIn('id', $followedIds);
             }
@@ -91,8 +92,8 @@ class CompaniesQuery extends BaseQuery
             $companies = $query->skip($offset)->take($first)->get();
 
             // Calcular isFollowedByMe para contexto EXPLORE usando DataLoader (evita N+1)
-            if ($context === 'EXPLORE' && auth()->check()) {
-                $user = auth()->user();
+            if ($context === 'EXPLORE' && JWTHelper::isAuthenticated()) {
+                $user = JWTHelper::getAuthenticatedUser();
 
                 // Usar DataLoader para cargar todos los company IDs seguidos en 1 query
                 $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);

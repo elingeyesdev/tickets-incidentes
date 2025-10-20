@@ -4,6 +4,7 @@ namespace App\Features\UserManagement\GraphQL\Mutations;
 
 use App\Features\UserManagement\Services\UserService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Activate User Mutation V10.1
@@ -28,7 +29,7 @@ class ActivateUserMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null): array
     {
         // Authorization: Require PLATFORM_ADMIN only
-        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $authUser = JWTHelper::getAuthenticatedUser();
 
         if (!$authUser) {
             throw new \Illuminate\Auth\AuthenticationException('Unauthenticated');

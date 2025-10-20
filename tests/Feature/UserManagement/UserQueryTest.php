@@ -108,7 +108,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Estructura completa
         $response->assertJsonStructure([
@@ -175,7 +175,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Misma estructura que 'me'
         $user = $response->json('data.user');
@@ -212,7 +212,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->companyAdmin)->graphQL($query, $variables);
 
         // Assert
         $user = $response->json('data.user');
@@ -245,7 +245,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $otherUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->companyAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->companyAdmin)->graphQL($query, $variables);
 
         // Assert - Debe fallar por permisos
         $this->assertNotNull($response->json('errors'));
@@ -275,7 +275,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -326,7 +326,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $fakeId];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -358,7 +358,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $roleContexts = $response->json('data.user.roleContexts');
@@ -388,7 +388,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert
         $user = $response->json('data.user');
@@ -430,7 +430,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->platformAdmin)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->platformAdmin)->graphQL($query, $variables);
 
         // Assert - Todos los campos necesarios para página de detalle
         $user = $response->json('data.user');
@@ -461,7 +461,7 @@ class UserQueryTest extends TestCase
         $variables = ['id' => $this->targetUser->id];
 
         // Act
-        $response = $this->actingAsGraphQL($this->targetUser)->graphQL($query, $variables);
+        $response = $this->authenticateWithJWT($this->targetUser)->graphQL($query, $variables);
 
         // Assert - Debe funcionar (puede verse a sí mismo)
         $user = $response->json('data.user');

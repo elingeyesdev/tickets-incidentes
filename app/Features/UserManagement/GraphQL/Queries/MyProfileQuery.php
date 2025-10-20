@@ -5,7 +5,7 @@ namespace App\Features\UserManagement\GraphQL\Queries;
 use App\Features\UserManagement\Services\ProfileService;
 use App\Shared\GraphQL\Queries\BaseQuery;
 use GraphQL\Error\Error;
-use Illuminate\Support\Facades\Auth;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * My Profile Query
@@ -22,7 +22,7 @@ class MyProfileQuery extends BaseQuery
     public function __invoke($root, array $args)
     {
         // Obtener usuario autenticado
-        $authUser = Auth::user();
+        $authUser = JWTHelper::getAuthenticatedUser();
 
         if (!$authUser) {
             throw new Error('Usuario no autenticado');

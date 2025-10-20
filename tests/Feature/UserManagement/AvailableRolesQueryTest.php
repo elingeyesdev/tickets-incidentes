@@ -54,7 +54,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $response->assertJsonStructure([
@@ -95,7 +95,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = $response->json('data.availableRoles');
@@ -124,7 +124,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = collect($response->json('data.availableRoles'));
@@ -153,7 +153,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = collect($response->json('data.availableRoles'));
@@ -182,7 +182,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = $response->json('data.availableRoles');
@@ -210,7 +210,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = collect($response->json('data.availableRoles'));
@@ -241,7 +241,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert
         $roles = $response->json('data.availableRoles');
@@ -277,7 +277,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($companyAdmin)->graphQL($query);
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL($query);
 
         // Assert
         $roles = $response->json('data.availableRoles');
@@ -305,7 +305,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($regularUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($regularUser)->graphQL($query);
 
         // Assert
         $this->assertNotNull($response->json('errors'));
@@ -351,7 +351,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert - Campos necesarios para selector
         $roles = $response->json('data.availableRoles');
@@ -380,7 +380,7 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act
-        $response = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert - Puede determinar qué roles necesitan companyId
         $roles = collect($response->json('data.availableRoles'));
@@ -410,8 +410,8 @@ class AvailableRolesQueryTest extends TestCase
         ';
 
         // Act - Llamar dos veces
-        $response1 = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
-        $response2 = $this->actingAsGraphQL($this->adminUser)->graphQL($query);
+        $response1 = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
+        $response2 = $this->authenticateWithJWT($this->adminUser)->graphQL($query);
 
         // Assert - Mismo orden
         $roles1 = collect($response1->json('data.availableRoles'))->pluck('code')->toArray();

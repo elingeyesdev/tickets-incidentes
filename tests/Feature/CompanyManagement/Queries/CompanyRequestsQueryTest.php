@@ -32,7 +32,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->count(2)->create(['status' => 'approved']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query {
                 companyRequests {
                     id
@@ -71,7 +71,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->create();
 
         // Act
-        $response = $this->actingAs($companyAdmin)->graphQL('
+        $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             query {
                 companyRequests {
                     id
@@ -91,7 +91,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->create();
 
         // Act
-        $response = $this->actingAs($user)->graphQL('
+        $response = $this->authenticateWithJWT($user)->graphQL('
             query {
                 companyRequests {
                     id
@@ -113,7 +113,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->create(['status' => 'rejected']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query CompanyRequests($status: CompanyRequestStatus) {
                 companyRequests(status: $status) {
                     id
@@ -142,7 +142,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->count(3)->create(['status' => 'approved']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query CompanyRequests($status: CompanyRequestStatus) {
                 companyRequests(status: $status) {
                     id
@@ -171,7 +171,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->count(2)->create(['status' => 'rejected']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query CompanyRequests($status: CompanyRequestStatus) {
                 companyRequests(status: $status) {
                     id
@@ -201,7 +201,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->create(['status' => 'rejected']);
 
         // Act - Sin filtro
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query {
                 companyRequests {
                     id
@@ -229,7 +229,7 @@ class CompanyRequestsQueryTest extends TestCase
         CompanyRequest::factory()->count(20)->create(['status' => 'pending']);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query CompanyRequests($first: Int) {
                 companyRequests(first: $first) {
                     id
@@ -256,7 +256,7 @@ class CompanyRequestsQueryTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             query {
                 companyRequests {
                     id
