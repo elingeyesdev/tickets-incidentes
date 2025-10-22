@@ -10,6 +10,7 @@
 
 // Exportar la instancia singleton del TokenManager
 export { TokenManager } from './TokenManager';
+export { PersistenceService } from './PersistenceService';
 export { TokenRefreshService } from './TokenRefreshService';
 
 // Exportar constantes y configuraciones
