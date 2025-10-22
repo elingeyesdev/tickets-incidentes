@@ -78,18 +78,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // SESSION DETECTION: Initialize authentication from TokenManager on mount
     useEffect(() => {
         const initializeAuth = async () => {
+            // Wait for the TokenManager to be ready before proceeding.
+            await TokenManager.onReady();
+
+            console.log('[DIAGNOSTIC] 1. AuthGuard mounted. Starting session verification...');
+
             // Check if a valid token exists in TokenManager
             const token = TokenManager.getAccessTokenObject();
             const validation = TokenManager.validateToken();
 
             if (token && validation.isValid) {
+                console.log('[DIAGNOSTIC] 2. Found valid token in persistence. Verifying with backend...');
                 // Valid token exists - fetch user data from server
                 try {
                     const result = await getAuthStatus();
 
-                    console.log('[AuthContext] Session detected, fetching user data:', result.data);
+                    console.log('[DIAGNOSTIC] 3. Backend verification response received:', result);
 
                     if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
+                        console.log('[DIAGNOSTIC] 4a. Success. Sending SESSION_DETECTED to state machine.');
                         // Notify machine about detected session
                         send({
                             type: 'SESSION_DETECTED',
@@ -98,14 +105,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                             lastSelectedRole: TokenManager.getLastSelectedRole(),
                         });
                     } else {
+                        console.warn('[DIAGNOSTIC] 4b. Failure. Token was valid locally, but backend says unauthenticated. Sending SESSION_INVALID.', result.data);
                         // Token exists but server says not authenticated
                         send({ type: 'SESSION_INVALID' });
                     }
                 } catch (error) {
-                    console.error('[AuthContext] Error fetching user data:', error);
+                    console.error('[DIAGNOSTIC] 4c. CRITICAL: Error during backend verification query:', error);
                     send({ type: 'SESSION_INVALID' });
                 }
             } else {
+                console.log('[DIAGNOSTIC] 2b. No valid token found in persistence. Sending SESSION_INVALID.');
                 // No valid token found
                 send({ type: 'SESSION_INVALID' });
             }

@@ -7,7 +7,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
-import { OnboardingRoute } from '@/Components';
+import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, Input, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale } from '@/contexts';
@@ -18,14 +18,14 @@ export default function CompleteProfile() {
     const [progressPercentage, setProgressPercentage] = useState(0);
 
     return (
-        <OnboardingRoute>
+        <AuthGuard>
             <OnboardingLayout title="Completar Perfil">
                 <CompleteProfileContent
                     setProgressPercentage={setProgressPercentage}
                     progressPercentage={progressPercentage}
                 />
             </OnboardingLayout>
-        </OnboardingRoute>
+        </AuthGuard>
     );
 }
 

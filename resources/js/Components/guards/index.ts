@@ -3,5 +3,3 @@
  */
 
 export { PublicRoute } from './PublicRoute';
-export { OnboardingRoute } from './OnboardingRoute';
-export { ProtectedRoute } from './ProtectedRoute';

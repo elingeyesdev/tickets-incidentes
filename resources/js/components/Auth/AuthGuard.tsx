@@ -2,75 +2,71 @@ import React, { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { useAuth } from '@/contexts';
 import FullscreenLoader from '@/components/Shared/FullscreenLoader';
+import { RoleCode } from '@/types';
 
 interface AuthGuardProps {
     children: React.ReactNode;
+    allowedRoles?: RoleCode[];
 }
 
 /**
- * AuthGuard
+ * AuthGuard - The Single Source of Truth for Protecting Private Routes.
  *
- * Este componente actúa como un guardián para las rutas protegidas. Se asegura de que
- * el usuario esté autenticado y haya completado todos los pasos preliminares necesarios
- * (como el onboarding y la selección de rol) antes de permitir el acceso a una página.
- *
- * Se ejecuta en cada carga de página dentro de un layout protegido.
+ * This component centralizes all authorization logic:
+ * 1. Verifies the user is authenticated.
+ * 2. Verifies onboarding is complete.
+ * 3. Verifies the user has selected a role if they have multiple.
+ * 4. Verifies the selected role is allowed to access the current page.
  */
-export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
+export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles = [] }) => {
     const {
         user,
         isAuthenticated,
         loading: authLoading,
         hasCompletedOnboarding,
+        lastSelectedRole,
     } = useAuth();
 
-    // Estado interno para gestionar la lógica de redirección y evitar flashes de contenido
     const [isVerifying, setIsVerifying] = useState(true);
 
     useEffect(() => {
-        // No ejecutar las verificaciones hasta que el estado de autenticación principal esté resuelto
-        if (authLoading) {
+        if (authLoading) return;
+
+        if (!isAuthenticated) {
+            router.visit('/login', { replace: true });
             return;
         }
 
-        // Si no está autenticado, redirigir a login inmediatamente.
-        if (!isAuthenticated) {
-            router.visit('/login', { replace: true });
-            return; // Detener la ejecución aquí
-        }
-
-        // En este punto, el usuario está autenticado. Ahora, ejecutar las verificaciones secuenciales.
         if (user) {
-            // 1. Verificar si ha completado el onboarding.
+            // 1. Onboarding Check
             if (!hasCompletedOnboarding()) {
                 router.visit('/onboarding/profile', { replace: true });
-                return; // Detener la ejecución aquí
+                return;
             }
 
-            // 2. Verificar la selección de rol para usuarios con múltiples roles.
+            // 2. Role Selection Check for Multi-Role users
             const multiRole = user.roleContexts && user.roleContexts.length > 1;
-            
-            // TODO: El `lastSelectedRole` necesita ser expuesto desde `useAuth`.
-            // Por ahora, asumimos que está en el objeto `user` para implementar la lógica.
-            const lastSelectedRole = (user as any).lastSelectedRole;
-
             if (multiRole && !lastSelectedRole) {
                 router.visit('/role-selector', { replace: true });
-                return; // Detener la ejecución aquí
+                return;
+            }
+
+            // 3. Role Permission Check
+            if (allowedRoles.length > 0 && lastSelectedRole) {
+                if (!allowedRoles.includes(lastSelectedRole as RoleCode)) {
+                    router.visit('/unauthorized', { replace: true });
+                    return;
+                }
             }
         }
 
-        // Si todas las verificaciones pasan, detener el estado de verificación y permitir que el contenido se renderice.
         setIsVerifying(false);
 
-    }, [authLoading, isAuthenticated, user, hasCompletedOnboarding]);
+    }, [authLoading, isAuthenticated, user, hasCompletedOnboarding, lastSelectedRole, allowedRoles]);
 
-    // Mientras el AuthContext está cargando o mientras estamos verificando, mostrar un loader.
-    // Esto previene cualquier "flash" del contenido protegido.
     if (authLoading || isVerifying) {
-        return <FullscreenLoader message="Verificando sesión..." />;
+        return <FullscreenLoader message="Verificando acceso..." />;
     }
 
-    // Todas las verificaciones pasaron, renderizar el contenido protegido.
     return <>{children}</>;
 };

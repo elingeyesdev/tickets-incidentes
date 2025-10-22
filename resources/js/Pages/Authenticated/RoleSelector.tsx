@@ -1,11 +1,3 @@
-/**
- * Role Selector Page - Zona Autenticada (Onboarding)
- * Permite a usuarios con múltiples roles elegir con cuál desean trabajar
- * 
- * IMPORTANTE: Esta página usa OnboardingLayout (igual que VerifyEmail, CompleteProfile, ConfigurePreferences)
- * Los providers globales están en app.tsx
- */
-
 import { useState, useEffect } from 'react';
 import {
     User,
@@ -15,50 +7,36 @@ import {
     Building,
     Sparkles
 } from 'lucide-react';
-import { ProtectedRoute } from '@/Components';
+import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { useAuth } from '@/contexts';
 import type { RoleContext } from '@/types/graphql';
 
 function RoleSelectorContent() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, selectRole } = useAuth();
     
     const [roleContexts, setRoleContexts] = useState<RoleContext[]>([]);
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {
-        // Si no hay usuario, redirigir a login
-        if (!authLoading && !user) {
-            window.location.href = '/login';
-            return;
-        }
-
-        // Obtener roleContexts del usuario autenticado
         if (user && user.roleContexts) {
             setRoleContexts(user.roleContexts);
             
-            // Si solo tiene 1 rol, redirigir automáticamente
+            // AuthGuard now handles redirection for single-role users, but this is a good fallback.
             if (user.roleContexts.length === 1) {
                 handleRoleSelection(user.roleContexts[0]);
             }
         }
-    }, [user, authLoading]);
+    }, [user]);
 
     const handleRoleSelection = (role: RoleContext) => {
-        setSelectedRole(role.roleCode);
         setIsRedirecting(true);
+        setSelectedRole(role.roleCode);
 
-        // Guardar rol seleccionado en localStorage para mantener contexto
-        localStorage.setItem('selectedRole', JSON.stringify({
-            roleCode: role.roleCode,
-            companyId: role.company?.id || null,
-        }));
-
-        // Redirigir al dashboard correspondiente
-        setTimeout(() => {
-            window.location.href = role.dashboardPath;
-        }, 400);
+        // Use the centralized selectRole function from AuthContext
+        // It handles state update, persistence, and redirection.
+        selectRole(role.roleCode);
     };
 
     const getRoleIcon = (roleCode: string) => {
@@ -91,7 +69,6 @@ function RoleSelectorContent() {
         return glows[roleCode] || 'hover:shadow-gray-500/50';
     };
 
-    // Loading state - El OnboardingLayout ya maneja la autenticación
     if (authLoading || !user) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -103,7 +80,6 @@ function RoleSelectorContent() {
         );
     }
 
-    // Sin roles - Simplificado
     if (roleContexts.length === 0) {
         return (
             <div className="max-w-md mx-auto text-center">
@@ -129,7 +105,6 @@ function RoleSelectorContent() {
 
     return (
         <div className="w-full max-w-5xl mx-auto">
-            {/* Header - Más profesional con énfasis en bienvenida */}
             <div className="text-center mb-10 opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
                 <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-sm mb-8">
                     <Sparkles className="h-5 w-5" />
@@ -147,7 +122,6 @@ function RoleSelectorContent() {
                 </p>
             </div>
 
-            {/* Grid de Roles - Una columna única */}
             <div className="grid grid-cols-1 gap-6 mb-8 max-w-3xl mx-auto">
                 {roleContexts.map((role, index) => (
                     <button
@@ -169,7 +143,6 @@ function RoleSelectorContent() {
                             p-5 text-left
                         `}
                     >
-                        {/* Gradient Background */}
                         <div className={`
                             absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${getRoleGradient(role.roleCode)}
                             opacity-10 rounded-full blur-3xl group-hover:opacity-20 transition-opacity
@@ -177,7 +150,6 @@ function RoleSelectorContent() {
                         `} />
 
                         <div className="relative flex items-start gap-4">
-                            {/* Icon */}
                             <div className={`
                                 flex-shrink-0 w-14 h-14 rounded-lg 
                                 bg-gradient-to-br ${getRoleGradient(role.roleCode)}
@@ -187,13 +159,11 @@ function RoleSelectorContent() {
                                 {getRoleIcon(role.roleCode)}
                             </div>
 
-                            {/* Content */}
                             <div className="flex-1 min-w-0">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     {role.roleName}
                                 </h3>
                                 
-                                {/* Company */}
                                 {role.company && (
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
                                         <Building className="h-4 w-4 flex-shrink-0" />
@@ -201,7 +171,6 @@ function RoleSelectorContent() {
                                     </div>
                                 )}
 
-                                {/* Description */}
                                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                                     {role.roleCode === 'USER' && 'Crea y gestiona tus tickets de soporte con facilidad'}
                                     {role.roleCode === 'AGENT' && 'Atiende tickets y brinda soporte a usuarios'}
@@ -209,7 +178,6 @@ function RoleSelectorContent() {
                                     {role.roleCode === 'PLATFORM_ADMIN' && 'Control total sobre la plataforma y todas las empresas'}
                                 </p>
 
-                                {/* Loading indicator */}
                                 {isRedirecting && selectedRole === role.roleCode && (
                                     <div className="mt-3 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
                                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
@@ -218,7 +186,6 @@ function RoleSelectorContent() {
                                 )}
                             </div>
 
-                            {/* Arrow Indicator */}
                             <div className="flex-shrink-0 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all">
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -229,7 +196,6 @@ function RoleSelectorContent() {
                 ))}
             </div>
 
-            {/* Footer Info */}
             <div className="text-center opacity-0 animate-[fadeIn_0.6s_ease-out_0.6s_forwards]">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                     💡 Puedes cambiar de rol en cualquier momento desde el menú de usuario
@@ -239,14 +205,12 @@ function RoleSelectorContent() {
     );
 }
 
-// Exportación usando OnboardingLayout (igual que VerifyEmail, CompleteProfile, ConfigurePreferences)
 export default function RoleSelector() {
     return (
-        <ProtectedRoute>
+        <AuthGuard>
             <OnboardingLayout title="Seleccionar Rol">
                 <RoleSelectorContent />
             </OnboardingLayout>
-        </ProtectedRoute>
+        </AuthGuard>
     );
 }
-

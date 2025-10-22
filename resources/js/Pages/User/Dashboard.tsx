@@ -4,7 +4,7 @@
  */
 
 import { Head } from '@inertiajs/react';
-import { ProtectedRoute } from '@/Components/guards';
+import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { UserLayout } from '@/Layouts/User/UserLayout';
 import { Card } from '@/Components/ui';
 import { Ticket, Plus, Clock, CheckCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ import { RoleCode } from '@/types';
 
 export default function UserDashboard() {
     return (
-        <ProtectedRoute allowedRoles={[RoleCode.User]}>
+        <AuthGuard allowedRoles={[RoleCode.User]}>
             <UserLayout title="Mis Tickets">
                 <Head title="Dashboard - Usuario" />
 
@@ -93,6 +93,6 @@ export default function UserDashboard() {
                     </div>
                 </Card>
             </UserLayout>
-        </ProtectedRoute>
+        </AuthGuard>
     );
 }

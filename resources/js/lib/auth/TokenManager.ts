@@ -30,8 +30,16 @@ class TokenManagerClass {
 
     private isRefreshing = false;
 
+    // Promise-based signal for async initialization
+    private resolveInitialization: (() => void) | null = null;
+    private initializationPromise: Promise<void>;
+
     constructor() {
         authLogger.info('TokenManager initializing...');
+        this.initializationPromise = new Promise(resolve => {
+            this.resolveInitialization = resolve;
+        });
+
         this.loadTokenFromPersistence().then(() => {
             authLogger.info('TokenManager finished async initialization.');
         });
@@ -157,6 +165,13 @@ class TokenManagerClass {
         return () => this.expiryCallbacks.delete(callback);
     }
 
+    /**
+     * Returns a promise that resolves when the async initialization is complete.
+     */
+    public onReady(): Promise<void> {
+        return this.initializationPromise;
+    }
+
     public getLastSelectedRole(): string | null {
         return this.lastSelectedRole;
     }
@@ -194,6 +209,11 @@ class TokenManagerClass {
             }
         } else {
             authLogger.info('No active session found in persistence layer.');
+        }
+
+        // Signal that initialization is complete
+        if (this.resolveInitialization) {
+            this.resolveInitialization();
         }
     }
 

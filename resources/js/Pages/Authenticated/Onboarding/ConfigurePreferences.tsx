@@ -4,9 +4,10 @@
  */
 
 import { useState, useEffect, FormEvent } from 'react';
+import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { Globe, Palette, Bell, CheckCircle2 } from 'lucide-react';
-import { OnboardingRoute } from '@/Components';
+import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
@@ -17,14 +18,14 @@ export default function ConfigurePreferences() {
     const [progressPercentage, setProgressPercentage] = useState(50); // Empieza en 50% (paso anterior completado)
 
     return (
-        <OnboardingRoute>
+        <AuthGuard>
             <OnboardingLayout title="Configurar Preferencias">
                 <ConfigurePreferencesContent
                     setProgressPercentage={setProgressPercentage}
                     progressPercentage={progressPercentage}
                 />
             </OnboardingLayout>
-        </OnboardingRoute>
+        </AuthGuard>
     );
 }
 
@@ -132,11 +133,11 @@ function ConfigurePreferencesContent({
                     const roleContexts = user?.roleContexts || [];
 
                     if (roleContexts.length === 1) {
-                        window.location.href = roleContexts[0].dashboardPath;
+                        router.visit(roleContexts[0].dashboardPath);
                     } else if (roleContexts.length > 1) {
-                        window.location.href = '/role-selector';
+                        router.visit('/role-selector');
                     } else {
-                        window.location.href = '/tickets';
+                        router.visit('/tickets');
                     }
                 }, 3500);
             } catch (error) {
@@ -213,13 +214,13 @@ function ConfigurePreferencesContent({
 
                 if (roleContexts.length === 1) {
                     // Un solo rol: redirigir directamente
-                    window.location.href = roleContexts[0].dashboardPath;
+                    router.visit(roleContexts[0].dashboardPath);
                 } else if (roleContexts.length > 1) {
                     // Múltiples roles: mostrar selector
-                    window.location.href = '/role-selector';
+                    router.visit('/role-selector');
                 } else {
                     // Sin roles: redirigir a /tickets por defecto
-                    window.location.href = '/tickets';
+                    router.visit('/tickets');
                 }
             }, 3500);
         } catch (error) {
@@ -240,11 +241,11 @@ function ConfigurePreferencesContent({
         const roleContexts = user?.roleContexts || [];
         
         if (roleContexts.length === 1) {
-            window.location.href = roleContexts[0].dashboardPath;
+            router.visit(roleContexts[0].dashboardPath);
         } else if (roleContexts.length > 1) {
-            window.location.href = '/role-selector';
+            router.visit('/role-selector');
         } else {
-            window.location.href = '/tickets';
+            router.visit('/tickets');
         }
     };
 

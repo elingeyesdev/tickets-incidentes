@@ -10,7 +10,6 @@ import {
     useTheme, 
     useLocale 
 } from '@/contexts';
-import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { Sidebar, type SidebarSection } from '@/Components/navigation/Sidebar';
 import { Button } from '@/Components/ui';
 import { RoleSwitcher } from '@/components/Auth/RoleSwitcher';
@@ -132,11 +131,9 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({
 
                     {/* Page Content */}
                     <main className="flex-1 overflow-y-auto p-6">
-                        <AuthGuard>
-                            <div className="max-w-7xl mx-auto">
-                                {children}
-                            </div>
-                        </AuthGuard>
+                        <div className="max-w-7xl mx-auto">
+                            {children}
+                        </div>
                     </main>
                 </div>
             </div>
