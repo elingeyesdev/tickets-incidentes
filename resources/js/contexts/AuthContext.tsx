@@ -20,6 +20,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { useMachine } from '@xstate/react';
+import { router } from '@inertiajs/react';
 import { apolloClient } from '@/lib/apollo/client';
 import { authMachine } from '@/lib/auth/AuthMachine';
 import { TokenManager } from '@/lib/auth/TokenManager';
@@ -124,7 +125,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     // Session expired in another tab - force logout
                     send({ type: 'LOGOUT' });
                     TokenManager.clearToken();
-                    window.location.href = '/login?reason=expired';
+                    router.visit('/login', {
+                        data: { reason: 'expired' },
+                        replace: true
+                    });
                     break;
 
                 case 'TOKEN_REFRESHED':
@@ -219,7 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             send({ type: 'LOGOUT' });
 
             // Redirect to login
-            window.location.href = '/login';
+            router.visit('/login', { replace: true });
         }
     };
 
