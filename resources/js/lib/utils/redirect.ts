@@ -27,8 +27,9 @@ const RESET_TIMEOUT = 5000;
 
 /**
  * Almacena timeouts activos para resetear contadores
+ * Note: In browser environment, setTimeout returns number, not NodeJS.Timeout
  */
-const activeTimeouts = new Map<string, NodeJS.Timeout>();
+const activeTimeouts = new Map<string, number>();
 
 /**
  * Verifica si se puede redirigir sin causar un loop

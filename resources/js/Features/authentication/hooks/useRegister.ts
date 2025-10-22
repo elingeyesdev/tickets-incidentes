@@ -1,15 +1,19 @@
 /**
  * useRegister Hook
- * Lógica de negocio para el registro de usuarios
+ * Business logic for user registration
+ *
+ * Uses TokenManager for centralized token management
+ * Broadcasts registration events via AuthChannel for multi-tab sync
  */
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { REGISTER_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
-import { saveAuthTokens, saveUserData } from '@/lib/apollo/client';
+import { TokenManager } from '@/lib/auth/TokenManager';
+import { AuthChannel } from '@/lib/auth/AuthChannel';
 import { useNotification } from '@/contexts';
 import type { RegisterInput } from '../types';
-import type { RegisterMutation, RegisterMutationVariables } from '@/types/graphql-generated';
+import type { RegisterMutation, RegisterMutationVariables, RoleContext } from '@/types/graphql';
 
 interface UseRegisterOptions {
     onSuccess?: () => void;
@@ -71,13 +75,21 @@ export const useRegister = (options?: UseRegisterOptions) => {
     const [register, { loading, error }] = useMutation<RegisterMutation, RegisterMutationVariables>(REGISTER_MUTATION, {
         onCompleted: (data) => {
             const { accessToken, expiresIn, user } = data.register;
-            const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
+            const roleContexts = user.roleContexts;
 
-            // Guardar tokens (refresh token ya está en httpOnly cookie)
-            saveAuthTokens(accessToken, expiresIn);
+            console.log('✅ useRegister: Registration successful', {
+                email: user.email,
+                roles: roleContexts.map((rc: RoleContext) => rc.roleCode),
+            });
 
-            // Guardar usuario y roleContexts temporalmente para que AuthContext los pueda leer
-            saveUserData(user, roleContexts);
+            // Use TokenManager to store token (single source of truth)
+            TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
+
+            // Broadcast registration event to other tabs for multi-tab sync
+            AuthChannel.broadcast({
+                type: 'LOGIN',
+                payload: { userId: user.id, timestamp: Date.now() }
+            });
 
             // Callback de éxito
             if (options?.onSuccess) {

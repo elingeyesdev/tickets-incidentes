@@ -11,7 +11,7 @@ import { Building2, Users, ShieldCheck, Activity } from 'lucide-react';
 
 export default function PlatformAdminDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['PLATFORM_ADMIN']}>
+        <ProtectedRoute allowedRoles={['PLATFORM_ADMIN' as const]}>
             <AdminLayout title="Dashboard de Plataforma">
                 <Head title="Dashboard - Admin de Plataforma" />
 

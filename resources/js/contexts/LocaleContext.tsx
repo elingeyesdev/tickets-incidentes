@@ -454,8 +454,9 @@ export const LocaleProvider: React.FC<LocaleProviderProps> = ({ children }) => {
      * 3. Default: 'es'
      */
     const getInitialLocale = (): Locale => {
-        if (user?.preferences?.language) {
-            return user.preferences.language;
+        // Note: UserAuthInfo has language at top level, not nested in preferences
+        if (user?.language) {
+            return user.language as Locale;
         }
 
         const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
@@ -479,10 +480,10 @@ export const LocaleProvider: React.FC<LocaleProviderProps> = ({ children }) => {
      * Sincronizar con preferencias del usuario cuando cambie
      */
     useEffect(() => {
-        if (user?.preferences?.language && user.preferences.language !== locale) {
-            setLocaleState(user.preferences.language);
+        if (user?.language && user.language !== locale) {
+            setLocaleState(user.language as Locale);
         }
-    }, [user?.preferences?.language]);
+    }, [user?.language, locale]);
 
     /**
      * Cambiar idioma
@@ -513,8 +514,8 @@ export const LocaleProvider: React.FC<LocaleProviderProps> = ({ children }) => {
      * Forzar sincronización con preferencias del usuario
      */
     const syncWithUserPreferences = () => {
-        if (user?.preferences?.language) {
-            setLocaleState(user.preferences.language);
+        if (user?.language) {
+            setLocaleState(user.language as Locale);
         }
     };
 

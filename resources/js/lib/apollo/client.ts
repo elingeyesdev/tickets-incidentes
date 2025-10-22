@@ -1,6 +1,9 @@
 /**
  * Apollo Client Configuration
- * Professional GraphQL setup with token management
+ * Professional GraphQL setup with centralized token management
+ *
+ * IMPORTANT: This file uses TokenManager as the single source of truth for tokens.
+ * NO legacy TokenStorage - all token operations go through TokenManager.
  */
 
 import {
@@ -10,48 +13,10 @@ import {
     from,
     Observable,
 } from '@apollo/client';
-import { onError, ErrorResponse } from '@apollo/client/link/error';
+import { onError } from '@apollo/client/link/error';
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { setContext } from '@apollo/client/link/context';
 import { TokenManager, TokenRefreshService } from '@/lib/auth';
-
-// ============================================
-// TOKEN STORAGE (Profesional y Seguro)
-// ============================================
-
-
-
-const TOKEN_KEY = 'helpdesk_access_token';
-const TOKEN_EXPIRY_KEY = 'helpdesk_token_expiry';
-
-export const TokenStorage = {
-    getAccessToken(): string | null {
-        // Verificar si el token ha expirado
-        const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-        if (expiry && Date.now() > parseInt(expiry)) {
-            this.clearTokens();
-            return null;
-        }
-        return localStorage.getItem(TOKEN_KEY);
-    },
-
-    setAccessToken(token: string, expiresIn: number): void {
-        localStorage.setItem(TOKEN_KEY, token);
-        // Guardar timestamp de expiración
-        const expiryTime = Date.now() + expiresIn * 1000;
-        localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-    },
-
-    clearTokens(): void {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(TOKEN_EXPIRY_KEY);
-    },
-
-    isTokenExpired(): boolean {
-        const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-        if (!expiry) return true;
-        return Date.now() > parseInt(expiry);
-    },
-};
 
 // ============================================
 // GRAPHQL ENDPOINT
@@ -63,11 +28,12 @@ const httpLink = new HttpLink({
 });
 
 // ============================================
-// AUTH LINK - Agregar token a headers
+// AUTH LINK - Add token to request headers
 // ============================================
 
 const authLink = setContext((_, { headers }) => {
-    const token = TokenStorage.getAccessToken();
+    // Use TokenManager as single source of truth for tokens
+    const token = TokenManager.getAccessToken();
 
     return {
         headers: {
@@ -84,18 +50,21 @@ const authLink = setContext((_, { headers }) => {
 // ERROR LINK - Manejo automático de refresh
 // ============================================
 
-const errorLink = onError(({ graphQLErrors, operation, forward }) => {
-    if (graphQLErrors) {
-        for (const err of graphQLErrors) {
+const errorLink = onError(({ error, operation, forward }) => {
+    // Check if this is a GraphQL error (Apollo Client v4 API)
+    if (CombinedGraphQLErrors.is(error)) {
+        // Iterate through GraphQL errors
+        for (const err of error.errors) {
             // Si el error es de autenticación, usar el nuevo servicio de refresco
             if (err.extensions?.code === 'UNAUTHENTICATED' || err.extensions?.code === 'INVALID_TOKEN') {
                 // Evitar loop infinito si la propia mutación de refresco falla
                 if (operation.operationName === 'RefreshToken') {
                     TokenManager.clearToken();
                     window.location.href = '/login';
-                    return;
+                    return; // Return undefined is valid for onError
                 }
 
+                // Return an Observable that handles the refresh and retry logic
                 return new Observable(observer => {
                     (async () => {
                         try {
@@ -123,6 +92,8 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
             }
         }
     }
+    // Return undefined is valid - Apollo will propagate the original error
+    return undefined;
 });
 
 // ============================================
@@ -174,64 +145,9 @@ export const apolloClient = new ApolloClient({
 });
 
 // ============================================
-// HELPER FUNCTIONS
+// EXPORTS
 // ============================================
-
-/**
- * Guarda los tokens después de login/register
- */
-export const saveAuthTokens = (accessToken: string, expiresIn: number) => {
-    TokenStorage.setAccessToken(accessToken, expiresIn);
-    // El refresh token ya está guardado como httpOnly cookie por Laravel
-};
-
-interface TempUserData {
-    user: {
-        id: string;
-        email: string;
-        [key: string]: unknown;
-    };
-    roleContexts: Array<{
-        roleCode: string;
-        [key: string]: unknown;
-    }>;
-}
-
-/**
- * Guarda el usuario completo en localStorage (temporal hasta que AuthContext cargue)
- */
-export const saveUserData = (user: TempUserData['user'], roleContexts: TempUserData['roleContexts']) => {
-    localStorage.setItem('helpdesk_user_temp', JSON.stringify({ user, roleContexts }));
-};
-
-/**
- * Obtiene el usuario temporal de localStorage
- */
-export const getTempUserData = () => {
-    const data = localStorage.getItem('helpdesk_user_temp');
-    return data ? JSON.parse(data) : null;
-};
-
-/**
- * Limpia el usuario temporal
- */
-export const clearTempUserData = () => {
-    localStorage.removeItem('helpdesk_user_temp');
-};
-
-/**
- * Limpia todos los tokens al hacer logout
- */
-export const clearAuthTokens = () => {
-    TokenStorage.clearTokens();
-    clearTempUserData();
-    apolloClient.clearStore();
-};
-
-/**
- * Verifica si el usuario está autenticado
- */
-export const isAuthenticated = (): boolean => {
-    return TokenStorage.getAccessToken() !== null && !TokenStorage.isTokenExpired();
-};
+// Only export the Apollo Client instance
+// Token management is now centralized in TokenManager
+// No more legacy helper functions!
 

@@ -5,17 +5,14 @@ const config: CodegenConfig = {
   schema: 'http://localhost:8000/graphql',
   documents: 'resources/js/**/*.{ts,tsx}',
   generates: {
-    'resources/js/types/graphql-generated.ts': {
-      plugins: [
-        'typescript',
-        'typescript-operations',
-        'typescript-react-apollo',
-      ],
+    'resources/js/types/': {
+      preset: 'client',
+      plugins: [],
+      presetConfig: {
+        gqlTagName: 'gql',
+      },
       config: {
         skipTypename: false,
-        withHooks: true,
-        withHOC: false,
-        withComponent: false,
         avoidOptionals: {
           field: false,
           object: false,

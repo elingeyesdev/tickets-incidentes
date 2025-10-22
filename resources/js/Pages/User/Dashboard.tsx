@@ -11,7 +11,7 @@ import { Ticket, Plus, Clock, CheckCircle } from 'lucide-react';
 
 export default function UserDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['USER']}>
+        <ProtectedRoute allowedRoles={['USER' as const]}>
             <UserLayout title="Mis Tickets">
                 <Head title="Dashboard - Usuario" />
 

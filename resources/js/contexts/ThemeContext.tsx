@@ -119,8 +119,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
      * Forzar sincronización con preferencias del usuario
      */
     const syncWithUserPreferences = () => {
-        if (user?.preferences?.theme) {
-            const userTheme = user.preferences.theme as ThemeMode;
+        // Note: UserAuthInfo has theme at top level, not nested in preferences
+        if (user?.theme) {
+            const userTheme = user.theme as ThemeMode;
             setThemeModeState(userTheme);
         }
     };

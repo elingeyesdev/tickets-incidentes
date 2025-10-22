@@ -110,12 +110,32 @@ class TokenManagerClass {
         try {
             const result = await TokenRefreshService.refresh();
 
-            if (result.success && this.accessToken) {
+            if (result.success && result.accessToken && result.expiresIn) {
+                // Update the token with the new one from the refresh response
+                const now = Date.now();
+                this.accessToken = {
+                    token: result.accessToken,
+                    expiresIn: result.expiresIn,
+                    issuedAt: now,
+                    expiresAt: now + result.expiresIn * 1000,
+                };
+
+                // Persist the updated token (user and roleContexts remain unchanged)
+                PersistenceService.saveState({
+                    accessToken: this.accessToken,
+                    user: this.user,
+                    roleContexts: this.roleContexts,
+                    lastSelectedRole: this.lastSelectedRole
+                });
+
                 authLogger.info('Notifying TokenManager subscribers of successful refresh.');
                 for (const callback of this.refreshCallbacks) {
                     await callback(this.accessToken);
                 }
                 AuthChannel.broadcast({ type: 'TOKEN_REFRESHED', payload: { expiresIn: this.accessToken.expiresIn, timestamp: Date.now() } });
+
+                // Reschedule the next refresh
+                this.scheduleRefresh();
             } else {
                 this.notifyExpiry();
                 throw new Error(result.error?.message || 'Refresh failed');
@@ -188,7 +208,11 @@ class TokenManagerClass {
         }
     }
 
-    private notifyExpiry(): void {
+    /**
+     * Notifies subscribers that the session has expired.
+     * Public method so HeartbeatService can force session expiry when needed.
+     */
+    public notifyExpiry(): void {
         authLogger.warn('Session has expired. Notifying subscribers.');
         this.clearToken();
         AuthChannel.broadcast({ type: 'SESSION_EXPIRED', payload: { timestamp: Date.now() } });
@@ -197,3 +221,6 @@ class TokenManagerClass {
         }
     }
 }
+
+export const TokenManager = new TokenManagerClass();
+

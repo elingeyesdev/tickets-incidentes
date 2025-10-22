@@ -125,7 +125,7 @@ function LoginContent() {
                         <label className="flex items-center cursor-pointer">
                             <input
                                 type="checkbox"
-                                checked={formData.rememberMe}
+                                checked={formData.rememberMe ?? false}
                                 onChange={(e) =>
                                     setFormData({ ...formData, rememberMe: e.target.checked })
                                 }

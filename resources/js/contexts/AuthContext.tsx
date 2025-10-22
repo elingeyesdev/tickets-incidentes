@@ -1,29 +1,37 @@
 /**
- * AuthContext - Gestión Global de Autenticación con GraphQL
+ * AuthContext - Gestión Global de Autenticación con XState
  *
  * Responsabilidades:
- * - Estado de autenticación mediante GraphQL
- * - Usuario actual desde accessToken + authStatus query
+ * - Estado de autenticación mediante XState machine (authMachine)
+ * - Usuario actual desde TokenManager + authStatus query
  * - Roles y permisos
  * - Login/Logout con GraphQL mutations
+ * - Multi-tab synchronization via AuthChannel
+ * - Session keep-alive via HeartbeatService
  *
- * Optimizaciones:
- * - Estado de 3 fases: 'initializing' | 'authenticated' | 'unauthenticated'
- * - Caché de datos temporales (post-login/register)
- * - Ejecución única del useEffect (sin re-verificaciones innecesarias)
- * - Fullscreen loader durante inicialización
+ * Architecture:
+ * - Uses XState v5 state machine for predictable state management
+ * - Subscribes to AuthChannel for cross-tab synchronization
+ * - Starts/stops HeartbeatService based on auth state
+ * - Uses TokenManager as single source of truth for tokens
+ * - NO legacy code (TokenStorage, getTempUserData, etc.)
  */
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
-import { apolloClient, TokenStorage, getTempUserData, clearTempUserData } from '@/lib/apollo/client';
+import { useMachine } from '@xstate/react';
+import { apolloClient } from '@/lib/apollo/client';
+import { authMachine } from '@/lib/auth/AuthMachine';
+import { TokenManager } from '@/lib/auth/TokenManager';
+import { AuthChannel } from '@/lib/auth/AuthChannel';
+import { HeartbeatService } from '@/lib/auth/HeartbeatService';
 import { AUTH_STATUS_QUERY } from '@/lib/graphql/queries/auth.queries';
 import { LOGOUT_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
 import { canAccessRoute as checkRoutePermission } from '@/config/permissions';
 import { hasCompletedOnboarding as checkOnboardingCompleted } from '@/lib/utils/onboarding';
 import { clearRedirectFlag } from '@/lib/utils/navigation';
-import type { RoleCode } from '@/types';
-import type { AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables, UserAuthInfo } from '@/types/graphql-generated';
+import type { RoleCode as RoleCodeModels } from '@/types/models';
+import type { RoleCode, RoleContext, AuthStatusQuery, AuthStatusQueryVariables, LogoutMutation, LogoutMutationVariables, UserAuthInfo } from '@/types/graphql';
 
 type AuthState = 'initializing' | 'authenticated' | 'unauthenticated';
 
@@ -47,90 +55,107 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [user, setUser] = useState<UserAuthInfo | null>(null);
-    const [authState, setAuthState] = useState<AuthState>('initializing');
+    // XState v5 machine integration
+    const [state, send] = useMachine(authMachine);
 
+    // GraphQL queries and mutations
     const [getAuthStatus] = useLazyQuery<AuthStatusQuery, AuthStatusQueryVariables>(AUTH_STATUS_QUERY, {
         fetchPolicy: 'network-only',
     });
 
     const [logoutMutation] = useMutation<LogoutMutation, LogoutMutationVariables>(LOGOUT_MUTATION);
 
-    // Computed values
+    // Computed values from XState machine
+    const authState = state.value as AuthState;
+    const user = state.context.user as UserAuthInfo | null;
     const isAuthenticated = authState === 'authenticated';
     const loading = authState === 'initializing';
 
-    // Inicialización de autenticación (ejecuta UNA SOLA VEZ al montar)
+    // SESSION DETECTION: Initialize authentication from TokenManager on mount
     useEffect(() => {
-        let isMounted = true;
-
         const initializeAuth = async () => {
-            setAuthState('initializing');
+            // Check if a valid token exists in TokenManager
+            const token = TokenManager.getAccessTokenObject();
+            const validation = TokenManager.validateToken();
 
-            const token = TokenStorage.getAccessToken();
+            if (token && validation.isValid) {
+                // Valid token exists - fetch user data from server
+                try {
+                    const result = await getAuthStatus();
 
-            if (!token) {
-                // Sin token = no autenticado
-                if (isMounted) {
-                    setUser(null);
-                    setAuthState('unauthenticated');
-                }
-                return;
-            }
+                    console.log('[AuthContext] Session detected, fetching user data:', result.data);
 
-            // Tiene token - primero intentar usar caché temporal
-            try {
-                const tempData = getTempUserData();
-
-                if (tempData && tempData.user && tempData.roleContexts) {
-                    // Usar datos temporales inmediatamente (sin llamada al servidor)
-                    const fullUser: UserAuthInfo = {
-                        ...tempData.user,
-                        roleContexts: tempData.roleContexts,
-                    };
-
-                    if (isMounted) {
-                        setUser(fullUser);
-                        setAuthState('authenticated');
-                    }
-
-                    // Limpiar caché después de usarlo
-                    clearTempUserData();
-                    return;
-                }
-
-                // No hay caché temporal, consultar servidor
-                const result = await getAuthStatus();
-
-                console.log('[AuthContext] Query response:', result.data);
-                console.log('[AuthContext] User object:', result.data?.authStatus?.user);
-                console.log('[AuthContext] onboardingCompleted:', result.data?.authStatus?.user?.onboardingCompleted);
-                console.log('[AuthContext] onboardingCompletedAt:', result.data?.authStatus?.user?.onboardingCompletedAt);
-
-                if (isMounted) {
                     if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
-                        setUser(result.data.authStatus.user);
-                        setAuthState('authenticated');
+                        // Notify machine about detected session
+                        send({
+                            type: 'SESSION_DETECTED',
+                            token: token,
+                            user: result.data.authStatus.user,
+                        });
                     } else {
-                        setUser(null);
-                        setAuthState('unauthenticated');
+                        // Token exists but server says not authenticated
+                        send({ type: 'SESSION_INVALID' });
                     }
+                } catch (error) {
+                    console.error('[AuthContext] Error fetching user data:', error);
+                    send({ type: 'SESSION_INVALID' });
                 }
-            } catch (error) {
-                console.error('Error initializing auth:', error);
-                if (isMounted) {
-                    setUser(null);
-                    setAuthState('unauthenticated');
-                }
+            } else {
+                // No valid token found
+                send({ type: 'SESSION_INVALID' });
             }
         };
 
         initializeAuth();
+    }, []); // Run once on mount
+
+    // MULTI-TAB SYNC: Subscribe to AuthChannel for cross-tab events
+    useEffect(() => {
+        const unsubscribe = AuthChannel.subscribe((event) => {
+            console.log('[AuthContext] AuthChannel event received:', event.type);
+
+            switch (event.type) {
+                case 'LOGOUT':
+                    // Another tab logged out - update machine state
+                    send({ type: 'LOGOUT' });
+                    break;
+
+                case 'SESSION_EXPIRED':
+                    // Session expired in another tab - force logout
+                    send({ type: 'LOGOUT' });
+                    TokenManager.clearToken();
+                    window.location.href = '/login?reason=expired';
+                    break;
+
+                case 'TOKEN_REFRESHED':
+                    // Token was refreshed in another tab - machine will handle it automatically
+                    console.log('[AuthContext] Token refreshed in another tab');
+                    break;
+
+                case 'LOGIN':
+                    // Another tab logged in - could refresh to sync (optional)
+                    console.log('[AuthContext] Login detected in another tab');
+                    break;
+            }
+        });
+
+        return unsubscribe;
+    }, [send]);
+
+    // HEARTBEAT SERVICE: Start/stop based on authentication state
+    useEffect(() => {
+        if (authState === 'authenticated') {
+            console.log('[AuthContext] Starting HeartbeatService');
+            HeartbeatService.start();
+        } else {
+            console.log('[AuthContext] Stopping HeartbeatService');
+            HeartbeatService.stop();
+        }
 
         return () => {
-            isMounted = false;
+            HeartbeatService.stop();
         };
-    }, []); // Array vacío = ejecuta UNA SOLA VEZ al montar
+    }, [authState]);
 
     /**
      * Verifica si el usuario tiene un rol específico o alguno de una lista
@@ -140,7 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!user) return false;
 
         const roles = Array.isArray(role) ? role : [role];
-        const userRoles = user.roleContexts.map((rc) => rc.roleCode);
+        const userRoles = user.roleContexts.map((rc: RoleContext) => rc.roleCode);
 
         return roles.some((r) => userRoles.includes(r));
     }, [user]);
@@ -160,64 +185,92 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         // Usar configuración centralizada de permisos
-        const userRoles = user.roleContexts.map((rc) => rc.roleCode);
+        // Cast GraphQL enum to string for permissions.ts compatibility
+        const userRoles = user.roleContexts.map((rc: RoleContext) => rc.roleCode as RoleCodeModels);
         return checkRoutePermission(userRoles, path);
     }, [user]);
 
     /**
-     * Cierra sesión del usuario mediante GraphQL
+     * LOGOUT: Closes user session via GraphQL and cleans up all state
      */
     const logout = async (everywhere: boolean = false) => {
         try {
+            // Call logout mutation on backend
             await logoutMutation({ variables: { everywhere } });
         } catch (error) {
-            console.error('Error al cerrar sesión:', error);
+            console.error('[AuthContext] Error during logout mutation:', error);
         } finally {
-            // Limpiar tokens locales
-            TokenStorage.clearTokens();
+            // Clear tokens via TokenManager (single source of truth)
+            TokenManager.clearToken();
 
-            // Limpiar flag de redirección de SessionStorage
+            // Broadcast logout event to other tabs
+            AuthChannel.broadcast({
+                type: 'LOGOUT',
+                payload: { reason: 'manual', timestamp: Date.now() }
+            });
+
+            // Clear redirect flag from SessionStorage
             clearRedirectFlag();
 
-            // Limpiar caché de Apollo
+            // Clear Apollo cache
             await apolloClient.clearStore();
 
-            // Actualizar estado
-            setUser(null);
-            setAuthState('unauthenticated');
+            // Update XState machine
+            send({ type: 'LOGOUT' });
 
-            // Redirigir a login
+            // Redirect to login
             window.location.href = '/login';
         }
     };
 
     /**
-     * Actualiza el usuario en el contexto
-     * Útil después de actualizar perfil o preferencias
+     * UPDATE USER: Updates user data in context
+     * Useful after profile updates or preference changes
      */
     const updateUser = (updatedUser: UserAuthInfo) => {
-        setUser(updatedUser);
-        setAuthState('authenticated');
+        const token = TokenManager.getAccessTokenObject();
+        if (token) {
+            // Send LOGIN event to machine to update context with new user data
+            send({
+                type: 'LOGIN',
+                token: token,
+                user: updatedUser,
+            });
+        }
     };
 
     /**
-     * Refresca los datos del usuario desde el servidor
+     * REFRESH USER: Fetches fresh user data from server
+     * Useful when you need to reload user info without re-authenticating
      */
     const refreshUser = async () => {
-        const token = TokenStorage.getAccessToken();
-        if (token) {
-            const result = await getAuthStatus();
-            console.log('[refreshUser] Query response:', result.data);
-            console.log('[refreshUser] User object:', result.data?.authStatus?.user);
-            console.log('[refreshUser] onboardingCompletedAt:', result.data?.authStatus?.user?.onboardingCompletedAt);
+        const token = TokenManager.getAccessTokenObject();
+        const validation = TokenManager.validateToken();
 
-            if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
-                setUser(result.data.authStatus.user);
-                setAuthState('authenticated');
-            } else {
-                setUser(null);
-                setAuthState('unauthenticated');
+        if (token && validation.isValid) {
+            try {
+                const result = await getAuthStatus();
+                console.log('[refreshUser] Query response:', result.data);
+                console.log('[refreshUser] User object:', result.data?.authStatus?.user);
+
+                if (result.data?.authStatus?.isAuthenticated && result.data.authStatus.user) {
+                    // Update machine with fresh user data
+                    send({
+                        type: 'SESSION_DETECTED',
+                        token: token,
+                        user: result.data.authStatus.user,
+                    });
+                } else {
+                    // Server says not authenticated
+                    send({ type: 'SESSION_INVALID' });
+                }
+            } catch (error) {
+                console.error('[refreshUser] Error fetching user data:', error);
+                send({ type: 'SESSION_INVALID' });
             }
+        } else {
+            // No valid token
+            send({ type: 'SESSION_INVALID' });
         }
     };
 

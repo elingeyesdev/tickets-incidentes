@@ -11,7 +11,7 @@ import { Users, Ticket, TrendingUp, Settings } from 'lucide-react';
 
 export default function CompanyAdminDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['COMPANY_ADMIN']}>
+        <ProtectedRoute allowedRoles={['COMPANY_ADMIN' as const]}>
             <CompanyAdminLayout title="Dashboard de Administración">
                 <Head title="Dashboard - Admin de Empresa" />
 

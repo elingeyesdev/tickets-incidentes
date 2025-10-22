@@ -11,7 +11,7 @@ import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
 import { MARK_ONBOARDING_COMPLETED_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
-import type { MarkOnboardingCompletedMutation, MarkOnboardingCompletedMutationVariables } from '@/types/graphql-generated';
+import type { MarkOnboardingCompletedMutation, MarkOnboardingCompletedMutationVariables } from '@/types/graphql';
 
 export default function ConfigurePreferences() {
     const [progressPercentage, setProgressPercentage] = useState(50); // Empieza en 50% (paso anterior completado)

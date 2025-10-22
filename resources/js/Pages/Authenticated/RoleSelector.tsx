@@ -18,7 +18,7 @@ import {
 import { ProtectedRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { useAuth } from '@/contexts';
-import type { RoleContext } from '@/types/models';
+import type { RoleContext } from '@/types/graphql';
 
 function RoleSelectorContent() {
     const { user, loading: authLoading } = useAuth();
@@ -134,7 +134,7 @@ function RoleSelectorContent() {
                 <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-sm mb-8">
                     <Sparkles className="h-5 w-5" />
                     <span className="text-sm font-semibold tracking-wide">
-                        ¡Bienvenido de vuelta, {user.profile?.firstName || user.displayName?.split(' ')[0] || 'Usuario'}!
+                        ¡Bienvenido de vuelta, {user.displayName?.split(' ')[0] || 'Usuario'}!
                     </span>
                 </div>
                 

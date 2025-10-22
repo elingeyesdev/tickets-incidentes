@@ -9,8 +9,7 @@
  */
 
 import { canAccessRoute } from '@/config/permissions';
-import type { RoleCode } from '@/types';
-import type { User } from '@/types';
+import type { RoleCode } from '@/types/graphql';
 
 // Import useAuth from contexts directly to avoid circular dependency
 // Since this file is exported from hooks/index.ts
@@ -39,28 +38,28 @@ export function usePermissions() {
      * Verifica si el usuario es admin de plataforma
      */
     const isPlatformAdmin = (): boolean => {
-        return checkRole('PLATFORM_ADMIN');
+        return checkRole('PLATFORM_ADMIN' as const);
     };
 
     /**
      * Verifica si el usuario es admin de empresa
      */
     const isCompanyAdmin = (): boolean => {
-        return checkRole('COMPANY_ADMIN');
+        return checkRole('COMPANY_ADMIN' as const);
     };
 
     /**
      * Verifica si el usuario es agente
      */
     const isAgent = (): boolean => {
-        return checkRole('AGENT');
+        return checkRole('AGENT' as const);
     };
 
     /**
      * Verifica si el usuario es usuario final
      */
     const isUser = (): boolean => {
-        return checkRole('USER');
+        return checkRole('USER' as const);
     };
 
     /**

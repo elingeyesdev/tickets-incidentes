@@ -1,15 +1,18 @@
 /**
  * useLogin Hook
- * Lógica de negocio para el login de usuarios
+ * Business logic for user login
+ *
+ * Uses TokenManager for centralized token management
+ * Broadcasts login events via AuthChannel for multi-tab sync
  */
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { LOGIN_MUTATION } from '@/lib/graphql/mutations/auth.mutations';
-import { saveAuthTokens, saveUserData } from '@/lib/apollo/client';
+import { TokenManager } from '@/lib/auth/TokenManager';
+import { AuthChannel } from '@/lib/auth/AuthChannel';
 import { useNotification } from '@/contexts';
-import type { LoginInput } from '../types';
-import type { LoginMutation, LoginMutationVariables } from '@/types/graphql-generated';
+import type { LoginInput, LoginMutation, LoginMutationVariables, RoleContext } from '@/types/graphql';
 import { router } from '@inertiajs/react';
 
 interface UseLoginOptions {
@@ -50,19 +53,22 @@ export const useLogin = (options?: UseLoginOptions) => {
     const [login, { loading, error }] = useMutation<LoginMutation, LoginMutationVariables>(LOGIN_MUTATION, {
         onCompleted: (data) => {
             const { accessToken, expiresIn, user } = data.login;
-            const roleContexts = user.roleContexts; // Ahora roleContexts está dentro de user
+            const roleContexts = user.roleContexts;
 
-            console.log('✅ useLogin: Login exitoso', {
+            console.log('✅ useLogin: Login successful', {
                 email: user.email,
-                roles: roleContexts.map((rc) => rc.roleCode),
+                roles: roleContexts.map((rc: RoleContext) => rc.roleCode),
                 onboardingCompleted: user.onboardingCompletedAt
             });
 
-            // Guardar tokens (refresh token ya está en httpOnly cookie)
-            saveAuthTokens(accessToken, expiresIn);
+            // Use TokenManager to store token (single source of truth)
+            TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
 
-            // Guardar usuario y roleContexts temporalmente para que AuthContext los pueda leer
-            saveUserData(user, roleContexts);
+            // Broadcast login event to other tabs for multi-tab sync
+            AuthChannel.broadcast({
+                type: 'LOGIN',
+                payload: { userId: user.id, timestamp: Date.now() }
+            });
 
             // Callback de éxito
             if (options?.onSuccess) {
@@ -70,24 +76,24 @@ export const useLogin = (options?: UseLoginOptions) => {
                 return;
             }
 
-            // Determinar redirección según estado del onboarding
+            // Determine redirect path based on onboarding status
             let redirectPath: string;
 
             if (!user.onboardingCompletedAt) {
-                // Usuario sin onboarding completo → ir a onboarding
+                // User hasn't completed onboarding → go to onboarding
                 redirectPath = '/onboarding/profile';
-                console.log('🔄 useLogin: Redirigiendo a onboarding');
+                console.log('🔄 useLogin: Redirecting to onboarding');
             } else if (roleContexts.length === 1) {
-                // Usuario con 1 rol → ir directo a su dashboard
+                // User with single role → go directly to their dashboard
                 redirectPath = roleContexts[0].dashboardPath;
-                console.log('🔄 useLogin: Redirigiendo a dashboard único', redirectPath);
+                console.log('🔄 useLogin: Redirecting to single dashboard', redirectPath);
             } else {
-                // Usuario con múltiples roles → ir a role selector
+                // User with multiple roles → go to role selector
                 redirectPath = '/role-selector';
-                console.log('🔄 useLogin: Redirigiendo a role selector');
+                console.log('🔄 useLogin: Redirecting to role selector');
             }
 
-            // Usar router.visit para redirección suave sin recargar página
+            // Use Inertia router for smooth navigation
             router.visit(redirectPath);
         },
         onError: (err) => {

@@ -48,8 +48,13 @@ class TokenRefreshServiceClass {
 
         if (result.success && result.accessToken && result.expiresIn) {
             authLogger.info('Token successfully refreshed.');
-            // Guardar el nuevo token usando el TokenManager
-            TokenManager.setToken(result.accessToken, result.expiresIn);
+            // Note: TokenRefreshService is called by TokenManager.triggerRefresh()
+            // TokenManager handles updating its internal state after this returns
+            // We don't call TokenManager.setToken() here because:
+            // 1. That would create a circular dependency
+            // 2. TokenManager.triggerRefresh() already handles the token update
+            // 3. setToken() is meant for initial login with user/roleContexts, not refresh
+
             // Resolver todas las peticiones encoladas con el nuevo token
             this.resolvePendingRequests(result.accessToken);
         } else {

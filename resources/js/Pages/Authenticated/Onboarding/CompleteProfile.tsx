@@ -3,16 +3,16 @@
  * Permite al usuario completar/actualizar su perfil
  */
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 import { OnboardingRoute } from '@/Components';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
-import { Card, Button, Input, Alert, OnboardingFormSkeleton } from '@/Components/ui';
+import { Card, Button, Input, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale } from '@/contexts';
 import { UPDATE_MY_PROFILE_MUTATION } from '@/lib/graphql/mutations/users.mutations';
-import type { UpdateMyProfileMutation, UpdateMyProfileMutationVariables, UpdateProfileInput } from '@/types/graphql-generated';
+import type { UpdateMyProfileMutation, UpdateMyProfileMutationVariables, UpdateProfileInput } from '@/types/graphql';
 
 export default function CompleteProfile() {
     const [progressPercentage, setProgressPercentage] = useState(0);
@@ -42,10 +42,11 @@ function CompleteProfileContent({
 
     // TODOS LOS HOOKS DEBEN IR ANTES DE CUALQUIER RETURN CONDICIONAL
     // Auto-completar con datos del registro (firstName, lastName ya vienen del backend)
+    // Note: UserAuthInfo has displayName flattened, not in a nested profile object
     const [formData, setFormData] = useState({
-        firstName: user?.profile?.firstName || (user?.displayName?.split(' ')[0]) || '',
-        lastName: user?.profile?.lastName || (user?.displayName?.split(' ').slice(1).join(' ')) || '',
-        phoneNumber: user?.profile?.phoneNumber || '',
+        firstName: user?.displayName?.split(' ')[0] || '',
+        lastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
+        phoneNumber: '', // UserAuthInfo doesn't expose phone number
         countryCode: '+591', // Bolivia por defecto
     });
     
@@ -59,16 +60,16 @@ function CompleteProfileContent({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Mutation para actualizar perfil
-    const [updateProfile, { loading: mutationLoading }] = useMutation<UpdateMyProfileMutation, UpdateMyProfileMutationVariables>(UPDATE_MY_PROFILE_MUTATION);
-    
+    const [updateProfile] = useMutation<UpdateMyProfileMutation, UpdateMyProfileMutationVariables>(UPDATE_MY_PROFILE_MUTATION);
+
     // Actualizar formData cuando user cambie (útil si refreshUser trae nuevos datos)
     useEffect(() => {
         if (user) {
             setFormData(prev => ({
                 ...prev,
-                firstName: user.profile?.firstName || (user.displayName?.split(' ')[0]) || prev.firstName,
-                lastName: user.profile?.lastName || (user.displayName?.split(' ').slice(1).join(' ')) || prev.lastName,
-                phoneNumber: user.profile?.phoneNumber || prev.phoneNumber,
+                firstName: user.displayName?.split(' ')[0] || prev.firstName,
+                lastName: user.displayName?.split(' ').slice(1).join(' ') || prev.lastName,
+                // phoneNumber stays as is since UserAuthInfo doesn't expose it
             }));
         }
     }, [user]);
@@ -124,12 +125,12 @@ function CompleteProfileContent({
         }
 
         // Detectar si hay cambios comparando con los datos actuales del usuario
-        const currentFirstName = user?.profile?.firstName || (user?.displayName?.split(' ')[0]) || '';
-        const currentLastName = user?.profile?.lastName || (user?.displayName?.split(' ').slice(1).join(' ')) || '';
-        const currentPhone = user?.profile?.phoneNumber || '';
-        
+        const currentFirstName = user?.displayName?.split(' ')[0] || '';
+        const currentLastName = user?.displayName?.split(' ').slice(1).join(' ') || '';
+        const currentPhone = ''; // UserAuthInfo doesn't expose phone number
+
         const newPhone = formData.phoneNumber ? `${formData.countryCode}${formData.phoneNumber.trim()}` : '';
-        
+
         const hasChanges = (
             formData.firstName.trim() !== currentFirstName ||
             formData.lastName.trim() !== currentLastName ||

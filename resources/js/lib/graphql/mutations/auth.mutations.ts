@@ -10,11 +10,20 @@ import { AUTH_PAYLOAD_FRAGMENT } from '../fragments';
 // ============================================
 
 export const REGISTER_MUTATION = gql`
-    ${AUTH_PAYLOAD_FRAGMENT}
-
     mutation Register($input: RegisterInput!) {
         register(input: $input) {
-            ...AuthPayloadFields
+            accessToken
+            expiresIn
+            user {
+                id
+                email
+                onboardingCompletedAt
+                roleContexts {
+                    roleCode
+                    roleName
+                    dashboardPath
+                }
+            }
         }
     }
 `;
@@ -24,11 +33,20 @@ export const REGISTER_MUTATION = gql`
 // ============================================
 
 export const LOGIN_MUTATION = gql`
-    ${AUTH_PAYLOAD_FRAGMENT}
-
     mutation Login($input: LoginInput!) {
         login(input: $input) {
-            ...AuthPayloadFields
+            accessToken
+            expiresIn
+            user {
+                id
+                email
+                onboardingCompletedAt
+                roleContexts {
+                    roleCode
+                    roleName
+                    dashboardPath
+                }
+            }
         }
     }
 `;

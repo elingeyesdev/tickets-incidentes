@@ -11,7 +11,7 @@ import { Inbox, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 
 export default function AgentDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['AGENT']}>
+        <ProtectedRoute allowedRoles={['AGENT' as const]}>
             <AgentLayout title="Dashboard del Agente">
                 <Head title="Dashboard - Agente" />
 

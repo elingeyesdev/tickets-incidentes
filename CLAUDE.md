@@ -66,6 +66,10 @@ npm run dev
 docker compose exec app npm run build
 # OR locally
 npm run build
+
+# GraphQL Code Generation (generate TypeScript types from schema)
+npm run codegen              # Generate types once
+npm run codegen:watch        # Watch mode for development
 ```
 
 ### Laravel Artisan Commands
@@ -441,6 +445,59 @@ public function __invoke($rootValue, array $args)
 - **Client**: Apollo Client (future)
 - **Status**: ✅ Lighthouse GraphQL installed and configured
 
+## Frontend Authentication Architecture
+
+**XState v5 State Machine** (`resources/js/lib/auth/AuthMachine.ts`):
+- Manages authentication state transitions (idle → authenticating → authenticated → error)
+- Handles JWT token lifecycle (access token + refresh token)
+- Automatic token refresh before expiration
+- Session restoration on page reload via PersistenceService
+- Multi-tab synchronization via BroadcastChannel API
+
+**Key Services**:
+- `TokenManager` - JWT storage, validation, and refresh logic
+- `PersistenceService` - Persist and restore auth state from localStorage
+- `HeartbeatService` - Keep-alive mechanism for long-running sessions
+
+**Integration**:
+- `useLogin` hook - React hook for login functionality with XState machine
+- GraphQL mutations for auth operations (login, register, refresh, logout)
+- Type-safe operations via GraphQL Code Generator
+
+## GraphQL Code Generation
+
+**Configuration** (`codegen.ts`):
+- Generates TypeScript types from GraphQL schema
+- Schema source: `http://localhost:8000/graphql`
+- Output: `resources/js/types/` (client preset)
+- Watches: `resources/js/**/*.{ts,tsx}` for GraphQL operations
+
+**Generated Files**:
+- `resources/js/types/graphql.ts` - All GraphQL types
+- `resources/js/types/gql.ts` - Type-safe gql tag function
+- `resources/js/types/fragment-masking.ts` - Fragment utilities
+- `resources/js/types/index.ts` - Barrel exports
+
+**Usage Pattern**:
+```typescript
+import { gql } from '@/types/gql';
+
+const LOGIN_MUTATION = gql(`
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      accessToken
+      user { id email }
+    }
+  }
+`);
+```
+
+**Benefits**:
+- Full type safety between frontend and backend
+- Autocomplete for GraphQL operations
+- Compile-time error detection
+- No manual type definitions needed
+
 ## Documentation References
 
 Comprehensive documentation in `/documentacion/`:
@@ -474,8 +531,8 @@ Comprehensive documentation in `/documentacion/`:
 
 ## Current Implementation Status
 
-**Last Updated:** 08-Oct-2025
-**Branch:** backup/work-in-progress-2025-10-05
+**Last Updated:** 22-Oct-2025
+**Current Branch:** feature/auth-refactor
 
 ### ✅ Production-Ready
 
@@ -497,10 +554,13 @@ Comprehensive documentation in `/documentacion/`:
 **Authentication Feature (100%)**:
 - ✅ Register mutation implemented & tested
 - ✅ Models: User, UserProfile, UserRole, Role, RefreshToken
-- ✅ Services: AuthService, TokenService, PasswordResetService (audited)
+- ✅ Services: AuthService, TokenService, PasswordResetService, HeartbeatService (audited)
 - ✅ Events/Listeners: Email verification flow
 - ✅ Jobs: Email jobs (verification, password reset)
 - ✅ Migrations & Seeders complete
+- ✅ Frontend: XState v5 state machine (AuthMachine) with PersistenceService
+- ✅ Token management: JWT with automatic refresh, multi-tab synchronization
+- ✅ Session restoration: Persistent auth state across page reloads
 
 **UserManagement Feature (90%)**:
 - ✅ Models, Services, Policies (100% audited)
@@ -514,9 +574,10 @@ Comprehensive documentation in `/documentacion/`:
 - ✅ Migrations & Factories
 - ⏳ Resolvers connection (pending)
 
-### ⏳ In Progress
+### ⏳ In Progress (feature/auth-refactor branch)
+- ⏳ Stateless JWT authentication refactoring (eliminating Laravel sessions)
+- ⏳ Frontend authentication UI with XState machine integration
 - ⏳ Additional GraphQL resolvers
-- ⏳ Frontend React/Inertia pages
 - ⏳ Company management workflows
 
 ### ❌ Future Features
@@ -639,3 +700,12 @@ php artisan queue:work redis --queue=emails,default --verbose --tries=3 --timeou
 ```bash
 docker compose logs -f queue
 ```
+
+## Additional Development Rules
+
+For comprehensive coding standards and patterns, see:
+- `.cursorrules` - Professional Cursor AI rules with detailed patterns
+- `.cursor/rules/backend-architecture.mdc` - Backend-specific architecture rules
+- `.cursor/rules/arquitecture-frontend.mdc` - Frontend-specific architecture rules
+
+These files contain detailed code patterns, naming conventions, and best practices that complement this CLAUDE.md file.

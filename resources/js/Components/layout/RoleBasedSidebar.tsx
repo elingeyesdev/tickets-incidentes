@@ -3,7 +3,6 @@
  * Inspirado en el mockup helpdeskmoqups/components/role-based-sidebar.tsx
  */
 
-import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { 
     Ticket, 
@@ -24,7 +23,6 @@ import {
     Home
 } from 'lucide-react';
 import { useAuth } from '@/contexts';
-import type { RoleContext } from '@/types/models';
 
 interface SidebarItem {
     icon: React.ComponentType<{ className?: string }>;
@@ -35,7 +33,6 @@ interface SidebarItem {
 
 export function RoleBasedSidebar() {
     const { user, logout } = useAuth();
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const currentPath = window.location.pathname;
 
     // Obtener el rol activo actual

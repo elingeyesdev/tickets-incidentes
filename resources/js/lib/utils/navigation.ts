@@ -32,29 +32,11 @@ export const safeRedirect = (url: string, options?: { replace?: boolean }): bool
     }, REDIRECT_TIMEOUT);
 
     // Realizar la redirección
-    if (options?.replace) {
-        router.replace(url, {
-            onSuccess: () => {
-                console.log('[safeRedirect] Redirección exitosa');
-                sessionStorage.removeItem(REDIRECT_FLAG_KEY);
-            },
-            onError: (errors) => {
-                console.error('[safeRedirect] Error en redirección:', errors);
-                sessionStorage.removeItem(REDIRECT_FLAG_KEY);
-            },
-        });
-    } else {
-        router.visit(url, {
-            onSuccess: () => {
-                console.log('[safeRedirect] Redirección exitosa');
-                sessionStorage.removeItem(REDIRECT_FLAG_KEY);
-            },
-            onError: (errors) => {
-                console.error('[safeRedirect] Error en redirección:', errors);
-                sessionStorage.removeItem(REDIRECT_FLAG_KEY);
-            },
-        });
-    }
+    // Note: Inertia v2 router.replace() is for client-side only updates
+    // For navigation with replace, use visit() with replace option
+    router.visit(url, { replace: options?.replace ?? false });
+
+    console.log('[safeRedirect] Redirección iniciada');
 
     return true;
 };

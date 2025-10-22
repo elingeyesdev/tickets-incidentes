@@ -12,15 +12,15 @@ import {
   // Base
   Skeleton, 
   InputSkeleton, 
-  ButtonSkeleton, 
-  AvatarSkeleton, 
+  ButtonSkeleton,
+  AvatarSkeleton,
   BadgeSkeleton,
   // Forms
-  FormSkeleton, 
-  OnboardingFormSkeleton,
+  FormSkeleton,
+  OnboardingFormSkeleton as _OnboardingFormSkeleton, // Example component, intentionally unused
   // Cards
-  CardSkeleton, 
-  CardGridSkeleton, 
+  CardSkeleton,
+  CardGridSkeleton,
   ListItemSkeleton 
 } from '@/Components/Skeleton';
 
