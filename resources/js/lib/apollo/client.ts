@@ -12,6 +12,7 @@ import {
 } from '@apollo/client';
 import { onError, ErrorResponse } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
+import { TokenManager, TokenRefreshService } from '@/lib/auth';
 
 // ============================================
 // TOKEN STORAGE (Profesional y Seguro)
@@ -77,132 +78,51 @@ const authLink = setContext((_, { headers }) => {
     };
 });
 
-// ============================================
-// REFRESH TOKEN LOGIC
-// ============================================
 
-let isRefreshing = false;
-let pendingRequests: Array<() => void> = [];
-
-const resolvePendingRequests = () => {
-    pendingRequests.forEach((callback) => callback());
-    pendingRequests = [];
-};
-
-const REFRESH_TOKEN_MUTATION = `
-    mutation RefreshToken {
-        refreshToken {
-            accessToken
-            refreshToken
-            tokenType
-            expiresIn
-        }
-    }
-`;
-
-/**
- * Intenta refrescar el access token usando el refresh token (httpOnly cookie)
- */
-const refreshAccessToken = async (): Promise<string | null> => {
-    try {
-        const response = await fetch('/graphql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'include', // Envía el refresh token cookie
-            body: JSON.stringify({
-                query: REFRESH_TOKEN_MUTATION,
-            }),
-        });
-
-        const result = await response.json();
-
-        if (result.errors) {
-            console.error('Refresh token failed:', result.errors);
-            return null;
-        }
-
-        const { accessToken, expiresIn } = result.data.refreshToken;
-        TokenStorage.setAccessToken(accessToken, expiresIn);
-
-        return accessToken;
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        return null;
-    }
-};
 
 // ============================================
 // ERROR LINK - Manejo automático de refresh
 // ============================================
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }: ErrorResponse) => {
-    if (graphQLErrors && graphQLErrors.length > 0) {
+const errorLink = onError(({ graphQLErrors, operation, forward }) => {
+    if (graphQLErrors) {
         for (const err of graphQLErrors) {
-            // Si el error es de autenticación inválida
+            // Si el error es de autenticación, usar el nuevo servicio de refresco
             if (err.extensions?.code === 'UNAUTHENTICATED' || err.extensions?.code === 'INVALID_TOKEN') {
-                // Evitar loop infinito
+                // Evitar loop infinito si la propia mutación de refresco falla
                 if (operation.operationName === 'RefreshToken') {
-                    TokenStorage.clearTokens();
+                    TokenManager.clearToken();
                     window.location.href = '/login';
-                    return undefined;
+                    return;
                 }
 
-                // Si ya estamos refrescando, esperar
-                if (isRefreshing) {
-                    return new Observable((observer) => {
-                        pendingRequests.push(() => {
-                            forward(operation).subscribe(observer);
-                        });
-                    });
-                }
-
-                // Iniciar proceso de refresh
-                isRefreshing = true;
-
-                return new Observable((observer) => {
-                    refreshAccessToken()
-                        .then((newToken) => {
-                            isRefreshing = false;
-                            resolvePendingRequests();
-
-                            if (!newToken) {
-                                TokenStorage.clearTokens();
+                return new Observable(observer => {
+                    (async () => {
+                        try {
+                            const result = await TokenRefreshService.refresh();
+                            if (result.success && result.accessToken) {
+                                // Reintentar la operación original con el nuevo token
+                                operation.setContext({
+                                    headers: {
+                                        ...operation.getContext().headers,
+                                        authorization: `Bearer ${result.accessToken}`,
+                                    },
+                                });
+                                forward(operation).subscribe(observer);
+                            } else {
+                                // Si el refresco falla, redirigir a login
+                                TokenManager.clearToken();
                                 window.location.href = '/login';
-                                observer.error(new Error('Failed to refresh token'));
-                                return;
+                                observer.error(new Error('Session expired'));
                             }
-
-                            // Actualizar header de la operación
-                            operation.setContext({
-                                headers: {
-                                    ...operation.getContext().headers,
-                                    authorization: `Bearer ${newToken}`,
-                                },
-                            });
-
-                            // Reintentar la operación
-                            forward(operation).subscribe(observer);
-                        })
-                        .catch((error) => {
-                            isRefreshing = false;
-                            pendingRequests = [];
-                            TokenStorage.clearTokens();
-                            window.location.href = '/login';
+                        } catch (error) {
                             observer.error(error);
-                        });
+                        }
+                    })();
                 });
             }
         }
     }
-
-    if (networkError) {
-        console.error(`[Network error]: ${networkError}`);
-    }
-
-    return undefined;
 });
 
 // ============================================
