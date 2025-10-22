@@ -8,10 +8,11 @@ import { ProtectedRoute } from '@/Components/guards';
 import { UserLayout } from '@/Layouts/User/UserLayout';
 import { Card } from '@/Components/ui';
 import { Ticket, Plus, Clock, CheckCircle } from 'lucide-react';
+import { RoleCode } from '@/types';
 
 export default function UserDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['USER' as const]}>
+        <ProtectedRoute allowedRoles={[RoleCode.User]}>
             <UserLayout title="Mis Tickets">
                 <Head title="Dashboard - Usuario" />
 

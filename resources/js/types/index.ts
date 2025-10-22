@@ -10,12 +10,12 @@ export * from "./graphql";
 
 // Custom model types (these override conflicting graphql.ts types)
 // Export explicitly to control what takes precedence
+// NOTE: RoleCode is NOT exported here to avoid conflict with graphql.ts enum
 export type {
     User,
     UserProfile,
     UserPreferences,
     UserStatus,
-    RoleCode,
     RoleContext,
     AuthProvider,
     Company,

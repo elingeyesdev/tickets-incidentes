@@ -29,22 +29,22 @@ Route::middleware(['jwt.guest'])->group(function () {
 
     // Login page
     Route::get('/login', function () {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Public/Login');
     })->name('login');
 
     // Registration page
     Route::get('/register', function () {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Public/Register');
     })->name('register');
 
     // Forgot password page
     Route::get('/forgot-password', function () {
-        return Inertia::render('Auth/ForgotPassword');
+        return Inertia::render('Public/ForgotPassword');
     })->name('password.request');
 
     // Reset password page (with token)
     Route::get('/reset-password/{token}', function (string $token) {
-        return Inertia::render('Auth/ResetPassword', ['token' => $token]);
+        return Inertia::render('Public/ResetPassword', ['token' => $token]);
     })->name('password.reset');
 });
 
@@ -71,7 +71,7 @@ Route::middleware(['jwt.auth'])->group(function () {
 
     // Role selector (for users with multiple roles or no role)
     Route::get('/role-selector', function () {
-        return Inertia::render('Auth/RoleSelector');
+        return Inertia::render('Authenticated/RoleSelector');
     })->name('role.selector');
 
     // ========================================================================

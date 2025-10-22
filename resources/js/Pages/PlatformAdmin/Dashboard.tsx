@@ -8,10 +8,11 @@ import { ProtectedRoute } from '@/Components/guards';
 import { AdminLayout } from '@/Layouts/PlatformAdmin/AdminLayout';
 import { Card } from '@/Components/ui';
 import { Building2, Users, ShieldCheck, Activity } from 'lucide-react';
+import { RoleCode } from '@/types';
 
 export default function PlatformAdminDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['PLATFORM_ADMIN' as const]}>
+        <ProtectedRoute allowedRoles={[RoleCode.PlatformAdmin]}>
             <AdminLayout title="Dashboard de Plataforma">
                 <Head title="Dashboard - Admin de Plataforma" />
 

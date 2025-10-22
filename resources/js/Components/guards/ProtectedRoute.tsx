@@ -14,7 +14,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks';
 import { safeRedirect } from '@/lib/utils';
-import type { RoleCode } from '@/types/graphql';
+import type { RoleCode } from '@/types';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;

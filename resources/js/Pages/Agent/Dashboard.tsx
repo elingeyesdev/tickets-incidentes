@@ -8,10 +8,11 @@ import { ProtectedRoute } from '@/Components/guards';
 import { AgentLayout } from '@/Layouts/Agent/AgentLayout';
 import { Card } from '@/Components/ui';
 import { Inbox, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { RoleCode } from '@/types';
 
 export default function AgentDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['AGENT' as const]}>
+        <ProtectedRoute allowedRoles={[RoleCode.Agent]}>
             <AgentLayout title="Dashboard del Agente">
                 <Head title="Dashboard - Agente" />
 

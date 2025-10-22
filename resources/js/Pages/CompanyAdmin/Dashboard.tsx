@@ -8,10 +8,11 @@ import { ProtectedRoute } from '@/Components/guards';
 import { CompanyAdminLayout } from '@/Layouts/CompanyAdmin/CompanyAdminLayout';
 import { Card } from '@/Components/ui';
 import { Users, Ticket, TrendingUp, Settings } from 'lucide-react';
+import { RoleCode } from '@/types';
 
 export default function CompanyAdminDashboard() {
     return (
-        <ProtectedRoute allowedRoles={['COMPANY_ADMIN' as const]}>
+        <ProtectedRoute allowedRoles={[RoleCode.CompanyAdmin]}>
             <CompanyAdminLayout title="Dashboard de Administración">
                 <Head title="Dashboard - Admin de Empresa" />
 
