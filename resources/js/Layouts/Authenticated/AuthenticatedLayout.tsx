@@ -10,8 +10,10 @@ import {
     useTheme, 
     useLocale 
 } from '@/contexts';
+import { AuthGuard } from '@/components/Auth/AuthGuard';
 import { Sidebar, type SidebarSection } from '@/Components/navigation/Sidebar';
 import { Button } from '@/Components/ui';
+import { RoleSwitcher } from '@/components/Auth/RoleSwitcher';
 import { Headphones } from 'lucide-react';
 
 interface AuthenticatedLayoutProps {
@@ -35,13 +37,6 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({
     const { locale, setLocale, t } = useLocale();
     
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-
-    if (!user) {
-        if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-        }
-        return null;
-    }
 
     const handleLogout = () => {
         logout();
@@ -107,33 +102,26 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({
                             </button>
 
                             {/* User Info */}
-                            <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-gray-700">
-                                <div className="text-right hidden md:block">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {user.displayName}
+                            {user && (
+                                <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-gray-700">
+                                    <div className="text-right hidden md:block">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                            {user.displayName}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {roleIndicator.label}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {roleIndicator.label}
-                                    </div>
+                                    <img
+                                        src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=random`}
+                                        alt={user.displayName}
+                                        className={`h-9 w-9 rounded-full ring-2 ${roleIndicator.color.replace('bg-', 'ring-')}`}
+                                    />
                                 </div>
-                                <img
-                                    src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=random`}
-                                    alt={user.displayName}
-                                    className={`h-9 w-9 rounded-full ring-2 ${roleIndicator.color.replace('bg-', 'ring-')}`}
-                                />
-                            </div>
+                            )}
 
                             {/* Change Role (solo si tiene 2+ roles) */}
-                            {user.roleContexts && user.roleContexts.length > 1 && (
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => window.location.href = '/role-selector'}
-                                    className="hidden sm:inline-flex"
-                                >
-                                    Cambiar Rol
-                                </Button>
-                            )}
+                            <RoleSwitcher />
 
                             {/* Logout */}
                             <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -144,9 +132,11 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({
 
                     {/* Page Content */}
                     <main className="flex-1 overflow-y-auto p-6">
-                        <div className="max-w-7xl mx-auto">
-                            {children}
-                        </div>
+                        <AuthGuard>
+                            <div className="max-w-7xl mx-auto">
+                                {children}
+                            </div>
+                        </AuthGuard>
                     </main>
                 </div>
             </div>

@@ -97,6 +97,7 @@ export interface AuthMachineContext {
     user: unknown | null; // Reemplazar con el tipo de usuario real
     error: RefreshError | null;
     retryCount: number;
+    lastSelectedRole: string | null;
 }
 
 /**

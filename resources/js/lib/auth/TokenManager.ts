@@ -157,6 +157,25 @@ class TokenManagerClass {
         return () => this.expiryCallbacks.delete(callback);
     }
 
+    public getLastSelectedRole(): string | null {
+        return this.lastSelectedRole;
+    }
+
+    public setLastSelectedRole(roleCode: string): void {
+        if (this.roleContexts.some((rc: any) => rc.roleCode === roleCode)) {
+            this.lastSelectedRole = roleCode;
+            authLogger.info(`Last selected role updated to: ${roleCode}`);
+            PersistenceService.saveState({ 
+                accessToken: this.accessToken!,
+                user: this.user,
+                roleContexts: this.roleContexts,
+                lastSelectedRole: this.lastSelectedRole
+            });
+        } else {
+            authLogger.error(`Attempted to set an invalid role: ${roleCode}`);
+        }
+    }
+
     private async loadTokenFromPersistence(): Promise<void> {
         const persistedData = await PersistenceService.loadState();
 

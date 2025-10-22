@@ -41,12 +41,14 @@ interface AuthContextType {
     authState: AuthState;
     isAuthenticated: boolean;
     loading: boolean;
+    lastSelectedRole: string | null;
     hasRole: (role: RoleCode | RoleCode[]) => boolean;
     canAccessRoute: (path: string) => boolean;
     hasCompletedOnboarding: () => boolean;
     logout: (everywhere?: boolean) => Promise<void>;
     updateUser: (user: UserAuthInfo) => void;
     refreshUser: () => Promise<void>;
+    selectRole: (roleCode: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Computed values from XState machine
     const authState = state.value as AuthState;
     const user = state.context.user as UserAuthInfo | null;
+    const lastSelectedRole = state.context.lastSelectedRole;
     const isAuthenticated = authState === 'authenticated';
     const loading = authState === 'initializing';
 
@@ -92,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                             type: 'SESSION_DETECTED',
                             token: token,
                             user: result.data.authStatus.user,
+                            lastSelectedRole: TokenManager.getLastSelectedRole(),
                         });
                     } else {
                         // Token exists but server says not authenticated
@@ -139,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 case 'LOGIN':
                     // Another tab logged in - could refresh to sync (optional)
                     console.log('[AuthContext] Login detected in another tab');
+                    window.location.reload();
                     break;
             }
         });
@@ -239,6 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 type: 'LOGIN',
                 token: token,
                 user: updatedUser,
+                lastSelectedRole: TokenManager.getLastSelectedRole(),
             });
         }
     };
@@ -263,6 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         type: 'SESSION_DETECTED',
                         token: token,
                         user: result.data.authStatus.user,
+                        lastSelectedRole: TokenManager.getLastSelectedRole(),
                     });
                 } else {
                     // Server says not authenticated
@@ -276,6 +283,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // No valid token
             send({ type: 'SESSION_INVALID' });
         }
+    };
+
+    /**
+     * SELECT ROLE: Updates the user's selected role
+     */
+    const selectRole = (roleCode: string) => {
+        TokenManager.setLastSelectedRole(roleCode);
+        send({ type: 'ROLE_SELECTED', role: roleCode });
+        // Redirect to role selector which will then redirect to the correct dashboard
+        router.visit('/role-selector');
     };
 
     /**
@@ -298,13 +315,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         authState,
         isAuthenticated,
         loading,
+        lastSelectedRole,
         hasRole,
         canAccessRoute,
         hasCompletedOnboarding,
         logout,
         updateUser,
         refreshUser,
-    }), [user, authState, isAuthenticated, loading, hasRole, canAccessRoute, hasCompletedOnboarding]);
+        selectRole,
+    }), [user, authState, isAuthenticated, loading, lastSelectedRole, hasRole, canAccessRoute, hasCompletedOnboarding]);
 
     // Mostrar fullscreen loader durante inicialización
     if (authState === 'initializing') {

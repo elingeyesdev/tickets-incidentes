@@ -24,7 +24,12 @@ export const useAuthMachine = () => {
             // Aquí necesitaríamos obtener los datos del usuario. Por ahora, simulamos.
             // En una implementación real, haríamos una query `getMe`.
             const user = { id: extractUserIdFromJWT(initialTokenObject.token) };
-            send({ type: 'SESSION_DETECTED', token: initialTokenObject, user });
+            send({ 
+                type: 'SESSION_DETECTED', 
+                token: initialTokenObject, 
+                user, 
+                lastSelectedRole: TokenManager.getLastSelectedRole()
+            });
         } else {
             authLogger.info('AuthMachine: No valid session on init.');
             send({ type: 'SESSION_INVALID' });

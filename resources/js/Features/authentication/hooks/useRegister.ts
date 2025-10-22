@@ -13,6 +13,7 @@ import { TokenManager } from '@/lib/auth/TokenManager';
 import { AuthChannel } from '@/lib/auth/AuthChannel';
 import { useNotification } from '@/contexts';
 import type { RegisterInput } from '../types';
+import { router } from '@inertiajs/react';
 import type { RegisterMutation, RegisterMutationVariables, RoleContext } from '@/types/graphql';
 
 interface UseRegisterOptions {
@@ -82,10 +83,13 @@ export const useRegister = (options?: UseRegisterOptions) => {
                 roles: roleContexts.map((rc: RoleContext) => rc.roleCode),
             });
 
-            // Use TokenManager to store token (single source of truth)
+            // 1. IMPORTANT: Clear any existing session before setting the new one.
+            TokenManager.clearToken();
+
+            // 2. Use TokenManager to store the new token (single source of truth)
             TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
 
-            // Broadcast registration event to other tabs for multi-tab sync
+            // 3. Broadcast registration event to other tabs for multi-tab sync
             AuthChannel.broadcast({
                 type: 'LOGIN',
                 payload: { userId: user.id, timestamp: Date.now() }
@@ -97,8 +101,8 @@ export const useRegister = (options?: UseRegisterOptions) => {
                 return;
             }
 
-            // Redirigir a verificación de email
-            window.location.href = '/verify-email';
+            // 4. Redirect to email verification using Inertia router
+            router.visit('/verify-email');
         },
         onError: (err) => {
             const errorMessage = err.message || 'Error al registrar usuario';

@@ -14,12 +14,13 @@ import { authLogger } from './constants';
 
 // Define los eventos que la máquina puede recibir
 export type AuthMachineEvent =
-    | { type: 'SESSION_DETECTED'; token: AccessToken; user: unknown }
+    | { type: 'SESSION_DETECTED'; token: AccessToken; user: unknown; lastSelectedRole: string | null }
     | { type: 'SESSION_INVALID' }
-    | { type: 'LOGIN'; token: AccessToken; user: unknown }
+    | { type: 'LOGIN'; token: AccessToken; user: unknown; lastSelectedRole: string | null }
     | { type: 'LOGOUT' }
     | { type: 'TOKEN_EXPIRED' }
-    | { type: 'RETRY' };
+    | { type: 'RETRY' }
+    | { type: 'ROLE_SELECTED'; role: string };
 
 // XState v5 setup API: Define actors with proper typing
 const authMachineSetup = setup({
@@ -46,14 +47,19 @@ const authMachineSetup = setup({
         setAuthData: assign({
             accessToken: ({ event }) => (event.type === 'LOGIN' || event.type === 'SESSION_DETECTED') ? event.token : null,
             user: ({ event }) => (event.type === 'LOGIN' || event.type === 'SESSION_DETECTED') ? event.user : null,
+            lastSelectedRole: ({ event }) => (event.type === 'LOGIN' || event.type === 'SESSION_DETECTED') ? event.lastSelectedRole : null,
             error: null,
             retryCount: 0,
+        }),
+        setSelectedRole: assign({
+            lastSelectedRole: ({ event }) => (event.type === 'ROLE_SELECTED') ? event.role : null,
         }),
         clearAuthData: assign({
             accessToken: null,
             user: null,
             error: null,
             retryCount: 0,
+            lastSelectedRole: null,
         }),
         clearTokenManager: () => {
             TokenManager.clearToken();
@@ -69,6 +75,7 @@ export const authMachine = authMachineSetup.createMachine({
         user: null,
         error: null,
         retryCount: 0,
+        lastSelectedRole: null,
     },
     states: {
         initializing: {
@@ -93,6 +100,9 @@ export const authMachine = authMachineSetup.createMachine({
             on: {
                 TOKEN_EXPIRED: 'refreshing',
                 LOGOUT: 'unauthenticated',
+                ROLE_SELECTED: {
+                    actions: 'setSelectedRole'
+                }
             },
         },
         refreshing: {
