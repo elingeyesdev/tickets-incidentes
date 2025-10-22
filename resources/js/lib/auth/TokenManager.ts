@@ -69,6 +69,17 @@ class TokenManagerClass {
     }
 
     /**
+     * Obtiene el objeto AccessToken completo si es válido.
+     * @returns El objeto AccessToken o null si no es válido o no existe.
+     */
+    public getAccessTokenObject(): AccessToken | null {
+        if (this.validateToken().isValid) {
+            return this.accessToken;
+        }
+        return null;
+    }
+
+    /**
      * Valida el token actual.
      * @returns El estado de validación del token.
      */
