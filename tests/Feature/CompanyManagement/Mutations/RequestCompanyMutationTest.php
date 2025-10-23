@@ -146,9 +146,7 @@ class RequestCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'A pending request already exists with this email',
-        ]);
+        $response->assertGraphQLErrorMessage('A pending request already exists with this email');
 
         $errors = $response->json('errors');
         $this->assertEquals('REQUEST_ALREADY_EXISTS', $errors[0]['extensions']['code']);

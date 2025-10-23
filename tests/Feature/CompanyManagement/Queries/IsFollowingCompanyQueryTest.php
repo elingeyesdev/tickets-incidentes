@@ -113,9 +113,7 @@ class IsFollowingCompanyQueryTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Company not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Company not found');
 
         $errors = $response->json('errors');
         $this->assertEquals('COMPANY_NOT_FOUND', $errors[0]['extensions']['code']);

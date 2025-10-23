@@ -23,7 +23,7 @@ class CreateCompanyMutation extends BaseMutation
             $authenticatedUser = JWTHelper::getAuthenticatedUser();
 
             if (!$authenticatedUser) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -35,7 +35,7 @@ class CreateCompanyMutation extends BaseMutation
             $adminUser = User::find($input['adminUserId']);
 
             if (!$adminUser) {
-                throw new Error('Usuario admin no encontrado', null, null, null, null, null, [
+                throw new Error('Admin user not found', null, null, null, null, null, [
                     'code' => 'ADMIN_USER_NOT_FOUND',
                     'userId' => $input['adminUserId']
                 ]);
@@ -98,7 +98,7 @@ class CreateCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al crear empresa: ' . $e->getMessage());
+            throw new Error('Error creating company: ' . $e->getMessage());
         }
     }
 }

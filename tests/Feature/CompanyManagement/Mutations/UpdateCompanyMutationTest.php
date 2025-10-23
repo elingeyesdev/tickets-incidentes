@@ -389,9 +389,7 @@ class UpdateCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Company not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Company not found');
     }
 
     /** @test */

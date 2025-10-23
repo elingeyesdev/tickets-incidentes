@@ -20,7 +20,7 @@ class MyFollowedCompaniesQuery extends BaseQuery
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +31,7 @@ class MyFollowedCompaniesQuery extends BaseQuery
         } catch (Error $e) {
             throw $e;
         } catch (\Exception $e) {
-            throw new Error('Error al obtener empresas seguidas: ' . $e->getMessage());
+            throw new Error('Error fetching followed companies: ' . $e->getMessage());
         }
     }
 }

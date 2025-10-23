@@ -25,7 +25,7 @@ class CompanyRequestsQuery extends BaseQuery
         } catch (Error $e) {
             throw $e;
         } catch (\Exception $e) {
-            throw new Error('Error al obtener solicitudes de empresas: ' . $e->getMessage());
+            throw new Error('Error fetching company requests: ' . $e->getMessage());
         }
     }
 }

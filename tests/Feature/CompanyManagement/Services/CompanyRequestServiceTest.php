@@ -103,7 +103,7 @@ class CompanyRequestServiceTest extends TestCase
         // Verificar que request fue marcado como approved
         $request->refresh();
         $this->assertEquals('approved', $request->status);
-        $this->assertEquals($reviewer->id, $request->reviewed_by_id);
+        $this->assertEquals($reviewer->id, $request->reviewed_by);
         $this->assertNotNull($request->reviewed_at);
     }
 
@@ -157,7 +157,7 @@ class CompanyRequestServiceTest extends TestCase
         // Assert
         $this->assertEquals('rejected', $rejectedRequest->status);
         $this->assertEquals($reason, $rejectedRequest->rejection_reason);
-        $this->assertEquals($reviewer->id, $rejectedRequest->reviewed_by_id);
+        $this->assertEquals($reviewer->id, $rejectedRequest->reviewed_by);
         $this->assertNotNull($rejectedRequest->reviewed_at);
 
         $this->assertDatabaseHas('business.company_requests', [

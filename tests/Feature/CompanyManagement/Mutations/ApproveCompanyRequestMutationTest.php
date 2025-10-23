@@ -200,7 +200,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $this->assertDatabaseHas('business.company_requests', [
             'id' => $request->id,
             'status' => 'approved',
-            'reviewed_by_id' => $admin->id,
+            'reviewed_by' => $admin->id,
         ]);
 
         $request->refresh();
@@ -227,9 +227,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Request not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Request not found');
 
         $errors = $response->json('errors');
         $this->assertEquals('REQUEST_NOT_FOUND', $errors[0]['extensions']['code']);
@@ -254,9 +252,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Only pending requests can be approved',
-        ]);
+        $response->assertGraphQLErrorMessage('Only pending requests can be approved');
 
         $errors = $response->json('errors');
         $this->assertEquals('REQUEST_NOT_PENDING', $errors[0]['extensions']['code']);

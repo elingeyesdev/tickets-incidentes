@@ -49,7 +49,7 @@ class CompanyQuery extends BaseQuery
         } catch (Error $e) {
             throw $e;
         } catch (\Exception $e) {
-            throw new Error('Error al obtener empresa: ' . $e->getMessage());
+            throw new Error('Error fetching company: ' . $e->getMessage());
         }
     }
 }

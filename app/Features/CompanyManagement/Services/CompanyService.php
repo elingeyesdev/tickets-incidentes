@@ -139,7 +139,7 @@ class CompanyService
     {
         return [
             'active_agents_count' => $company->userRoles()
-                ->where('role_code', 'agent')
+                ->where('role_code', 'AGENT')
                 ->where('is_active', true)
                 ->count(),
             'total_users_count' => $company->userRoles()

@@ -67,15 +67,8 @@ class RefreshTokenControllerTest extends TestCase
         $originalRefreshToken = $loginResult['refresh_token'];
 
         // Act: Make REST request with refresh token cookie
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $originalRefreshToken
-        ]);
-
-        // Debug: Check response content
-        if ($response->status() !== 200) {
-            dump('Response status: ' . $response->status());
-            dump('Response content: ' . $response->content());
-        }
+        $response = $this->withCookie('refresh_token', $originalRefreshToken)
+            ->post('/api/auth/refresh');
 
         // Assert: Success response
         $response->assertStatus(200);
@@ -118,9 +111,8 @@ class RefreshTokenControllerTest extends TestCase
     public function refresh_token_endpoint_rejects_invalid_refresh_token(): void
     {
         // Act: Make request with invalid refresh token
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => 'invalid_token'
-        ]);
+        $response = $this->withCookie('refresh_token', 'invalid_token')
+            ->post('/api/auth/refresh');
 
         // Assert: Error response
         $response->assertStatus(401);
@@ -173,9 +165,8 @@ class RefreshTokenControllerTest extends TestCase
         ]);
 
         // Act: Make request with revoked refresh token
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $revokedToken->token_hash
-        ]);
+        $response = $this->withCookie('refresh_token', $revokedToken->token_hash)
+            ->post('/api/auth/refresh');
 
         // Assert: Error response
         $response->assertStatus(401);
@@ -207,11 +198,9 @@ class RefreshTokenControllerTest extends TestCase
         $originalRefreshToken = $loginResult['refresh_token'];
 
         // Act: Make request with different user agent
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $originalRefreshToken
-        ], [], [], [
-            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        ]);
+        $response = $this->withCookie('refresh_token', $originalRefreshToken)
+            ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+            ->post('/api/auth/refresh');
 
         // Assert: Success response (device detection is handled internally)
         $response->assertStatus(200);
@@ -249,16 +238,14 @@ class RefreshTokenControllerTest extends TestCase
         $originalRefreshToken = $loginResult['refresh_token'];
 
         // Act: Use refresh token first time
-        $response1 = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $originalRefreshToken
-        ]);
+        $response1 = $this->withCookie('refresh_token', $originalRefreshToken)
+            ->post('/api/auth/refresh');
 
         $response1->assertStatus(200);
 
         // Act: Try to use same refresh token again
-        $response2 = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $originalRefreshToken
-        ]);
+        $response2 = $this->withCookie('refresh_token', $originalRefreshToken)
+            ->post('/api/auth/refresh');
 
         // Assert: Second request fails
         $response2->assertStatus(401);
@@ -283,9 +270,8 @@ class RefreshTokenControllerTest extends TestCase
         ]);
 
         // Act: Make request with suspended user's refresh token
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $refreshToken->token_hash
-        ]);
+        $response = $this->withCookie('refresh_token', $refreshToken->token_hash)
+            ->post('/api/auth/refresh');
 
         // Assert: Error response
         $response->assertStatus(401);
@@ -317,9 +303,8 @@ class RefreshTokenControllerTest extends TestCase
         $originalRefreshToken = $loginResult['refresh_token'];
 
         // Act: Make request
-        $response = $this->call('POST', '/api/auth/refresh', [], [
-            'refresh_token' => $originalRefreshToken
-        ]);
+        $response = $this->withCookie('refresh_token', $originalRefreshToken)
+            ->post('/api/auth/refresh');
 
         // Assert: Success response
         $response->assertStatus(200);

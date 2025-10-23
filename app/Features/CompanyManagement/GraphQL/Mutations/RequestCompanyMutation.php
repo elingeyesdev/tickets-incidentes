@@ -20,7 +20,7 @@ class RequestCompanyMutation extends BaseMutation
 
             // Verificar si el email ya tiene una solicitud pendiente
             if ($this->requestService->hasPendingRequest($input['adminEmail'])) {
-                throw new Error('Ya existe una solicitud pendiente con este email', null, null, null, null, null, [
+                throw new Error('A pending request already exists with this email', null, null, null, null, null, [
                     'code' => 'REQUEST_ALREADY_EXISTS',
                     'email' => $input['adminEmail']
                 ]);
@@ -51,7 +51,7 @@ class RequestCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al enviar solicitud de empresa: ' . $e->getMessage());
+            throw new Error('Error submitting company request: ' . $e->getMessage());
         }
     }
 }

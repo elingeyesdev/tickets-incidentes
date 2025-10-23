@@ -22,7 +22,7 @@ class IsFollowingCompanyQuery extends BaseQuery
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +31,7 @@ class IsFollowingCompanyQuery extends BaseQuery
             $company = $this->companyService->findById($args['companyId']);
 
             if (!$company) {
-                throw new Error('Empresa no encontrada', null, null, null, null, null, [
+                throw new Error('Company not found', null, null, null, null, null, [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['companyId']
                 ]);
@@ -43,7 +43,7 @@ class IsFollowingCompanyQuery extends BaseQuery
         } catch (Error $e) {
             throw $e;
         } catch (\Exception $e) {
-            throw new Error('Error al verificar seguimiento: ' . $e->getMessage());
+            throw new Error('Error verifying follow status: ' . $e->getMessage());
         }
     }
 }

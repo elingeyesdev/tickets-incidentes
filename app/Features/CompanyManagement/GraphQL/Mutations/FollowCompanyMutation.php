@@ -22,7 +22,7 @@ class FollowCompanyMutation extends BaseMutation
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +31,7 @@ class FollowCompanyMutation extends BaseMutation
             $company = $this->companyService->findById($args['companyId']);
 
             if (!$company) {
-                throw new Error('Empresa no encontrada', null, null, null, null, null, [
+                throw new Error('Company not found', null, null, null, null, null, [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['companyId']
                 ]);
@@ -39,7 +39,7 @@ class FollowCompanyMutation extends BaseMutation
 
             // Validar que la empresa esté activa
             if ($company->status !== 'active') {
-                throw new Error('La empresa está suspendida', null, null, null, null, null, [
+                throw new Error('Company is suspended', null, null, null, null, null, [
                     'code' => 'COMPANY_SUSPENDED',
                     'companyId' => $company->id
                 ]);
@@ -51,7 +51,7 @@ class FollowCompanyMutation extends BaseMutation
             // Retornar resultado
             return [
                 'success' => true,
-                'message' => "Ahora sigues a {$company->name}.",
+                'message' => "You are now following {$company->name}.",
                 'company' => $company,
                 'followedAt' => $follow->followed_at->toIso8601String(),
             ];
@@ -81,7 +81,7 @@ class FollowCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al seguir empresa: ' . $e->getMessage());
+            throw new Error('Error following company: ' . $e->getMessage());
         }
     }
 }

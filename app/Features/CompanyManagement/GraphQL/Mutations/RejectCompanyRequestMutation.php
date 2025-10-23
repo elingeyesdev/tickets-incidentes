@@ -21,7 +21,7 @@ class RejectCompanyRequestMutation extends BaseMutation
             $reviewer = JWTHelper::getAuthenticatedUser();
 
             if (!$reviewer) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -30,7 +30,7 @@ class RejectCompanyRequestMutation extends BaseMutation
             $request = CompanyRequest::find($args['requestId']);
 
             if (!$request) {
-                throw new Error('Solicitud no encontrada', null, null, null, null, null, [
+                throw new Error('Request not found', null, null, null, null, null, [
                     'code' => 'REQUEST_NOT_FOUND',
                     'requestId' => $args['requestId']
                 ]);
@@ -48,7 +48,7 @@ class RejectCompanyRequestMutation extends BaseMutation
                 'code' => 'REQUEST_NOT_PENDING'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al rechazar solicitud: ' . $e->getMessage());
+            throw new Error('Error rejecting request: ' . $e->getMessage());
         }
     }
 }

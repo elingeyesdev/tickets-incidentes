@@ -104,9 +104,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'You are not following this company',
-        ]);
+        $response->assertGraphQLErrorMessage('You are not following this company');
 
         $errors = $response->json('errors');
         $this->assertEquals('NOT_FOLLOWING', $errors[0]['extensions']['code']);
@@ -129,9 +127,7 @@ class UnfollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Company not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Company not found');
     }
 
     /** @test */

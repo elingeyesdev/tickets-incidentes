@@ -156,7 +156,7 @@ class CompanyServiceTest extends TestCase
         // Asignar roles
         $agent1->assignRole('AGENT', $company->id);
         $agent2->assignRole('AGENT', $company->id);
-        $user1->assignRole('USER', $company->id);
+        $user1->assignRole('USER'); // USER is a global role, no company_id
 
         // Act
         $stats = $this->service->getStats($company);

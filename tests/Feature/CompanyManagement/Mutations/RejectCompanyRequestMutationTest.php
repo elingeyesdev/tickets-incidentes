@@ -74,7 +74,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         $this->assertDatabaseHas('business.company_requests', [
             'id' => $request->id,
             'status' => 'rejected',
-            'reviewed_by_id' => $admin->id,
+            'reviewed_by' => $admin->id,
         ]);
 
         $request->refresh();
@@ -149,9 +149,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Request not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Request not found');
     }
 
     /** @test */
@@ -172,9 +170,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Only pending requests can be rejected',
-        ]);
+        $response->assertGraphQLErrorMessage('Only pending requests can be rejected');
     }
 
     /** @test */

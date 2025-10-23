@@ -145,9 +145,7 @@ class FollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'You are already following this company',
-        ]);
+        $response->assertGraphQLErrorMessage('You are already following this company');
 
         $errors = $response->json('errors');
         $this->assertEquals('ALREADY_FOLLOWING', $errors[0]['extensions']['code']);
@@ -172,9 +170,7 @@ class FollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Cannot follow a suspended company',
-        ]);
+        $response->assertGraphQLErrorMessage('Cannot follow a suspended company');
 
         $errors = $response->json('errors');
         $this->assertEquals('COMPANY_SUSPENDED', $errors[0]['extensions']['code']);
@@ -209,9 +205,7 @@ class FollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'You have reached the maximum number of companies you can follow',
-        ]);
+        $response->assertGraphQLErrorMessage('You have reached the maximum number of companies you can follow');
 
         $errors = $response->json('errors');
         $this->assertEquals('MAX_FOLLOWS_EXCEEDED', $errors[0]['extensions']['code']);
@@ -238,9 +232,7 @@ class FollowCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLError([
-            'message' => 'Company not found',
-        ]);
+        $response->assertGraphQLErrorMessage('Company not found');
 
         $errors = $response->json('errors');
         $this->assertEquals('COMPANY_NOT_FOUND', $errors[0]['extensions']['code']);

@@ -19,7 +19,7 @@ class UpdateCompanyMutation extends BaseMutation
             $company = $this->companyService->findById($args['id']);
 
             if (!$company) {
-                throw new Error('Empresa no encontrada', null, null, null, null, null, [
+                throw new Error('Company not found', null, null, null, null, null, [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['id']
                 ]);
@@ -116,7 +116,7 @@ class UpdateCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al actualizar empresa: ' . $e->getMessage());
+            throw new Error('Error updating company: ' . $e->getMessage());
         }
     }
 }

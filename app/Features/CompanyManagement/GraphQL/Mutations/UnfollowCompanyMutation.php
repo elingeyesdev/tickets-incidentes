@@ -22,7 +22,7 @@ class UnfollowCompanyMutation extends BaseMutation
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('Usuario no autenticado', null, null, null, null, null, [
+                throw new Error('User not authenticated', null, null, null, null, null, [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +31,7 @@ class UnfollowCompanyMutation extends BaseMutation
             $company = $this->companyService->findById($args['companyId']);
 
             if (!$company) {
-                throw new Error('Empresa no encontrada', null, null, null, null, null, [
+                throw new Error('Company not found', null, null, null, null, null, [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['companyId']
                 ]);
@@ -47,7 +47,7 @@ class UnfollowCompanyMutation extends BaseMutation
                 'code' => 'NOT_FOLLOWING'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error al dejar de seguir empresa: ' . $e->getMessage());
+            throw new Error('Error unfollowing company: ' . $e->getMessage());
         }
     }
 }

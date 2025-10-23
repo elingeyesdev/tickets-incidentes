@@ -310,7 +310,7 @@ input CompanyRequestInput {
         @rules(apply: ["required", "max:100"])
 
     website: URL
-        @rules(apply: ["url"])
+        @rules(apply: ["active_url"])
 
     contactAddress: String
         @rules(apply: ["max:500"])
@@ -343,7 +343,7 @@ input CreateCompanyInput {
 
     phone: PhoneNumber
     website: URL
-        @rules(apply: ["url"])
+        @rules(apply: ["active_url"])
 
     contactInfo: ContactInfoInput
     initialConfig: CompanyConfigInput
@@ -364,7 +364,7 @@ input UpdateCompanyInput {
 
     phone: PhoneNumber
     website: URL
-        @rules(apply: ["url"])
+        @rules(apply: ["active_url"])
 
     contactInfo: ContactInfoInput
     config: CompanyConfigInput
@@ -397,9 +397,9 @@ input CompanyConfigInput {
 
 input CompanyBrandingInput {
     logoUrl: URL
-        @rules(apply: ["url"])
+        @rules(apply: ["active_url"])
     faviconUrl: URL
-        @rules(apply: ["url"])
+        @rules(apply: ["active_url"])
     primaryColor: HexColor
     secondaryColor: HexColor
 }
