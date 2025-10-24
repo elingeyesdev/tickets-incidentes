@@ -40,6 +40,21 @@ Route::get('/reset-password/{token}', function (string $token) {
     return Inertia::render('Public/ResetPassword', ['token' => $token]);
 })->name('password.reset');
 
+// Home page - accessible to everyone (Welcome page handles redirection based on auth state)
+Route::get('/', function () {
+    return Inertia::render('Public/Welcome');
+})->name('home');
+
+// Register user page
+Route::get('/register-user', function () {
+    return Inertia::render('Public/Register');
+})->name('register.user');
+
+// Register company page
+Route::get('/solicitud-empresa', function () {
+    return Inertia::render('Public/RegisterCompany');
+})->name('register.company');
+
 // ============================================================================
 // AUTHENTICATED ROUTES (ALL behind web.auth middleware)
 // Frontend (AuthGuard) handles ALL authorization & redirections
@@ -68,11 +83,7 @@ Route::middleware(['web.auth'])->group(function () {
         return Inertia::render('Authenticated/RoleSelector');
     })->name('role.selector');
 
-    // Home & Dashboard
-    Route::get('/', function () {
-        return Inertia::render('Home');
-    })->name('home');
-
+    // Dashboard route
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');

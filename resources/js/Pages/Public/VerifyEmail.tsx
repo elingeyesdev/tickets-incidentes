@@ -256,7 +256,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                 )}
 
                 {/* User Info */}
-                {user && !token && (
+                {!token && user && (
                     <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                         <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium text-gray-900 dark:text-white">{t('auth.email')}:</span>

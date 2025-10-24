@@ -23,7 +23,7 @@ class TokenManagerClass {
     private roleContexts: unknown[] = [];
     private lastSelectedRole: string | null = null;
 
-    private refreshTimer: number | null = null;
+    private refreshTimer: NodeJS.Timeout | null = null;
 
     private refreshCallbacks = new Set<RefreshCallback>();
     private expiryCallbacks = new Set<ExpiryCallback>();
@@ -258,6 +258,19 @@ class TokenManagerClass {
         for (const callback of this.expiryCallbacks) {
             callback();
         }
+    }
+
+    // Test-friendly aliases
+    public setTokens(token: string, expiresIn: number): void {
+        this.setToken(token, expiresIn, null, []);
+    }
+
+    public clearTokens(): void {
+        this.clearToken();
+    }
+
+    public validateCurrentToken(): TokenValidationStatus | null {
+        return this.validateToken();
     }
 }
 

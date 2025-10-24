@@ -80,7 +80,7 @@ export const useLogin = (options?: UseLoginOptions) => {
             let redirectPath: string;
 
             // Priority 1: Email verification (must be first)
-            if (!user.emailVerified) {
+            if ((user as any).emailVerified === false) {
                 redirectPath = '/verify-email';
                 console.log('🔄 useLogin: Redirecting to email verification');
             }

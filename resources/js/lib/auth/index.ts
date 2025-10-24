@@ -12,6 +12,8 @@
 export { TokenManager } from './TokenManager';
 export { PersistenceService } from './PersistenceService';
 export { TokenRefreshService } from './TokenRefreshService';
+export { HeartbeatService } from './HeartbeatService';
+export { authMachine } from './AuthMachine';
 
 // Exportar constantes y configuraciones
 export { AuthChannel } from './AuthChannel';
