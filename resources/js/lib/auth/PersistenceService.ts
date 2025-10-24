@@ -73,12 +73,25 @@ class IndexedDBBackend implements StorageBackend {
     }
 
     async set(data: PersistedData): Promise<void> {
-        const store = await this.getStore('readwrite');
-        const request = store.put({ key: KEY, data });
-        return new Promise((resolve, reject) => {
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve();
-        });
+        try {
+            console.log('[IndexedDB] Getting store...');
+            const store = await this.getStore('readwrite');
+            console.log('[IndexedDB] Store acquired, putting data...');
+            const request = store.put({ key: KEY, data });
+            return new Promise((resolve, reject) => {
+                request.onerror = () => {
+                    console.error('[IndexedDB] Put failed:', request.error);
+                    reject(request.error);
+                };
+                request.onsuccess = () => {
+                    console.log('[IndexedDB] Put successful');
+                    resolve();
+                };
+            });
+        } catch (error) {
+            console.error('[IndexedDB] Set error:', error);
+            throw error;
+        }
     }
 
     async clear(): Promise<void> {
@@ -169,7 +182,14 @@ class PersistenceServiceClass {
             await this.clearState();
             return;
         }
-        await this.backend.set(dataToPersist);
+        try {
+            console.log('[PersistenceService] Starting saveState...', { backend: this.backend.constructor.name });
+            await this.backend.set(dataToPersist);
+            console.log('[PersistenceService] saveState completed successfully');
+        } catch (error) {
+            console.error('[PersistenceService] saveState failed:', error);
+            throw error;
+        }
     }
 
     async loadState(): Promise<PersistedData | null> {

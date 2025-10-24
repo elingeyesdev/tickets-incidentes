@@ -18,6 +18,20 @@ interface VerifyEmailPageProps {
 function VerifyEmailContent({ token }: VerifyEmailPageProps) {
     const { user, refreshUser } = useAuth();
     const { t } = useLocale();
+    
+    // Extract token from URL query params if not provided as prop
+    const [urlToken, setUrlToken] = useState<string | null>(token || null);
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !token) {
+            const params = new URLSearchParams(window.location.search);
+            const queryToken = params.get('token');
+            if (queryToken) {
+                setUrlToken(queryToken);
+                console.log('🔑 Token extracted from URL');
+            }
+        }
+    }, [token]);
     const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error'>('pending');
     const [message, setMessage] = useState<string>('');
     const [canResend, setCanResend] = useState(false); // Empieza deshabilitado
@@ -81,27 +95,27 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
     // Si hay token en URL, verificar automáticamente SOLO si es de un link de email
     // (token presente en URL, no es el usuario que viene de registro directo)
     useEffect(() => {
-        if (token && token.length > 10) {
+        if (urlToken && urlToken.length > 10) {
             console.log('🔑 Token de email detectado, verificando automáticamente...');
             // Pequeño delay para que el usuario vea la pantalla
             const timer = setTimeout(() => {
-                verifyEmail({ variables: { token } });
+                verifyEmail({ variables: { token: urlToken } });
             }, 500);
             return () => clearTimeout(timer);
         }
         return undefined;
-    }, [token]);
+    }, [urlToken]);
     
     // Auto-cerrar pestaña después de verificación exitosa (si se abrió desde email)
     useEffect(() => {
-        if (verificationStatus === 'success' && token && window.opener) {
+        if (verificationStatus === 'success' && urlToken && window.opener) {
             // Esta pestaña fue abierta desde un email, cerrarla automáticamente después de 3 segundos
             console.log('✅ Verificación exitosa, cerrando pestaña en 3 segundos...');
             setTimeout(() => {
                 window.close();
             }, 3000);
         }
-    }, [verificationStatus, token]);
+    }, [verificationStatus, urlToken]);
 
     const handleResend = () => {
         resendVerification();
@@ -133,12 +147,33 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         }
     };
 
+    // Wait for user to be loaded before showing the full UI
+    if (!user) {
+        return (
+            <div className="max-w-md mx-auto opacity-0 animate-[fadeIn_0.8s_ease-out_forwards]">
+                <Card padding="lg" className="shadow-xl border border-gray-200 dark:border-gray-700">
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-6">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        </div>
+                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                            Cargando...
+                        </h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Verificando sesión
+                        </p>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-md mx-auto opacity-0 animate-[fadeIn_0.8s_ease-out_forwards]">
             <Card padding="lg" className="shadow-xl border border-gray-200 dark:border-gray-700">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    {verificationStatus === 'pending' && token && (
+                    {verificationStatus === 'pending' && urlToken && (
                         <>
                             {/* Loading minimalista */}
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-6">
@@ -214,7 +249,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                         </>
                     )}
 
-                    {!token && (
+                    {!urlToken && (
                         <>
                             {/* Email pendiente minimalista */}
                             <div className="relative inline-flex items-center justify-center mb-6">
@@ -256,7 +291,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                 )}
 
                 {/* User Info */}
-                {!token && user && (
+                {!urlToken && (
                     <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                         <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium text-gray-900 dark:text-white">{t('auth.email')}:</span>
@@ -301,7 +336,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                         </Button>
                     )}
 
-                    {!token && user && !user.emailVerified && (
+                    {!urlToken && !user.emailVerified && (
                         <>
                             <Button
                                 variant="primary"
@@ -367,7 +402,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                         </>
                     )}
 
-                    {(verificationStatus === 'error' || !token) && !showSkipWarning && (
+                    {(verificationStatus === 'error' || !urlToken) && !showSkipWarning && (
                         <Button 
                             variant="ghost" 
                             size="lg" 

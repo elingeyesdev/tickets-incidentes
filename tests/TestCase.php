@@ -83,6 +83,10 @@ abstract class TestCase extends BaseTestCase
      * for all subsequent requests. This is the recommended way to authenticate users
      * in tests as it matches production authentication flow.
      *
+     * IMPORTANT: The JWTAuthenticationMiddleware (configured in lighthouse.php) will
+     * automatically process this token and set the necessary request attributes that
+     * the @jwt directive expects.
+     *
      * @param User $user The user to authenticate
      * @return $this
      */
@@ -92,9 +96,11 @@ abstract class TestCase extends BaseTestCase
         $tokenService = app(TokenService::class);
 
         // Generate access token with test session ID
-        $token = $tokenService->generateAccessToken($user, 'test_session_' . uniqid());
+        $sessionId = 'test_session_' . uniqid();
+        $token = $tokenService->generateAccessToken($user, $sessionId);
 
         // Add Authorization header to all subsequent requests
+        // The JWTAuthenticationMiddleware will process this header automatically
         $this->withHeaders([
             'Authorization' => "Bearer {$token}",
         ]);

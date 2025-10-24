@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Features\CompanyManagement\Services\CompanyService;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
@@ -22,7 +23,7 @@ class FollowCompanyMutation extends BaseMutation
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('User not authenticated', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('User not authenticated', [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +32,7 @@ class FollowCompanyMutation extends BaseMutation
             $company = $this->companyService->findById($args['companyId']);
 
             if (!$company) {
-                throw new Error('Company not found', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('Company not found', [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['companyId']
                 ]);
@@ -39,7 +40,7 @@ class FollowCompanyMutation extends BaseMutation
 
             // Validar que la empresa esté activa
             if ($company->status !== 'active') {
-                throw new Error('Cannot follow a suspended company', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('Cannot follow a suspended company', [
                     'code' => 'COMPANY_SUSPENDED',
                     'companyId' => $company->id
                 ]);
@@ -63,23 +64,23 @@ class FollowCompanyMutation extends BaseMutation
             $message = $e->getMessage();
 
             if (str_contains($message, 'already following')) {
-                throw new Error($message, null, null, null, null, $e, [
+                throw new GraphQLErrorWithExtensions($message, [
                     'code' => 'ALREADY_FOLLOWING',
                     'companyId' => $args['companyId']
-                ]);
+                ], $e);
             }
 
             if (str_contains($message, 'maximum number')) {
-                throw new Error($message, null, null, null, null, $e, [
+                throw new GraphQLErrorWithExtensions($message, [
                     'code' => 'MAX_FOLLOWS_EXCEEDED',
                     'currentFollows' => 50,
                     'maxAllowed' => 50
-                ]);
+                ], $e);
             }
 
-            throw new Error($message, null, null, null, null, $e, [
+            throw new GraphQLErrorWithExtensions($message, [
                 'code' => 'VALIDATION_ERROR'
-            ]);
+            ], $e);
         } catch (\Exception $e) {
             throw new Error($e->getMessage());
         }

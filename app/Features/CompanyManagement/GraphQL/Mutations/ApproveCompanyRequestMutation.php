@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Services\CompanyRequestService;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
@@ -21,7 +22,7 @@ class ApproveCompanyRequestMutation extends BaseMutation
             $reviewer = JWTHelper::getAuthenticatedUser();
 
             if (!$reviewer) {
-                throw new Error('User not authenticated', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('User not authenticated', [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -30,7 +31,7 @@ class ApproveCompanyRequestMutation extends BaseMutation
             $request = CompanyRequest::find($args['requestId']);
 
             if (!$request) {
-                throw new Error('Request not found', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('Request not found', [
                     'code' => 'REQUEST_NOT_FOUND',
                     'requestId' => $args['requestId']
                 ]);
@@ -43,10 +44,6 @@ class ApproveCompanyRequestMutation extends BaseMutation
 
         } catch (Error $e) {
             throw $e;
-        } catch (\InvalidArgumentException $e) {
-            throw new Error($e->getMessage(), null, null, null, null, $e, [
-                'code' => 'REQUEST_NOT_PENDING'
-            ]);
         } catch (\Exception $e) {
             throw new Error($e->getMessage());
         }

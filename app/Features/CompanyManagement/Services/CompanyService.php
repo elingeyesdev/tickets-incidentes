@@ -61,34 +61,26 @@ class CompanyService
      */
     public function update(Company $company, array $data): Company
     {
-        DB::transaction(function () use ($company, $data) {
-            $company->update(array_filter([
-                'name' => $data['name'] ?? null,
-                'legal_name' => $data['legal_name'] ?? null,
-                'support_email' => $data['support_email'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'website' => $data['website'] ?? null,
-                'contact_address' => $data['contact_address'] ?? null,
-                'contact_city' => $data['contact_city'] ?? null,
-                'contact_state' => $data['contact_state'] ?? null,
-                'contact_country' => $data['contact_country'] ?? null,
-                'contact_postal_code' => $data['contact_postal_code'] ?? null,
-                'tax_id' => $data['tax_id'] ?? null,
-                'legal_representative' => $data['legal_representative'] ?? null,
-                'business_hours' => $data['business_hours'] ?? null,
-                'timezone' => $data['timezone'] ?? null,
-                'logo_url' => $data['logo_url'] ?? null,
-                'favicon_url' => $data['favicon_url'] ?? null,
-                'primary_color' => $data['primary_color'] ?? null,
-                'secondary_color' => $data['secondary_color'] ?? null,
-                'settings' => $data['settings'] ?? null,
-            ], fn($value) => $value !== null));
+        return DB::transaction(function () use ($company, $data) {
+            // Construir array de actualización solo con campos presentes
+            $updateData = [];
+
+            foreach ($data as $key => $value) {
+                if ($value !== null) {
+                    $updateData[$key] = $value;
+                }
+            }
+
+            // Actualizar empresa
+            if (!empty($updateData)) {
+                $company->update($updateData);
+            }
 
             // Disparar evento
             event(new CompanyUpdated($company));
-        });
 
-        return $company->fresh();
+            return $company->fresh();
+        });
     }
 
     /**

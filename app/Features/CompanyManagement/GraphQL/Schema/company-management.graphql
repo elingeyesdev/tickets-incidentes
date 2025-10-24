@@ -154,7 +154,7 @@ type CompanyForFollowing {
     id: UUID!
 
     """Código único"""
-    companyCode: String!
+    companyCode: String! @rename(attribute: "company_code")
 
     """Nombre comercial"""
     name: String!
@@ -182,6 +182,7 @@ type CompanyForFollowing {
 
     """Si yo la estoy siguiendo"""
     isFollowedByMe: Boolean!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@isFollowedByMe")
 }
 
 """
@@ -191,7 +192,7 @@ CASO DE USO: Query company($id) para detalle completo
 type Company implements Node & Timestamped {
     # Identificadores
     id: UUID!
-    companyCode: String!
+    companyCode: String! @rename(attribute: "company_code")
 
     # Info básica
     name: String!
@@ -222,16 +223,16 @@ type Company implements Node & Timestamped {
     status: CompanyStatus!
 
     # Admin (SIN loops)
-    adminId: UUID!
-    adminName: String!
-    adminEmail: Email!
+    adminId: UUID! @rename(attribute: "admin_user_id")
+    adminName: String! @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@adminName")
+    adminEmail: Email! @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@adminEmail")
 
     # Estadísticas (contadores)
-    activeAgentsCount: Int!
-    totalUsersCount: Int!
+    activeAgentsCount: Int! @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@activeAgentsCount")
+    totalUsersCount: Int! @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@totalUsersCount")
     totalTicketsCount: Int!
     openTicketsCount: Int!
-    followersCount: Int!
+    followersCount: Int! @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@followersCount")
 
     # Flags contextuales
     isFollowedByMe: Boolean @jwt
@@ -247,23 +248,60 @@ CASO DE USO: myFollowedCompanies query
 """
 type CompanyFollowInfo {
     id: UUID!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@id")
+
     company: CompanyMinimal!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@company")
+
     followedAt: DateTime!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@followedAt")
+
     myTicketsCount: Int!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@myTicketsCount")
+
     lastTicketCreatedAt: DateTime
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@lastTicketCreatedAt")
+
     hasUnreadAnnouncements: Boolean!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFollowInfoFieldResolvers@hasUnreadAnnouncements")
 }
 
 """
 Solicitud de empresa pendiente de aprobación
 """
 type CompanyRequest implements Node & Timestamped {
+    # Identificadores
     id: UUID!
-    requestCode: String!
-    companyName: String!
-    adminEmail: Email!
-    businessDescription: String!
+    requestCode: String! @rename(attribute: "request_code")
+
+    # Información de la empresa solicitada
+    companyName: String! @rename(attribute: "company_name")
+    legalName: String @rename(attribute: "legal_name")
+    adminEmail: Email! @rename(attribute: "admin_email")
+    businessDescription: String! @rename(attribute: "business_description")
+
+    # Detalles adicionales
+    website: URL
+    industryType: String @rename(attribute: "industry_type")
+    estimatedUsers: Int @rename(attribute: "estimated_users")
+
+    # Información de contacto
+    contactAddress: String @rename(attribute: "contact_address")
+    contactCity: String @rename(attribute: "contact_city")
+    contactCountry: String @rename(attribute: "contact_country")
+    contactPostalCode: String @rename(attribute: "contact_postal_code")
+    taxId: String @rename(attribute: "tax_id")
+
+    # Estado y revisión
     status: CompanyRequestStatus!
+    reviewedBy: UUID @rename(attribute: "reviewed_by")
+    reviewedAt: DateTime @rename(attribute: "reviewed_at")
+    rejectionReason: String @rename(attribute: "rejection_reason")
+
+    # Empresa creada (si fue aprobada)
+    createdCompanyId: UUID @rename(attribute: "created_company_id")
+
+    # Auditoría
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -300,7 +338,7 @@ input CompanyRequestInput {
     companyName: String!
         @rules(apply: ["required", "min:2", "max:200"])
 
-    adminEmail: Email!
+    adminEmail: String!
         @rules(apply: ["required", "email"])
 
     businessDescription: String!
@@ -309,20 +347,20 @@ input CompanyRequestInput {
     industryType: String!
         @rules(apply: ["required", "max:100"])
 
-    website: URL
-        @rules(apply: ["active_url"])
+    website: String
+        @rules(apply: ["nullable", "url"])
 
     contactAddress: String
-        @rules(apply: ["max:500"])
+        @rules(apply: ["nullable", "max:500"])
 
     contactCity: String
-        @rules(apply: ["max:100"])
+        @rules(apply: ["nullable", "max:100"])
 
     contactCountry: String
-        @rules(apply: ["max:100"])
+        @rules(apply: ["nullable", "max:100"])
 
     taxId: String
-        @rules(apply: ["max:50"])
+        @rules(apply: ["nullable", "max:50"])
 }
 
 """

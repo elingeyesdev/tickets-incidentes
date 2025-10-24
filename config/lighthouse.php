@@ -363,7 +363,10 @@ return [
         // 3. Errores de validación (422)
         \App\Shared\GraphQL\Errors\CustomValidationErrorHandler::class,
 
-        // 4. Catch-all y logging (debe ir al final)
+        // 4. Preservar extensions de GraphQL Error (codes y metadata)
+        \App\Shared\GraphQL\Errors\GraphQLErrorPreservationHandler::class,
+
+        // 5. Catch-all y logging (debe ir al final)
         Nuwave\Lighthouse\Execution\ReportingErrorHandler::class,
     ],
 

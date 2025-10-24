@@ -7,6 +7,7 @@ use App\Features\CompanyManagement\Events\CompanyUnfollowed;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use App\Features\UserManagement\Models\User;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use Illuminate\Support\Facades\DB;
 
 class CompanyFollowService
@@ -23,13 +24,23 @@ class CompanyFollowService
     {
         // Verificar si ya está siguiendo
         if ($this->isFollowing($user, $company)) {
-            throw new \Exception('You are already following this company');
+            throw GraphQLErrorWithExtensions::validation(
+                'You are already following this company',
+                'ALREADY_FOLLOWING',
+                ['companyId' => $company->id]
+            );
         }
 
         // Verificar límite
-        if ($this->getFollowedCount($user) >= self::MAX_FOLLOWS) {
-            throw new \Exception(
-                'You have reached the maximum number of companies you can follow'
+        $currentFollows = $this->getFollowedCount($user);
+        if ($currentFollows >= self::MAX_FOLLOWS) {
+            throw GraphQLErrorWithExtensions::validation(
+                'You have reached the maximum number of companies you can follow',
+                'MAX_FOLLOWS_EXCEEDED',
+                [
+                    'currentFollows' => $currentFollows,
+                    'maxAllowed' => self::MAX_FOLLOWS
+                ]
             );
         }
 
@@ -54,7 +65,11 @@ class CompanyFollowService
     {
         // Verificar si está siguiendo
         if (!$this->isFollowing($user, $company)) {
-            throw new \Exception('You are not following this company');
+            throw GraphQLErrorWithExtensions::validation(
+                'You are not following this company',
+                'NOT_FOLLOWING',
+                ['companyId' => $company->id]
+            );
         }
 
         return DB::transaction(function () use ($user, $company) {

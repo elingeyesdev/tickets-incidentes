@@ -2,15 +2,12 @@
 
 namespace App\Features\CompanyManagement\GraphQL\Resolvers;
 
-use App\Features\CompanyManagement\GraphQL\DataLoaders\FollowersCountByCompanyIdBatchLoader;
-use App\Features\CompanyManagement\GraphQL\DataLoaders\CompanyStatsBatchLoader;
-use App\Shared\GraphQL\DataLoaders\UserByIdLoader;
+use App\Shared\Helpers\JWTHelper;
 
 /**
  * Field resolvers para Company type
  *
- * Estos resolvers usan DataLoaders para prevenir N+1 queries
- * cuando GraphQL solicita campos calculados en listas de empresas.
+ * Estos resolvers usan relaciones Eloquent y queries directas.
  *
  * IMPORTANTE: Estos resolvers deben registrarse en el schema GraphQL usando:
  * @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@followersCount")
@@ -20,60 +17,67 @@ class CompanyFieldResolvers
     /**
      * Resolver para Company.followersCount
      *
-     * Usa DataLoader para cargar conteos en batch, evitando N+1.
+     * Cuenta los followers directamente.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
      * @return int
      */
     public function followersCount($company): int
     {
-        $loader = app(FollowersCountByCompanyIdBatchLoader::class);
-        return $loader->load($company->id);
+        // Contar followers directamente
+        return \App\Features\CompanyManagement\Models\CompanyFollower::where('company_id', $company->id)
+            ->count();
     }
 
     /**
      * Resolver para Company.activeAgentsCount
      *
-     * Usa DataLoader para cargar stats en batch, evitando N+1.
+     * Cuenta usuarios con rol AGENT en esta empresa.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
      * @return int
      */
     public function activeAgentsCount($company): int
     {
-        $loader = app(CompanyStatsBatchLoader::class);
-        $stats = $loader->load($company->id);
-        return $stats['active_agents_count'];
+        // Contar usuarios con rol AGENT en esta empresa
+        return \App\Features\UserManagement\Models\UserRole::where('company_id', $company->id)
+            ->whereHas('role', function ($query) {
+                $query->where('role_code', 'AGENT');
+            })
+            ->whereHas('user', function ($query) {
+                $query->where('status', 'ACTIVE');
+            })
+            ->count();
     }
 
     /**
      * Resolver para Company.totalUsersCount
      *
-     * Usa DataLoader para cargar stats en batch, evitando N+1.
+     * Cuenta todos los usuarios de esta empresa.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
      * @return int
      */
     public function totalUsersCount($company): int
     {
-        $loader = app(CompanyStatsBatchLoader::class);
-        $stats = $loader->load($company->id);
-        return $stats['total_users_count'];
+        // Contar todos los usuarios de esta empresa
+        return \App\Features\UserManagement\Models\UserRole::where('company_id', $company->id)
+            ->distinct('user_id')
+            ->count('user_id');
     }
 
     /**
      * Resolver para Company.adminName
      *
-     * Usa DataLoader para cargar admin User en batch, evitando N+1.
-     * El UserByIdLoader ya carga profiles con eager loading.
+     * Usa relación Eloquent directamente.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
      * @return string
      */
     public function adminName($company): string
     {
-        $loader = app(UserByIdLoader::class);
-        $admin = $loader->load($company->admin_user_id);
+        // Usar relación Eloquent directamente
+        $admin = $company->admin;
 
         if (!$admin) {
             return 'Unknown';
@@ -81,25 +85,52 @@ class CompanyFieldResolvers
 
         $profile = $admin->profile;
         if (!$profile) {
-            return $admin->email;
+            return 'Unknown';
         }
 
-        return $profile->first_name . ' ' . $profile->last_name;
+        return trim("{$profile->first_name} {$profile->last_name}");
     }
 
     /**
      * Resolver para Company.adminEmail
      *
-     * Usa DataLoader para cargar admin User en batch, evitando N+1.
+     * Usa relación Eloquent directamente.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
      * @return string
      */
     public function adminEmail($company): string
     {
-        $loader = app(UserByIdLoader::class);
-        $admin = $loader->load($company->admin_user_id);
+        // Usar relación Eloquent directamente
+        $admin = $company->admin;
 
-        return $admin?->email ?? 'unknown@example.com';
+        return $admin ? $admin->email : 'unknown@example.com';
+    }
+
+    /**
+     * Resolver para isFollowedByMe
+     *
+     * Verifica si el usuario autenticado sigue esta empresa.
+     *
+     * @param \App\Features\CompanyManagement\Models\Company $company
+     * @return bool
+     */
+    public function isFollowedByMe($company): bool
+    {
+        // Si el atributo ya está seteado (desde CompaniesQuery), usarlo
+        if (isset($company->isFollowedByMe)) {
+            return $company->isFollowedByMe;
+        }
+
+        // Si no, calcularlo
+        if (!JWTHelper::isAuthenticated()) {
+            return false;
+        }
+
+        $user = JWTHelper::getAuthenticatedUser();
+
+        return \App\Features\CompanyManagement\Models\CompanyFollower::where('user_id', $user->id)
+            ->where('company_id', $company->id)
+            ->exists();
     }
 }

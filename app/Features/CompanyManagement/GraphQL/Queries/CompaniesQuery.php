@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Queries;
 
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Services\CompanyFollowService;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use App\Shared\GraphQL\Queries\BaseQuery;
 use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
@@ -23,6 +24,13 @@ class CompaniesQuery extends BaseQuery
             $first = $args['first'] ?? 20;
             $search = $args['search'] ?? null;
             $filters = $args['filters'] ?? [];
+
+            // Validar autenticación para contexto EXPLORE
+            if ($context === 'EXPLORE' && !JWTHelper::isAuthenticated()) {
+                throw GraphQLErrorWithExtensions::unauthenticated(
+                    'You must be authenticated to access EXPLORE context'
+                );
+            }
 
             // Construir consulta base
             $query = Company::query();
@@ -89,20 +97,18 @@ class CompaniesQuery extends BaseQuery
 
             // Aplicar paginación
             $offset = ($page - 1) * $first;
-            $companies = $query->skip($offset)->take($first)->get();
+            $companies = $query->offset($offset)->limit($first)->get();
 
-            // Calcular isFollowedByMe para contexto EXPLORE usando DataLoader (evita N+1)
-            if ($context === 'EXPLORE' && JWTHelper::isAuthenticated()) {
+            // Calcular isFollowedByMe para contexto EXPLORE
+            if ($context === 'EXPLORE') {
                 $user = JWTHelper::getAuthenticatedUser();
 
-                // Usar DataLoader para cargar todos los company IDs seguidos en 1 query
-                $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);
-                $followedIds = $loader->load($user->id);
+                // Use direct query for synchronous result (avoids Deferred/Promise issues)
+                $followedIds = $this->followService->getFollowedCompanies($user)->pluck('id')->toArray();
 
-                $companies = $companies->map(function($company) use ($followedIds) {
+                foreach ($companies as $company) {
                     $company->isFollowedByMe = in_array($company->id, $followedIds);
-                    return $company;
-                });
+                }
             }
 
             // Calcular información de paginación

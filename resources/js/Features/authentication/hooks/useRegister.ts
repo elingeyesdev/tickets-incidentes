@@ -74,7 +74,7 @@ export const useRegister = (options?: UseRegisterOptions) => {
     ]);
 
     const [register, { loading, error }] = useMutation<RegisterMutation, RegisterMutationVariables>(REGISTER_MUTATION, {
-        onCompleted: (data) => {
+        onCompleted: async (data) => {
             const { accessToken, expiresIn, user } = data.register;
             const roleContexts = user.roleContexts;
 
@@ -86,14 +86,14 @@ export const useRegister = (options?: UseRegisterOptions) => {
             // 1. IMPORTANT: Clear any existing session before setting the new one.
             TokenManager.clearToken();
 
-            // 2. Use TokenManager to store the new token (single source of truth)
-            TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
+            // 2. Wait for token to be persisted before proceeding
+            await TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
+            console.log('✅ Token persisted successfully');
 
-            // 3. Broadcast registration event to other tabs for multi-tab sync
-            AuthChannel.broadcast({
-                type: 'LOGIN',
-                payload: { userId: user.id, timestamp: Date.now() }
-            });
+            // 3. NOTE: Don't broadcast LOGIN to other tabs
+            // Broadcasting causes AuthContext to receive the event and reload the page
+            // The current tab's AuthContext will detect the token via onReady()
+            // Other tabs will detect the login via their own session detection on page load
 
             // Callback de éxito
             if (options?.onSuccess) {
@@ -101,8 +101,8 @@ export const useRegister = (options?: UseRegisterOptions) => {
                 return;
             }
 
-            // 4. Redirect to email verification using Inertia router
-            router.visit('/verify-email');
+            // 4. Redirect to email verification
+            window.location.href = '/verify-email';
         },
         onError: (err) => {
             const errorMessage = err.message || 'Error al registrar usuario';

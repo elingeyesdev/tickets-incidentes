@@ -51,7 +51,7 @@ export const useLogin = (options?: UseLoginOptions) => {
     }, [formData.email, formData.password]);
 
     const [login, { loading, error }] = useMutation<LoginMutation, LoginMutationVariables>(LOGIN_MUTATION, {
-        onCompleted: (data) => {
+        onCompleted: async (data) => {
             const { accessToken, expiresIn, user } = data.login;
             const roleContexts = user.roleContexts;
 
@@ -61,14 +61,14 @@ export const useLogin = (options?: UseLoginOptions) => {
                 onboardingCompleted: user.onboardingCompletedAt
             });
 
-            // Use TokenManager to store token (single source of truth)
-            TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
+            // Wait for token to be persisted before proceeding
+            await TokenManager.setToken(accessToken, expiresIn, user, roleContexts);
+            console.log('✅ Token persisted successfully');
 
-            // Broadcast login event to other tabs for multi-tab sync
-            AuthChannel.broadcast({
-                type: 'LOGIN',
-                payload: { userId: user.id, timestamp: Date.now() }
-            });
+            // NOTE: Don't broadcast LOGIN to other tabs yet
+            // The current tab's AuthContext will detect the token via onReady()
+            // Broadcasting would trigger window.location.reload() in AuthContext, which we don't want
+            // Other tabs will detect the login via their own session detection on page load
 
             // Callback de éxito
             if (options?.onSuccess) {
@@ -100,8 +100,9 @@ export const useLogin = (options?: UseLoginOptions) => {
                 console.log('🔄 useLogin: Redirecting to role selector');
             }
 
-            // Use Inertia router for smooth navigation
-            router.visit(redirectPath);
+            // Use window.location.href instead of router.visit() to preserve token in sessionStorage
+            // router.visit() causes Inertia to reinitialize and lose the token before it's saved
+            window.location.href = redirectPath;
         },
         onError: (err) => {
             const errorMessage = err.message || 'Error al iniciar sesión';

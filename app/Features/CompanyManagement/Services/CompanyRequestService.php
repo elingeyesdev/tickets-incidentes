@@ -10,6 +10,7 @@ use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
 use App\Features\UserManagement\Services\UserService;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Support\Facades\DB;
 
@@ -69,7 +70,11 @@ class CompanyRequestService
     {
         // Validar que la solicitud esté pendiente
         if (!$request->isPending()) {
-            throw new \Exception('Only pending requests can be approved');
+            throw GraphQLErrorWithExtensions::validation(
+                'Only pending requests can be approved',
+                'REQUEST_NOT_PENDING',
+                ['requestId' => $request->id, 'currentStatus' => $request->status]
+            );
         }
 
         return DB::transaction(function () use ($request, $reviewer) {
@@ -123,7 +128,11 @@ class CompanyRequestService
     {
         // Validar que la solicitud esté pendiente
         if (!$request->isPending()) {
-            throw new \Exception('Only pending requests can be rejected');
+            throw GraphQLErrorWithExtensions::validation(
+                'Only pending requests can be rejected',
+                'REQUEST_NOT_PENDING',
+                ['requestId' => $request->id, 'currentStatus' => $request->status]
+            );
         }
 
         DB::transaction(function () use ($request, $reviewer, $reason) {

@@ -45,7 +45,7 @@ class TokenManagerClass {
         });
     }
 
-    public setToken(token: string, expiresIn: number, user: unknown, roleContexts: unknown[]): void {
+    public async setToken(token: string, expiresIn: number, user: unknown, roleContexts: unknown[]): Promise<void> {
         if (!isValidJWTFormat(token)) {
             authLogger.error('Attempted to set an invalid JWT.');
             this.clearToken();
@@ -67,7 +67,8 @@ class TokenManagerClass {
         }
 
         authLogger.info('New access token and user data have been set.');
-        PersistenceService.saveState({ 
+        // Wait for persistence to complete before returning
+        await PersistenceService.saveState({ 
             accessToken: this.accessToken, 
             user: this.user, 
             roleContexts: this.roleContexts,

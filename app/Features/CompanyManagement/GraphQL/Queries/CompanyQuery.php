@@ -31,15 +31,10 @@ class CompanyQuery extends BaseQuery
             // Eager load admin con profile para evitar N+1 en getters
             $company->load('admin.profile');
 
-            // Calcular isFollowedByMe si el usuario está autenticado usando DataLoader
+            // Calcular isFollowedByMe si el usuario está autenticado
             if (JWTHelper::isAuthenticated()) {
                 $user = JWTHelper::getAuthenticatedUser();
-
-                // Usar DataLoader para evitar query individual
-                $loader = app(\App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserIdBatchLoader::class);
-                $followedIds = $loader->load($user->id);
-
-                $company->isFollowedByMe = in_array($company->id, $followedIds);
+                $company->isFollowedByMe = $this->followService->isFollowing($user, $company);
             } else {
                 $company->isFollowedByMe = false;
             }

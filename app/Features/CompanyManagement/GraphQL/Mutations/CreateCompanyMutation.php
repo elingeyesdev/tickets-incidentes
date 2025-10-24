@@ -69,15 +69,6 @@ class CreateCompanyMutation extends BaseMutation
                 $data['timezone'] = $config['timezone'] ?? 'America/La_Paz';
             }
 
-            // Marca/Identidad visual
-            if (isset($input['branding'])) {
-                $branding = $input['branding'];
-                $data['logo_url'] = $branding['logoUrl'] ?? null;
-                $data['favicon_url'] = $branding['faviconUrl'] ?? null;
-                $data['primary_color'] = $branding['primaryColor'] ?? '#007bff';
-                $data['secondary_color'] = $branding['secondaryColor'] ?? '#6c757d';
-            }
-
             // Crear empresa
             $company = $this->companyService->create($data, $adminUser);
 

@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 
 use App\Features\CompanyManagement\Services\CompanyFollowService;
 use App\Features\CompanyManagement\Services\CompanyService;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use App\Shared\GraphQL\Mutations\BaseMutation;
 use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
@@ -22,7 +23,7 @@ class UnfollowCompanyMutation extends BaseMutation
             $user = JWTHelper::getAuthenticatedUser();
 
             if (!$user) {
-                throw new Error('User not authenticated', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('User not authenticated', [
                     'code' => 'UNAUTHENTICATED'
                 ]);
             }
@@ -31,7 +32,7 @@ class UnfollowCompanyMutation extends BaseMutation
             $company = $this->companyService->findById($args['companyId']);
 
             if (!$company) {
-                throw new Error('Company not found', null, null, null, null, null, [
+                throw new GraphQLErrorWithExtensions('Company not found', [
                     'code' => 'COMPANY_NOT_FOUND',
                     'companyId' => $args['companyId']
                 ]);
@@ -43,9 +44,9 @@ class UnfollowCompanyMutation extends BaseMutation
         } catch (Error $e) {
             throw $e;
         } catch (\InvalidArgumentException $e) {
-            throw new Error($e->getMessage(), null, null, null, null, $e, [
+            throw new GraphQLErrorWithExtensions($e->getMessage(), [
                 'code' => 'NOT_FOLLOWING'
-            ]);
+            ], $e);
         } catch (\Exception $e) {
             throw new Error($e->getMessage());
         }
