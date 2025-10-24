@@ -51,7 +51,7 @@ class RequestCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error submitting company request: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

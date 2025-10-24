@@ -76,12 +76,8 @@ class CustomAuthenticationErrorHandler extends BaseErrorHandler
     {
         $message = $exception->getMessage();
 
-        // Si es mensaje genérico de Laravel, mejorarlo
-        if (empty($message) || $message === 'Unauthenticated.') {
-            return 'Authentication required: No valid token provided or token is invalid.';
-        }
-
-        return $message;
+        // Return message as-is for consistency with test expectations
+        return $message ?: 'Unauthenticated';
     }
 
     /**

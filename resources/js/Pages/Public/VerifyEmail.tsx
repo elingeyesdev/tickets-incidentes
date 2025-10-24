@@ -113,7 +113,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         
         if (!user || !user.roleContexts || user.roleContexts.length === 0) {
             // Sin roles o sin usuario, ir a onboarding (es un usuario nuevo)
-            window.location.href = '/onboarding/profile';
+            router.visit('/onboarding/profile', { replace: true });
             return;
         }
 
@@ -122,13 +122,13 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         
         if (!hasCompletedOnboarding) {
             // Usuario nuevo, ir a onboarding
-            window.location.href = '/onboarding/profile';
+            router.visit('/onboarding/profile', { replace: true });
         } else {
             // Usuario existente que ya completó onboarding, ir a dashboard
             if (user.roleContexts.length === 1) {
-                window.location.href = user.roleContexts[0].dashboardPath;
+                router.visit(user.roleContexts[0].dashboardPath, { replace: true });
             } else {
-                window.location.href = '/role-selector';
+                router.visit('/role-selector', { replace: true });
             }
         }
     };
@@ -286,13 +286,13 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                                 
                                 if (!hasCompletedOnboarding) {
                                     // Usuario nuevo, ir a onboarding
-                                    window.location.href = '/onboarding/profile';
+                                    router.visit('/onboarding/profile', { replace: true });
                                 } else {
                                     // Usuario existente, ir a dashboard según roles
                                     if (user?.roleContexts && user.roleContexts.length === 1) {
-                                        window.location.href = user.roleContexts[0].dashboardPath;
+                                        router.visit(user.roleContexts[0].dashboardPath, { replace: true });
                                     } else {
-                                        window.location.href = '/role-selector';
+                                        router.visit('/role-selector', { replace: true });
                                     }
                                 }
                             }}
@@ -372,7 +372,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                             variant="ghost" 
                             size="lg" 
                             className="w-full"
-                            onClick={() => window.location.href = '/login'}
+                            onClick={() => router.visit('/login', { replace: true })}
                         >
                             {t('onboarding.verify.back_to_login')}
                         </Button>

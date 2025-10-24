@@ -74,17 +74,13 @@ GRAPHQL;
             // Verificar si hubo error en la validación del token (middleware)
             $jwtError = $request->attributes->get('jwt_error');
             if ($jwtError) {
-                throw new AuthenticationException(
-                    'Authentication required: ' . $jwtError
-                );
+                throw new AuthenticationException('Unauthenticated');
             }
 
             // Obtener user_id del token validado
             $userId = $request->attributes->get('jwt_user_id');
             if (!$userId) {
-                throw new AuthenticationException(
-                    'Authentication required: No valid token provided or token is invalid.'
-                );
+                throw new AuthenticationException('Unauthenticated');
             }
 
             // Cargar usuario completo con roles activos
@@ -136,9 +132,8 @@ GRAPHQL;
         }
 
         if (!$hasRequiredRole) {
-            throw new ForbiddenException(
-                'Insufficient permissions. Required roles: ' . implode(', ', $requiredRoles)
-            );
+            // Return generic "Unauthenticated" to avoid revealing endpoint existence
+            throw new AuthenticationException('Unauthenticated');
         }
     }
 }

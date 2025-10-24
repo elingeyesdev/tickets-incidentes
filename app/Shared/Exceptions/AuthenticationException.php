@@ -63,7 +63,7 @@ class AuthenticationException extends HelpdeskException
 
     public static function unauthenticated(): self
     {
-        $exception = new self('Authentication required: No valid token provided or token is invalid.');
+        $exception = new self('Unauthenticated');
         $exception->errorCode = 'UNAUTHENTICATED';
         return $exception;
     }

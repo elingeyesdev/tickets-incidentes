@@ -48,7 +48,7 @@ class ApproveCompanyRequestMutation extends BaseMutation
                 'code' => 'REQUEST_NOT_PENDING'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error approving request: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

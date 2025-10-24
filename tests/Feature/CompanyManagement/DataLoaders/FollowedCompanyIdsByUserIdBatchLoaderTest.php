@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\GraphQL\DataLoaders\FollowedCompanyIdsByUserI
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use App\Features\UserManagement\Models\User;
+use GraphQL\Executor\Promise\Adapter\SyncPromise;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -27,7 +28,12 @@ class FollowedCompanyIdsByUserIdBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(FollowedCompanyIdsByUserIdBatchLoader::class);
-        $followedIds = $loader->load($user->id);
+        $deferred = $loader->load($user->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $followedIds = $promise->result;
 
         // Assert
         $this->assertIsArray($followedIds);
@@ -45,7 +51,12 @@ class FollowedCompanyIdsByUserIdBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(FollowedCompanyIdsByUserIdBatchLoader::class);
-        $followedIds = $loader->load($user->id);
+        $deferred = $loader->load($user->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $followedIds = $promise->result;
 
         // Assert
         $this->assertIsArray($followedIds);
@@ -69,7 +80,6 @@ class FollowedCompanyIdsByUserIdBatchLoaderTest extends TestCase
         // User 3 follows nothing
 
         // Act - Simulate multiple loads (DataLoader pattern)
-        DB::enableQueryLog();
         $loader = app(FollowedCompanyIdsByUserIdBatchLoader::class);
 
         $deferred1 = $loader->load($users[0]->id);
@@ -77,12 +87,19 @@ class FollowedCompanyIdsByUserIdBatchLoaderTest extends TestCase
         $deferred3 = $loader->load($users[2]->id);
 
         // Resolve all deferred values (triggers batch query)
-        $followedIds1 = $deferred1->then(fn($v) => $v)->wait();
-        $followedIds2 = $deferred2->then(fn($v) => $v)->wait();
-        $followedIds3 = $deferred3->then(fn($v) => $v)->wait();
+        $promise1 = $deferred1->then(fn($v) => $v);
+        $promise2 = $deferred2->then(fn($v) => $v);
+        $promise3 = $deferred3->then(fn($v) => $v);
 
+        // Enable query log BEFORE triggering resolution
+        DB::enableQueryLog();
+        SyncPromise::runQueue();
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
+
+        $followedIds1 = $promise1->result;
+        $followedIds2 = $promise2->result;
+        $followedIds3 = $promise3->result;
 
         // Assert - Should be only 1 query for all 3 users
         $followerQueries = collect($queries)->filter(function($query) {
@@ -113,19 +130,25 @@ class FollowedCompanyIdsByUserIdBatchLoaderTest extends TestCase
         }
 
         // Act: Simulate GraphQL query companies(EXPLORE) checking isFollowedByMe
-        DB::enableQueryLog();
-
         $loader = app(FollowedCompanyIdsByUserIdBatchLoader::class);
-        $followedIds = $loader->load($user->id);
+        $deferred = $loader->load($user->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+
+        // Enable query log BEFORE triggering resolution
+        DB::enableQueryLog();
+        SyncPromise::runQueue();
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $followedIds = $promise->result;
 
         // Simulate checking isFollowedByMe for all 20 companies
         $results = [];
         foreach ($companies as $company) {
             $results[$company->id] = in_array($company->id, $followedIds);
         }
-
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
 
         // Assert: Only 1 query to load follows (not 20)
         $followerQueries = collect($queries)->filter(function($query) {

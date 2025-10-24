@@ -78,7 +78,7 @@ class CompanyStatsBatchLoader
         // Batch load active agents count with GROUP BY
         $agentCounts = UserRole::query()
             ->whereIn('company_id', $companyIds)
-            ->where('role_code', 'agent')
+            ->where('role_code', 'AGENT')
             ->where('is_active', true)
             ->select('company_id', DB::raw('COUNT(*) as count'))
             ->groupBy('company_id')

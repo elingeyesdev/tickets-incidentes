@@ -47,7 +47,7 @@ class UnfollowCompanyMutation extends BaseMutation
                 'code' => 'NOT_FOLLOWING'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error unfollowing company: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

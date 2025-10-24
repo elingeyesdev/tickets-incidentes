@@ -115,7 +115,7 @@ class RoleService
         if ($role->requiresCompany() && !$companyId) {
             throw ValidationException::withField(
                 'company_id',
-                "El rol {$role->role_name} requiere contexto de empresa"
+                "{$role->role_name} role requires company context"
             );
         }
 
@@ -123,7 +123,7 @@ class RoleService
         if (!$role->requiresCompany() && $companyId) {
             throw ValidationException::withField(
                 'company_id',
-                "El rol {$role->role_name} no puede tener contexto de empresa"
+                "{$role->role_name} role cannot have company context"
             );
         }
 

@@ -18,13 +18,7 @@ const OnboardingLayoutContent: React.FC<OnboardingLayoutProps> = ({
     title, 
     children
 }) => {
-    const { user, logout, loading: authLoading } = useAuth();
-
-    // Redirigir si no hay usuario autenticado
-    if (!authLoading && !user) {
-        window.location.href = '/login';
-        return null;
-    }
+    const { logout } = useAuth();
 
     const handleLogout = () => {
         if (confirm('¿Estás seguro que deseas salir del proceso de configuración?')) {

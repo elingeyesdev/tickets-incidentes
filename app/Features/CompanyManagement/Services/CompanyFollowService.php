@@ -28,10 +28,9 @@ class CompanyFollowService
 
         // Verificar límite
         if ($this->getFollowedCount($user) >= self::MAX_FOLLOWS) {
-            throw new \Exception(sprintf(
-                'You have reached the maximum number of companies you can follow (%d)',
-                self::MAX_FOLLOWS
-            ));
+            throw new \Exception(
+                'You have reached the maximum number of companies you can follow'
+            );
         }
 
         return DB::transaction(function () use ($user, $company) {

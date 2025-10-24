@@ -48,7 +48,7 @@ class RejectCompanyRequestMutation extends BaseMutation
                 'code' => 'REQUEST_NOT_PENDING'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error rejecting request: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

@@ -76,14 +76,21 @@ export const useLogin = (options?: UseLoginOptions) => {
                 return;
             }
 
-            // Determine redirect path based on onboarding status
+            // Determine redirect path based on user state
             let redirectPath: string;
 
-            if (!user.onboardingCompletedAt) {
-                // User hasn't completed onboarding → go to onboarding
+            // Priority 1: Email verification (must be first)
+            if (!user.emailVerified) {
+                redirectPath = '/verify-email';
+                console.log('🔄 useLogin: Redirecting to email verification');
+            }
+            // Priority 2: Onboarding completion
+            else if (!user.onboardingCompletedAt) {
                 redirectPath = '/onboarding/profile';
                 console.log('🔄 useLogin: Redirecting to onboarding');
-            } else if (roleContexts.length === 1) {
+            }
+            // Priority 3: Role selection (if multiple roles)
+            else if (roleContexts.length === 1) {
                 // User with single role → go directly to their dashboard
                 redirectPath = roleContexts[0].dashboardPath;
                 console.log('🔄 useLogin: Redirecting to single dashboard', redirectPath);

@@ -15,16 +15,25 @@ interface PublicRouteProps {
 }
 
 export function PublicRoute({ children }: PublicRouteProps) {
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, hasCompletedOnboarding, user } = useAuth();
 
     useEffect(() => {
         // If auth state is resolved and the user is authenticated, redirect them.
-        if (!loading && isAuthenticated) {
-            // Redirect to a neutral, authenticated entry point.
-            // The AuthGuard on the destination route will handle the rest.
-            router.visit('/dashboard', { replace: true });
+        if (!loading && isAuthenticated && user) {
+            // Determinar ruta según estado del usuario
+            let redirectPath = '/dashboard';
+            
+            if (!hasCompletedOnboarding()) {
+                redirectPath = '/onboarding/profile';
+            } else if (user.roleContexts && user.roleContexts.length > 1) {
+                redirectPath = '/role-selector';
+            } else if (user.roleContexts && user.roleContexts.length === 1) {
+                redirectPath = user.roleContexts[0].dashboardPath || '/dashboard';
+            }
+            
+            router.visit(redirectPath, { replace: true });
         }
-    }, [isAuthenticated, loading]);
+    }, [isAuthenticated, loading, hasCompletedOnboarding, user]);
 
     // While authentication is loading, show a loader to prevent content flashing.
     if (loading) {

@@ -116,7 +116,7 @@ class UpdateCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error updating company: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

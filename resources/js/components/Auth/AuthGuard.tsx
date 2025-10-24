@@ -38,20 +38,26 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles = [
         }
 
         if (user) {
-            // 1. Onboarding Check
+            // 1. Email Verification Check (MUST BE FIRST)
+            if (!user.emailVerified) {
+                router.visit('/verify-email', { replace: true });
+                return;
+            }
+
+            // 2. Onboarding Check
             if (!hasCompletedOnboarding()) {
                 router.visit('/onboarding/profile', { replace: true });
                 return;
             }
 
-            // 2. Role Selection Check for Multi-Role users
+            // 3. Role Selection Check for Multi-Role users
             const multiRole = user.roleContexts && user.roleContexts.length > 1;
             if (multiRole && !lastSelectedRole) {
                 router.visit('/role-selector', { replace: true });
                 return;
             }
 
-            // 3. Role Permission Check
+            // 4. Role Permission Check
             if (allowedRoles.length > 0 && lastSelectedRole) {
                 if (!allowedRoles.includes(lastSelectedRole as RoleCode)) {
                     router.visit('/unauthorized', { replace: true });

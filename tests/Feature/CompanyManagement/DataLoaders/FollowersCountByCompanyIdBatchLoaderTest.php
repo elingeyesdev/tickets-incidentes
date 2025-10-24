@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\GraphQL\DataLoaders\FollowersCountByCompanyId
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use App\Features\UserManagement\Models\User;
+use GraphQL\Executor\Promise\Adapter\SyncPromise;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -28,7 +29,12 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(FollowersCountByCompanyIdBatchLoader::class);
-        $count = $loader->load($company->id);
+        $deferred = $loader->load($company->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $count = $promise->result;
 
         // Assert
         $this->assertEquals(5, $count);
@@ -42,7 +48,12 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(FollowersCountByCompanyIdBatchLoader::class);
-        $count = $loader->load($company->id);
+        $deferred = $loader->load($company->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $count = $promise->result;
 
         // Assert
         $this->assertEquals(0, $count);
@@ -68,7 +79,6 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
         // Company 3: 0 followers
 
         // Act
-        DB::enableQueryLog();
         $loader = app(FollowersCountByCompanyIdBatchLoader::class);
 
         $deferred1 = $loader->load($companies[0]->id);
@@ -76,12 +86,19 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
         $deferred3 = $loader->load($companies[2]->id);
 
         // Resolve all deferred values
-        $count1 = $deferred1->then(fn($v) => $v)->wait();
-        $count2 = $deferred2->then(fn($v) => $v)->wait();
-        $count3 = $deferred3->then(fn($v) => $v)->wait();
+        $promise1 = $deferred1->then(fn($v) => $v);
+        $promise2 = $deferred2->then(fn($v) => $v);
+        $promise3 = $deferred3->then(fn($v) => $v);
 
+        // Enable query log BEFORE triggering resolution
+        DB::enableQueryLog();
+        SyncPromise::runQueue();
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
+
+        $count1 = $promise1->result;
+        $count2 = $promise2->result;
+        $count3 = $promise3->result;
 
         // Assert - Should be only 1 query with GROUP BY for all companies
         $countQueries = collect($queries)->filter(function($query) {
@@ -119,16 +136,29 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
         }
 
         // Act: Load follower counts for all companies
-        DB::enableQueryLog();
-
         $loader = app(FollowersCountByCompanyIdBatchLoader::class);
         $counts = [];
         foreach ($companies as $company) {
             $counts[$company->id] = $loader->load($company->id);
         }
 
+        // Enable query log BEFORE triggering resolution
+        DB::enableQueryLog();
+
+        // Resolve all deferred values
+        $promises = [];
+        foreach ($companies as $company) {
+            $promises[$company->id] = $counts[$company->id]->then(fn($v) => $v);
+        }
+        SyncPromise::runQueue();
+
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
+
+        $resolvedCounts = [];
+        foreach ($companies as $company) {
+            $resolvedCounts[$company->id] = $promises[$company->id]->result;
+        }
 
         // Assert: Only 1 query (not 20)
         $countQueries = collect($queries)->filter(function($query) {
@@ -142,7 +172,7 @@ class FollowersCountByCompanyIdBatchLoaderTest extends TestCase
         foreach ($companies as $company) {
             $this->assertEquals(
                 $expectedCounts[$company->id],
-                $counts[$company->id],
+                $resolvedCounts[$company->id],
                 "Follower count for company {$company->id} should match"
             );
         }

@@ -39,7 +39,7 @@ class FollowCompanyMutation extends BaseMutation
 
             // Validar que la empresa esté activa
             if ($company->status !== 'active') {
-                throw new Error('Company is suspended', null, null, null, null, null, [
+                throw new Error('Cannot follow a suspended company', null, null, null, null, null, [
                     'code' => 'COMPANY_SUSPENDED',
                     'companyId' => $company->id
                 ]);
@@ -81,7 +81,7 @@ class FollowCompanyMutation extends BaseMutation
                 'code' => 'VALIDATION_ERROR'
             ]);
         } catch (\Exception $e) {
-            throw new Error('Error following company: ' . $e->getMessage());
+            throw new Error($e->getMessage());
         }
     }
 }

@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\GraphQL\DataLoaders\CompanyStatsBatchLoader;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Models\UserRole;
+use GraphQL\Executor\Promise\Adapter\SyncPromise;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -54,7 +55,12 @@ class CompanyStatsBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(CompanyStatsBatchLoader::class);
-        $stats = $loader->load($company->id);
+        $deferred = $loader->load($company->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $stats = $promise->result;
 
         // Assert
         $this->assertEquals(3, $stats['active_agents_count']);
@@ -69,7 +75,12 @@ class CompanyStatsBatchLoaderTest extends TestCase
 
         // Act
         $loader = app(CompanyStatsBatchLoader::class);
-        $stats = $loader->load($company->id);
+        $deferred = $loader->load($company->id);
+
+        // Resolve the Deferred value
+        $promise = $deferred->then(fn($v) => $v);
+        SyncPromise::runQueue();
+        $stats = $promise->result;
 
         // Assert
         $this->assertEquals(0, $stats['active_agents_count']);
@@ -96,7 +107,9 @@ class CompanyStatsBatchLoaderTest extends TestCase
         // Company 3: 0 agents, 0 users
 
         // Act
+        // Enable query log BEFORE creating loader to capture all queries
         DB::enableQueryLog();
+
         $loader = app(CompanyStatsBatchLoader::class);
 
         $deferred1 = $loader->load($companies[0]->id);
@@ -104,16 +117,21 @@ class CompanyStatsBatchLoaderTest extends TestCase
         $deferred3 = $loader->load($companies[2]->id);
 
         // Resolve all deferred values
-        $stats1 = $deferred1->then(fn($v) => $v)->wait();
-        $stats2 = $deferred2->then(fn($v) => $v)->wait();
-        $stats3 = $deferred3->then(fn($v) => $v)->wait();
+        $promise1 = $deferred1->then(fn($v) => $v);
+        $promise2 = $deferred2->then(fn($v) => $v);
+        $promise3 = $deferred3->then(fn($v) => $v);
+        SyncPromise::runQueue();
 
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
+        $stats1 = $promise1->result;
+        $stats2 = $promise2->result;
+        $stats3 = $promise3->result;
+
         // Assert - Should be 2 queries (1 for agents, 1 for total users) with GROUP BY
         $roleQueries = collect($queries)->filter(function($query) {
-            return strpos($query['query'], 'user_company_roles') !== false;
+            return strpos($query['query'], 'user_roles') !== false;
         });
 
         $this->assertCount(2, $roleQueries, 'Should execute only 2 queries (agents + users) with GROUP BY for all companies');
@@ -172,6 +190,7 @@ class CompanyStatsBatchLoaderTest extends TestCase
         }
 
         // Act: Load stats for all companies
+        // Enable query log BEFORE creating loader to capture all queries
         DB::enableQueryLog();
 
         $loader = app(CompanyStatsBatchLoader::class);
@@ -180,12 +199,24 @@ class CompanyStatsBatchLoaderTest extends TestCase
             $stats[$company->id] = $loader->load($company->id);
         }
 
+        // Resolve all deferred values
+        $promises = [];
+        foreach ($companies as $company) {
+            $promises[$company->id] = $stats[$company->id]->then(fn($v) => $v);
+        }
+        SyncPromise::runQueue();
+
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
+        $resolvedStats = [];
+        foreach ($companies as $company) {
+            $resolvedStats[$company->id] = $promises[$company->id]->result;
+        }
+
         // Assert: Only 2 queries (not 30 = 15 companies * 2 queries each)
         $roleQueries = collect($queries)->filter(function($query) {
-            return strpos($query['query'], 'user_company_roles') !== false;
+            return strpos($query['query'], 'user_roles') !== false;
         });
 
         $this->assertCount(2, $roleQueries, 'Should execute only 2 queries (agents + users), not 30 (N+1 prevented)');
@@ -194,12 +225,12 @@ class CompanyStatsBatchLoaderTest extends TestCase
         foreach ($companies as $company) {
             $this->assertEquals(
                 $expectedStats[$company->id]['active_agents_count'],
-                $stats[$company->id]['active_agents_count'],
+                $resolvedStats[$company->id]['active_agents_count'],
                 "Active agents count for company {$company->id} should match"
             );
             $this->assertEquals(
                 $expectedStats[$company->id]['total_users_count'],
-                $stats[$company->id]['total_users_count'],
+                $resolvedStats[$company->id]['total_users_count'],
                 "Total users count for company {$company->id} should match"
             );
         }
