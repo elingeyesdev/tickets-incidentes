@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\GraphQL\Mutations;
 
 use App\Features\CompanyManagement\Services\CompanyService;
 use App\Shared\GraphQL\Mutations\BaseMutation;
+use App\Shared\Helpers\JWTHelper;
 use GraphQL\Error\Error;
 
 class UpdateCompanyMutation extends BaseMutation
@@ -15,6 +16,9 @@ class UpdateCompanyMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null)
     {
         try {
+            // Get authenticated user
+            $authenticatedUser = JWTHelper::getAuthenticatedUser();
+
             // Buscar empresa
             $company = $this->companyService->findById($args['id']);
 
@@ -25,7 +29,26 @@ class UpdateCompanyMutation extends BaseMutation
                 ]);
             }
 
-            // Los permisos son validados por la directiva @can en el schema
+            // Custom authorization: PLATFORM_ADMIN can update any company, COMPANY_ADMIN can only update their own
+            $isPlatformAdmin = $authenticatedUser->hasRole('PLATFORM_ADMIN');
+            $isCompanyAdmin = $authenticatedUser->hasRoleInCompany('COMPANY_ADMIN', $company->id);
+
+            if (!$isPlatformAdmin && !$isCompanyAdmin) {
+                // Check if user has COMPANY_ADMIN role for any company (but not this one)
+                $hasCompanyAdminRoleElsewhere = $authenticatedUser->hasRole('COMPANY_ADMIN');
+
+                if ($hasCompanyAdminRoleElsewhere) {
+                    // User is a COMPANY_ADMIN but not for THIS company
+                    throw new Error('This action is unauthorized', null, null, null, null, null, [
+                        'code' => 'UNAUTHORIZED'
+                    ]);
+                } else {
+                    // User doesn't have the required role at all
+                    throw new Error('Unauthenticated', null, null, null, null, null, [
+                        'code' => 'UNAUTHENTICATED'
+                    ]);
+                }
+            }
             // Extraer datos de entrada
             $input = $args['input'];
             $data = [];

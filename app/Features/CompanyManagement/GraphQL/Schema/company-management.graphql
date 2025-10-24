@@ -90,7 +90,10 @@ extend type Mutation {
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\ApproveCompanyRequestMutation")
         @audit(action: "company_request_approve", includePayload: true)
 
-    rejectCompanyRequest(requestId: UUID!, reason: String!): Boolean!
+    rejectCompanyRequest(
+        requestId: UUID!
+        reason: String! @rules(apply: ["required", "min:3"])
+    ): Boolean!
         @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\RejectCompanyRequestMutation")
         @audit(action: "company_request_reject", includePayload: true)
@@ -102,8 +105,7 @@ extend type Mutation {
         @audit(action: "company_create", includePayload: true)
 
     updateCompany(id: UUID!, input: UpdateCompanyInput!): Company!
-        @jwt(requires: [PLATFORM_ADMIN, COMPANY_ADMIN])
-        @can(ability: "update", model: "Company", find: "id")
+        @jwt
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\UpdateCompanyMutation")
         @audit(action: "company_update", includePayload: true)
 }
@@ -160,7 +162,7 @@ type CompanyForFollowing {
     name: String!
 
     """Logo"""
-    logoUrl: URL
+    logoUrl: URL @rename(attribute: "logo_url")
 
     """Descripción breve del negocio"""
     description: String
@@ -169,16 +171,17 @@ type CompanyForFollowing {
     industry: String
 
     """Ciudad"""
-    city: String
+    city: String @rename(attribute: "contact_city")
 
     """País"""
-    country: String
+    country: String @rename(attribute: "contact_country")
 
     """Color primario para branding"""
-    primaryColor: HexColor
+    primaryColor: HexColor @rename(attribute: "primary_color")
 
     """Total de seguidores (social proof)"""
     followersCount: Int!
+        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@followersCount")
 
     """Si yo la estoy siguiendo"""
     isFollowedByMe: Boolean!
@@ -196,28 +199,28 @@ type Company implements Node & Timestamped {
 
     # Info básica
     name: String!
-    legalName: String
-    supportEmail: Email
+    legalName: String @rename(attribute: "legal_name")
+    supportEmail: Email @rename(attribute: "support_email")
     phone: PhoneNumber
     website: URL
 
     # Contacto
-    contactAddress: String
-    contactCity: String
-    contactCountry: String
+    contactAddress: String @rename(attribute: "contact_address")
+    contactCity: String @rename(attribute: "contact_city")
+    contactCountry: String @rename(attribute: "contact_country")
 
     # Legal
-    taxId: String
-    legalRepresentative: String
+    taxId: String @rename(attribute: "tax_id")
+    legalRepresentative: String @rename(attribute: "legal_representative")
 
     # Config
-    businessHours: JSON!
+    businessHours: JSON! @rename(attribute: "business_hours")
     timezone: String!
 
     # Branding
-    logoUrl: URL
-    primaryColor: HexColor!
-    secondaryColor: HexColor!
+    logoUrl: URL @rename(attribute: "logo_url")
+    primaryColor: HexColor! @rename(attribute: "primary_color")
+    secondaryColor: HexColor! @rename(attribute: "secondary_color")
 
     # Estado
     status: CompanyStatus!

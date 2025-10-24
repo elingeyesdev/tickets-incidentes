@@ -103,6 +103,9 @@ GRAPHQL;
             // Agregar usuario al contexto para que esté disponible en el resolver
             $context->user = $user;
 
+            // Also set in request attributes so JWTHelper can access it
+            $request->attributes->set('jwt_user', $user);
+
             // Llamar al resolver original con el usuario en contexto
             return $resolver($root, $args, $context, $resolveInfo);
         });

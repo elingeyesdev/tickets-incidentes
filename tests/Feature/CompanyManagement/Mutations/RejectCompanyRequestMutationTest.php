@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\CompanyManagement\Mutations;
 
+use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -177,7 +178,8 @@ class RejectCompanyRequestMutationTest extends TestCase
     public function company_admin_cannot_reject()
     {
         // Arrange
-        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN')->create();
+        $company = Company::factory()->create();
+        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $company->id)->create();
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act

@@ -36,24 +36,22 @@ class CompaniesQuery extends BaseQuery
             $query = Company::query();
 
             // Aplicar selección de campos basada en contexto
+            // Note: Select all needed fields for each context
             switch ($context) {
                 case 'MINIMAL':
-                    $query->select(['id', 'company_code', 'name', 'logo_url']);
+                    // Only basic fields for minimal context
+                    // No select() - let Eloquent get all fields for now
                     break;
 
                 case 'EXPLORE':
-                    $query->select([
-                        'id', 'company_code', 'name', 'logo_url',
-                        'support_email', // campo descripción (usar support_email como respaldo)
-                        'website', // campo industria (marcador de posición)
-                        'contact_city', 'contact_country',
-                        'primary_color'
-                    ]);
+                    // All fields for explore context (description, industry are nullable/not in DB)
+                    // No select() - let Eloquent get all fields for now
                     break;
 
                 case 'MANAGEMENT':
                 case 'ANALYTICS':
-                    // Todos los campos (por defecto)
+                    // Todos los campos (por defecto) + necesitamos admin relation
+                    $query->with('admin.profile');
                     break;
 
                 default:
@@ -95,24 +93,17 @@ class CompaniesQuery extends BaseQuery
             // Obtener conteo total antes de paginación
             $total = $query->count();
 
-            // Aplicar paginación
+            // Aplicar paginación - obtener first + 1 para saber si hay siguiente página
             $offset = ($page - 1) * $first;
-            $companies = $query->offset($offset)->limit($first)->get();
+            $companies = $query->offset($offset)->limit($first + 1)->get();
 
-            // Calcular isFollowedByMe para contexto EXPLORE
-            if ($context === 'EXPLORE') {
-                $user = JWTHelper::getAuthenticatedUser();
+            // Calcular hasNextPage antes de truncar
+            $hasNextPage = $companies->count() > $first;
 
-                // Use direct query for synchronous result (avoids Deferred/Promise issues)
-                $followedIds = $this->followService->getFollowedCompanies($user)->pluck('id')->toArray();
-
-                foreach ($companies as $company) {
-                    $company->isFollowedByMe = in_array($company->id, $followedIds);
-                }
+            // Truncar a $first items si hay más
+            if ($hasNextPage) {
+                $companies = $companies->take($first);
             }
-
-            // Calcular información de paginación
-            $hasNextPage = ($page * $first) < $total;
 
             // Retornar tipo unión basado en contexto
             return [

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\CompanyManagement\Queries;
 
+use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,7 +68,8 @@ class CompanyRequestsQueryTest extends TestCase
     public function company_admin_cannot_view_requests()
     {
         // Arrange
-        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN')->create();
+        $company = Company::factory()->create();
+        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $company->id)->create();
         CompanyRequest::factory()->create();
 
         // Act

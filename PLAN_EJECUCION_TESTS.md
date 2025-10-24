@@ -257,15 +257,16 @@ Si algún ❌ → Rechazar, dar feedback, re-ejecutar
 | Agente 1 | RequestCompanyMutation | ✅ COMPLETADO | 1→8 | 45 min | 24-Oct-2025 |
 | Agente 2 | CreateCompanyMutation | ✅ COMPLETADO | 6→10 | 35 min | 24-Oct-2025 |
 | Agente 3 | ApproveCompanyRequest | ✅ COMPLETADO | 11→12 | 20 min | 24-Oct-2025 |
-| Agente 4 | UpdateCompanyMutation | ⏳ PENDIENTE | - | - | - |
-| Agente 5 | CompaniesQuery | ⏳ PENDIENTE | - | - | - |
-| Agente 6-8 | Resto | ⏳ PENDIENTE | - | - | - |
+| Agente 4 | UpdateCompanyMutation | ✅ COMPLETADO | 3→12 | 40 min | 24-Oct-2025 |
+| Agente 5 | CompaniesQuery | ❌ RECHAZADO | 10→12/20 | 60 min | 24-Oct-2025 |
+| Director | RejectCompanyRequest | ✅ COMPLETADO | 8→10 | 15 min | 24-Oct-2025 |
+| Director | CompanyRequestsQuery | 🟡 PARCIAL | 8→9/10 | 10 min | 24-Oct-2025 |
 
 ### Progreso Global
 - **Inicio:** 132/167 (79.0%)
-- **Actual:** 139/167 (83.2%)
-- **Recuperados:** +7 tests
-- **Restantes:** 28 tests
+- **Final:** 150/167 (89.8%)
+- **Recuperados:** +18 tests
+- **Restantes:** 17 tests (10.2%)
 
 ### Reporte Agente 1 - RequestCompanyMutation
 **Archivos modificados:**
@@ -323,7 +324,97 @@ Si algún ❌ → Rechazar, dar feedback, re-ejecutar
 
 **Impacto Agent 2:** Excepcional - 11/12 tests resueltos indirectamente
 
+### Reporte Agente 4 - UpdateCompanyMutation
+**Archivos modificados:**
+1. `company-management.graphql` - Eliminó @can directive, agregó 14 @rename directives
+2. `UpdateCompanyMutation.php` - Implementó autorización JWT custom (PLATFORM_ADMIN vs COMPANY_ADMIN)
+
+**Problemas resueltos:**
+- ✅ Autorización custom → Implementada sin @can (JWT puro)
+- ✅ Diferenciación errores → "unauthorized" vs "unauthenticated" según contexto
+- ✅ @rename faltantes → 14 campos corregidos (legalName, primaryColor, etc.)
+- ✅ Permisos granulares → PLATFORM_ADMIN (cualquier empresa), COMPANY_ADMIN (solo propia)
+
+**Cumplimiento restricciones:** ✅ 100%
+- Eliminó directiva @can de Laravel (prohibida)
+- Implementó autorización custom con JWTHelper
+- Lógica delegada a Services (actualización)
+- Autorización en resolver (patrón aceptado)
+
+**Impacto:** El grupo MÁS GRANDE (+9 tests) - Subida de 83.2% → 88.6%
+
+### Reporte Agente 5 - CompaniesQuery
+**Estado:** ❌ RECHAZADO (60% - por debajo del 86% threshold)
+
+**Resultado:** 12/20 tests pasando (reportó incorrectamente "14 tests total")
+**Razón rechazo:**
+- Conteo incorrecto de tests (20 reales vs 14 reportados)
+- Solo 60% pasando (threshold: 86%+)
+- 8 tests aún fallando (paginación, authorization, field resolvers)
+
+**Lecciones:** Queries complejas requieren más debugging que mutations
+
+### Reporte Director - Intervención Directa
+
+**Grupo 1: RejectCompanyRequestMutation** ✅ COMPLETADO (10/10)
+**Archivos modificados:**
+1. `RejectCompanyRequestMutationTest.php` - Fix COMPANY_ADMIN context + import Company
+2. `company-management.graphql` - Agregada validación @rules(min:3) para reason
+
+**Problemas resueltos:**
+- ✅ COMPANY_ADMIN sin company_id → Creada empresa antes de asignar rol
+- ✅ Validación reason vacío → Agregado @rules(apply: ["required", "min:3"])
+- ✅ Missing import → Agregado `use Company`
+
+**Grupo 2: CompanyRequestsQuery** 🟡 PARCIAL (9/10 - 90%)
+**Archivos modificados:**
+1. `CompanyRequestsQueryTest.php` - Fix COMPANY_ADMIN context + import Company
+
+**Problemas resueltos:**
+- ✅ COMPANY_ADMIN sin company_id → Mismo fix que Reject
+
+**Pendiente:**
+- ⏸️ 1 test fallando: "returns_all_fields_of_company_request" (requiere debug de campos específicos)
+
+---
+
+## 📊 RESUMEN FINAL
+
+### Logros
+- ✅ **4 Agentes exitosos** (Agents 1-4): +16 tests
+- ✅ **Director intervention**: +2 tests
+- ✅ **Progreso:** 79.0% → 89.8% (+10.8 puntos porcentuales)
+- ✅ **Total recuperado:** +18 tests en una sesión
+
+### Grupos Completados (100%)
+1. RequestCompanyMutation (8/8)
+2. CreateCompanyMutation (10/10)
+3. ApproveCompanyRequestMutation (12/12)
+4. UpdateCompanyMutation (12/12)
+5. RejectCompanyRequestMutation (10/10)
+
+### Grupos Parciales
+1. CompanyRequestsQuery (9/10 - 90%)
+
+### Grupos Pendientes (~17 tests)
+1. CompaniesQuery (~8 tests) - Query compleja con paginación/autorización
+2. CompanyQuery (~1 test)
+3. Otros queries/mutations (~8 tests)
+
+### Patrones Identificados
+1. **RoleService context** - COMPANY_ADMIN requiere company_id (resuelto en todos)
+2. **@rename directives** - snake_case DB ↔ camelCase GraphQL (resuelto en mayoría)
+3. **Autorización JWT custom** - Eliminación de @can, implementación manual (resuelto)
+4. **Validación strings vacíos** - @rules necesarios además de String! (resuelto)
+5. **active_url validation** - Causa DNS lookups, removido (resuelto)
+
+### Próximos Pasos Recomendados
+1. Debug CompaniesQuery paginación (~2 hrs)
+2. Fix remaining 17 tests (~3-4 hrs)
+3. Target final: 167/167 (100%)
+
 ---
 
 **Generado por:** Claude Code (Director de Proyecto)
-**Última actualización:** 24 Octubre 2025 - 17:30
+**Última actualización:** 24 Octubre 2025 - 19:00
+**Sesión:** feature/auth-refactor

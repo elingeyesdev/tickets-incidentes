@@ -113,21 +113,21 @@ class CompanyFieldResolvers
      * Verifica si el usuario autenticado sigue esta empresa.
      *
      * @param \App\Features\CompanyManagement\Models\Company $company
+     * @param array $args
+     * @param mixed $context
      * @return bool
      */
-    public function isFollowedByMe($company): bool
+    public function isFollowedByMe($company, array $args = [], $context = null): bool
     {
-        // Si el atributo ya está seteado (desde CompaniesQuery), usarlo
-        if (isset($company->isFollowedByMe)) {
-            return $company->isFollowedByMe;
-        }
+        // Get request from context if available
+        $request = $context ? $context->request() : request();
 
-        // Si no, calcularlo
-        if (!JWTHelper::isAuthenticated()) {
+        // Check if user is authenticated via JWT
+        $user = $request->attributes->get('jwt_user');
+
+        if (!$user) {
             return false;
         }
-
-        $user = JWTHelper::getAuthenticatedUser();
 
         return \App\Features\CompanyManagement\Models\CompanyFollower::where('user_id', $user->id)
             ->where('company_id', $company->id)
