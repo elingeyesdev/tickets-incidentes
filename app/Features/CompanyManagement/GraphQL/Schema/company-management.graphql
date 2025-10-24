@@ -238,8 +238,8 @@ type Company implements Node & Timestamped {
     isFollowedByMe: Boolean @jwt
 
     # Auditoría
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
+    updatedAt: DateTime! @rename(attribute: "updated_at")
 }
 
 """
@@ -302,8 +302,8 @@ type CompanyRequest implements Node & Timestamped {
     createdCompanyId: UUID @rename(attribute: "created_company_id")
 
     # Auditoría
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdAt: DateTime! @rename(attribute: "created_at")
+    updatedAt: DateTime! @rename(attribute: "updated_at")
 }
 
 """
@@ -338,6 +338,9 @@ input CompanyRequestInput {
     companyName: String!
         @rules(apply: ["required", "min:2", "max:200"])
 
+    legalName: String
+        @rules(apply: ["nullable", "max:250"])
+
     adminEmail: String!
         @rules(apply: ["required", "email"])
 
@@ -350,6 +353,9 @@ input CompanyRequestInput {
     website: String
         @rules(apply: ["nullable", "url"])
 
+    estimatedUsers: Int
+        @rules(apply: ["nullable", "integer", "min:1"])
+
     contactAddress: String
         @rules(apply: ["nullable", "max:500"])
 
@@ -358,6 +364,9 @@ input CompanyRequestInput {
 
     contactCountry: String
         @rules(apply: ["nullable", "max:100"])
+
+    contactPostalCode: String
+        @rules(apply: ["nullable", "max:20"])
 
     taxId: String
         @rules(apply: ["nullable", "max:50"])
@@ -374,14 +383,13 @@ input CreateCompanyInput {
         @rules(apply: ["max:250"])
 
     adminUserId: UUID!
-        @rules(apply: ["required", "exists:users,id"])
+        @rules(apply: ["required"])
 
     supportEmail: Email
         @rules(apply: ["email"])
 
     phone: PhoneNumber
     website: URL
-        @rules(apply: ["active_url"])
 
     contactInfo: ContactInfoInput
     initialConfig: CompanyConfigInput
@@ -402,7 +410,6 @@ input UpdateCompanyInput {
 
     phone: PhoneNumber
     website: URL
-        @rules(apply: ["active_url"])
 
     contactInfo: ContactInfoInput
     config: CompanyConfigInput
@@ -435,9 +442,7 @@ input CompanyConfigInput {
 
 input CompanyBrandingInput {
     logoUrl: URL
-        @rules(apply: ["active_url"])
     faviconUrl: URL
-        @rules(apply: ["active_url"])
     primaryColor: HexColor
     secondaryColor: HexColor
 }

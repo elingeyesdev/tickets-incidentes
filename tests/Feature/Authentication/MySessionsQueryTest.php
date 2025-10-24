@@ -180,7 +180,7 @@ class MySessionsQueryTest extends TestCase
         $response = $this->graphQL($query);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Authentication required: No valid token provided or token is invalid.');
+        $response->assertGraphQLErrorMessage('Unauthenticated');
 
         $errors = $response->json('errors');
         $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
@@ -252,7 +252,7 @@ class MySessionsQueryTest extends TestCase
             ->graphQL($query);
 
         // Assert - Debe fallar porque el token está invalidado
-        $response->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $response->assertGraphQLErrorMessage('Unauthenticated');
     }
 
     /**

@@ -30,8 +30,8 @@ class CreateCompanyMutationTest extends TestCase
     public function platform_admin_can_create_company_directly()
     {
         // Arrange
-        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
-        $adminUser = User::factory()->create(['email' => 'companyadmin@example.com']);
+        $admin = User::factory()->withProfile()->withRole('PLATFORM_ADMIN')->create();
+        $adminUser = User::factory()->withProfile()->create(['email' => 'companyadmin@example.com']);
 
         $input = [
             'name' => 'Enterprise Solutions Corp',
@@ -175,8 +175,8 @@ class CreateCompanyMutationTest extends TestCase
     public function returns_created_company()
     {
         // Arrange
-        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
-        $adminUser = User::factory()->create();
+        $admin = User::factory()->withProfile()->withRole('PLATFORM_ADMIN')->create();
+        $adminUser = User::factory()->withProfile()->create();
 
         $input = [
             'name' => 'New Company',
@@ -236,14 +236,16 @@ class CreateCompanyMutationTest extends TestCase
         ]);
 
         // Assert
-        $response->assertGraphQLValidationError('input.adminUserId');
+        $response->assertGraphQLValidationError('adminUserId', 'The selected admin user does not exist.');
     }
 
     /** @test */
     public function company_admin_cannot_create_company()
     {
         // Arrange
-        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN')->create();
+        // Create a company first so we can create a COMPANY_ADMIN with proper context
+        $existingCompany = Company::factory()->create();
+        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $existingCompany->id)->create();
         $adminUser = User::factory()->create();
 
         $input = [

@@ -29,7 +29,7 @@ class RequestCompanyMutation extends BaseMutation
             // Enviar solicitud (no se requiere autenticación - endpoint público)
             $request = $this->requestService->submit([
                 'company_name' => $input['companyName'],
-                'legal_name' => $input['legalName'] ?? null,
+                'legal_name' => $input['legalName'] ?? $input['companyName'], // Default to companyName
                 'admin_email' => $input['adminEmail'],
                 'business_description' => $input['businessDescription'],
                 'website' => $input['website'] ?? null,

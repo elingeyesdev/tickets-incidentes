@@ -19,14 +19,8 @@ class CreateCompanyMutation extends BaseMutation
     public function __invoke($root, array $args, $context = null)
     {
         try {
-            // Obtener usuario autenticado (permisos manejados por directiva @auth)
+            // Usuario autenticado y validado por directiva @jwt(requires: [PLATFORM_ADMIN])
             $authenticatedUser = JWTHelper::getAuthenticatedUser();
-
-            if (!$authenticatedUser) {
-                throw new Error('User not authenticated', null, null, null, null, null, [
-                    'code' => 'UNAUTHENTICATED'
-                ]);
-            }
 
             // Extraer datos de entrada
             $input = $args['input'];
@@ -35,9 +29,8 @@ class CreateCompanyMutation extends BaseMutation
             $adminUser = User::find($input['adminUserId']);
 
             if (!$adminUser) {
-                throw new Error('Admin user not found', null, null, null, null, null, [
-                    'code' => 'ADMIN_USER_NOT_FOUND',
-                    'userId' => $input['adminUserId']
+                throw \Nuwave\Lighthouse\Exceptions\ValidationException::withMessages([
+                    'adminUserId' => ['The selected admin user does not exist.']
                 ]);
             }
 
@@ -82,6 +75,9 @@ class CreateCompanyMutation extends BaseMutation
 
             return $company;
 
+        } catch (\Nuwave\Lighthouse\Exceptions\ValidationException $e) {
+            // Re-throw validation exceptions as-is
+            throw $e;
         } catch (Error $e) {
             throw $e;
         } catch (\InvalidArgumentException $e) {

@@ -49,6 +49,9 @@ class CompanyRequestService
                 'status' => 'pending',
             ]);
 
+            // Refrescar para obtener timestamps de la BD
+            $request->refresh();
+
             // Disparar evento
             event(new CompanyRequestSubmitted($request));
 

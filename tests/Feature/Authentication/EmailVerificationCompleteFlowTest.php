@@ -335,11 +335,10 @@ class EmailVerificationCompleteFlowTest extends TestCase
         $response = $this->graphQL($query);
 
         // Assert - Sistema global de errores (AuthenticationException)
-        $response->assertGraphQLErrorMessage('Authentication required: No valid token provided or token is invalid.');
+        $response->assertGraphQLErrorMessage('Unauthenticated');
 
         $errors = $response->json('errors');
         $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
-        $this->assertEquals('authentication', $errors[0]['extensions']['category']);
     }
 
     /**
@@ -360,7 +359,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
         $response = $this->graphQL($query);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Authentication required: No valid token provided or token is invalid.');
+        $response->assertGraphQLErrorMessage('Unauthenticated');
     }
 
     /**

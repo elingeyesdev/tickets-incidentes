@@ -262,7 +262,8 @@ class ApproveCompanyRequestMutationTest extends TestCase
     public function company_admin_cannot_approve()
     {
         // Arrange
-        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN')->create();
+        $company = Company::factory()->create();
+        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $company->id)->create();
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
         // Act

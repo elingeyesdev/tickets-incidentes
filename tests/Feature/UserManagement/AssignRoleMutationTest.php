@@ -138,7 +138,7 @@ class AssignRoleMutationTest extends TestCase
         // Assert
         $this->assertNotNull($response->json('errors'));
         $errors = $response->json('errors');
-        $this->assertStringContainsString('requiere contexto de empresa', $errors[0]['message']);
+        $this->assertStringContainsString('requires company context', $errors[0]['message']);
     }
 
     /**
@@ -170,7 +170,7 @@ class AssignRoleMutationTest extends TestCase
         // Assert
         $this->assertNotNull($response->json('errors'));
         $errors = $response->json('errors');
-        $this->assertStringContainsString('no puede tener contexto de empresa', $errors[0]['message']);
+        $this->assertStringContainsString('cannot have company context', $errors[0]['message']);
     }
 
     /**

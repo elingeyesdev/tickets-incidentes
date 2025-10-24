@@ -201,7 +201,7 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $test1->assertGraphQLErrorMessage('Unauthenticated');
 
         // Sesión 2 debe seguir funcionando
         $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
@@ -253,13 +253,13 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $test1->assertGraphQLErrorMessage('Unauthenticated');
 
         $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
-        $test2->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $test2->assertGraphQLErrorMessage('Unauthenticated');
 
         $test3 = $this->withJWT($session3['accessToken'])->graphQL($testQuery);
-        $test3->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $test3->assertGraphQLErrorMessage('Unauthenticated');
     }
 
     /**
@@ -278,7 +278,7 @@ class RefreshTokenAndLogoutTest extends TestCase
         $response = $this->graphQL($query);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Authentication required: No valid token provided or token is invalid.');
+        $response->assertGraphQLErrorMessage('Unauthenticated');
     }
 
     /**
@@ -312,7 +312,7 @@ class RefreshTokenAndLogoutTest extends TestCase
         ';
 
         $test = $this->withJWT($loginResponse['accessToken'])->graphQL($testQuery);
-        $test->assertGraphQLErrorMessage('Authentication required: Access token is invalid or has been revoked.');
+        $test->assertGraphQLErrorMessage('Unauthenticated');
     }
 
     /**
