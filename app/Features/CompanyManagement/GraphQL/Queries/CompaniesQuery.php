@@ -27,9 +27,7 @@ class CompaniesQuery extends BaseQuery
 
             // Validar autenticación para contexto EXPLORE
             if ($context === 'EXPLORE' && !JWTHelper::isAuthenticated()) {
-                throw GraphQLErrorWithExtensions::unauthenticated(
-                    'You must be authenticated to access EXPLORE context'
-                );
+                throw GraphQLErrorWithExtensions::unauthenticated();
             }
 
             // Construir consulta base

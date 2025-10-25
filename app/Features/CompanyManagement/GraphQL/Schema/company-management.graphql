@@ -179,6 +179,9 @@ type CompanyForFollowing {
     """Color primario para branding"""
     primaryColor: HexColor @rename(attribute: "primary_color")
 
+    """Estado de la empresa"""
+    status: CompanyStatus!
+
     """Total de seguidores (social proof)"""
     followersCount: Int!
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyFieldResolvers@followersCount")
@@ -297,12 +300,14 @@ type CompanyRequest implements Node & Timestamped {
 
     # Estado y revisión
     status: CompanyRequestStatus!
-    reviewedBy: UUID @rename(attribute: "reviewed_by")
+    reviewedById: UUID @rename(attribute: "reviewed_by")
+    reviewedByName: String @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyRequestFieldResolvers@reviewedByName")
     reviewedAt: DateTime @rename(attribute: "reviewed_at")
     rejectionReason: String @rename(attribute: "rejection_reason")
 
     # Empresa creada (si fue aprobada)
     createdCompanyId: UUID @rename(attribute: "created_company_id")
+    createdCompanyName: String @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Resolvers\\CompanyRequestFieldResolvers@createdCompanyName")
 
     # Auditoría
     createdAt: DateTime! @rename(attribute: "created_at")
@@ -354,7 +359,7 @@ input CompanyRequestInput {
         @rules(apply: ["required", "max:100"])
 
     website: String
-        @rules(apply: ["nullable", "url"])
+        @rules(apply: ["nullable"])
 
     estimatedUsers: Int
         @rules(apply: ["nullable", "integer", "min:1"])

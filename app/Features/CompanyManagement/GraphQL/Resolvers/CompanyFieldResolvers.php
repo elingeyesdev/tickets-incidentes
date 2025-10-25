@@ -45,7 +45,7 @@ class CompanyFieldResolvers
                 $query->where('role_code', 'AGENT');
             })
             ->whereHas('user', function ($query) {
-                $query->where('status', 'ACTIVE');
+                $query->where('status', 'active');  // lowercase for PostgreSQL enum
             })
             ->count();
     }
@@ -119,15 +119,12 @@ class CompanyFieldResolvers
      */
     public function isFollowedByMe($company, array $args = [], $context = null): bool
     {
-        // Get request from context if available
-        $request = $context ? $context->request() : request();
-
         // Check if user is authenticated via JWT
-        $user = $request->attributes->get('jwt_user');
-
-        if (!$user) {
+        if (!JWTHelper::isAuthenticated()) {
             return false;
         }
+
+        $user = JWTHelper::getAuthenticatedUser();
 
         return \App\Features\CompanyManagement\Models\CompanyFollower::where('user_id', $user->id)
             ->where('company_id', $company->id)

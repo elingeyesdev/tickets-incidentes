@@ -26,7 +26,7 @@ class CompanyFactory extends Factory
             'name' => $this->faker->company(),
             'legal_name' => $this->faker->company() . ' SRL',
             'support_email' => $this->faker->companyEmail(),
-            'phone' => $this->faker->phoneNumber(),
+            'phone' => '+591' . $this->faker->numerify('########'),  // E.164 format for Bolivia
             'website' => $this->faker->url(),
             'contact_address' => $this->faker->streetAddress(),
             'contact_city' => $this->faker->city(),
