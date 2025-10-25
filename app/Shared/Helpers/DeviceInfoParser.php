@@ -33,9 +33,9 @@ class DeviceInfoParser
         $userAgent = $request->userAgent();
 
         return [
-            'ip_address' => $request->ip() ?? '127.0.0.1',
+            'ip' => $request->ip() ?? '127.0.0.1',
             'user_agent' => $userAgent,
-            'device_name' => self::parseDeviceName($userAgent),
+            'name' => self::parseDeviceName($userAgent),
         ];
     }
 
@@ -230,9 +230,9 @@ class DeviceInfoParser
     private static function getDefaultDeviceInfo(): array
     {
         return [
-            'ip_address' => '127.0.0.1',
+            'ip' => '127.0.0.1',
             'user_agent' => null,
-            'device_name' => 'Unknown Device',
+            'name' => 'Unknown Device',
         ];
     }
 }

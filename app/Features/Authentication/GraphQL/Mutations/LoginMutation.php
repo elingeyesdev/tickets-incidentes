@@ -55,7 +55,7 @@ class LoginMutation extends BaseMutation
 
         // Si se proveyó deviceName en el input, usarlo
         if (!empty($args['input']['deviceName'])) {
-            $deviceInfo['device_name'] = $args['input']['deviceName'];
+            $deviceInfo['name'] = $args['input']['deviceName'];
         }
 
         // 3. Llamar al servicio (TODA la lógica de negocio está aquí)

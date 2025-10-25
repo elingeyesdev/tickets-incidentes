@@ -24,8 +24,7 @@ extend type Query {
         page: Int = 1
         first: Int = 20
     ): CompanyQueryResult!
-        @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Queries\\CompaniesQuery")
-        @cache(ttl: 300, key: "companies_{context}_{filters}")
+        @field(resolver: "CompaniesQuery")
 
     # ===== QUERIES ESPECÍFICAS: 20% restante =====
 

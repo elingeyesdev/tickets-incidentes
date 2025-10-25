@@ -3,6 +3,7 @@
 namespace App\Features\UserManagement\GraphQL\Types;
 
 use App\Shared\GraphQL\DataLoaders\CompanyByIdBatchLoader;
+use Nuwave\Lighthouse\Execution\BatchLoader\BatchLoaderRegistry;
 use Nuwave\Lighthouse\Execution\ResolveInfo;
 use GraphQL\Type\Definition\ResolveInfo as GraphQLResolveInfo;
 
@@ -56,13 +57,14 @@ class UserRoleInfoFieldResolvers
     /**
      * Resuelve el campo 'company' del tipo UserRoleInfo
      *
-     * Carga directa de la empresa (optimización con DataLoader pendiente)
+     * Utiliza CompanyByIdBatchLoader para prevenir N+1 queries.
+     * Si GraphQL solicita company de N roles, ejecuta UNA sola query.
      *
      * @param \App\Features\UserManagement\Models\UserRole $root
      * @param array $args
      * @param \Nuwave\Lighthouse\Support\Contracts\GraphQLContext $context
      * @param ResolveInfo|GraphQLResolveInfo $resolveInfo
-     * @return \App\Features\CompanyManagement\Models\Company|null
+     * @return \Illuminate\Support\Promise|\App\Features\CompanyManagement\Models\Company|null
      */
     public function company($root, array $args, $context, $resolveInfo)
     {
@@ -71,13 +73,13 @@ class UserRoleInfoFieldResolvers
             return null;
         }
 
-        // Cargar company directamente desde relación Eloquent
-        // TODO: Optimizar con DataLoader cuando se resuelvan issues de Lighthouse
-        if (!$root->relationLoaded('company')) {
-            $root->load('company');
-        }
+        // Get or create BatchLoader instance for this field path
+        $batchLoader = BatchLoaderRegistry::instance(
+            $resolveInfo->path,
+            static fn (): CompanyByIdBatchLoader => new CompanyByIdBatchLoader(),
+        );
 
-        return $root->company;
+        return $batchLoader->load($root->company_id);
     }
 
     /**

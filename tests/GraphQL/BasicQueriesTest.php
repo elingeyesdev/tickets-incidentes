@@ -14,7 +14,7 @@ class BasicQueriesTest extends TestCase
         $response = $this->graphQL($query);
 
         $response->assertJsonFragment([
-            'ping' => 'pong'
+            'ping' => 'pong :)'
         ]);
     }
 

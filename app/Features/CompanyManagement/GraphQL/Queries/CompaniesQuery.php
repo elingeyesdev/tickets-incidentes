@@ -24,10 +24,12 @@ class CompaniesQuery extends BaseQuery
             $first = $args['first'] ?? 20;
             $search = $args['search'] ?? null;
             $filters = $args['filters'] ?? [];
-
-            // Validar autenticación para contexto EXPLORE
-            if ($context === 'EXPLORE' && !JWTHelper::isAuthenticated()) {
-                throw GraphQLErrorWithExtensions::unauthenticated();
+            
+            // Validate authentication for EXPLORE and MANAGEMENT contexts
+            if (in_array($context, ['EXPLORE', 'MANAGEMENT', 'ANALYTICS'])) {
+                if (!JWTHelper::isAuthenticated()) {
+                    throw new Error('Unauthenticated');
+                }
             }
 
             // Construir consulta base
