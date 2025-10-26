@@ -324,6 +324,12 @@ type PasswordResetResult {
     """Mensaje descriptivo"""
     message: String!
 
+    """Token de acceso JWT para auto-login"""
+    accessToken: String
+
+    """Token de refresh para renovación"""
+    refreshToken: String
+
     """Usuario (solo si exitoso)"""
     user: UserMinimal
 }

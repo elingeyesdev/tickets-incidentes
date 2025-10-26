@@ -346,6 +346,7 @@ class PasswordResetCompleteTest extends TestCase
                     email
                     expiresAt
                     canReset
+                    attemptsRemaining
                 }
             }
         ', ['token' => $token]);
@@ -354,6 +355,7 @@ class PasswordResetCompleteTest extends TestCase
         $this->assertTrue($response->json('data.passwordResetStatus.isValid'));
         $this->assertEquals($user->email, $response->json('data.passwordResetStatus.email'));
         $this->assertTrue($response->json('data.passwordResetStatus.canReset'));
+        $this->assertNotNull($response->json('data.passwordResetStatus.attemptsRemaining'));
     }
 
     /** @test */

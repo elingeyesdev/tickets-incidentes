@@ -66,13 +66,21 @@ class ConfirmPasswordResetMutation extends BaseMutation
         }
 
         // === GENERAR TOKENS JWT ===
-        $tokens = $this->tokenService->generateTokens($user);
+        // Generar access token
+        $accessToken = $this->tokenService->generateAccessToken($user);
+        
+        // Crear refresh token
+        $refreshTokenData = $this->tokenService->createRefreshToken($user, [
+            'name' => 'Password Reset Login',
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
 
         return [
             'success' => true,
             'message' => 'Password reset successful',
-            'accessToken' => $tokens['access_token'],
-            'refreshToken' => $tokens['refresh_token'],
+            'accessToken' => $accessToken,
+            'refreshToken' => $refreshTokenData['token'],
             'user' => $user,
         ];
     }

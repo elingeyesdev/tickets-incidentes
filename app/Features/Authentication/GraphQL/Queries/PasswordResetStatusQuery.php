@@ -37,6 +37,7 @@ class PasswordResetStatusQuery extends BaseQuery
                 'canReset' => false,
                 'email' => null,
                 'expiresAt' => null,
+                'attemptsRemaining' => 0,
             ];
         }
 
@@ -48,6 +49,7 @@ class PasswordResetStatusQuery extends BaseQuery
             'canReset' => $status['is_valid'],
             'email' => $status['email'],
             'expiresAt' => $status['expires_at'] ? \Carbon\Carbon::createFromTimestamp($status['expires_at'])->toIso8601String() : null,
+            'attemptsRemaining' => $status['attempts_remaining'] ?? 0,
         ];
     }
 }
