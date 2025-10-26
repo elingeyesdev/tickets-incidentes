@@ -220,7 +220,7 @@ class PasswordResetService
         }
 
         // Buscar usuario
-        $user = User::find($data['user_id']);
+        $user = User::with('profile')->find($data['user_id']);
 
         if (!$user) {
             Cache::forget($key);
@@ -261,7 +261,7 @@ class PasswordResetService
         event(new PasswordResetCompleted($user));
 
         return [
-            'user' => $user->fresh(['profile']),
+            'user' => $user,
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,
@@ -295,7 +295,7 @@ class PasswordResetService
         }
 
         // Buscar usuario
-        $user = User::find($userId);
+        $user = User::with('profile')->find($userId);
 
         if (!$user) {
             throw new AuthenticationException('User not found');
@@ -333,7 +333,7 @@ class PasswordResetService
         event(new PasswordResetCompleted($user));
 
         return [
-            'user' => $user->fresh(['profile']),
+            'user' => $user,
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,

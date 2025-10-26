@@ -58,16 +58,16 @@ type UserMinimal {
   id: UUID!
 
   """Código único legible del usuario"""
-  userCode: String!
+  userCode: String! @rename(attribute: "user_code")
 
   """Email del usuario"""
   email: Email!
 
   """Nombre para mostrar (firstName + lastName)"""
-  displayName: String!
+  displayName: String! @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\DisplayNameResolver")
 
   """URL del avatar del usuario"""
-  avatarUrl: URL
+  avatarUrl: URL @field(resolver: "App\\Shared\\GraphQL\\Resolvers\\AvatarUrlResolver")
 }
 
 """

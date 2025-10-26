@@ -56,9 +56,12 @@ CREATE TABLE auth.users (
     -- Seguridad (CRÃTICA)
     password_reset_token VARCHAR(255),
     password_reset_expires TIMESTAMPTZ,
+    has_temporary_password BOOLEAN DEFAULT FALSE,
+    temporary_password_expires_at TIMESTAMPTZ,
 
     -- Estado del sistema (CRÃTICO)
     status auth.user_status DEFAULT 'active' NOT NULL,
+    onboarding_completed_at TIMESTAMPTZ, -- NULL si no ha completado el onboarding
     last_login_at TIMESTAMPTZ,
     last_login_ip INET,
 
@@ -148,6 +151,9 @@ CREATE TABLE auth.user_roles (
     assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     assigned_by UUID REFERENCES auth.users(id),
     revoked_at TIMESTAMPTZ,
+    revocation_reason TEXT, -- RazÃ³n de la revocaciÃ³n para auditorÃ­a
+
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_user_role_context UNIQUE (user_id, role_code, company_id),
     CONSTRAINT chk_company_context CHECK (
@@ -166,11 +172,12 @@ CREATE TABLE auth.refresh_tokens (
 
     -- InformaciÃ³n del dispositivo
     device_name VARCHAR(100), -- "Chrome on Windows", "iPhone Safari"
-    ip_address INET NOT NULL,
+    ip_address INET,
     user_agent TEXT,
 
     -- Temporalidad
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMPTZ NOT NULL,
     last_used_at TIMESTAMPTZ,
 
@@ -212,6 +219,9 @@ CREATE TABLE business.company_requests (
     reviewed_at TIMESTAMPTZ,
     rejection_reason TEXT,
 
+    -- Link to created company (if approved)
+    created_company_id UUID,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -248,6 +258,9 @@ CREATE TABLE business.companies (
     favicon_url VARCHAR(500),
     primary_color VARCHAR(7) DEFAULT '#007bff',
     secondary_color VARCHAR(7) DEFAULT '#6c757d',
+
+    -- ConfiguraciÃ³n adicional flexible
+    settings JSONB DEFAULT '{}'::JSONB,
 
     -- Estado
     status VARCHAR(20) DEFAULT 'active' NOT NULL, -- active, suspended
@@ -327,6 +340,11 @@ CREATE TABLE business.help_center_articles (
 -- ================================================================================
 -- ESQUEMA: ticketing - El CorazÃ³n del Sistema de Soporte
 -- ================================================================================
+
+-- NOTA DE AUDITORÃA (26 de Octubre de 2025): Las siguientes tablas (12 a 17) estÃ¡n
+-- diseÃ±adas en este documento, pero sus archivos de migraciÃ³n aÃºn no han sido
+-- creados en el proyecto. Es necesario crear las migraciones correspondientes
+-- en la feature de Ticketing para alinear el cÃ³digo con el diseÃ±o.
 
 -- TABLA 12: CATEGORIES (DE TICKETS, PERSONALIZADAS POR EMPRESA)
 CREATE TABLE ticketing.categories (
@@ -432,6 +450,10 @@ CREATE TABLE ticketing.ticket_ratings (
 -- ================================================================================
 -- ESQUEMA: audit - Logs y AuditorÃ­a del Sistema
 -- ================================================================================
+
+-- NOTA DE AUDITORÃA (26 de Octubre de 2025): La tabla `audit_logs` estÃ¡ diseÃ±ada
+-- en este documento, pero su archivo de migraciÃ³n aÃºn no ha sido creado.
+-- Es necesario crear la migraciÃ³n correspondiente para alinear el cÃ³digo con el diseÃ±o.
 
 -- TABLA 18: AUDIT_LOGS (REGISTRO DE ACTIVIDADES)
 CREATE TABLE audit.audit_logs (

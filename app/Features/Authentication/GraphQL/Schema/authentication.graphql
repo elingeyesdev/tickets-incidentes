@@ -121,7 +121,7 @@ extend type Mutation {
     """
     resetPassword(email: Email!): Boolean!
         @field(resolver: "App\\Features\\Authentication\\GraphQL\\Mutations\\ResetPasswordMutation")
-        @rateLimit(max: 3, window: 3600, message: "Solo 3 intentos por hora")
+        
         @audit(action: "password_reset_request")
 
     """

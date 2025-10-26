@@ -360,7 +360,10 @@ return [
         // 2. Errores de autorización (403)
         \App\Shared\GraphQL\Errors\CustomAuthorizationErrorHandler::class,
 
-        // 3. Errores de validación (422)
+        // 3. Errores de Rate Limiting (429)
+        \App\Shared\GraphQL\Errors\RateLimitExceededErrorHandler::class,
+
+        // 4. Errores de validación (422)
         \App\Shared\GraphQL\Errors\CustomValidationErrorHandler::class,
 
         // 4. Preservar extensions de GraphQL Error (codes y metadata)

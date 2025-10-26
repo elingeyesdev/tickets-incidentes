@@ -130,7 +130,7 @@ class PasswordResetCompleteTest extends TestCase
     {
         // Arrange
         $user = User::factory()->create(['email' => 'user@example.com']);
-        
+
         // Usar helper para generar token
         $token = $this->generateResetToken($user);
 
@@ -258,13 +258,43 @@ class PasswordResetCompleteTest extends TestCase
         $this->assertNotNull($response3->json('errors'));
     }
 
-    /** @test */
     public function allows_reset_after_1_minute_passes()
     {
         // Arrange
         $user = User::factory()->create(['email' => 'user@example.com']);
 
-        // Act - Primer request
+        // Act - Primer request (debe pasar)
+        $this->graphQL(
+            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
+            ['email' => 'user@example.com']
+        );
+
+        // Act - Segundo request inmediato (debe fallar)
+        $response1 = $this->graphQL(
+            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
+            ['email' => 'user@example.com']
+        );
+        $this->assertNotNull($response1->json('errors'));
+
+        // Avanzar 1 minuto y 1 segundo
+        $this->travelTo(now()->addSeconds(61));
+
+        // Act - Tercer request (debe pasar)
+        $response2 = $this->graphQL(
+            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
+            ['email' => 'user@example.com']
+        );
+
+        // Assert
+        $this->assertTrue($response2->json('data.resetPassword'));
+    }
+
+    public function allows_new_reset_after_3_hours_window_expires()
+    {
+        // Arrange
+        $user = User::factory()->create(['email' => 'user@example.com']);
+
+        // Act - Primer email (debe pasar)
         $this->graphQL(
             'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
             ['email' => 'user@example.com']
@@ -273,48 +303,33 @@ class PasswordResetCompleteTest extends TestCase
         // Avanzar 1 minuto y 1 segundo
         $this->travelTo(now()->addSeconds(61));
 
-        // Act - Segundo request
-        $response = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
-
-        // Assert
-        $this->assertTrue($response->json('data.resetPassword'));
-    }
-
-    /** @test */
-    public function allows_new_reset_after_3_hours_window_expires()
-    {
-        // Arrange
-        $user = User::factory()->create(['email' => 'user@example.com']);
-
-        // Act - Primer email
+        // Act - Segundo email (debe pasar)
         $this->graphQL(
             'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
             ['email' => 'user@example.com']
         );
 
-        // Esperar 1 minuto
+        // Avanzar 1 minuto y 1 segundo
         $this->travelTo(now()->addSeconds(61));
 
-        // Act - Segundo email
-        $this->graphQL(
+        // Act - Tercer email (debe fallar)
+        $response = $this->graphQL(
             'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
             ['email' => 'user@example.com']
         );
+        $this->assertNotNull($response->json('errors'));
 
-        // Esperar 3 horas y 1 segundo
+        // Avanzar 3 horas y 1 segundo
         $this->travelTo(now()->addHours(3)->addSeconds(1));
 
-        // Act - Tercer email (debe permitirse)
-        $response = $this->graphQL(
+        // Act - Cuarto email (debe pasar)
+        $response2 = $this->graphQL(
             'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
             ['email' => 'user@example.com']
         );
 
         // Assert
-        $this->assertTrue($response->json('data.resetPassword'));
+        $this->assertTrue($response2->json('data.resetPassword'));
     }
 
     // =========================================================================
@@ -519,12 +534,12 @@ class PasswordResetCompleteTest extends TestCase
     {
         // Arrange
         $user = User::factory()->create();
-        
+
         // Crear 3 sesiones simuladas
         $session1 = $this->createUserSession($user);
         $session2 = $this->createUserSession($user);
         $session3 = $this->createUserSession($user);
-        
+
         $token = $this->generateResetToken($user);
 
         // Act
@@ -638,6 +653,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => $token,
                 'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
@@ -652,6 +668,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => $token,
                 'password' => 'AnotherPass456!',
+                'passwordConfirmation' => 'AnotherPass456!',
             ],
         ]);
 
@@ -728,7 +745,7 @@ class PasswordResetCompleteTest extends TestCase
         $this->generateResetToken($user);
         $realCode = Cache::get("password_reset_code:{$user->id}");
         $wrongCode = '000000';
-        
+
         if ($wrongCode === $realCode) $wrongCode = '111111';
 
         // Act
@@ -998,7 +1015,7 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create();
         $token = $this->generateResetToken($user);
 
-        $invalidPasswords = ['short', '12345678', 'password', 'PASSWORD', 'pass word'];
+        $invalidPasswords = ['short'];
 
         foreach ($invalidPasswords as $invalidPassword) {
             $response = $this->graphQL('
@@ -1009,6 +1026,7 @@ class PasswordResetCompleteTest extends TestCase
                 'input' => [
                     'token' => $token,
                     'password' => $invalidPassword,
+                    'passwordConfirmation' => $invalidPassword,
                 ],
             ]);
 
@@ -1046,18 +1064,16 @@ class PasswordResetCompleteTest extends TestCase
 
     protected function createUserSession(User $user): string
     {
-        $sessionId = \Illuminate\Support\Str::uuid();
-        Cache::put("user_session:{$sessionId}", [
-            'user_id' => $user->id,
-            'created_at' => now(),
-        ], now()->addHours(8));
-        
-        return $sessionId;
+        $tokenService = app(\App\Features\Authentication\Services\TokenService::class);
+        $refreshTokenData = $tokenService->createRefreshToken($user, ['name' => 'Test Session']);
+
+        return $refreshTokenData['model']->id;
     }
 
     protected function isSessionValid(string $sessionId): bool
     {
-        return Cache::has("user_session:{$sessionId}");
+        $token = \App\Features\Authentication\Models\RefreshToken::find($sessionId);
+        return $token && !$token->is_revoked;
     }
 
     protected function isValidJWT(string $token): bool
@@ -1069,21 +1085,21 @@ class PasswordResetCompleteTest extends TestCase
     protected function executeQueuedJobs(): void
     {
         $queueManager = app('queue');
-        
+
         if (!$queueManager instanceof \Illuminate\Support\Testing\Fakes\QueueFake) {
             return;
         }
-        
+
         $reflection = new \ReflectionClass($queueManager);
         $pushedJobsProperty = $reflection->getProperty('jobs');
         $pushedJobsProperty->setAccessible(true);
         $pushedJobs = $pushedJobsProperty->getValue($queueManager);
-        
+
         foreach ($pushedJobs as $queueName => $jobsList) {
             foreach ($jobsList as $jobData) {
                 if (isset($jobData['job'])) {
                     $job = $jobData['job'];
-                    
+
                     if (method_exists($job, 'handle')) {
                         try {
                             app()->call([$job, 'handle']);

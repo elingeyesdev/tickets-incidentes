@@ -236,7 +236,25 @@ class TokenService
      */
     public function revokeAllUserTokens(string $userId, ?string $revokedById = null): int
     {
-        return RefreshToken::revokeAllForUser($userId, $revokedById);
+        // Get all active refresh tokens for the user before revoking them
+        $tokensToRevoke = RefreshToken::forUser($userId)->active()->get();
+
+        if ($tokensToRevoke->isEmpty()) {
+            return 0;
+        }
+
+        // Revoke all tokens in the database
+        $revokedCount = RefreshToken::revokeAllForUser($userId, $revokedById);
+
+        // Now, clear the sessions from the cache
+        foreach ($tokensToRevoke as $token) {
+            Cache::forget("user_session:{$token->id}");
+        }
+
+        // Also, add user to global blacklist for immediate access token invalidation
+        $this->blacklistUser($userId);
+
+        return $revokedCount;
     }
 
     /**

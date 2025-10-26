@@ -687,8 +687,15 @@ class ApproveCompanyRequestMutationTest extends TestCase
             '--queue' => 'emails'
         ]);
 
-        // Wait for email to arrive
-        sleep(1);
+        // Wait for email to arrive with a retry loop
+        $messages = [];
+        for ($i = 0; $i < 5; $i++) {
+            $messages = $this->getMailpitMessages();
+            if (count($messages) > 0) {
+                break;
+            }
+            sleep(1);
+        }
 
         // Assert - Email llegó a Mailpit
         $messages = $this->getMailpitMessages();

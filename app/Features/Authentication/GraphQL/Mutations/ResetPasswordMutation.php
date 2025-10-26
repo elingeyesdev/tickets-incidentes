@@ -29,9 +29,17 @@ class ResetPasswordMutation extends BaseMutation
      */
     public function __invoke($root, array $args, $context = null): bool
     {
-        $email = strtolower(trim($args['email'] ?? ''));
+        try {
+            $email = strtolower(trim($args['email'] ?? ''));
 
-        // Solicitar reset (retorna true siempre, lanza excepción si rate limit)
-        return $this->passwordResetService->requestReset($email);
+            // Solicitar reset (retorna true siempre, lanza excepción si rate limit)
+            return $this->passwordResetService->requestReset($email);
+        } catch (\Exception $e) {
+            \Log::error('Exception in ResetPasswordMutation', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 }
