@@ -473,6 +473,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => $token,
                 'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
@@ -502,6 +503,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => $token,
                 'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
@@ -535,6 +537,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => $token,
                 'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
@@ -558,6 +561,7 @@ class PasswordResetCompleteTest extends TestCase
             'input' => [
                 'token' => 'invalid_token',
                 'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
@@ -1010,12 +1014,15 @@ class PasswordResetCompleteTest extends TestCase
         
         $expiresAt = now()->addHours($expiresIn);
         
-        Cache::put("password_reset:{$user->id}", [
-            'token' => $token,
+        // Guardar con TOKEN como clave (sincronizado con PasswordResetService)
+        Cache::put("password_reset:{$token}", [
             'user_id' => $user->id,
-            'expires_at' => $expiresAt,
+            'email' => $user->email,
+            'expires_at' => $expiresAt->timestamp,
+            'attempts_remaining' => 3,
         ], $expiresAt);
         
+        // Guardar código de 6 dígitos con user->id
         Cache::put("password_reset_code:{$user->id}", $code, $expiresAt);
         
         return $token;

@@ -2,10 +2,9 @@
 
 namespace App\Features\Authentication\Listeners;
 
-use App\Features\Authentication\Events\PasswordResetRequested;
-use App\Features\Authentication\Jobs\SendPasswordResetEmailJob;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Cache;
+use App\\Features\\Authentication\\Events\\PasswordResetRequested;
+use App\\Features\\Authentication\\Jobs\\SendPasswordResetEmailJob;
+use Illuminate\\Support\\Facades\\Cache;
 
 /**
  * Send Password Reset Email Listener
@@ -14,8 +13,11 @@ use Illuminate\Support\Facades\Cache;
  * 1. Genera un código de 6 dígitos
  * 2. Guarda el código en cache
  * 3. Dispara el job para enviar email
+ *
+ * NOTA: Se ejecuta sincrónicamente (rápido, solo genera código y dispara job)
+ * El job en sí es quien se encola y envía el email
  */
-class SendPasswordResetEmail implements ShouldQueue
+class SendPasswordResetEmail
 {
     /**
      * Handle the event.

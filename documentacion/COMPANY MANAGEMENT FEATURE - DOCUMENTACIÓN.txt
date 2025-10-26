@@ -1,9 +1,9 @@
-# 📘 COMPANY MANAGEMENT API V8.3 - DOCUMENTACIÓN COMPLETA
+# 📘 COMPANY MANAGEMENT API V9.0 - DOCUMENTACIÓN COMPLETA
 
 > Sistema Helpdesk Multi-Tenant
 > Feature: Company Management
-> Schema Version: 8.3 (Balanceado y Pragmático)
-> Última actualización: 2025
+> Schema Version: 9.0 (Sistema de Emails y Contraseñas Temporales)
+> Última actualización: 26 de Octubre, 2025
 
 ---
 
@@ -11,14 +11,15 @@
 
 1. [Introducción](#introducción)
 2. [Arquitectura](#arquitectura)
-3. [Queries](#queries)
-4. [Mutations](#mutations)
-5. [Types](#types)
-6. [Enums e Inputs](#enums-e-inputs)
-7. [Permisos y Autenticación](#permisos-y-autenticación)
-8. [Códigos de Error](#códigos-de-error)
-9. [Rate Limiting](#rate-limiting)
-10. [Casos de Uso](#casos-de-uso)
+3. [Sistema de Emails y Contraseñas Temporales](#sistema-de-emails-y-contraseñas-temporales)
+4. [Queries](#queries)
+5. [Mutations](#mutations)
+6. [Types](#types)
+7. [Enums e Inputs](#enums-e-inputs)
+8. [Permisos y Autenticación](#permisos-y-autenticación)
+9. [Códigos de Error](#códigos-de-error)
+10. [Rate Limiting](#rate-limiting)
+11. [Casos de Uso](#casos-de-uso)
 
 ---
 
@@ -37,6 +38,9 @@ El **Company Management Feature** gestiona empresas en el sistema Helpdesk multi
 ✅ **Performance optimizado**: Contadores en lugar de listas, caché eficiente
 ✅ **Multi-tenant**: Aislamiento completo entre empresas
 ✅ **Sistema de seguimiento**: Usuarios pueden seguir empresas de interés
+✅ **Sistema de emails profesional**: Event → Listener → Job → Mail → Queue
+✅ **Contraseñas temporales**: Generación automática para nuevos admins (16 chars, expira 7 días)
+✅ **Responses profesionales**: Mensajes descriptivos en español, campos limitados por seguridad
 
 ---
 
@@ -86,6 +90,457 @@ companies(context: CompanyQueryContext!)
 - `EXPLORE`: Para explorar empresas (11 campos)
 - `MANAGEMENT`: Para administración (todos los campos)
 - `ANALYTICS`: Para dashboards con estadísticas
+
+---
+
+## 📧 SISTEMA DE EMAILS Y CONTRASEÑAS TEMPORALES
+
+### Filosofía del Sistema
+
+El sistema de aprobación/rechazo de solicitudes de empresas implementa un **flujo profesional de notificaciones por email** con dos escenarios distintos:
+
+1. **Usuario Admin Ya Existe**: Se le asigna rol de COMPANY_ADMIN y recibe email de confirmación (sin contraseña)
+2. **Usuario Admin Nuevo**: Se crea cuenta con contraseña temporal y recibe email con credenciales
+3. **Solicitud Rechazada**: Se envía email con la razón del rechazo
+
+### Arquitectura del Sistema de Emails
+
+El sistema sigue el patrón profesional **Event → Listener → Job → Mail → Queue** implementado en el Authentication Feature:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    MUTATION EJECUTADA                    │
+│              (Approve/Reject Company Request)            │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+         ┌──────────────────────┐
+         │  Event Disparado      │
+         │  - CompanyRequest     │
+         │    Approved/Rejected  │
+         └──────────┬────────────┘
+                    │
+                    ▼
+         ┌──────────────────────┐
+         │  Listener Escucha     │
+         │  - SendCompanyEmail   │
+         │    Notification       │
+         └──────────┬────────────┘
+                    │
+                    ▼
+         ┌──────────────────────┐
+         │  Job Encolado         │
+         │  - Queue: 'emails'    │
+         │  - Retry: 3 veces     │
+         └──────────┬────────────┘
+                    │
+                    ▼
+         ┌──────────────────────┐
+         │  Mail Enviado         │
+         │  - Mailpit (dev)      │
+         │  - SMTP (prod)        │
+         └───────────────────────┘
+```
+
+### Sistema de Contraseñas Temporales
+
+#### Características
+
+- **Longitud**: 16 caracteres alfanuméricos seguros (generados con `Str::random(16)`)
+- **Expiración**: 7 días desde la creación
+- **Seguridad**: Hash con bcrypt antes de almacenar
+- **Campos en DB**:
+  - `has_temporary_password` (boolean): Marca si el usuario debe cambiar su contraseña
+  - `temporary_password_expires_at` (timestamp): Fecha de expiración
+
+#### Flujo de Contraseña Temporal
+
+```
+┌──────────────────────────────────────────────────┐
+│ 1. Admin aprueba solicitud                       │
+│    - admin_email NO existe en sistema            │
+└────────────────┬─────────────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────────────┐
+│ 2. UserService::createFromCompanyRequest()       │
+│    - Genera password temporal (16 chars)         │
+│    - Hash con bcrypt                             │
+│    - Sets has_temporary_password = true          │
+│    - Sets temporary_password_expires_at = +7d    │
+│    - Returns ['user' => $user, 'password' => $p] │
+└────────────────┬─────────────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────────────┐
+│ 3. CompanyRequestApproved Event                  │
+│    - Lleva la contraseña temporal (plain text)   │
+│    - Solo para nuevos usuarios (null si existe)  │
+└────────────────┬─────────────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────────────┐
+│ 4. SendCompanyApprovalEmailJob                   │
+│    - Detecta si temporaryPassword != null        │
+│    - Envía CompanyApprovalMailForNewUser         │
+│    - Email incluye contraseña en texto plano     │
+└────────────────┬─────────────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────────────┐
+│ 5. Usuario recibe email con credenciales         │
+│    - Email: admin@company.com                    │
+│    - Password temporal: XyZ123abc...             │
+│    - Link de login al sistema                    │
+│    - Instrucción de cambiar contraseña           │
+└──────────────────────────────────────────────────┘
+```
+
+### Clases de Email Implementadas
+
+#### 1. CompanyApprovalMailForNewUser
+
+**Ubicación**: `app/Features/CompanyManagement/Mail/CompanyApprovalMailForNewUser.php`
+
+**Propósito**: Notificar aprobación a nuevos usuarios con contraseña temporal
+
+**Contenido del Email**:
+```
+Asunto: ✅ Bienvenido a Helpdesk - Solicitud de Empresa Aprobada
+
+¡Bienvenido {displayName}!
+
+Tu solicitud para crear la empresa "{company_name}" ha sido APROBADA.
+
+Credenciales de Acceso:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: {admin_email}
+Contraseña Temporal: {temporaryPassword}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ IMPORTANTE: Esta contraseña es temporal y expira en 7 días.
+Deberás cambiarla al iniciar sesión por primera vez.
+
+[Iniciar Sesión] → {loginUrl}
+
+Datos de tu Empresa:
+- Código: {company_code}
+- Nombre: {company_name}
+- Rol Asignado: Administrador de Empresa
+```
+
+**Templates**:
+- HTML: `resources/views/emails/company/approval-new-user.blade.php`
+- Texto plano: `resources/views/emails/company/approval-new-user-text.blade.php`
+
+---
+
+#### 2. CompanyApprovalMailForExistingUser
+
+**Ubicación**: `app/Features/CompanyManagement/Mail/CompanyApprovalMailForExistingUser.php`
+
+**Propósito**: Notificar aprobación a usuarios existentes (sin contraseña)
+
+**Contenido del Email**:
+```
+Asunto: ✅ Nueva Empresa Asignada - Solicitud Aprobada
+
+¡Hola {displayName}!
+
+Tu solicitud para crear la empresa "{company_name}" ha sido APROBADA.
+
+Como ya tienes una cuenta en nuestro sistema, hemos asignado el
+rol de Administrador de Empresa a tu cuenta existente.
+
+Datos de tu Nueva Empresa:
+- Código: {company_code}
+- Nombre: {company_name}
+- Rol Asignado: Administrador de Empresa
+
+Puedes iniciar sesión con tus credenciales actuales:
+[Iniciar Sesión] → {loginUrl}
+```
+
+**Templates**:
+- HTML: `resources/views/emails/company/approval-existing-user.blade.php`
+- Texto plano: `resources/views/emails/company/approval-existing-user-text.blade.php`
+
+---
+
+#### 3. CompanyRejectionMail
+
+**Ubicación**: `app/Features/CompanyManagement/Mail/CompanyRejectionMail.php`
+
+**Propósito**: Notificar rechazo de solicitud con razón
+
+**Contenido del Email**:
+```
+Asunto: ❌ Solicitud de Empresa Rechazada - {requestCode}
+
+Estimado/a,
+
+Lamentamos informarte que tu solicitud para crear la empresa
+"{company_name}" ha sido RECHAZADA.
+
+Código de Solicitud: {requestCode}
+
+Razón del Rechazo:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{reason}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Puedes enviar una nueva solicitud corrigiendo los aspectos
+mencionados.
+
+Si tienes dudas, contáctanos a: {supportEmail}
+```
+
+**Templates**:
+- HTML: `resources/views/emails/company/rejection.blade.php`
+- Texto plano: `resources/views/emails/company/rejection-text.blade.php`
+
+---
+
+### Jobs de Email
+
+#### SendCompanyApprovalEmailJob
+
+**Ubicación**: `app/Features/CompanyManagement/Jobs/SendCompanyApprovalEmailJob.php`
+
+**Configuración**:
+```php
+public int $tries = 3;          // 3 intentos en caso de fallo
+public int $timeout = 30;       // 30 segundos de timeout
+public string $queue = 'emails'; // Cola de alta prioridad
+```
+
+**Lógica**:
+```php
+public function handle(): void
+{
+    if ($this->temporaryPassword) {
+        // Usuario NUEVO - envía con contraseña
+        Mail::to($this->adminUser->email)->send(
+            new CompanyApprovalMailForNewUser(
+                $this->company,
+                $this->adminUser,
+                $this->temporaryPassword
+            )
+        );
+    } else {
+        // Usuario EXISTENTE - sin contraseña
+        Mail::to($this->adminUser->email)->send(
+            new CompanyApprovalMailForExistingUser(
+                $this->company,
+                $this->adminUser
+            )
+        );
+    }
+}
+```
+
+---
+
+#### SendCompanyRejectionEmailJob
+
+**Ubicación**: `app/Features/CompanyManagement/Jobs/SendCompanyRejectionEmailJob.php`
+
+**Configuración**: Igual que approval (3 tries, 30s timeout, cola 'emails')
+
+**Lógica**:
+```php
+public function handle(): void
+{
+    Mail::to($this->request->admin_email)->send(
+        new CompanyRejectionMail(
+            $this->request,
+            $this->reason
+        )
+    );
+}
+```
+
+---
+
+### Configuración del Sistema
+
+#### Cola de Emails
+
+**Redis Queue**: `emails` (alta prioridad)
+
+**Worker Configuration** (`queue` service en Docker):
+```bash
+php artisan queue:work redis \
+    --queue=emails,default \
+    --verbose \
+    --tries=3 \
+    --timeout=90
+```
+
+**Prioridad de Colas**:
+1. `emails` - Emails críticos (verificación, passwords, aprobaciones)
+2. `default` - Jobs estándar del sistema
+
+---
+
+#### Mailpit (Development)
+
+**Configuración** (`.env`):
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS=noreply@helpdesk.local
+MAIL_FROM_NAME="Helpdesk System"
+```
+
+**Acceso**:
+- SMTP: `mailpit:1025` (desde containers)
+- UI: `http://localhost:8025` (desde browser)
+
+---
+
+### Eventos Disparados
+
+#### CompanyRequestApproved
+
+**Ubicación**: `app/Features/CompanyManagement/Events/CompanyRequestApproved.php`
+
+**Constructor**:
+```php
+public function __construct(
+    public CompanyRequest $request,
+    public Company $company,
+    public User $adminUser,
+    public ?string $temporaryPassword = null  // ⚠️ Null para usuarios existentes
+) {}
+```
+
+**Listeners**:
+- `SendCompanyApprovalEmailNotification` → Dispara `SendCompanyApprovalEmailJob`
+
+---
+
+#### CompanyRequestRejected
+
+**Ubicación**: `app/Features/CompanyManagement/Events/CompanyRequestRejected.php`
+
+**Constructor**:
+```php
+public function __construct(
+    public CompanyRequest $request,
+    public string $reason
+) {}
+```
+
+**Listeners**:
+- `SendCompanyRejectionEmailNotification` → Dispara `SendCompanyRejectionEmailJob`
+
+---
+
+### Horario Laboral por Defecto
+
+Cuando se crea una empresa (ya sea por aprobación o creación directa), si no se especifica `business_hours`, se aplica el **horario laboral estándar**:
+
+```json
+{
+    "monday": {"open": "09:00", "close": "18:00", "is_open": true},
+    "tuesday": {"open": "09:00", "close": "18:00", "is_open": true},
+    "wednesday": {"open": "09:00", "close": "18:00", "is_open": true},
+    "thursday": {"open": "09:00", "close": "18:00", "is_open": true},
+    "friday": {"open": "09:00", "close": "18:00", "is_open": true},
+    "saturday": {"open": "09:00", "close": "13:00", "is_open": false},
+    "sunday": {"is_open": false}
+}
+```
+
+**Implementación**: `CompanyService::create()`
+
+---
+
+### Testing del Sistema de Emails
+
+#### Tests Implementados
+
+**ApproveCompanyRequestMutationTest.php** (9 tests de email):
+- ✅ `sends_approval_email_when_user_already_exists`
+- ✅ `sends_approval_email_with_temporary_password_for_new_user`
+- ✅ `new_user_can_login_with_temporary_password`
+- ✅ `temporary_password_expires_after_configured_time`
+- ✅ `approval_email_is_sent_to_correct_queue`
+- ✅ `approval_email_contains_company_information`
+- ✅ `multiple_companies_can_be_approved_without_email_conflicts`
+- ✅ `email_is_sent_via_mailpit_in_development`
+
+**RejectCompanyRequestMutationTest.php** (6 tests de email):
+- ✅ `sends_rejection_email_with_reason`
+- ✅ `rejection_email_is_sent_to_correct_queue`
+- ✅ `rejection_email_contains_request_information`
+- ✅ `rejection_reason_is_included_in_email`
+- ✅ `rejection_email_is_sent_via_mailpit`
+
+#### Helper Methods para Mailpit
+
+```php
+protected function isMailpitAvailable(): bool
+{
+    try {
+        $response = \Illuminate\Support\Facades\Http::get('http://localhost:8025/api/v1/messages');
+        return $response->successful();
+    } catch (\Exception $e) {
+        return false;
+    }
+}
+
+protected function clearMailpit(): void
+{
+    \Illuminate\Support\Facades\Http::delete('http://localhost:8025/api/v1/messages');
+}
+
+protected function getMailpitMessages(): array
+{
+    $response = \Illuminate\Support\Facades\Http::get('http://localhost:8025/api/v1/messages');
+    return $response->json('messages') ?? [];
+}
+```
+
+---
+
+### Monitoreo y Debugging
+
+#### Ver Logs de Jobs
+
+```bash
+# Ver logs del worker de cola
+docker compose logs -f queue
+
+# Ver todos los emails enviados (Mailpit UI)
+# Navegar a http://localhost:8025
+```
+
+#### Verificar Estado de Cola
+
+```bash
+# Ver jobs pendientes en Redis
+docker compose exec redis redis-cli
+> LLEN queues:emails
+
+# Ver jobs fallidos
+php artisan queue:failed
+```
+
+#### Reintentar Jobs Fallidos
+
+```bash
+# Reintentar todos los jobs fallidos
+php artisan queue:retry all
+
+# Reintentar job específico
+php artisan queue:retry {job-id}
+```
 
 ---
 
@@ -989,29 +1444,36 @@ mutation RequestCompany($input: CompanyRequestInput!) {
 
 ### 4. `approveCompanyRequest` - Aprobar Solicitud
 
-**Descripción**: Aprueba una solicitud y crea automáticamente la empresa. Solo administradores de plataforma.
+**Descripción**: Aprueba una solicitud y crea automáticamente la empresa. Solo administradores de plataforma. Retorna una respuesta profesional con mensaje descriptivo y datos limitados.
 
 **Firma:**
 ```graphql
-approveCompanyRequest(requestId: UUID!): Company!
+approveCompanyRequest(requestId: UUID!): CompanyRequestApprovalResponse!
 ```
 
 **Directivas:**
-- `@auth(requires: [PLATFORM_ADMIN])`: Solo admins
-- `@audit(action: "approve_company_request", includePayload: true)`: Auditoría completa
+- `@jwt(requires: [PLATFORM_ADMIN])`: Solo admins
+- `@audit(action: "company_request_approve", includePayload: true)`: Auditoría completa
 
 **Request:**
 ```graphql
 mutation ApproveRequest($requestId: UUID!) {
     approveCompanyRequest(requestId: $requestId) {
-        id
-        companyCode
-        name
-        status
-        adminId
-        adminName
-        adminEmail
-        createdAt
+        success
+        message
+        company {
+            id
+            companyCode
+            name
+            legalName
+            status
+            adminId
+            adminEmail
+            adminName
+            createdAt
+        }
+        newUserCreated
+        notificationSentTo
     }
 }
 ```
@@ -1023,19 +1485,51 @@ mutation ApproveRequest($requestId: UUID!) {
 }
 ```
 
-**Response:**
+**Response (Usuario Nuevo - Con Contraseña Temporal):**
 ```json
 {
     "data": {
         "approveCompanyRequest": {
-            "id": "550e8400-e29b-41d4-a716-446655440010",
-            "companyCode": "CMP-2025-00010",
-            "name": "Innovación Digital SRL",
-            "status": "ACTIVE",
-            "adminId": "660e8400-e29b-41d4-a716-446655440050",
-            "adminName": "Juan Pérez",
-            "adminEmail": "admin@innovaciondigital.bo",
-            "createdAt": "2025-10-03T11:30:00Z"
+            "success": true,
+            "message": "Solicitud aprobada exitosamente. Se ha creado la empresa 'Innovación Digital SRL' y se envió un email con las credenciales de acceso a admin@innovaciondigital.bo.",
+            "company": {
+                "id": "550e8400-e29b-41d4-a716-446655440010",
+                "companyCode": "CMP-2025-00010",
+                "name": "Innovación Digital SRL",
+                "legalName": "Innovación Digital Sociedad de Responsabilidad Limitada",
+                "status": "ACTIVE",
+                "adminId": "660e8400-e29b-41d4-a716-446655440050",
+                "adminEmail": "admin@innovaciondigital.bo",
+                "adminName": "Admin Usuario",
+                "createdAt": "2025-10-26T11:30:00Z"
+            },
+            "newUserCreated": true,
+            "notificationSentTo": "admin@innovaciondigital.bo"
+        }
+    }
+}
+```
+
+**Response (Usuario Existente - Sin Contraseña):**
+```json
+{
+    "data": {
+        "approveCompanyRequest": {
+            "success": true,
+            "message": "Solicitud aprobada exitosamente. Se ha creado la empresa 'Tech Solutions Inc.' y se asignó el rol de administrador al usuario existente.",
+            "company": {
+                "id": "550e8400-e29b-41d4-a716-446655440011",
+                "companyCode": "CMP-2025-00011",
+                "name": "Tech Solutions Inc.",
+                "legalName": null,
+                "status": "ACTIVE",
+                "adminId": "660e8400-e29b-41d4-a716-446655440055",
+                "adminEmail": "existing@user.com",
+                "adminName": "Juan Pérez",
+                "createdAt": "2025-10-26T11:35:00Z"
+            },
+            "newUserCreated": false,
+            "notificationSentTo": "existing@user.com"
         }
     }
 }
@@ -1043,32 +1537,59 @@ mutation ApproveRequest($requestId: UUID!) {
 
 **Proceso Automático:**
 1. ✅ Valida que la solicitud esté PENDING
-2. ✅ Crea usuario admin si no existe
-3. ✅ Crea empresa con datos de la solicitud
-4. ✅ Asigna rol COMPANY_ADMIN al usuario
-5. ✅ Marca solicitud como APPROVED
-6. ✅ Envía email de confirmación
-7. ✅ Registra evento de auditoría
+2. ✅ Verifica si admin_email existe en sistema
+3. ✅ **Si usuario NO existe**:
+   - Crea usuario con contraseña temporal (16 chars, expira en 7 días)
+   - Marca `has_temporary_password = true`
+   - Envía `CompanyApprovalMailForNewUser` con credenciales
+4. ✅ **Si usuario SÍ existe**:
+   - Reutiliza usuario existente
+   - Envía `CompanyApprovalMailForExistingUser` sin contraseña
+5. ✅ Crea empresa con business_hours por defecto (Lun-Vie 9-18)
+6. ✅ Asigna rol COMPANY_ADMIN al usuario
+7. ✅ Marca solicitud como APPROVED
+8. ✅ Dispara evento CompanyRequestApproved
+9. ✅ Encola email en cola 'emails' (alta prioridad)
+10. ✅ Registra evento de auditoría
+
+**⚠️ IMPORTANTE - Campos NO Expuestos:**
+
+Por seguridad y profesionalismo, la respuesta **NO incluye**:
+- ❌ `business_hours` (configuración interna)
+- ❌ `settings` (configuración interna)
+- ❌ `timezone` (configuración interna)
+- ❌ Contraseña temporal (solo va por email)
+
+Solo se devuelven campos esenciales para confirmar la operación.
 
 ---
 
 ### 5. `rejectCompanyRequest` - Rechazar Solicitud
 
-**Descripción**: Rechaza una solicitud con una razón específica. Solo administradores.
+**Descripción**: Rechaza una solicitud con una razón específica. Solo administradores. Retorna una respuesta profesional con mensaje descriptivo.
 
 **Firma:**
 ```graphql
-rejectCompanyRequest(requestId: UUID!, reason: String!): Boolean!
+rejectCompanyRequest(
+    requestId: UUID!
+    reason: String! @rules(apply: ["required", "min:3"])
+): CompanyRequestRejectionResponse!
 ```
 
 **Directivas:**
-- `@auth(requires: [PLATFORM_ADMIN])`: Solo admins
-- `@audit(action: "reject_company_request", includePayload: true)`: Auditoría completa
+- `@jwt(requires: [PLATFORM_ADMIN])`: Solo admins
+- `@audit(action: "company_request_reject", includePayload: true)`: Auditoría completa
 
 **Request:**
 ```graphql
 mutation RejectRequest($requestId: UUID!, $reason: String!) {
-    rejectCompanyRequest(requestId: $requestId, reason: $reason)
+    rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+        success
+        message
+        reason
+        notificationSentTo
+        requestCode
+    }
 }
 ```
 
@@ -1084,16 +1605,31 @@ mutation RejectRequest($requestId: UUID!, $reason: String!) {
 ```json
 {
     "data": {
-        "rejectCompanyRequest": true
+        "rejectCompanyRequest": {
+            "success": true,
+            "message": "La solicitud de empresa 'Innovación Digital SRL' ha sido rechazada. Se ha enviado un email a admin@innovaciondigital.bo con la razón del rechazo.",
+            "reason": "La descripción del negocio no proporciona suficiente información sobre los servicios ofrecidos. Por favor, reenvíe la solicitud con más detalles sobre su modelo de negocio y servicios específicos.",
+            "notificationSentTo": "admin@innovaciondigital.bo",
+            "requestCode": "REQ-2025-00042"
+        }
     }
 }
 ```
 
 **Proceso Automático:**
-1. ✅ Marca solicitud como REJECTED
-2. ✅ Guarda razón de rechazo
-3. ✅ Envía email al solicitante con la razón
-4. ✅ Registra evento de auditoría
+1. ✅ Valida que la solicitud esté PENDING
+2. ✅ Guarda datos antes del rechazo (código, nombre, email)
+3. ✅ Marca solicitud como REJECTED
+4. ✅ Guarda razón de rechazo en la solicitud
+5. ✅ Dispara evento CompanyRequestRejected
+6. ✅ Encola email en cola 'emails' (alta prioridad)
+7. ✅ Envía `CompanyRejectionMail` con la razón
+8. ✅ Registra evento de auditoría
+
+**Validaciones:**
+- `reason` es requerido y debe tener al menos 3 caracteres
+- La solicitud debe estar en estado PENDING
+- Solo PLATFORM_ADMIN puede ejecutar esta mutación
 
 ---
 
@@ -1437,6 +1973,107 @@ type CompanyRequest {
     updatedAt: DateTime!
 }
 ```
+
+---
+
+### CompanyRequestApprovalResponse
+
+**Descripción**: Respuesta profesional al aprobar solicitud de empresa. Incluye mensaje descriptivo y campos limitados por seguridad.
+
+**Campos:**
+```graphql
+type CompanyRequestApprovalResponse {
+    """Siempre true si la mutation fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo del resultado"""
+    message: String!
+
+    """Datos básicos de la empresa creada"""
+    company: CompanyApprovalInfo!
+
+    """Si se creó un nuevo usuario administrador"""
+    newUserCreated: Boolean!
+
+    """Email al que se envió la notificación"""
+    notificationSentTo: Email!
+}
+```
+
+**Uso:**
+- Response de `approveCompanyRequest` mutation
+- Proporciona feedback profesional al cliente
+- Expone solo campos esenciales (no internos)
+
+**Mensajes Posibles:**
+- Usuario nuevo: `"Solicitud aprobada exitosamente. Se ha creado la empresa '{company_name}' y se envió un email con las credenciales de acceso a {admin_email}."`
+- Usuario existente: `"Solicitud aprobada exitosamente. Se ha creado la empresa '{company_name}' y se asignó el rol de administrador al usuario existente."`
+
+---
+
+### CompanyApprovalInfo
+
+**Descripción**: Información limitada de empresa creada tras aprobación. NO incluye campos internos como business_hours, settings, etc.
+
+**Campos:**
+```graphql
+type CompanyApprovalInfo {
+    id: UUID!
+    companyCode: String!
+    name: String!
+    legalName: String
+    status: CompanyStatus!
+    adminId: UUID!
+    adminEmail: Email!
+    adminName: String!
+    createdAt: DateTime!
+}
+```
+
+**Uso:**
+- Anidado en `CompanyRequestApprovalResponse`
+- Versión segura del tipo `Company` sin datos sensibles
+
+**⚠️ Campos NO Incluidos (por seguridad):**
+- ❌ `business_hours` - Configuración interna
+- ❌ `settings` - Configuración interna
+- ❌ `timezone` - Configuración interna
+- ❌ `phone`, `website`, `contactAddress` - Info detallada no necesaria
+- ❌ Estadísticas (counts) - No relevantes en respuesta de aprobación
+
+---
+
+### CompanyRequestRejectionResponse
+
+**Descripción**: Respuesta profesional al rechazar solicitud de empresa.
+
+**Campos:**
+```graphql
+type CompanyRequestRejectionResponse {
+    """Siempre true si la mutation fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo del resultado"""
+    message: String!
+
+    """Razón del rechazo (la misma que se proporcionó)"""
+    reason: String!
+
+    """Email al que se envió la notificación de rechazo"""
+    notificationSentTo: Email!
+
+    """Código de la solicitud rechazada"""
+    requestCode: String!
+}
+```
+
+**Uso:**
+- Response de `rejectCompanyRequest` mutation
+- Confirma que el rechazo fue procesado y notificado
+- Incluye el código de solicitud para referencia futura
+
+**Mensaje:**
+`"La solicitud de empresa '{company_name}' ha sido rechazada. Se ha enviado un email a {admin_email} con la razón del rechazo."`
 
 ---
 
@@ -1930,7 +2567,7 @@ mutation RequestNewCompany($input: CompanyRequestInput!) {
 
 ### Caso 5: Panel Admin - Revisar Solicitudes
 
-**Objetivo**: Admin revisa y aprueba/rechaza solicitudes.
+**Objetivo**: Admin revisa y aprueba/rechaza solicitudes con feedback profesional.
 
 **1. Ver Pendientes:**
 ```graphql
@@ -1941,28 +2578,90 @@ query PendingRequests {
         companyName
         adminEmail
         businessDescription
+        industryType
+        estimatedUsers
         createdAt
     }
 }
 ```
 
-**2. Aprobar:**
+**2. Aprobar Solicitud (Usuario Nuevo):**
 ```graphql
 mutation ApproveRequest($requestId: UUID!) {
     approveCompanyRequest(requestId: $requestId) {
-        id
-        companyCode
-        name
+        success
+        message
+        company {
+            id
+            companyCode
+            name
+            adminEmail
+        }
+        newUserCreated
+        notificationSentTo
     }
 }
 ```
 
-**3. O Rechazar:**
-```graphql
-mutation RejectRequest($requestId: UUID!, $reason: String!) {
-    rejectCompanyRequest(requestId: $requestId, reason: $reason)
+**Response:**
+```json
+{
+    "data": {
+        "approveCompanyRequest": {
+            "success": true,
+            "message": "Solicitud aprobada exitosamente. Se ha creado la empresa 'Innovación Digital SRL' y se envió un email con las credenciales de acceso a admin@innovaciondigital.bo.",
+            "company": {
+                "id": "550e8400-...",
+                "companyCode": "CMP-2025-00042",
+                "name": "Innovación Digital SRL",
+                "adminEmail": "admin@innovaciondigital.bo"
+            },
+            "newUserCreated": true,
+            "notificationSentTo": "admin@innovaciondigital.bo"
+        }
+    }
 }
 ```
+
+**Proceso en Background:**
+1. ✅ Usuario creado con contraseña temporal (16 chars, expira en 7 días)
+2. ✅ Empresa creada con business_hours por defecto
+3. ✅ Rol COMPANY_ADMIN asignado
+4. ✅ Email enviado con credenciales a Mailpit
+5. ✅ Job encolado en 'emails' queue
+
+**3. Rechazar Solicitud:**
+```graphql
+mutation RejectRequest($requestId: UUID!, $reason: String!) {
+    rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+        success
+        message
+        reason
+        notificationSentTo
+        requestCode
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "data": {
+        "rejectCompanyRequest": {
+            "success": true,
+            "message": "La solicitud de empresa 'Innovación Digital SRL' ha sido rechazada. Se ha enviado un email a admin@innovaciondigital.bo con la razón del rechazo.",
+            "reason": "La descripción del negocio no proporciona suficiente información...",
+            "notificationSentTo": "admin@innovaciondigital.bo",
+            "requestCode": "REQ-2025-00042"
+        }
+    }
+}
+```
+
+**UI Feedback:**
+- Mostrar toast de éxito con el mensaje profesional
+- Actualizar lista de solicitudes pendientes
+- Indicar que el email fue enviado exitosamente
 
 ---
 
@@ -2086,7 +2785,92 @@ CREATE INDEX idx_company_followers_company_id ON company_followers(company_id);
 
 ## 📝 CHANGELOG
 
-### V8.3 (Actual)
+### V9.0 (Actual - 26 de Octubre, 2025)
+
+**Sistema de Emails y Contraseñas Temporales** - Implementación completa del flujo profesional de notificaciones
+
+#### ✨ Nuevas Funcionalidades
+
+**Sistema de Contraseñas Temporales:**
+- ✅ Migración de base de datos (`has_temporary_password`, `temporary_password_expires_at`)
+- ✅ Generación de contraseñas seguras de 16 caracteres
+- ✅ Expiración automática a los 7 días
+- ✅ Hash bcrypt para seguridad
+- ✅ Modelo User actualizado con campos y accesorios
+
+**Sistema de Emails:**
+- ✅ 3 clases Mail implementadas:
+  - `CompanyApprovalMailForNewUser` (con contraseña temporal)
+  - `CompanyApprovalMailForExistingUser` (sin contraseña)
+  - `CompanyRejectionMail` (con razón de rechazo)
+- ✅ 6 templates Blade (3 HTML + 3 texto plano)
+- ✅ 2 Jobs de email con retry (3 intentos, timeout 30s)
+- ✅ Cola 'emails' de alta prioridad
+- ✅ Integración con Mailpit para desarrollo
+
+**Eventos y Listeners:**
+- ✅ `CompanyRequestApproved` actualizado con `temporaryPassword`
+- ✅ `CompanyRequestRejected` implementado
+- ✅ Listeners para disparar jobs de email
+
+**GraphQL Responses Profesionales:**
+- ✅ `CompanyRequestApprovalResponse` - respuesta estructurada para aprobaciones
+- ✅ `CompanyApprovalInfo` - type limitado sin campos internos
+- ✅ `CompanyRequestRejectionResponse` - respuesta estructurada para rechazos
+- ✅ Mensajes descriptivos en español
+- ✅ Campos limitados por seguridad (NO expone business_hours, settings, etc.)
+
+**Configuración por Defecto:**
+- ✅ business_hours estándar (Lun-Vie 9-18) cuando no se especifica
+- ✅ Implementado en `CompanyService::create()`
+
+#### 🧪 Testing
+
+**15 Tests de Email Implementados:**
+- ✅ `ApproveCompanyRequestMutationTest`: 9 tests de aprobación
+- ✅ `RejectCompanyRequestMutationTest`: 6 tests de rechazo
+- ✅ Helper methods para integración con Mailpit API
+- ✅ Verificación de Queue dispatch a 'emails'
+- ✅ Verificación de Mail sending con clases correctas
+- ✅ Tests de login con contraseña temporal
+- ✅ Tests de expiración de contraseña
+
+**Cobertura:**
+- ✅ Escenario usuario nuevo (con contraseña)
+- ✅ Escenario usuario existente (sin contraseña)
+- ✅ Escenario de rechazo con razón
+- ✅ Validación de emails llegando a Mailpit
+
+#### 🔧 Mejoras Técnicas
+
+**Service Layer:**
+- ✅ `UserService::createFromCompanyRequest()` retorna array con user y password
+- ✅ `CompanyRequestService::approve()` maneja contraseña temporal
+- ✅ `CompanyService::create()` aplica business_hours por defecto
+
+**Mutations Actualizadas:**
+- ✅ `approveCompanyRequest`: Retorna `CompanyRequestApprovalResponse!`
+- ✅ `rejectCompanyRequest`: Retorna `CompanyRequestRejectionResponse!`
+- ✅ Mensajes profesionales en español
+- ✅ Confirmación de envío de email
+
+#### 📋 Documentación
+
+- ✅ Sección completa "Sistema de Emails y Contraseñas Temporales"
+- ✅ Diagramas de flujo de arquitectura
+- ✅ Ejemplos de contenido de emails
+- ✅ Guías de testing con Mailpit
+- ✅ Instrucciones de monitoreo y debugging
+
+#### 🐛 Fixes
+
+- ✅ User model: Fix compatibilidad con AuthenticatableTrait (`password` vs `password_hash`)
+- ✅ business_hours: Fix null default, ahora usa horario estándar
+- ✅ Missing imports: Added `use Illuminate\Support\Str` en UserService
+
+---
+
+### V8.3
 - ✅ Consolidación de queries: 9 → 5
 - ✅ Query principal con contextos
 - ✅ Eliminación de redundancia
@@ -2105,14 +2889,48 @@ CREATE INDEX idx_company_followers_company_id ON company_followers(company_id);
 
 ## 🎯 PRÓXIMOS PASOS
 
-1. ✅ **Implementar Backend**: Services, Resolvers, DataLoaders
-2. ✅ **Tests Unitarios**: CompanyService, FollowService
-3. ✅ **Tests de Integración**: GraphQL endpoints
-4. ✅ **Frontend**: Custom hooks, componentes
-5. ✅ **Documentación Frontend**: Guía de uso
+### ✅ Completado (V9.0)
+
+1. ✅ **Backend Completo**: Services, Resolvers, DataLoaders
+2. ✅ **Sistema de Emails**: 3 Mail classes, 6 templates Blade
+3. ✅ **Contraseñas Temporales**: Sistema completo con expiración
+4. ✅ **Tests Completos**: 15 tests de email + tests de integración
+5. ✅ **GraphQL Profesional**: Responses estructuradas con mensajes
+6. ✅ **Documentación Completa**: Sistema de emails documentado
+
+### 🔜 Pendientes
+
+1. **Frontend React:**
+   - Panel admin para revisar solicitudes
+   - UI para aprobar/rechazar con feedback visual
+   - Formulario público de solicitud de empresa
+   - Toast notifications con mensajes profesionales
+
+2. **Validación de Contraseña Temporal:**
+   - Middleware para detectar `has_temporary_password = true`
+   - Forzar cambio de contraseña en primer login
+   - UI de cambio obligatorio de contraseña
+
+3. **Email Templates Mejorados:**
+   - Branding personalizable por empresa
+   - Soporte multi-idioma (ES/EN)
+   - Templates responsive avanzados
+
+4. **Notificaciones Adicionales:**
+   - Notificación a PLATFORM_ADMIN cuando llega nueva solicitud
+   - Recordatorio de contraseña temporal próxima a expirar
+   - Email de bienvenida post-cambio de contraseña
+
+5. **Analytics:**
+   - Dashboard de solicitudes (aprobadas/rechazadas/pendientes)
+   - Métricas de tiempo de respuesta
+   - Tasas de aprobación por industria
 
 ---
 
-**Fin de la Documentación**
+**Fin de la Documentación V9.0**
 
-> Para más información sobre implementación backend, consulta los archivos del proyecto en `app/Features/CompanyManagement/`
+> Para más información sobre implementación backend, consulta los archivos del proyecto en:
+> - `app/Features/CompanyManagement/`
+> - `app/Features/UserManagement/` (User model con contraseñas temporales)
+> - `resources/views/emails/company/` (Templates de email)
