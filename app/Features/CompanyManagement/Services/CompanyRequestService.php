@@ -84,12 +84,20 @@ class CompanyRequestService
             // 1. Buscar o crear usuario admin
             $adminUser = User::where('email', $request->admin_email)->first();
 
+            // Determinar si se está creando un nuevo usuario
+            $isNewUser = false;
+            $temporaryPassword = null;
+
             if (!$adminUser) {
                 // Crear nuevo usuario desde datos de solicitud
-                $adminUser = $this->userService->createFromCompanyRequest(
+                $result = $this->userService->createFromCompanyRequest(
                     $request->admin_email,
                     $request->company_name
                 );
+
+                $adminUser = $result['user'];
+                $temporaryPassword = $result['temporary_password'];
+                $isNewUser = true;
             }
 
             // 2. Crear empresa
@@ -117,8 +125,8 @@ class CompanyRequestService
             // 4. Marcar solicitud como aprobada
             $request->markAsApproved($reviewer, $company);
 
-            // 5. Disparar evento (dispara envío de email)
-            event(new CompanyRequestApproved($request, $company, $adminUser));
+            // 5. Disparar evento (dispara envío de email con password temporal si es nuevo usuario)
+            event(new CompanyRequestApproved($request, $company, $adminUser, $temporaryPassword));
 
             return $company;
         });

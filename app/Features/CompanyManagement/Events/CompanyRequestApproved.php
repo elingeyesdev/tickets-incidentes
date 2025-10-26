@@ -15,6 +15,7 @@ class CompanyRequestApproved
     public function __construct(
         public CompanyRequest $request,
         public Company $company,
-        public User $adminUser
+        public User $adminUser,
+        public ?string $temporaryPassword = null
     ) {}
 }

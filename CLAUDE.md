@@ -26,13 +26,13 @@ Enterprise-grade helpdesk system built with Laravel 12 backend, React 19 fronten
 
 ## Key Commands
 
-### Windows/PowerShell Environment
+### Development Environment
 
-**IMPORTANT**: This project runs on Windows with Laravel Herd. Commands can run either:
-- **Local PHP** (via Herd) - Faster for CPU-intensive tasks
-- **Docker** - Isolated environment, slower for CPU tasks
+**IMPORTANT**: Commands can run either:
+- **Local PHP** (via Herd/local installation) - Faster for CPU-intensive tasks
+- **Docker** - Isolated environment, consistent across platforms
 
-**Use PowerShell for best compatibility with scripts and commands.**
+**Note**: The project supports both Windows (PowerShell) and Linux environments.
 
 ### Development Workflow
 
@@ -112,6 +112,7 @@ docker compose exec app bash
 
 ### Testing
 
+**Backend Testing (PHPUnit)**:
 ```bash
 # Run all tests (Docker)
 docker compose exec app php artisan test
@@ -124,6 +125,21 @@ docker compose exec app composer test
 
 # Local testing (faster)
 php artisan test
+```
+
+**Frontend Testing (Vitest)**:
+```bash
+# Run all frontend tests
+npm run test
+
+# Watch mode (re-run on changes)
+npm run test:watch
+
+# UI mode (interactive browser)
+npm run test:ui
+
+# Coverage report
+npm run test:coverage
 ```
 
 ### Code Quality
@@ -247,7 +263,14 @@ resources/js/
 │   ├── Authentication/
 │   ├── UserManagement/
 │   └── CompanyManagement/
-└── Shared/                        # Shared components
+├── Components/                    # Shared UI components
+│   ├── ui/                        # Base UI components (Button, Input, etc.)
+│   ├── Skeleton/                  # Loading skeleton system (see frontend rules)
+│   ├── forms/                     # Form components
+│   ├── feedback/                  # Alert, Toast, Loading
+│   ├── navigation/                # Breadcrumb, Pagination, Tabs
+│   └── data-display/              # Avatar, StatusBadge, DataTable
+└── Shared/                        # Shared utilities and hooks
 
 graphql/
 ├── schema.graphql                 # Main schema entry point
@@ -445,6 +468,20 @@ public function __invoke($rootValue, array $args)
 - **Client**: Apollo Client (future)
 - **Status**: ✅ Lighthouse GraphQL installed and configured
 
+## Frontend UI Components
+
+**Skeleton Loading System** (`resources/js/Components/Skeleton/`):
+- **Purpose**: Professional loading states (never show blank screens)
+- **Structure**: Organized by functionality (base, forms, cards, data-display)
+- **Components**:
+  - Base: Skeleton, Input, Button, Avatar, Badge
+  - Forms: FormSkeleton, OnboardingForm
+  - Cards: Card, CardGrid, ListItem
+- **Usage**: Import from `@/Components/Skeleton/` and use during data loading
+- **Documentation**: See `Components/Skeleton/README.md` and `EXAMPLES.tsx`
+
+**Note**: See `.cursor/rules/arquitecture-frontend.mdc` for complete component organization and the skeleton system rule.
+
 ## Frontend Authentication Architecture
 
 **XState v5 State Machine** (`resources/js/lib/auth/AuthMachine.ts`):
@@ -531,7 +568,7 @@ Comprehensive documentation in `/documentacion/`:
 
 ## Current Implementation Status
 
-**Last Updated:** 22-Oct-2025
+**Last Updated:** 25-Oct-2025
 **Current Branch:** feature/auth-refactor
 
 ### ✅ Production-Ready
@@ -542,6 +579,7 @@ Comprehensive documentation in `/documentacion/`:
 - ✅ PostgreSQL 17 with 4 schemas
 - ✅ Redis cache/queue/sessions
 - ✅ Database 100% aligned with Modelado V7.0
+- ✅ Vitest testing framework configured
 
 **GraphQL API**:
 - ✅ Lighthouse GraphQL schema-first complete
@@ -552,7 +590,7 @@ Comprehensive documentation in `/documentacion/`:
 - ✅ 6 DataLoaders implemented
 
 **Authentication Feature (100%)**:
-- ✅ Register mutation implemented & tested
+- ✅ Register mutation implemented & tested (100% tests passing)
 - ✅ Models: User, UserProfile, UserRole, Role, RefreshToken
 - ✅ Services: AuthService, TokenService, PasswordResetService, HeartbeatService (audited)
 - ✅ Events/Listeners: Email verification flow
@@ -562,17 +600,17 @@ Comprehensive documentation in `/documentacion/`:
 - ✅ Token management: JWT with automatic refresh, multi-tab synchronization
 - ✅ Session restoration: Persistent auth state across page reloads
 
-**UserManagement Feature (90%)**:
+**UserManagement Feature (100%)**:
 - ✅ Models, Services, Policies (100% audited)
 - ✅ Factories and Seeders
 - ✅ Events system
-- ⏳ Resolvers connection (pending)
+- ✅ Tests 100% passing
 
-**CompanyManagement Feature (90%)**:
+**CompanyManagement Feature (100%)**:
 - ✅ Models: Company, CompanyRequest, CompanyFollower
 - ✅ Services: CompanyService, CompanyRequestService
 - ✅ Migrations & Factories
-- ⏳ Resolvers connection (pending)
+- ✅ Tests 100% passing
 
 ### ⏳ In Progress (feature/auth-refactor branch)
 - ⏳ Stateless JWT authentication refactoring (eliminating Laravel sessions)

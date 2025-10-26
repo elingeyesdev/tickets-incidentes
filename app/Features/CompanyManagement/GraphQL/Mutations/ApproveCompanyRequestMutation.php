@@ -37,10 +37,38 @@ class ApproveCompanyRequestMutation extends BaseMutation
                 ]);
             }
 
+            // Verificar si el admin_email ya existe (para determinar si creamos usuario nuevo)
+            $existingUser = \App\Features\UserManagement\Models\User::where('email', $request->admin_email)->exists();
+            $newUserCreated = !$existingUser;
+
             // Aprobar solicitud (crea empresa y asigna rol de admin)
             $company = $this->requestService->approve($request, $reviewer);
 
-            return $company;
+            // Cargar relaciones necesarias para la respuesta
+            $company->load('adminUser.profile');
+
+            // Construir respuesta profesional
+            return [
+                'success' => true,
+                'message' => $newUserCreated
+                    ? "Solicitud aprobada exitosamente. Se ha creado la empresa '{$company->name}' y se envió un email con las credenciales de acceso a {$request->admin_email}."
+                    : "Solicitud aprobada exitosamente. Se ha creado la empresa '{$company->name}' y se asignó el rol de administrador al usuario existente.",
+                'company' => [
+                    'id' => $company->id,
+                    'companyCode' => $company->company_code,
+                    'name' => $company->name,
+                    'legalName' => $company->legal_name,
+                    'status' => $company->status,
+                    'adminId' => $company->admin_user_id,
+                    'adminEmail' => $company->adminUser->email,
+                    'adminName' => $company->adminUser->profile
+                        ? $company->adminUser->profile->first_name . ' ' . $company->adminUser->profile->last_name
+                        : $company->adminUser->email,
+                    'createdAt' => $company->created_at,
+                ],
+                'newUserCreated' => $newUserCreated,
+                'notificationSentTo' => $request->admin_email,
+            ];
 
         } catch (Error $e) {
             throw $e;

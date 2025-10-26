@@ -10,6 +10,7 @@ use App\Shared\Exceptions\ValidationException;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -373,13 +374,13 @@ class UserService
      * Crear usuario desde solicitud de empresa
      *
      * Crea un usuario temporal para el admin de una nueva empresa.
-     * El usuario necesitará establecer su password en el primer login.
+     * El usuario recibe un password temporal que debe cambiar en el primer login.
      *
      * @param string $email Email del admin
      * @param string $companyName Nombre de la empresa (para generar nombre temporal)
-     * @return User Usuario creado
+     * @return array ['user' => User, 'temporary_password' => string]
      */
-    public function createFromCompanyRequest(string $email, string $companyName): User
+    public function createFromCompanyRequest(string $email, string $companyName): array
     {
         return DB::transaction(function () use ($email, $companyName) {
             // Generar user_code
@@ -390,17 +391,22 @@ class UserService
             $firstName = $nameParts[0] ?? 'Admin';
             $lastName = implode(' ', array_slice($nameParts, 1)) ?: 'User';
 
-            // Crear usuario sin password (deberá establecerlo después)
+            // Generar password temporal (16 caracteres, seguro)
+            $temporaryPassword = Str::random(16);
+
+            // Crear usuario con password temporal
             $user = User::create([
                 'user_code' => $userCode,
                 'email' => $email,
-                'password_hash' => null, // Sin password inicial
+                'password_hash' => Hash::make($temporaryPassword),
                 'status' => UserStatus::ACTIVE,
                 'email_verified' => false,
                 'terms_accepted' => true,
                 'terms_accepted_at' => now(),
                 'terms_version' => '1.0',
                 'auth_provider' => 'local',
+                'has_temporary_password' => true,
+                'temporary_password_expires_at' => now()->addDays(7), // Expira en 7 días
             ]);
 
             // Crear perfil básico
@@ -410,7 +416,10 @@ class UserService
                 'last_name' => $lastName,
             ]);
 
-            return $user->fresh();
+            return [
+                'user' => $user->fresh(),
+                'temporary_password' => $temporaryPassword,
+            ];
         });
     }
 }

@@ -93,12 +93,15 @@ class User extends Model implements Authenticatable
         'terms_accepted_at',
         'terms_version',
         'onboarding_completed_at',
+        'has_temporary_password',
+        'temporary_password_expires_at',
     ];
 
     /**
      * Campos ocultos (no exponer en JSON)
      */
     protected $hidden = [
+        'password',
         'password_hash',
         'password_reset_token',
         'external_auth_id',
@@ -117,6 +120,8 @@ class User extends Model implements Authenticatable
         'terms_accepted' => 'boolean',
         'terms_accepted_at' => 'datetime',
         'onboarding_completed_at' => 'datetime',
+        'has_temporary_password' => 'boolean',
+        'temporary_password_expires_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -130,6 +135,7 @@ class User extends Model implements Authenticatable
         'avatarUrl',
         'theme',
         'language',
+        'hasTemporaryPassword',
     ];
 
     /**
@@ -164,6 +170,14 @@ class User extends Model implements Authenticatable
     public function getAuthIdentifierName(): string
     {
         return 'id';
+    }
+
+    /**
+     * Obtener el nombre de la columna del password
+     */
+    public function getAuthPasswordName(): string
+    {
+        return 'password_hash';
     }
 
     /**
@@ -440,6 +454,32 @@ class User extends Model implements Authenticatable
     public function getLanguageAttribute(): string
     {
         return $this->profile?->language ?? 'es';
+    }
+
+    /**
+     * Accessor: hasTemporaryPassword para GraphQL
+     * Retorna si el usuario tiene password temporal activo
+     */
+    public function getHasTemporaryPasswordAttribute(): bool
+    {
+        return $this->attributes['has_temporary_password'] ?? false;
+    }
+
+    /**
+     * Override password attribute to use password_hash instead
+     * This prevents Laravel's AuthenticatableTrait from trying to set 'password' column
+     */
+    public function getPasswordAttribute(): ?string
+    {
+        return $this->password_hash;
+    }
+
+    /**
+     * Override password mutator to use password_hash instead
+     */
+    public function setPasswordAttribute(?string $value): void
+    {
+        $this->attributes['password_hash'] = $value;
     }
 
     /**

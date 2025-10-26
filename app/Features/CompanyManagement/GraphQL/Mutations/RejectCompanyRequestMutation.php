@@ -36,10 +36,23 @@ class RejectCompanyRequestMutation extends BaseMutation
                 ]);
             }
 
-            // Rechazar solicitud
-            $this->requestService->reject($request, $reviewer, $args['reason']);
+            // Guardar datos antes del rechazo
+            $requestCode = $request->request_code;
+            $companyName = $request->company_name;
+            $adminEmail = $request->admin_email;
+            $reason = $args['reason'];
 
-            return true;
+            // Rechazar solicitud
+            $this->requestService->reject($request, $reviewer, $reason);
+
+            // Construir respuesta profesional
+            return [
+                'success' => true,
+                'message' => "La solicitud de empresa '{$companyName}' ha sido rechazada. Se ha enviado un email a {$adminEmail} con la razón del rechazo.",
+                'reason' => $reason,
+                'notificationSentTo' => $adminEmail,
+                'requestCode' => $requestCode,
+            ];
 
         } catch (Error $e) {
             throw $e;

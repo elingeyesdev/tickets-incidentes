@@ -84,7 +84,7 @@ extend type Mutation {
         @audit(action: "company_request", includePayload: true)
 
     # Admin
-    approveCompanyRequest(requestId: UUID!): Company!
+    approveCompanyRequest(requestId: UUID!): CompanyRequestApprovalResponse!
         @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\ApproveCompanyRequestMutation")
         @audit(action: "company_request_approve", includePayload: true)
@@ -92,7 +92,7 @@ extend type Mutation {
     rejectCompanyRequest(
         requestId: UUID!
         reason: String! @rules(apply: ["required", "min:3"])
-    ): Boolean!
+    ): CompanyRequestRejectionResponse!
         @jwt(requires: [PLATFORM_ADMIN])
         @field(resolver: "App\\Features\\CompanyManagement\\GraphQL\\Mutations\\RejectCompanyRequestMutation")
         @audit(action: "company_request_reject", includePayload: true)
@@ -321,6 +321,63 @@ type CompanyFollowResult {
     message: String!
     company: CompanyMinimal!
     followedAt: DateTime!
+}
+
+"""
+Respuesta profesional al aprobar solicitud de empresa
+Solo devuelve datos esenciales, NO internos (business_hours, settings, etc.)
+"""
+type CompanyRequestApprovalResponse {
+    """Siempre true si la mutation fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo del resultado"""
+    message: String!
+
+    """Datos básicos de la empresa creada"""
+    company: CompanyApprovalInfo!
+
+    """Si se creó un nuevo usuario administrador"""
+    newUserCreated: Boolean!
+
+    """Email al que se envió la notificación"""
+    notificationSentTo: Email!
+}
+
+"""
+Información limitada de empresa creada tras aprobación
+NO incluye campos internos como business_hours, settings, etc.
+"""
+type CompanyApprovalInfo {
+    id: UUID!
+    companyCode: String!
+    name: String!
+    legalName: String
+    status: CompanyStatus!
+    adminId: UUID!
+    adminEmail: Email!
+    adminName: String!
+    createdAt: DateTime!
+}
+
+"""
+Respuesta profesional al rechazar solicitud de empresa
+"""
+type CompanyRequestRejectionResponse {
+    """Siempre true si la mutation fue exitosa"""
+    success: Boolean!
+
+    """Mensaje descriptivo del resultado"""
+    message: String!
+
+    """Razón del rechazo (la misma que se proporcionó)"""
+    reason: String!
+
+    """Email al que se envió la notificación de rechazo"""
+    notificationSentTo: Email!
+
+    """Código de la solicitud rechazada"""
+    requestCode: String!
 }
 
 # ================================================================================

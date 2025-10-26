@@ -16,7 +16,8 @@ class SendApprovalEmail
         SendCompanyApprovalEmailJob::dispatch(
             $event->request,
             $event->company,
-            $event->adminUser
+            $event->adminUser,
+            $event->temporaryPassword
         );
     }
 }

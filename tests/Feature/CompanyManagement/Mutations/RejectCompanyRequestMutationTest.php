@@ -2,10 +2,14 @@
 
 namespace Tests\Feature\CompanyManagement\Mutations;
 
+use App\Features\CompanyManagement\Jobs\SendCompanyRejectionEmailJob;
+use App\Features\CompanyManagement\Mail\CompanyRejectionMail;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Nuwave\Lighthouse\Testing\MakesGraphQLRequests;
 use Tests\TestCase;
 
@@ -22,6 +26,9 @@ use Tests\TestCase;
  * - COMPANY_ADMIN no puede rechazar (permisos)
  * - USER no puede rechazar (permisos)
  * - Razón es obligatoria (validación)
+ * - 📧 EMAIL TESTS: Envío de email con razón de rechazo
+ * - 📧 Email llega a Mailpit con razón incluida
+ * - NO crea empresa ni usuario cuando rechaza
  */
 class RejectCompanyRequestMutationTest extends TestCase
 {
@@ -255,5 +262,322 @@ class RejectCompanyRequestMutationTest extends TestCase
 
         // Assert
         $response->assertGraphQLErrorMessage('Unauthenticated');
+    }
+
+    // =========================================================================
+    // 📧 EMAIL TESTS - Verifican que email de rechazo SE ENVÍA y LLEGA
+    // =========================================================================
+
+    /** @test */
+    public function sends_rejection_email_with_reason()
+    {
+        // Arrange
+        Mail::fake();
+        Queue::fake();
+
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $request = CompanyRequest::factory()->create([
+            'status' => 'pending',
+            'company_name' => 'Failed Verification Co',
+            'admin_email' => 'failed@verification.com',
+        ]);
+
+        $rejectionReason = 'Incomplete business documentation. Please provide tax ID and business license.';
+
+        // Act
+        $this->authenticateWithJWT($admin)->graphQL('
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+            }
+        ', [
+            'requestId' => $request->id,
+            'reason' => $rejectionReason
+        ]);
+
+        // Assert - Job de email fue despachado a la cola 'emails'
+        Queue::assertPushedOn('emails', SendCompanyRejectionEmailJob::class);
+
+        // Assert - Job contiene datos correctos
+        Queue::assertPushed(SendCompanyRejectionEmailJob::class, function ($job) use ($request, $rejectionReason) {
+            return $job->request->id === $request->id
+                && $job->reason === $rejectionReason;
+        });
+
+        // Assert - Email fue enviado
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) use ($request) {
+            return $mail->hasTo($request->admin_email);
+        });
+
+        // Assert - Email contiene la razón de rechazo
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) use ($rejectionReason) {
+            return $mail->reason === $rejectionReason;
+        });
+    }
+
+    /** @test */
+    public function rejection_email_arrives_to_mailpit()
+    {
+        // Skip if Mailpit not available
+        if (!$this->isMailpitAvailable()) {
+            $this->markTestSkipped('Mailpit is not available');
+        }
+
+        // Arrange - Limpiar Mailpit
+        $this->clearMailpit();
+
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $request = CompanyRequest::factory()->create([
+            'status' => 'pending',
+            'company_name' => 'Mailpit Rejection Test',
+            'admin_email' => 'rejection-test@mailpit.com',
+        ]);
+
+        $rejectionReason = 'Your company does not meet our service criteria at this time. Please reapply in 6 months with updated documentation.';
+
+        // Act
+        $this->authenticateWithJWT($admin)->graphQL('
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+            }
+        ', [
+            'requestId' => $request->id,
+            'reason' => $rejectionReason
+        ]);
+
+        // Procesar queue
+        $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
+        sleep(1);
+
+        // Assert - Email llegó a Mailpit
+        $messages = $this->getMailpitMessages();
+        $this->assertGreaterThan(0, count($messages), 'At least one email should arrive to Mailpit');
+
+        // Buscar email específico
+        $rejectionEmail = collect($messages)->first(function ($msg) {
+            return str_contains($msg['To'][0]['Address'] ?? '', 'rejection-test@mailpit.com');
+        });
+
+        $this->assertNotNull($rejectionEmail, 'Rejection email should be in Mailpit');
+
+        // Assert - Subject correcto
+        $this->assertStringContainsString('Rechazada', $rejectionEmail['Subject'] ?? '');
+
+        // Assert - Email contiene la razón de rechazo
+        $emailBody = $this->getMailpitMessageBody($rejectionEmail['ID']);
+        $this->assertStringContainsString($rejectionReason, $emailBody, 'Email should contain rejection reason');
+    }
+
+    /** @test */
+    public function multiple_rejections_send_separate_emails()
+    {
+        // Arrange
+        Mail::fake();
+        Queue::fake();
+
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+
+        $requests = [
+            [
+                'request' => CompanyRequest::factory()->create([
+                    'status' => 'pending',
+                    'admin_email' => 'reject1@test.com',
+                ]),
+                'reason' => 'Reason one'
+            ],
+            [
+                'request' => CompanyRequest::factory()->create([
+                    'status' => 'pending',
+                    'admin_email' => 'reject2@test.com',
+                ]),
+                'reason' => 'Reason two'
+            ],
+            [
+                'request' => CompanyRequest::factory()->create([
+                    'status' => 'pending',
+                    'admin_email' => 'reject3@test.com',
+                ]),
+                'reason' => 'Reason three'
+            ],
+        ];
+
+        // Act - Rechazar todas las solicitudes
+        foreach ($requests as $data) {
+            $this->authenticateWithJWT($admin)->graphQL('
+                mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                    rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                }
+            ', [
+                'requestId' => $data['request']->id,
+                'reason' => $data['reason']
+            ]);
+        }
+
+        // Assert - Se enviaron 3 emails diferentes
+        Mail::assertSent(CompanyRejectionMail::class, 3);
+
+        // Assert - Cada email fue al destinatario correcto con su razón
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) {
+            return $mail->hasTo('reject1@test.com') && $mail->reason === 'Reason one';
+        });
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) {
+            return $mail->hasTo('reject2@test.com') && $mail->reason === 'Reason two';
+        });
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) {
+            return $mail->hasTo('reject3@test.com') && $mail->reason === 'Reason three';
+        });
+    }
+
+    /** @test */
+    public function does_not_create_company_when_rejected()
+    {
+        // Arrange
+        Mail::fake();
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $request = CompanyRequest::factory()->create([
+            'status' => 'pending',
+            'company_name' => 'Should Not Create This Company',
+        ]);
+
+        $initialCompanyCount = Company::count();
+
+        // Act
+        $this->authenticateWithJWT($admin)->graphQL('
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+            }
+        ', [
+            'requestId' => $request->id,
+            'reason' => 'Rejected for testing'
+        ]);
+
+        // Assert - Company count did not increase
+        $this->assertEquals($initialCompanyCount, Company::count());
+
+        // Assert - No company created with this name
+        $this->assertDatabaseMissing('business.companies', [
+            'name' => 'Should Not Create This Company',
+        ]);
+    }
+
+    /** @test */
+    public function does_not_create_user_when_rejected()
+    {
+        // Arrange
+        Mail::fake();
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $request = CompanyRequest::factory()->create([
+            'status' => 'pending',
+            'admin_email' => 'should-not-create@rejected.com',
+        ]);
+
+        // Verify user doesn't exist
+        $this->assertDatabaseMissing('auth.users', [
+            'email' => 'should-not-create@rejected.com',
+        ]);
+
+        $initialUserCount = User::count();
+
+        // Act
+        $this->authenticateWithJWT($admin)->graphQL('
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+            }
+        ', [
+            'requestId' => $request->id,
+            'reason' => 'Invalid business information'
+        ]);
+
+        // Assert - User was NOT created
+        $this->assertEquals($initialUserCount, User::count());
+        $this->assertDatabaseMissing('auth.users', [
+            'email' => 'should-not-create@rejected.com',
+        ]);
+    }
+
+    /** @test */
+    public function rejection_reason_can_be_long_text()
+    {
+        // Arrange
+        Mail::fake();
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $request = CompanyRequest::factory()->create(['status' => 'pending']);
+
+        $longReason = str_repeat('This is a detailed explanation of why the request was rejected. ', 50);
+
+        // Act
+        $this->authenticateWithJWT($admin)->graphQL('
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+            }
+        ', [
+            'requestId' => $request->id,
+            'reason' => $longReason
+        ]);
+
+        // Assert - Full reason was stored
+        $this->assertDatabaseHas('business.company_requests', [
+            'id' => $request->id,
+            'rejection_reason' => $longReason,
+        ]);
+
+        // Assert - Email contains full reason
+        Mail::assertSent(CompanyRejectionMail::class, function ($mail) use ($longReason) {
+            return $mail->reason === $longReason;
+        });
+    }
+
+    // =========================================================================
+    // 🛠️ HELPER METHODS para Mailpit Integration
+    // =========================================================================
+
+    /**
+     * Check if Mailpit is available
+     */
+    protected function isMailpitAvailable(): bool
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get('http://localhost:8025/api/v1/messages');
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Clear all messages from Mailpit
+     */
+    protected function clearMailpit(): void
+    {
+        try {
+            \Illuminate\Support\Facades\Http::delete('http://localhost:8025/api/v1/messages');
+        } catch (\Exception $e) {
+            // Silently fail if Mailpit not available
+        }
+    }
+
+    /**
+     * Get all messages from Mailpit
+     */
+    protected function getMailpitMessages(): array
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get('http://localhost:8025/api/v1/messages');
+            return $response->json('messages') ?? [];
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get message body from Mailpit
+     */
+    protected function getMailpitMessageBody(string $messageId): string
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get("http://localhost:8025/api/v1/message/{$messageId}");
+            return $response->json('HTML') ?? $response->json('Text') ?? '';
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 }

@@ -22,6 +22,17 @@ class CompanyService
             // Generar código único de empresa
             $companyCode = CodeGenerator::generate('business.companies', 'CMP', 'company_code');
 
+            // Horario laboral estándar por defecto (Lunes a Viernes 9:00-18:00)
+            $defaultBusinessHours = [
+                'monday' => ['open' => '09:00', 'close' => '18:00', 'is_open' => true],
+                'tuesday' => ['open' => '09:00', 'close' => '18:00', 'is_open' => true],
+                'wednesday' => ['open' => '09:00', 'close' => '18:00', 'is_open' => true],
+                'thursday' => ['open' => '09:00', 'close' => '18:00', 'is_open' => true],
+                'friday' => ['open' => '09:00', 'close' => '18:00', 'is_open' => true],
+                'saturday' => ['open' => '09:00', 'close' => '13:00', 'is_open' => false],
+                'sunday' => ['is_open' => false],
+            ];
+
             // Crear empresa
             $company = Company::create([
                 'company_code' => $companyCode,
@@ -38,7 +49,7 @@ class CompanyService
                 'contact_postal_code' => $data['contact_postal_code'] ?? null,
                 'tax_id' => $data['tax_id'] ?? null,
                 'legal_representative' => $data['legal_representative'] ?? null,
-                'business_hours' => $data['business_hours'] ?? null,
+                'business_hours' => $data['business_hours'] ?? $defaultBusinessHours,
                 'timezone' => $data['timezone'] ?? 'America/La_Paz',
                 'logo_url' => $data['logo_url'] ?? null,
                 'favicon_url' => $data['favicon_url'] ?? null,

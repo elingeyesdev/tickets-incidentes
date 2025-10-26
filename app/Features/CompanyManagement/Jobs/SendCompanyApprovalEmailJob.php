@@ -2,6 +2,8 @@
 
 namespace App\Features\CompanyManagement\Jobs;
 
+use App\Features\CompanyManagement\Mail\CompanyApprovalMailForExistingUser;
+use App\Features\CompanyManagement\Mail\CompanyApprovalMailForNewUser;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
@@ -11,10 +13,28 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
+/**
+ * Send Company Approval Email Job
+ *
+ * Job asíncrono para enviar email de aprobación de empresa.
+ * Envía diferentes emails según si el usuario es nuevo o existente.
+ * Se ejecuta en la cola 'emails'.
+ */
 class SendCompanyApprovalEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * Número de intentos
+     */
+    public int $tries = 3;
+
+    /**
+     * Timeout en segundos
+     */
+    public int $timeout = 30;
 
     /**
      * Create a new job instance.
@@ -22,25 +42,51 @@ class SendCompanyApprovalEmailJob implements ShouldQueue
     public function __construct(
         public CompanyRequest $request,
         public Company $company,
-        public User $adminUser
-    ) {}
+        public User $adminUser,
+        public ?string $temporaryPassword = null
+    ) {
+        // Asignar a cola específica
+        $this->onQueue('emails');
+    }
 
     /**
      * Execute the job.
      */
     public function handle(): void
     {
-        // TODO: Send approval email with company credentials
-        // Por ahora, solo registrarlo
-        Log::info('Company request approval email would be sent', [
+        // Determinar qué email enviar basado en si hay password temporal
+        if ($this->temporaryPassword) {
+            // Nuevo usuario - enviar email con password temporal
+            Mail::to($this->adminUser->email)->send(
+                new CompanyApprovalMailForNewUser(
+                    $this->company,
+                    $this->adminUser,
+                    $this->temporaryPassword
+                )
+            );
+        } else {
+            // Usuario existente - enviar email sin password
+            Mail::to($this->adminUser->email)->send(
+                new CompanyApprovalMailForExistingUser(
+                    $this->company,
+                    $this->adminUser
+                )
+            );
+        }
+    }
+
+    /**
+     * Manejar fallo del job
+     */
+    public function failed(\Throwable $exception): void
+    {
+        // Log del error
+        Log::error('Failed to send company approval email', [
             'request_code' => $this->request->request_code,
             'company_code' => $this->company->company_code,
-            'company_name' => $this->company->name,
             'admin_email' => $this->adminUser->email,
+            'has_temp_password' => !is_null($this->temporaryPassword),
+            'error' => $exception->getMessage(),
         ]);
-
-        // Implementación futura:
-        // Mail::to($this->adminUser->email)
-        //     ->send(new CompanyApprovalMail($this->request, $this->company, $this->adminUser));
     }
 }
