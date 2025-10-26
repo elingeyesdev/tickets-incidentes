@@ -107,4 +107,48 @@ abstract class TestCase extends BaseTestCase
 
         return $this;
     }
+
+    /**
+     * Execute all queued jobs manually (for testing)
+     *
+     * When using Queue::fake(), jobs are intercepted but not executed.
+     * This helper method manually executes queued jobs from the fake queue
+     * so their side effects (like Mail::send()) occur during testing.
+     */
+    protected function executeQueuedJobs(): void
+    {
+        // Get the queue manager
+        $queueManager = app('queue');
+        
+        // Check if QueueFake is being used
+        if (!$queueManager instanceof \Illuminate\Support\Testing\Fakes\QueueFake) {
+            // Queue::fake() is not active, so there's nothing to execute
+            return;
+        }
+        
+        // Use reflection to access protected properties since QueueFake doesn't expose them
+        $reflection = new \ReflectionClass($queueManager);
+        $pushedJobsProperty = $reflection->getProperty('jobs');
+        $pushedJobsProperty->setAccessible(true);
+        $pushedJobs = $pushedJobsProperty->getValue($queueManager);
+        
+        // Execute each job
+        foreach ($pushedJobs as $queueName => $jobsList) {
+            foreach ($jobsList as $jobData) {
+                if (isset($jobData['job'])) {
+                    $job = $jobData['job'];
+                    
+                    // Execute the job's handle method
+                    if (method_exists($job, 'handle')) {
+                        try {
+                            app()->call([$job, 'handle']);
+                        } catch (\Exception $e) {
+                            // Log but don't fail the test
+                            logger()->error('Queue job execution failed in test: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

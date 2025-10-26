@@ -80,12 +80,12 @@ class CompanyRequestService
             );
         }
 
-        return DB::transaction(function () use ($request, $reviewer) {
+        // Ejecutar dentro de transacción
+        $data = DB::transaction(function () use ($request, $reviewer) {
             // 1. Buscar o crear usuario admin
             $adminUser = User::where('email', $request->admin_email)->first();
 
             // Determinar si se está creando un nuevo usuario
-            $isNewUser = false;
             $temporaryPassword = null;
 
             if (!$adminUser) {
@@ -97,7 +97,6 @@ class CompanyRequestService
 
                 $adminUser = $result['user'];
                 $temporaryPassword = $result['temporary_password'];
-                $isNewUser = true;
             }
 
             // 2. Crear empresa
@@ -125,11 +124,24 @@ class CompanyRequestService
             // 4. Marcar solicitud como aprobada
             $request->markAsApproved($reviewer, $company);
 
-            // 5. Disparar evento (dispara envío de email con password temporal si es nuevo usuario)
-            event(new CompanyRequestApproved($request, $company, $adminUser, $temporaryPassword));
-
-            return $company;
+            return [
+                'company' => $company,
+                'adminUser' => $adminUser,
+                'temporaryPassword' => $temporaryPassword,
+            ];
         });
+
+        // 5. Disparar evento DESPUÉS de que la transacción se complete
+        // Se hace fuera de la transacción para garantizar que los listeners
+        // se ejecuten correctamente incluso en tests con RefreshDatabase
+        event(new CompanyRequestApproved(
+            $request->fresh(),
+            $data['company'],
+            $data['adminUser'],
+            $data['temporaryPassword']
+        ));
+
+        return $data['company'];
     }
 
     /**
@@ -149,10 +161,11 @@ class CompanyRequestService
         DB::transaction(function () use ($request, $reviewer, $reason) {
             // Marcar como rechazada
             $request->markAsRejected($reviewer, $reason);
-
-            // Disparar evento (dispara envío de email)
-            event(new CompanyRequestRejected($request, $reason));
         });
+
+        // Disparar evento DESPUÉS de que la transacción se complete
+        // Esto garantiza que los listeners se ejecuten fuera de la transacción
+        event(new CompanyRequestRejected($request, $reason));
 
         return $request->fresh();
     }

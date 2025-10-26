@@ -12,6 +12,8 @@ class SendApprovalEmail
      */
     public function handle(CompanyRequestApproved $event): void
     {
+        \Illuminate\Support\Facades\Log::debug('SendApprovalEmail listener: Handling CompanyRequestApproved event');
+
         // Despachar job para enviar email de aprobación
         SendCompanyApprovalEmailJob::dispatch(
             $event->request,
@@ -19,5 +21,7 @@ class SendApprovalEmail
             $event->adminUser,
             $event->temporaryPassword
         );
+
+        \Illuminate\Support\Facades\Log::debug('SendApprovalEmail listener: Job dispatched');
     }
 }
