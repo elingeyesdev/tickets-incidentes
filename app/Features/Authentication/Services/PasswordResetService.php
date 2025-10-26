@@ -403,15 +403,16 @@ class PasswordResetService
      * para búsqueda O(1) en lugar de iterar todas las keys
      *
      * @param string $code
-     * @return int|null User ID o null
+     * @return string|null User ID (UUID) o null
      */
-    private function findUserByResetCode(string $code): ?int
+    private function findUserByResetCode(string $code): ?string
     {
         // Buscar user_id usando el mapeo inverso
-        $userId = Cache::get("password_reset_code_lookup:{$code}");
+        $cacheKey = "password_reset_code_lookup:{$code}";
+        $userId = Cache::get($cacheKey);
 
         if ($userId) {
-            return (int) $userId;
+            return (string) $userId;
         }
 
         return null;
@@ -421,10 +422,10 @@ class PasswordResetService
      * Invalidar código de reset
      *
      * @param string $code
-     * @param int $userId
+     * @param string $userId User ID (UUID)
      * @return bool
      */
-    private function invalidateResetCode(string $code, int $userId): bool
+    private function invalidateResetCode(string $code, string $userId): bool
     {
         // Eliminar ambas keys: user_id -> code Y code -> user_id
         Cache::forget("password_reset_code:{$userId}");
@@ -436,9 +437,9 @@ class PasswordResetService
     /**
      * Invalidar todos los tokens de reset para un usuario
      *
-     * @param int $userId
+     * @param string $userId User ID (UUID)
      */
-    private function invalidateAllResetTokensForUser(int $userId): void
+    private function invalidateAllResetTokensForUser(string $userId): void
     {
         // Buscar todos los tokens para este usuario usando el prefijo de Laravel
         $cachePrefix = config('cache.prefix', '');

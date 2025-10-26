@@ -32,7 +32,7 @@ class RateLimitExceededException extends HelpdeskException
     public static function tooManyAttempts(int $retryAfter = 60): self
     {
         return new self(
-            'Demasiados intentos. Por favor espera un momento antes de reintentar.',
+            'Too many attempts. Please wait a moment before retrying.',
             $retryAfter
         );
     }
@@ -40,7 +40,7 @@ class RateLimitExceededException extends HelpdeskException
     public static function loginAttempts(int $retryAfter = 900): self
     {
         return new self(
-            'Demasiados intentos de inicio de sesión. Por favor espera 15 minutos.',
+            'Too many login attempts. Please wait 15 minutes.',
             $retryAfter,
             5,
             900
@@ -49,10 +49,10 @@ class RateLimitExceededException extends HelpdeskException
 
     public static function custom(string $action, int $limit, int $windowSeconds, int $retryAfter): self
     {
-        // Usar ceil() para redondear hacia arriba (119 segundos = 2 minutos, no 1)
+        // Round up window (119 seconds = 2 minutes, not 1)
         $windowMinutes = ceil($windowSeconds / 60);
         return new self(
-            "Solo puedes {$action} {$limit} veces cada {$windowMinutes} minutos. Espera {$retryAfter} segundos.",
+            "Too many {$action} requests. Maximum {$limit} per {$windowMinutes} minutes. Try again in {$retryAfter} seconds.",
             $retryAfter,
             $limit,
             $windowSeconds

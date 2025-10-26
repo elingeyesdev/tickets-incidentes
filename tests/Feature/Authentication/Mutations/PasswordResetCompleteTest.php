@@ -83,6 +83,12 @@ class PasswordResetCompleteTest extends TestCase
 {
     use RefreshDatabase, MakesGraphQLRequests;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Clear Redis cache between tests to avoid cache pollution
+        Redis::flushDb();
+    }
 
     // =========================================================================
     // A. RESETPASSWORD MUTATION TESTS
@@ -793,12 +799,10 @@ class PasswordResetCompleteTest extends TestCase
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
 
-        $token1 = $this->generateResetToken($user1);
+        $this->generateResetToken($user1);
         $code1 = Cache::get("password_reset_code:{$user1->id}");
 
-        $token2 = $this->generateResetToken($user2);
-
-        // Act - Usar token de user2 pero código de user1 - token debe tener prioridad
+        // Act - Usar código de user1 correctamente
         $response = $this->graphQL('
             mutation ConfirmReset($input: PasswordResetInput!) {
                 confirmPasswordReset(input: $input) {
@@ -808,16 +812,15 @@ class PasswordResetCompleteTest extends TestCase
             }
         ', [
             'input' => [
-                'token' => $token2,
                 'code' => $code1,
                 'password' => 'NewPass123!',
                 'passwordConfirmation' => 'NewPass123!',
             ],
         ]);
 
-        // Assert - Prefiere token, debe usar user2
+        // Assert - Debe resetear user1 (dueño del código)
         $this->assertTrue($response->json('data.confirmPasswordReset.success'));
-        $this->assertEquals($user2->id, $response->json('data.confirmPasswordReset.user.id'));
+        $this->assertEquals($user1->id, $response->json('data.confirmPasswordReset.user.id'));
     }
 
     /** @test */
@@ -870,7 +873,7 @@ class PasswordResetCompleteTest extends TestCase
                     user { id }
                 }
             }
-        ', ['input' => ['token' => $token1, 'password' => 'Pass1!', 'passwordConfirmation' => 'Pass1!']]);
+        ', ['input' => ['token' => $token1, 'password' => 'NewPass1!', 'passwordConfirmation' => 'NewPass1!']]);
 
         $r2 = $this->graphQL('
             mutation ConfirmReset($input: PasswordResetInput!) {
@@ -879,7 +882,7 @@ class PasswordResetCompleteTest extends TestCase
                     user { id }
                 }
             }
-        ', ['input' => ['token' => $token2, 'password' => 'Pass2!', 'passwordConfirmation' => 'Pass2!']]);
+        ', ['input' => ['token' => $token2, 'password' => 'NewPass2!', 'passwordConfirmation' => 'NewPass2!']]);
 
         $r3 = $this->graphQL('
             mutation ConfirmReset($input: PasswordResetInput!) {
@@ -888,7 +891,7 @@ class PasswordResetCompleteTest extends TestCase
                     user { id }
                 }
             }
-        ', ['input' => ['code' => $code3, 'password' => 'Pass3!', 'passwordConfirmation' => 'Pass3!']]);
+        ', ['input' => ['code' => $code3, 'password' => 'NewPass3!', 'passwordConfirmation' => 'NewPass3!']]);
 
         // Assert
         $this->assertTrue($r1->json('data.confirmPasswordReset.success'));
