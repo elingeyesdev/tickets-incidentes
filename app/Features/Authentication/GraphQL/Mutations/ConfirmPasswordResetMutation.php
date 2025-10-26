@@ -39,69 +39,78 @@ class ConfirmPasswordResetMutation extends BaseMutation
      */
     public function __invoke($root, array $args, $context = null): array
     {
-        $input = $args['input'] ?? [];
-        $token = $input['token'] ?? null;
-        $code = $input['code'] ?? null;
-        $newPassword = $input['password'] ?? $input['newPassword'] ?? null;
-        $passwordConfirmation = $input['passwordConfirmation'] ?? null;
-
-        // === VALIDACIONES ===
-        if (!$newPassword) {
-            throw ValidationException::fieldRequired('password');
-        }
-
-        if (!$passwordConfirmation) {
-            throw ValidationException::fieldRequired('passwordConfirmation');
-        }
-
-        if ($newPassword !== $passwordConfirmation) {
-            throw ValidationException::withField('passwordConfirmation', 'The passwords do not match');
-        }
-
-        if (strlen($newPassword) < 8) {
-            throw ValidationException::withField('password', 'The password must be at least 8 characters');
-        }
-
-        // Validar que hay token O código, pero NO ambos
-        if ($token && $code) {
-            throw ValidationException::withField('input', 'Provide either token or code, not both');
-        }
-
-        if (!$token && !$code) {
-            throw ValidationException::withField('input', 'Provide either token or code');
-        }
-
-        // === CONFIRMAR RESET ===
-        if ($token) {
-            $user = $this->passwordResetService->confirmReset($token, $newPassword);
-        } else {
-            $user = $this->passwordResetService->confirmResetWithCode($code, $newPassword);
-        }
-
-        // === GENERAR TOKENS JWT ===
-        // Generar access token
-        $accessToken = $this->tokenService->generateAccessToken($user);
-        
-        // Crear refresh token
-        $deviceInfo = [];
         try {
-            $deviceInfo = [
-                'name' => 'Password Reset Login',
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
+            $input = $args['input'] ?? [];
+            $token = $input['token'] ?? null;
+            $code = $input['code'] ?? null;
+            $newPassword = $input['password'] ?? $input['newPassword'] ?? null;
+            $passwordConfirmation = $input['passwordConfirmation'] ?? null;
+
+            // === VALIDACIONES ===
+            if (!$newPassword) {
+                throw ValidationException::fieldRequired('password');
+            }
+
+            if (!$passwordConfirmation) {
+                throw ValidationException::fieldRequired('passwordConfirmation');
+            }
+
+            if ($newPassword !== $passwordConfirmation) {
+                throw ValidationException::withField('passwordConfirmation', 'The passwords do not match');
+            }
+
+            if (strlen($newPassword) < 8) {
+                throw ValidationException::withField('password', 'The password must be at least 8 characters');
+            }
+
+            // Validar que hay token O código, pero NO ambos
+            if ($token && $code) {
+                throw ValidationException::withField('input', 'Provide either token or code, not both');
+            }
+
+            if (!$token && !$code) {
+                throw ValidationException::withField('input', 'Provide either token or code');
+            }
+
+            // === CONFIRMAR RESET ===
+            // Prepare device info
+            $deviceInfo = [];
+            try {
+                $deviceInfo = [
+                    'name' => 'Password Reset Login',
+                    'ip' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ];
+            } catch (\Exception $e) {
+                // En contexto de testing o sin request, usar valores por defecto
+                $deviceInfo = ['name' => 'Password Reset Login'];
+            }
+
+            // Call service (ahora retorna array con tokens)
+            if ($token) {
+                $result = $this->passwordResetService->confirmReset($token, $newPassword, $deviceInfo);
+            } else {
+                $result = $this->passwordResetService->confirmResetWithCode($code, $newPassword, $deviceInfo);
+            }
+
+            // Service ya genera los tokens, solo formatear respuesta
+            return [
+                'success' => true,
+                'message' => 'Password reset successful',
+                'accessToken' => $result['access_token'],
+                'refreshToken' => $result['refresh_token'],
+                'user' => $result['user'],
             ];
         } catch (\Exception $e) {
-            // En contexto de testing o sin request, usar valores por defecto
-            $deviceInfo = ['name' => 'Password Reset Login'];
+            // Log the exception for debugging
+            \Log::error('ConfirmPasswordResetMutation error', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
-        $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
-
-        return [
-            'success' => true,
-            'message' => 'Password reset successful',
-            'accessToken' => $accessToken,
-            'refreshToken' => $refreshTokenData['token'],
-            'user' => $user,
-        ];
     }
 }

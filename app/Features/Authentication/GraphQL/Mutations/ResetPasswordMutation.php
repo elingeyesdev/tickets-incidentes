@@ -23,13 +23,13 @@ class ResetPasswordMutation extends BaseMutation
 
     /**
      * @param mixed $root
-     * @param array{input: array{email: string}} $args
+     * @param array{email: string} $args
      * @param mixed $context
      * @return bool Siempre true por seguridad
      */
     public function __invoke($root, array $args, $context = null): bool
     {
-        $email = strtolower(trim($args['input']['email'] ?? ''));
+        $email = strtolower(trim($args['email'] ?? ''));
 
         // Solicitar reset (retorna true siempre, lanza excepción si rate limit)
         return $this->passwordResetService->requestReset($email);

@@ -97,8 +97,15 @@ class PasswordResetService
         // Generar token de reset
         $resetToken = $this->generateResetToken($user);
 
+        \Log::debug('PasswordResetService: About to dispatch PasswordResetRequested event', [
+            'user_id' => $user->id,
+            'token' => $resetToken,
+        ]);
+
         // Disparar evento (enviará email)
         event(new PasswordResetRequested($user, $resetToken));
+
+        \Log::debug('PasswordResetService: Event dispatched');
 
         return true;
     }
@@ -177,14 +184,22 @@ class PasswordResetService
     }
 
     /**
-     * Confirmar reset de contraseña
+     * Confirmar reset de contraseña y generar nuevos tokens
+     *
+     * Sigue el MISMO patrón que AuthService::login()
+     * - Valida token/código
+     * - Actualiza password
+     * - Revoca todas las sesiones
+     * - Genera nuevos tokens JWT
+     * - Retorna array completo para GraphQL
      *
      * @param string $token
      * @param string $newPassword
-     * @return User
+     * @param array $deviceInfo [opcional]
+     * @return array ['user' => User, 'access_token' => string, 'refresh_token' => string, 'expires_in' => int, 'session_id' => string]
      * @throws AuthenticationException
      */
-    public function confirmReset(string $token, string $newPassword): User
+    public function confirmReset(string $token, string $newPassword, array $deviceInfo = []): array
     {
         $key = $this->getResetTokenKey($token);
         $data = Cache::get($key);
@@ -236,21 +251,36 @@ class PasswordResetService
         // Revocar TODAS las sesiones del usuario (logout everywhere)
         $this->tokenService->revokeAllUserTokens($user->id, $user->id);
 
+        // === GENERAR NUEVOS TOKENS (reutilizando patrón de AuthService) ===
+        // RefreshToken PRIMERO para usar su ID como session_id
+        $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
+        $sessionId = $refreshTokenData['model']->id;
+        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
+
         // Disparar evento
         event(new PasswordResetCompleted($user));
 
-        return $user->fresh(['profile', 'roles', 'companies']);
+        return [
+            'user' => $user->fresh(['profile']),
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshTokenData['token'],
+            'expires_in' => config('jwt.ttl') * 60,
+            'session_id' => $sessionId,
+        ];
     }
 
     /**
      * Confirmar reset de contraseña usando código de 6 dígitos
      *
+     * Sigue el MISMO patrón que confirmReset()
+     *
      * @param string $code Código de 6 dígitos
      * @param string $newPassword
-     * @return User
+     * @param array $deviceInfo [opcional]
+     * @return array ['user' => User, 'access_token' => string, 'refresh_token' => string, 'expires_in' => int, 'session_id' => string]
      * @throws AuthenticationException
      */
-    public function confirmResetWithCode(string $code, string $newPassword): User
+    public function confirmResetWithCode(string $code, string $newPassword, array $deviceInfo = []): array
     {
         // Validar que el código tenga exactamente 6 dígitos
         if (!preg_match('/^\d{6}$/', $code)) {
@@ -293,10 +323,22 @@ class PasswordResetService
         // Revocar TODAS las sesiones del usuario (logout everywhere)
         $this->tokenService->revokeAllUserTokens($userId, $userId);
 
+        // === GENERAR NUEVOS TOKENS (reutilizando patrón de AuthService) ===
+        // RefreshToken PRIMERO para usar su ID como session_id
+        $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
+        $sessionId = $refreshTokenData['model']->id;
+        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId);
+
         // Disparar evento
         event(new PasswordResetCompleted($user));
 
-        return $user->fresh(['profile', 'roles', 'companies']);
+        return [
+            'user' => $user->fresh(['profile']),
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshTokenData['token'],
+            'expires_in' => config('jwt.ttl') * 60,
+            'session_id' => $sessionId,
+        ];
     }
 
     /**
@@ -357,24 +399,19 @@ class PasswordResetService
     /**
      * Buscar usuario por código de reset
      *
+     * Usa un mapeo inverso (code -> user_id) almacenado en cache
+     * para búsqueda O(1) en lugar de iterar todas las keys
+     *
      * @param string $code
      * @return int|null User ID o null
      */
     private function findUserByResetCode(string $code): ?int
     {
-        // Buscar todas las claves de código en cache
-        $pattern = "password_reset_code:*";
-        $keys = Cache::many(\Illuminate\Support\Facades\Redis::keys($pattern));
+        // Buscar user_id usando el mapeo inverso
+        $userId = Cache::get("password_reset_code_lookup:{$code}");
 
-        // Buscar en cada key
-        foreach ($keys as $key => $storedCode) {
-            if ($storedCode === $code) {
-                // Extraer user_id de la clave
-                preg_match('/password_reset_code:(\d+)/', $key, $matches);
-                if (isset($matches[1])) {
-                    return (int) $matches[1];
-                }
-            }
+        if ($userId) {
+            return (int) $userId;
         }
 
         return null;
@@ -389,8 +426,11 @@ class PasswordResetService
      */
     private function invalidateResetCode(string $code, int $userId): bool
     {
-        $key = "password_reset_code:{$userId}";
-        return Cache::forget($key);
+        // Eliminar ambas keys: user_id -> code Y code -> user_id
+        Cache::forget("password_reset_code:{$userId}");
+        Cache::forget("password_reset_code_lookup:{$code}");
+
+        return true;
     }
 
     /**
@@ -400,14 +440,25 @@ class PasswordResetService
      */
     private function invalidateAllResetTokensForUser(int $userId): void
     {
-        // Buscar todos los tokens para este usuario
-        $pattern = "password_reset:*";
-        $keys = \Illuminate\Support\Facades\Redis::keys($pattern);
+        // Buscar todos los tokens para este usuario usando el prefijo de Laravel
+        $cachePrefix = config('cache.prefix', '');
+        $pattern = $cachePrefix . 'password_reset:*';
+        $allKeys = \Illuminate\Support\Facades\Redis::keys($pattern);
 
-        foreach ($keys as $key) {
-            $data = Cache::get(str_replace('password_reset:', '', $key));
+        foreach ($allKeys as $fullKey) {
+            // Extraer la key sin el prefijo de Laravel
+            if ($cachePrefix) {
+                $key = str_replace($cachePrefix, '', $fullKey);
+            } else {
+                $key = $fullKey;
+            }
+
+            // Obtener datos del token
+            $data = Cache::get($key);
             if ($data && isset($data['user_id']) && $data['user_id'] == $userId) {
-                $this->invalidateResetToken(str_replace('password_reset:', '', $key));
+                // Extraer solo el token de la key
+                $token = str_replace('password_reset:', '', $key);
+                $this->invalidateResetToken($token);
             }
         }
     }

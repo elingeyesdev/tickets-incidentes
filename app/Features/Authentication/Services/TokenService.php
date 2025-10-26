@@ -50,7 +50,7 @@ class TokenService
             // Claims personalizados
             'user_id' => $user->id,
             'email' => $user->email,
-            'session_id' => $sessionId ?? Str::uuid()->toString(),
+            'session_id' => $sessionId ?? Str::random(32),
         ];
 
         return JWT::encode($payload, config('jwt.secret'), config('jwt.algo'));
