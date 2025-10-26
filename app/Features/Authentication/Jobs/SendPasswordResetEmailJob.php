@@ -36,7 +36,8 @@ class SendPasswordResetEmailJob implements ShouldQueue
      */
     public function __construct(
         public User $user,
-        public string $resetToken
+        public string $resetToken,
+        public string $resetCode
     ) {
         // Asignar a cola específica
         $this->onQueue('emails');
@@ -47,11 +48,12 @@ class SendPasswordResetEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // Enviar email
+        // Enviar email con token y código
         Mail::to($this->user->email)->send(
             new PasswordResetMail(
                 $this->user,
-                $this->resetToken
+                $this->resetToken,
+                $this->resetCode
             )
         );
     }

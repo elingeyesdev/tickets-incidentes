@@ -1108,12 +1108,18 @@ mutation ResetPassword($email: Email!) {
 
 ### 8. `confirmPasswordReset` - Confirmar Reset
 
-**Descripción**: Establece nueva contraseña usando token válido.
+**Descripción**: Establece nueva contraseña usando código (preferido) o token (UX).
 
 **Firma:**
 ```graphql
 confirmPasswordReset(input: PasswordResetInput!): PasswordResetResult!
 ```
+
+**Arquitectura del Input (V10.3+):**
+- `code`: String (Preferido - código de 6 dígitos)
+- `token`: String (Opcional - para validación previa en UX desde links)
+- Se envía SOLO code en la confirmación final
+- Token es solo para la query `passwordResetStatus` (validación UX)
 
 **Directivas:**
 - `@rateLimit(max: 3, window: 900)`: Máximo 3 intentos por 15 minutos
@@ -1134,7 +1140,18 @@ mutation ConfirmPasswordReset($input: PasswordResetInput!) {
 }
 ```
 
-**Variables:**
+**Variables (con code - RECOMENDADO):**
+```json
+{
+    "input": {
+        "code": "123456",
+        "password": "NuevaPassword123!",
+        "passwordConfirmation": "NuevaPassword123!"
+    }
+}
+```
+
+**Variables (con token - solo UX desde link):**
 ```json
 {
     "input": {
@@ -1772,11 +1789,11 @@ query ValidateToken {
 }
 ```
 
-**5. Si válido, muestra formulario y confirma:**
+**5. Si válido, usuario ingresa código (de SMS/email/formulario) y confirma:**
 ```graphql
 mutation ConfirmReset {
     confirmPasswordReset(input: {
-        token: "reset_abc123..."
+        code: "123456"
         password: "NuevaPass123!"
         passwordConfirmation: "NuevaPass123!"
     }) {

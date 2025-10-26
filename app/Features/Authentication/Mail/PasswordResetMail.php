@@ -12,8 +12,10 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Password Reset Mail
  *
- * Email enviado al usuario para restablecer su contraseña.
- * Contiene un link con token que expira en 1 hora.
+ * Email enviado al usuario cuando solicita reset de contraseña.
+ * Incluye:
+ * - Token (32 caracteres) - para links/requests
+ * - Código (6 dígitos) - para SMS/entrada manual
  */
 class PasswordResetMail extends Mailable
 {
@@ -27,11 +29,12 @@ class PasswordResetMail extends Mailable
      */
     public function __construct(
         public User $user,
-        public string $resetToken
+        public string $resetToken,
+        public string $resetCode
     ) {
-        // Generar URL de reset
-        $this->resetUrl = config('app.frontend_url', config('app.url'))
-            . "/reset-password?token={$resetToken}";
+        // Generar URL de reset con token
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $this->resetUrl = $frontendUrl . '/reset-password?token=' . urlencode($resetToken);
 
         // Nombre para mostrar
         $this->displayName = $user->profile
@@ -55,13 +58,15 @@ class PasswordResetMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.auth.reset-password',
-            text: 'emails.auth.reset-password-text',
+            view: 'emails.authentication.password-reset',
+            text: 'emails.authentication.password-reset-text',
             with: [
                 'user' => $this->user,
+                'resetToken' => $this->resetToken,
+                'resetCode' => $this->resetCode,
                 'resetUrl' => $this->resetUrl,
                 'displayName' => $this->displayName,
-                'expiresInHours' => 1,
+                'expiresInHours' => 24,
             ],
         );
     }

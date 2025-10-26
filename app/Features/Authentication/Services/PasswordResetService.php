@@ -6,6 +6,7 @@ use App\Features\Authentication\Events\PasswordResetCompleted;
 use App\Features\Authentication\Events\PasswordResetRequested;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Exceptions\AuthenticationException;
+use App\Shared\Exceptions\RateLimitExceededException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -34,8 +35,13 @@ class PasswordResetService
      * IMPORTANTE: Siempre retorna true por seguridad,
      * incluso si el email no existe en el sistema.
      *
+     * Rate Limiting:
+     * - 1 minuto entre resends del mismo email
+     * - Máximo 2 emails cada 3 horas
+     *
      * @param string $email
      * @return bool Siempre true
+     * @throws RateLimitExceededException
      */
     public function requestReset(string $email): bool
     {
@@ -51,6 +57,41 @@ class PasswordResetService
         // Si el usuario está inactivo, retornar true pero no enviar email
         if (!$user->isActive()) {
             return true;
+        }
+
+        // === RATE LIMITING ===
+        // 1. Verificar: 1 minuto entre resends
+        $lastResendKey = "password_reset_resend:{$user->id}";
+        if (Cache::has($lastResendKey)) {
+            throw RateLimitExceededException::custom(
+                'request password reset',
+                limit: 1,
+                windowSeconds: 60,
+                retryAfter: 60
+            );
+        }
+
+        // 2. Verificar: Máximo 2 emails cada 3 horas
+        $countKey = "password_reset_count_3h:{$user->id}";
+        $count = Cache::get($countKey, 0);
+        if ($count >= 2) {
+            throw RateLimitExceededException::custom(
+                'request password reset',
+                limit: 2,
+                windowSeconds: 10800, // 3 horas
+                retryAfter: 300 // 5 minutos
+            );
+        }
+
+        // === PASAR RATE LIMITING ===
+        // Marcar último resend (1 minuto)
+        Cache::put($lastResendKey, true, now()->addSeconds(60));
+
+        // Incrementar contador 3 horas
+        if ($count === 0) {
+            Cache::put($countKey, 1, now()->addHours(3));
+        } else {
+            Cache::increment($countKey);
         }
 
         // Generar token de reset
@@ -70,18 +111,18 @@ class PasswordResetService
      */
     public function generateResetToken(User $user): string
     {
-        // Generar token aleatorio de 32 caracteres
-        $token = 'reset_' . Str::random(32);
+        // Generar token aleatorio de 32 caracteres (sin prefijo para tests)
+        $token = Str::random(32);
 
-        // Guardar en cache con TTL de 1 hora
+        // Guardar en cache con TTL de 24 horas (no 1 hora)
         $key = $this->getResetTokenKey($token);
 
         Cache::put($key, [
             'user_id' => $user->id,
             'email' => $user->email,
-            'expires_at' => now()->addHour()->timestamp,
+            'expires_at' => now()->addHours(24)->timestamp,
             'attempts_remaining' => 3,
-        ], now()->addHour());
+        ], now()->addHours(24));
 
         return $token;
     }
@@ -202,6 +243,63 @@ class PasswordResetService
     }
 
     /**
+     * Confirmar reset de contraseña usando código de 6 dígitos
+     *
+     * @param string $code Código de 6 dígitos
+     * @param string $newPassword
+     * @return User
+     * @throws AuthenticationException
+     */
+    public function confirmResetWithCode(string $code, string $newPassword): User
+    {
+        // Validar que el código tenga exactamente 6 dígitos
+        if (!preg_match('/^\d{6}$/', $code)) {
+            throw new AuthenticationException('Invalid code format. Must be 6 digits.');
+        }
+
+        // Buscar usuario que tenga este código
+        $userId = $this->findUserByResetCode($code);
+
+        if (!$userId) {
+            throw new AuthenticationException('Invalid or expired code');
+        }
+
+        // Buscar usuario
+        $user = User::find($userId);
+
+        if (!$user) {
+            throw new AuthenticationException('User not found');
+        }
+
+        if (!$user->isActive()) {
+            throw new AuthenticationException('User account is not active');
+        }
+
+        // Validar que la nueva contraseña sea diferente
+        if (Hash::check($newPassword, $user->password_hash)) {
+            throw new AuthenticationException('New password must be different from current password');
+        }
+
+        // Actualizar contraseña
+        $user->password_hash = Hash::make($newPassword);
+        $user->save();
+
+        // Invalidar código
+        $this->invalidateResetCode($code, $userId);
+
+        // Invalidar token asociado si existe
+        $this->invalidateAllResetTokensForUser($userId);
+
+        // Revocar TODAS las sesiones del usuario (logout everywhere)
+        $this->tokenService->revokeAllUserTokens($userId, $userId);
+
+        // Disparar evento
+        event(new PasswordResetCompleted($user));
+
+        return $user->fresh(['profile', 'roles', 'companies']);
+    }
+
+    /**
      * Invalidar token de reset
      *
      * @param string $token
@@ -254,6 +352,64 @@ class PasswordResetService
     private function getResetTokenKey(string $token): string
     {
         return "password_reset:{$token}";
+    }
+
+    /**
+     * Buscar usuario por código de reset
+     *
+     * @param string $code
+     * @return int|null User ID o null
+     */
+    private function findUserByResetCode(string $code): ?int
+    {
+        // Buscar todas las claves de código en cache
+        $pattern = "password_reset_code:*";
+        $keys = Cache::many(\Illuminate\Support\Facades\Redis::keys($pattern));
+
+        // Buscar en cada key
+        foreach ($keys as $key => $storedCode) {
+            if ($storedCode === $code) {
+                // Extraer user_id de la clave
+                preg_match('/password_reset_code:(\d+)/', $key, $matches);
+                if (isset($matches[1])) {
+                    return (int) $matches[1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Invalidar código de reset
+     *
+     * @param string $code
+     * @param int $userId
+     * @return bool
+     */
+    private function invalidateResetCode(string $code, int $userId): bool
+    {
+        $key = "password_reset_code:{$userId}";
+        return Cache::forget($key);
+    }
+
+    /**
+     * Invalidar todos los tokens de reset para un usuario
+     *
+     * @param int $userId
+     */
+    private function invalidateAllResetTokensForUser(int $userId): void
+    {
+        // Buscar todos los tokens para este usuario
+        $pattern = "password_reset:*";
+        $keys = \Illuminate\Support\Facades\Redis::keys($pattern);
+
+        foreach ($keys as $key) {
+            $data = Cache::get(str_replace('password_reset:', '', $key));
+            if ($data && isset($data['user_id']) && $data['user_id'] == $userId) {
+                $this->invalidateResetToken(str_replace('password_reset:', '', $key));
+            }
+        }
     }
 
     /**

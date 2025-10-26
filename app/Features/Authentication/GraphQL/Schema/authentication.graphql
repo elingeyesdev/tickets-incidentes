@@ -454,9 +454,12 @@ input GoogleLoginInput {
 Input para confirmar reset de contraseña
 """
 input PasswordResetInput {
-    """Token de reset"""
-    token: String!
-        @rules(apply: ["required"])
+    """Código de reset (6 dígitos) - Preferido para confirmar reset"""
+    code: String
+        @rules(apply: ["regex:/^\\d{6}$/"])
+
+    """Token de reset (32 caracteres) - Para validación previa en UX"""
+    token: String
 
     """Nueva contraseña"""
     password: String!

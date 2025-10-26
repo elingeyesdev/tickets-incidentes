@@ -5,18 +5,21 @@ namespace App\Features\Authentication\Listeners;
 use App\Features\Authentication\Events\PasswordResetRequested;
 use App\Features\Authentication\Jobs\SendPasswordResetEmailJob;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Str;
 
 /**
- * Send Password Reset Email Listener
+ * Password Reset Listener
  *
  * Escucha el evento PasswordResetRequested y:
  * 1. Genera un código de 6 dígitos
  * 2. Guarda el código en cache
- * 3. Dispara el job para enviar email
+ * 3. Encola el job para enviar email
  */
-class SendPasswordResetEmail implements ShouldQueue
+class PasswordResetListener implements ShouldQueue
 {
+    use InteractsWithQueue;
+
     /**
      * Handle the event.
      */
@@ -26,13 +29,13 @@ class SendPasswordResetEmail implements ShouldQueue
         $resetCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         // Guardar código en cache con TTL de 24 horas
-        Cache::put(
+        \Illuminate\Support\Facades\Cache::put(
             "password_reset_code:{$event->user->id}",
             $resetCode,
             now()->addHours(24)
         );
 
-        // Disparar job asíncrono para enviar email con token y código
+        // Encolar job para enviar email
         SendPasswordResetEmailJob::dispatch(
             $event->user,
             $event->resetToken,
