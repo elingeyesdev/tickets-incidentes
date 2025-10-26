@@ -45,7 +45,13 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    message
+                    reason
+                    requestCode
+                    notificationSentTo
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -55,7 +61,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Assert
         $response->assertJson([
             'data' => [
-                'rejectCompanyRequest' => true,
+                'rejectCompanyRequest' => [
+                    'success' => true,
+                ],
             ],
         ]);
     }
@@ -69,14 +77,20 @@ class RejectCompanyRequestMutationTest extends TestCase
         $reason = 'Business description is too vague';
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    message
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => $reason
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
 
         // Assert
         $this->assertDatabaseHas('business.company_requests', [
@@ -99,14 +113,21 @@ class RejectCompanyRequestMutationTest extends TestCase
         $reason = 'The company does not meet our minimum requirements for business verification';
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    reason
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => $reason
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
+        $this->assertEquals($reason, $response->json('data.rejectCompanyRequest.reason'));
 
         // Assert
         $this->assertDatabaseHas('business.company_requests', [
@@ -128,7 +149,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -136,7 +159,7 @@ class RejectCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $this->assertTrue($response->json('data.rejectCompanyRequest'));
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
     }
 
     /** @test */
@@ -149,7 +172,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $fakeId,
@@ -170,7 +195,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -192,7 +219,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -213,7 +242,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -233,14 +264,17 @@ class RejectCompanyRequestMutationTest extends TestCase
 
         // Act - Sin razón (GraphQL schema lo requiere)
         $response = $this->authenticateWithJWT($admin)->graphQL('
-            mutation RejectRequest($requestId: UUID!) {
-                rejectCompanyRequest(requestId: $requestId, reason: "")
+            mutation RejectRequest($requestId: UUID!, $reason: String!) {
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
-            'requestId' => $request->id
+            'requestId' => $request->id,
+            'reason' => ''
         ]);
 
-        // Assert - Error de validación
+        // Assert - Error de validación (min 3 caracteres)
         $this->assertNotEmpty($response->json('errors'));
     }
 
@@ -253,7 +287,9 @@ class RejectCompanyRequestMutationTest extends TestCase
         // Act
         $response = $this->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
@@ -285,14 +321,21 @@ class RejectCompanyRequestMutationTest extends TestCase
         $rejectionReason = 'Incomplete business documentation. Please provide tax ID and business license.';
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    message
+                    reason
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => $rejectionReason
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
 
         // Assert - Job de email fue despachado a la cola 'emails'
         Queue::assertPushedOn('emails', SendCompanyRejectionEmailJob::class);
@@ -335,14 +378,21 @@ class RejectCompanyRequestMutationTest extends TestCase
         $rejectionReason = 'Your company does not meet our service criteria at this time. Please reapply in 6 months with updated documentation.';
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    reason
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => $rejectionReason
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
+        $this->assertEquals($rejectionReason, $response->json('data.rejectCompanyRequest.reason'));
 
         // Procesar queue
         $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
@@ -402,14 +452,19 @@ class RejectCompanyRequestMutationTest extends TestCase
 
         // Act - Rechazar todas las solicitudes
         foreach ($requests as $data) {
-            $this->authenticateWithJWT($admin)->graphQL('
+            $response = $this->authenticateWithJWT($admin)->graphQL('
                 mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                    rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                    rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                        success
+                    }
                 }
             ', [
                 'requestId' => $data['request']->id,
                 'reason' => $data['reason']
             ]);
+
+            // Assert - Cada respuesta fue exitosa
+            $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
         }
 
         // Assert - Se enviaron 3 emails diferentes
@@ -441,14 +496,19 @@ class RejectCompanyRequestMutationTest extends TestCase
         $initialCompanyCount = Company::count();
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => 'Rejected for testing'
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
 
         // Assert - Company count did not increase
         $this->assertEquals($initialCompanyCount, Company::count());
@@ -478,14 +538,19 @@ class RejectCompanyRequestMutationTest extends TestCase
         $initialUserCount = User::count();
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => 'Invalid business information'
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
 
         // Assert - User was NOT created
         $this->assertEquals($initialUserCount, User::count());
@@ -505,14 +570,21 @@ class RejectCompanyRequestMutationTest extends TestCase
         $longReason = str_repeat('This is a detailed explanation of why the request was rejected. ', 50);
 
         // Act
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation RejectRequest($requestId: UUID!, $reason: String!) {
-                rejectCompanyRequest(requestId: $requestId, reason: $reason)
+                rejectCompanyRequest(requestId: $requestId, reason: $reason) {
+                    success
+                    reason
+                }
             }
         ', [
             'requestId' => $request->id,
             'reason' => $longReason
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.rejectCompanyRequest.success'));
+        $this->assertEquals($longReason, $response->json('data.rejectCompanyRequest.reason'));
 
         // Assert - Full reason was stored
         $this->assertDatabaseHas('business.company_requests', [

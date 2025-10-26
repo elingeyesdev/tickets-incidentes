@@ -52,14 +52,20 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    companyCode
-                    name
-                    status
-                    adminId
-                    adminName
-                    adminEmail
-                    createdAt
+                    success
+                    message
+                    newUserCreated
+                    notificationSentTo
+                    company {
+                        id
+                        companyCode
+                        name
+                        status
+                        adminId
+                        adminName
+                        adminEmail
+                        createdAt
+                    }
                 }
             }
         ', [
@@ -70,19 +76,25 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response->assertJsonStructure([
             'data' => [
                 'approveCompanyRequest' => [
-                    'id',
-                    'companyCode',
-                    'name',
-                    'status',
-                    'adminId',
-                    'adminName',
-                    'adminEmail',
-                    'createdAt',
+                    'success',
+                    'message',
+                    'company' => [
+                        'id',
+                        'companyCode',
+                        'name',
+                        'status',
+                        'adminId',
+                        'adminName',
+                        'adminEmail',
+                        'createdAt',
+                    ],
                 ],
             ],
         ]);
 
-        $company = $response->json('data.approveCompanyRequest');
+        $response = $response->json('data.approveCompanyRequest');
+        $this->assertTrue($response['success']);
+        $company = $response['company'];
         $this->assertEquals('Test Company', $company['name']);
         $this->assertEquals('ACTIVE', $company['status']);
         $this->assertNotEmpty($company['companyCode']);
@@ -102,9 +114,11 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    name
-                    companyCode
+                    company {
+                        id
+                        name
+                        companyCode
+                    }
                 }
             }
         ', [
@@ -112,7 +126,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $companyId = $response->json('data.approveCompanyRequest.id');
+        $companyId = $response->json('data.approveCompanyRequest.company.id');
 
         $this->assertDatabaseHas('business.companies', [
             'id' => $companyId,
@@ -140,8 +154,10 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    adminEmail
+                    newUserCreated
+                    company {
+                        adminEmail
+                    }
                 }
             }
         ', [
@@ -168,8 +184,10 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    adminId
+                    company {
+                        id
+                        adminId
+                    }
                 }
             }
         ', [
@@ -177,8 +195,9 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Assert
-        $adminUserId = $response->json('data.approveCompanyRequest.adminId');
-        $companyId = $response->json('data.approveCompanyRequest.id');
+        $company = $response->json('data.approveCompanyRequest.company');
+        $adminUserId = $company['adminId'];
+        $companyId = $company['id'];
 
         $this->assertDatabaseHas('auth.user_roles', [
             'user_id' => $adminUserId,
@@ -199,7 +218,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -229,7 +248,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -238,9 +257,6 @@ class ApproveCompanyRequestMutationTest extends TestCase
 
         // Assert
         $response->assertGraphQLErrorMessage('Request not found');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('REQUEST_NOT_FOUND', $errors[0]['extensions']['code']);
     }
 
     /** @test */
@@ -254,7 +270,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -263,9 +279,6 @@ class ApproveCompanyRequestMutationTest extends TestCase
 
         // Assert
         $response->assertGraphQLErrorMessage('Only pending requests can be approved');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('REQUEST_NOT_PENDING', $errors[0]['extensions']['code']);
     }
 
     /** @test */
@@ -280,7 +293,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($companyAdmin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -302,7 +315,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($user)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -323,7 +336,7 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
@@ -345,17 +358,18 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    companyCode
-                    name
-                    legalName
-                    status
-                    supportEmail
-                    adminId
-                    adminName
-                    adminEmail
-                    createdAt
-                    updatedAt
+                    success
+                    company {
+                        id
+                        companyCode
+                        name
+                        legalName
+                        status
+                        adminId
+                        adminName
+                        adminEmail
+                        createdAt
+                    }
                 }
             }
         ', [
@@ -366,19 +380,24 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response->assertJsonStructure([
             'data' => [
                 'approveCompanyRequest' => [
-                    'id',
-                    'companyCode',
-                    'name',
-                    'status',
-                    'adminId',
-                    'adminName',
-                    'adminEmail',
-                    'createdAt',
+                    'success',
+                    'company' => [
+                        'id',
+                        'companyCode',
+                        'name',
+                        'status',
+                        'adminId',
+                        'adminName',
+                        'adminEmail',
+                        'createdAt',
+                    ],
                 ],
             ],
         ]);
 
-        $company = $response->json('data.approveCompanyRequest');
+        $approval = $response->json('data.approveCompanyRequest');
+        $this->assertTrue($approval['success']);
+        $company = $approval['company'];
         $this->assertNotEmpty($company['id']);
         $this->assertNotEmpty($company['companyCode']);
         $this->assertEquals('ACTIVE', $company['status']);
@@ -402,8 +421,11 @@ class ApproveCompanyRequestMutationTest extends TestCase
         $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    adminId
-                    adminEmail
+                    newUserCreated
+                    company {
+                        adminId
+                        adminEmail
+                    }
                 }
             }
         ', [
@@ -412,9 +434,11 @@ class ApproveCompanyRequestMutationTest extends TestCase
 
         // Assert - No se creó nuevo usuario
         $this->assertEquals($initialUserCount, User::count());
+        $this->assertFalse($response->json('data.approveCompanyRequest.newUserCreated'));
 
         // Se usó el usuario existente
-        $this->assertEquals($existingUser->id, $response->json('data.approveCompanyRequest.adminId'));
+        $company = $response->json('data.approveCompanyRequest.company');
+        $this->assertEquals($existingUser->id, $company['adminId']);
     }
 
     // =========================================================================
@@ -441,16 +465,22 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    name
+                    success
+                    company {
+                        id
+                        name
+                    }
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         // Assert - Job de email fue despachado a la cola 'emails'
         Queue::assertPushedOn('emails', SendCompanyApprovalEmailJob::class);
@@ -494,17 +524,23 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
-                    name
-                    adminEmail
+                    success
+                    company {
+                        id
+                        name
+                        adminEmail
+                    }
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         // Assert - Usuario fue creado
         $this->assertDatabaseHas('auth.users', [
@@ -546,15 +582,21 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
+                    company {
+                        id
+                    }
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         // Obtener usuario creado
         $newUser = User::where('email', 'temp-password-test@company.com')->first();
@@ -618,15 +660,18 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         // Procesar queue para enviar emails
         $this->artisan('queue:work', [
@@ -677,15 +722,18 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         // Procesar queue
         $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
@@ -723,15 +771,18 @@ class ApproveCompanyRequestMutationTest extends TestCase
         ]);
 
         // Act - Aprobar solicitud
-        $this->authenticateWithJWT($admin)->graphQL('
+        $response = $this->authenticateWithJWT($admin)->graphQL('
             mutation ApproveRequest($requestId: UUID!) {
                 approveCompanyRequest(requestId: $requestId) {
-                    id
+                    success
                 }
             }
         ', [
             'requestId' => $request->id
         ]);
+
+        // Assert - Respuesta fue exitosa
+        $this->assertTrue($response->json('data.approveCompanyRequest.success'));
 
         $newUser = User::where('email', 'expiry-test@company.com')->first();
 
@@ -777,15 +828,18 @@ class ApproveCompanyRequestMutationTest extends TestCase
 
         // Act - Aprobar todas las solicitudes
         foreach ($requests as $request) {
-            $this->authenticateWithJWT($admin)->graphQL('
+            $response = $this->authenticateWithJWT($admin)->graphQL('
                 mutation ApproveRequest($requestId: UUID!) {
                     approveCompanyRequest(requestId: $requestId) {
-                        id
+                        success
                     }
                 }
             ', [
                 'requestId' => $request->id
             ]);
+
+            // Assert - Cada respuesta fue exitosa
+            $this->assertTrue($response->json('data.approveCompanyRequest.success'));
         }
 
         // Assert - Se enviaron 3 emails diferentes

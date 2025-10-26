@@ -45,7 +45,7 @@ class ApproveCompanyRequestMutation extends BaseMutation
             $company = $this->requestService->approve($request, $reviewer);
 
             // Cargar relaciones necesarias para la respuesta
-            $company->load('adminUser.profile');
+            $company->load('admin.profile');
 
             // Construir respuesta profesional
             return [
@@ -60,10 +60,10 @@ class ApproveCompanyRequestMutation extends BaseMutation
                     'legalName' => $company->legal_name,
                     'status' => $company->status,
                     'adminId' => $company->admin_user_id,
-                    'adminEmail' => $company->adminUser->email,
-                    'adminName' => $company->adminUser->profile
-                        ? $company->adminUser->profile->first_name . ' ' . $company->adminUser->profile->last_name
-                        : $company->adminUser->email,
+                    'adminEmail' => $company->admin->email,
+                    'adminName' => $company->admin->profile
+                        ? $company->admin->profile->first_name . ' ' . $company->admin->profile->last_name
+                        : $company->admin->email,
                     'createdAt' => $company->created_at,
                 ],
                 'newUserCreated' => $newUserCreated,
