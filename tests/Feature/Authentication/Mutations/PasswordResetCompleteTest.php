@@ -436,6 +436,7 @@ class PasswordResetCompleteTest extends TestCase
             mutation ConfirmReset($input: PasswordResetInput!) {
                 confirmPasswordReset(input: $input) {
                     success
+                    message
                     accessToken
                     refreshToken
                     user { id email }

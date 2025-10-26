@@ -462,16 +462,13 @@ Input para confirmar reset de contraseña
 input PasswordResetInput {
     """Código de reset (6 dígitos) - Preferido para confirmar reset"""
     code: String
-        @rules(apply: ["regex:/^\\d{6}$/"])
 
     """Token de reset (32 caracteres) - Para validación previa en UX"""
     token: String
 
-    """Nueva contraseña"""
+    """Nueva contraseña (mínimo 8 caracteres)"""
     password: String!
-        @rules(apply: ["required", "min:8", "confirmed"])
 
     """Confirmación de nueva contraseña"""
     passwordConfirmation: String!
-        @rules(apply: ["required"])
 }

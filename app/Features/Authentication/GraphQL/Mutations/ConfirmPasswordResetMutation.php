@@ -43,10 +43,23 @@ class ConfirmPasswordResetMutation extends BaseMutation
         $token = $input['token'] ?? null;
         $code = $input['code'] ?? null;
         $newPassword = $input['password'] ?? $input['newPassword'] ?? null;
+        $passwordConfirmation = $input['passwordConfirmation'] ?? null;
 
         // === VALIDACIONES ===
         if (!$newPassword) {
-            throw ValidationException::fieldRequired('newPassword');
+            throw ValidationException::fieldRequired('password');
+        }
+
+        if (!$passwordConfirmation) {
+            throw ValidationException::fieldRequired('passwordConfirmation');
+        }
+
+        if ($newPassword !== $passwordConfirmation) {
+            throw ValidationException::withField('passwordConfirmation', 'The passwords do not match');
+        }
+
+        if (strlen($newPassword) < 8) {
+            throw ValidationException::withField('password', 'The password must be at least 8 characters');
         }
 
         // Validar que hay token O código, pero NO ambos
@@ -70,11 +83,18 @@ class ConfirmPasswordResetMutation extends BaseMutation
         $accessToken = $this->tokenService->generateAccessToken($user);
         
         // Crear refresh token
-        $refreshTokenData = $this->tokenService->createRefreshToken($user, [
-            'name' => 'Password Reset Login',
-            'ip' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        $deviceInfo = [];
+        try {
+            $deviceInfo = [
+                'name' => 'Password Reset Login',
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ];
+        } catch (\Exception $e) {
+            // En contexto de testing o sin request, usar valores por defecto
+            $deviceInfo = ['name' => 'Password Reset Login'];
+        }
+        $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
 
         return [
             'success' => true,
