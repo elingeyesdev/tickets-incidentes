@@ -7,4 +7,6 @@ return [
     App\Features\Authentication\AuthenticationServiceProvider::class,
     App\Features\UserManagement\UserManagementServiceProvider::class,
     App\Features\CompanyManagement\CompanyManagementServiceProvider::class,
+    App\Features\TicketManagement\TicketManagementServiceProvider::class,
+    App\Features\ContentManagement\ContentManagementServiceProvider::class,
 ];
