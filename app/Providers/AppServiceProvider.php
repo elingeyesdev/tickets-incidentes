@@ -26,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
             app_path('Features/UserManagement/Database/Migrations'),
             app_path('Features/Authentication/Database/Migrations'),
             app_path('Features/CompanyManagement/Database/Migrations'),
+            app_path('Features/TicketManagement/Database/Migrations'),
+            app_path('Features/ContentManagement/Database/Migrations'),
         ]);
     }
 }
