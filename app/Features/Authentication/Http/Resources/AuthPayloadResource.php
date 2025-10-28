@@ -10,30 +10,44 @@ use Illuminate\Support\Str;
  * Auth Payload Resource
  *
  * Transforma el payload de autenticación a JSON.
- * Se usa en register, login, y confirmPasswordReset.
+ * REPLICA EXACTAMENTE RegisterMutation.mapToGraphQLResponse() y LoginMutation.mapToGraphQLResponse()
  *
- * NOTA: Replicates RegisterMutation and LoginMutation behavior:
- * - Si AuthService retorna session_id (login), lo usa
- * - Si NO retorna session_id (register), genera uno nuevo (como RegisterMutation)
+ * Estructura idéntica a GraphQL para que el cliente use el mismo código para ambos.
+ *
+ * PATRÓN: Usa nested UserAuthInfoResource para transformar usuario (como GraphQL usa resolvers).
+ * No inlina toda la transformación - delega a recursos especializados.
  */
 class AuthPayloadResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
+     *
+     * Replicates EXACTLY what GraphQL mutations do:
+     * - Tokens con camelCase
+     * - refreshToken: mensaje informativo (token real en cookie)
+     * - user: estructura transformada por UserAuthInfoResource
+     * - sessionId: desde servicio o generado
+     * - loginTimestamp: timestamp actual
+     *
+     * NOTA: Usa delegación a UserAuthInfoResource en lugar de inlinar transformación.
+     * Esto replica el patrón de Lighthouse que usa resolvers para cada campo.
      */
     public function toArray(Request $request): array
     {
         return [
+            // Tokens - EXACTAMENTE como GraphQL
             'accessToken' => $this['access_token'],
             'refreshToken' => 'Refresh token set in httpOnly cookie',
-            'tokenType' => $this['token_type'] ?? 'Bearer',
-            'expiresIn' => $this['expires_in'] ?? 2592000, // 30 days
+            'tokenType' => 'Bearer',
+            'expiresIn' => $this['expires_in'],
+
+            // Usuario - DELEGADO a UserAuthInfoResource (patrón de composición)
+            // Esto replica como GraphQL resuelve user fields con field resolvers
             'user' => new UserAuthInfoResource($this['user']),
-            // Si no hay session_id, generar uno nuevo (como RegisterMutation)
+
+            // Metadata de sesión
             'sessionId' => $this['session_id'] ?? Str::uuid()->toString(),
-            'loginTimestamp' => isset($this['login_timestamp'])
-                ? $this['login_timestamp']->toIso8601String()
-                : now()->toIso8601String(),
+            'loginTimestamp' => now()->toIso8601String(),
         ];
     }
 }

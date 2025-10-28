@@ -16,22 +16,59 @@ class UserAuthInfoResource extends JsonResource
     /**
      * Transform the resource into an array.
      * Estructura idéntica a lo que retorna UserAuthInfoResolver de GraphQL
+     *
+     * Acceso seguro a propiedades - maneja relaciones no cargadas
      */
     public function toArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-            'userCode' => $this->user_code,
-            'email' => $this->email,
-            'emailVerified' => (bool) $this->email_verified,
-            'onboardingCompleted' => (bool) $this->onboarding_completed_at,
+        $data = [
+            'id' => $this->id ?? null,
+            'userCode' => $this->user_code ?? null,
+            'email' => $this->email ?? null,
+            'emailVerified' => (bool) ($this->email_verified ?? false),
+            'onboardingCompleted' => (bool) ($this->onboarding_completed_at ?? false),
             'status' => strtoupper($this->status ?? 'ACTIVE'),
             'displayName' => $this->getDisplayName(),
-            'avatarUrl' => $this->profile?->avatar_url,
-            'theme' => $this->profile?->theme ?? 'light',
-            'language' => $this->profile?->language ?? 'es',
-            'roleContexts' => $this->getRoleContexts(),
+            'avatarUrl' => $this->getAvatarUrl(),
+            'theme' => $this->getTheme(),
+            'language' => $this->getLanguage(),
         ];
+
+        // Cargar roleContexts solo si la relación existe
+        if ($this->relationLoaded('userRoles')) {
+            $data['roleContexts'] = $this->getRoleContexts();
+        } else {
+            $data['roleContexts'] = [];
+        }
+
+        return $data;
+    }
+
+    private function getAvatarUrl(): ?string
+    {
+        try {
+            return $this->profile?->avatar_url;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function getTheme(): string
+    {
+        try {
+            return $this->profile?->theme ?? 'light';
+        } catch (\Exception $e) {
+            return 'light';
+        }
+    }
+
+    private function getLanguage(): string
+    {
+        try {
+            return $this->profile?->language ?? 'es';
+        } catch (\Exception $e) {
+            return 'es';
+        }
     }
 
     /**
