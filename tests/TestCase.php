@@ -10,7 +10,7 @@ use Nuwave\Lighthouse\Testing\MakesGraphQLRequests;
 
 abstract class TestCase extends BaseTestCase
 {
-    use MakesGraphQLRequests;
+    use MakesGraphQLRequests, \Tests\Traits\HandlesTimeTravelWithCache;
 
     /**
      * Indicates whether the default seeder should run before each test.
