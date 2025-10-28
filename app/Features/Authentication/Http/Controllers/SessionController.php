@@ -183,12 +183,13 @@ class SessionController
                 ->cookie(
                     'refresh_token',
                     '',
-                    minutes: 0,
-                    path: '/',
-                    domain: null,
-                    secure: !app()->isLocal(),
-                    httpOnly: true,
-                    sameSite: 'lax'
+                    0, // minutes
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    true, // httpOnly
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
             throw $e;

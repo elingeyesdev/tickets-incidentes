@@ -186,12 +186,13 @@ class PasswordResetController
                 ->cookie(
                     'refresh_token',
                     $result['refresh_token'],
-                    minutes: 43200,
-                    path: '/',
-                    domain: null,
-                    secure: !app()->isLocal(),
-                    httpOnly: true,
-                    sameSite: 'lax'
+                    43200, // minutes
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    true, // httpOnly
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
             // Log the exception for debugging (replicar mutation)

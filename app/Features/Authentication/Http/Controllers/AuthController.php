@@ -87,12 +87,13 @@ class AuthController
                 ->cookie(
                     'refresh_token',
                     $payload['refresh_token'],
-                    minutes: 43200, // 30 días
-                    path: '/',
-                    domain: null,
-                    secure: !app()->isLocal(),
-                    httpOnly: true,
-                    sameSite: 'lax'
+                    43200, // minutes: 30 días
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    true, // httpOnly
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
             // Las excepciones son capturadas por ApiExceptionHandler middleware
@@ -156,12 +157,13 @@ class AuthController
                 ->cookie(
                     'refresh_token',
                     $payload['refresh_token'],
-                    minutes: 43200,
-                    path: '/',
-                    domain: null,
-                    secure: !app()->isLocal(),
-                    httpOnly: true,
-                    sameSite: 'lax'
+                    43200, // minutes
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    true, // httpOnly
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
             throw $e;
@@ -254,12 +256,13 @@ class AuthController
                 ->cookie(
                     'refresh_token',
                     $payload['refresh_token'],
-                    minutes: 43200,
-                    path: '/',
-                    domain: null,
-                    secure: !app()->isLocal(),
-                    httpOnly: true,
-                    sameSite: 'lax'
+                    43200, // minutes
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    true, // httpOnly
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
             throw $e;
