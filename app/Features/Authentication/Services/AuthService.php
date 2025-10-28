@@ -97,7 +97,7 @@ class AuthService
         event(new UserRegistered($user, $verificationToken));
 
         return [
-            'user' => $user->fresh(['profile']),
+            'user' => $user->fresh(['profile', 'userRoles.role', 'userRoles.company']),
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,
@@ -152,7 +152,7 @@ class AuthService
         event(new UserLoggedIn($user, $deviceInfo));
 
         return [
-            'user' => $user->fresh(['profile']),
+            'user' => $user->fresh(['profile', 'userRoles.role', 'userRoles.company']),
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenData['token'],
             'expires_in' => config('jwt.ttl') * 60,

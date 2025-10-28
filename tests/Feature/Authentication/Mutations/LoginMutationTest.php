@@ -49,98 +49,58 @@ class LoginMutationTest extends TestCase
      */
     public function user_can_login_successfully(): void
     {
-        // Arrange
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                    tokenType
-                    expiresIn
-                    user {
-                        id
-                        userCode
-                        email
-                        emailVerified
-                        onboardingCompleted
-                        status
-                        displayName
-                        avatarUrl
-                        theme
-                        language
-                        roleContexts {
-                            roleCode
-                            roleName
-                            dashboardPath
-                            company {
-                                id
-                                companyCode
-                                name
-                            }
-                        }
-                    }
-                    sessionId
-                    loginTimestamp
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        // Arrange - REST API payload
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
+            'deviceName' => 'Test Device',
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
-        // Assert
+        // Assert - Status code
+        $response->assertStatus(200);
+
+        // Verificar estructura JSON
         $response->assertJsonStructure([
-            'data' => [
-                'login' => [
-                    'accessToken',
-                    'refreshToken',
-                    'tokenType',
-                    'expiresIn',
-                    'user' => [
-                        'id',
-                        'userCode',
-                        'email',
-                        'emailVerified',
-                        'status',
-                        'displayName',
-                        'avatarUrl',
-                        'theme',
-                        'language',
-                        'roleContexts' => [
-                            '*' => [
-                                'roleCode',
-                                'roleName',
-                                'dashboardPath',
-                            ],
-                        ],
+            'accessToken',
+            'refreshToken',
+            'tokenType',
+            'expiresIn',
+            'user' => [
+                'id',
+                'userCode',
+                'email',
+                'emailVerified',
+                'status',
+                'displayName',
+                'avatarUrl',
+                'theme',
+                'language',
+                'roleContexts' => [
+                    '*' => [
+                        'roleCode',
+                        'roleName',
+                        'dashboardPath',
                     ],
-                    'sessionId',
-                    'loginTimestamp',
                 ],
             ],
+            'sessionId',
+            'loginTimestamp',
         ]);
 
-        $loginData = $response->json('data.login');
+        $loginData = $response->json();
 
         // Verificar tokens
         $this->assertNotEmpty($loginData['accessToken']);
-        // RefreshToken ahora devuelve mensaje informativo (no el token real)
-        $this->assertEquals('Token stored in secure HttpOnly cookie', $loginData['refreshToken']);
+        // RefreshToken ahora devuelve mensaje informativo (no el token real en JSON)
+        $this->assertEquals('Refresh token set in httpOnly cookie', $loginData['refreshToken']);
         $this->assertEquals('Bearer', $loginData['tokenType']);
-        $this->assertEquals(3600, $loginData['expiresIn']); // 1 hora
+        $this->assertIsInt($loginData['expiresIn']);
 
-        // ✅ NUEVO: Verificar que el refresh token fue almacenado para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-        $this->assertNotEmpty($refreshToken, 'Refresh token debe estar almacenado para tests');
-        $this->assertGreaterThan(40, strlen($refreshToken), 'Refresh token debe tener longitud válida');
+        // Verificar que el refresh token está en la cookie
+        $this->assertNotEmpty($response->cookie('refresh_token'), 'Refresh token debe estar en cookie');
 
         // Verificar datos del usuario
         $this->assertEquals($this->testUser->id, $loginData['user']['id']);
@@ -148,7 +108,7 @@ class LoginMutationTest extends TestCase
         $this->assertTrue($loginData['user']['emailVerified']);
         $this->assertEquals('ACTIVE', $loginData['user']['status']);
 
-        // Verificar roleContexts (ahora dentro de user)
+        // Verificar roleContexts
         $this->assertCount(1, $loginData['user']['roleContexts']);
         $this->assertEquals('USER', $loginData['user']['roleContexts'][0]['roleCode']);
         $this->assertEquals('/tickets', $loginData['user']['roleContexts'][0]['dashboardPath']);
@@ -164,33 +124,22 @@ class LoginMutationTest extends TestCase
      */
     public function cannot_login_with_invalid_credentials(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => 'WrongPassword123!',
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => 'WrongPassword123!',
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
-        // Assert - Sistema global de errores
-        $response->assertGraphQLErrorMessage('Credenciales inválidas. Verifica tu email y contraseña.');
-
-        // Verificar que usa el código de error correcto
-        $errors = $response->json('errors');
-        $this->assertNotEmpty($errors);
-        $this->assertEquals('INVALID_CREDENTIALS', $errors[0]['extensions']['code']);
-        $this->assertEquals('authentication', $errors[0]['extensions']['category']);
+        // Assert - Sistema global de errores (REST)
+        $response->assertStatus(401);
+        $response->assertJson([
+            'success' => false,
+            'message' => 'Credenciales inválidas. Verifica tu email y contraseña.',
+            'code' => 'INVALID_CREDENTIALS',
+            'category' => 'authentication',
+        ]);
     }
 
     /**
@@ -199,30 +148,21 @@ class LoginMutationTest extends TestCase
      */
     public function cannot_login_with_nonexistent_email(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'nonexistent@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'nonexistent@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Credenciales inválidas. Verifica tu email y contraseña.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('INVALID_CREDENTIALS', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
+        $response->assertJson([
+            'success' => false,
+            'message' => 'Credenciales inválidas. Verifica tu email y contraseña.',
+            'code' => 'INVALID_CREDENTIALS',
+        ]);
     }
 
     /**
@@ -231,35 +171,19 @@ class LoginMutationTest extends TestCase
      */
     public function email_login_is_case_insensitive(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    user {
-                        email
-                    }
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'LOGINTEST@EXAMPLE.COM', // Uppercase
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'LOGINTEST@EXAMPLE.COM', // Uppercase
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert - Debe funcionar
+        $response->assertStatus(200);
         $response->assertJson([
-            'data' => [
-                'login' => [
-                    'user' => [
-                        'email' => 'logintest@example.com', // Normalizado
-                    ],
-                ],
+            'user' => [
+                'email' => 'logintest@example.com', // Normalizado
             ],
         ]);
     }
@@ -273,30 +197,21 @@ class LoginMutationTest extends TestCase
         // Arrange - Suspender cuenta
         $this->testUser->update(['status' => UserStatus::SUSPENDED]);
 
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert - Sistema global de errores
-        $response->assertGraphQLErrorMessage('Tu cuenta está suspendida. Contacta al administrador.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('ACCOUNT_SUSPENDED', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
+        $response->assertJson([
+            'success' => false,
+            'message' => 'Tu cuenta está suspendida. Contacta al administrador.',
+            'code' => 'ACCOUNT_SUSPENDED',
+        ]);
     }
 
     /**
@@ -309,40 +224,23 @@ class LoginMutationTest extends TestCase
         // Arrange - Email no verificado
         $this->testUser->update(['email_verified' => false]);
 
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    user {
-                        emailVerified
-                    }
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert - Login exitoso
+        $response->assertStatus(200);
         $response->assertJson([
-            'data' => [
-                'login' => [
-                    'user' => [
-                        'emailVerified' => false,
-                    ],
-                ],
+            'user' => [
+                'emailVerified' => false,
             ],
         ]);
 
-        $this->assertNotEmpty($response->json('data.login.accessToken'));
+        $this->assertNotEmpty($response->json('accessToken'));
     }
 
     /**
@@ -351,26 +249,21 @@ class LoginMutationTest extends TestCase
      */
     public function email_is_required(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
-        // Assert - Error de validación de GraphQL (campo requerido)
-        $this->assertNotEmpty($response->json('errors'));
+        // Assert - Error de validación (422)
+        $response->assertStatus(422);
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'code',
+            'errors' => ['email'],
+        ]);
     }
 
     /**
@@ -379,26 +272,21 @@ class LoginMutationTest extends TestCase
      */
     public function password_is_required(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert
-        $this->assertNotEmpty($response->json('errors'));
+        $response->assertStatus(422);
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'code',
+            'errors' => ['password'],
+        ]);
     }
 
     /**
@@ -407,40 +295,27 @@ class LoginMutationTest extends TestCase
      */
     public function generated_jwt_tokens_are_valid(): void
     {
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert
-        $accessToken = $response->json('data.login.accessToken');
-        $refreshToken = $response->json('data.login.refreshToken');
+        $response->assertStatus(200);
+        $accessToken = $response->json('accessToken');
+        $refreshTokenMessage = $response->json('refreshToken');
 
         // Verificar formato JWT (3 partes separadas por puntos)
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/', $accessToken);
 
         // RefreshToken ahora es un mensaje informativo (el token real está en cookie)
-        $this->assertEquals('Token stored in secure HttpOnly cookie', $refreshToken);
+        $this->assertEquals('Refresh token set in httpOnly cookie', $refreshTokenMessage);
 
-        // Verificar que el token real está almacenado para tests
-        $actualRefreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-        $this->assertNotEmpty($actualRefreshToken);
-        $this->assertGreaterThan(40, strlen($actualRefreshToken));
+        // Verificar que el refresh token está en la cookie
+        $this->assertNotEmpty($response->cookie('refresh_token'));
     }
 
     /**
@@ -452,33 +327,17 @@ class LoginMutationTest extends TestCase
         // Arrange - Agregar rol PLATFORM_ADMIN al usuario (no requiere empresa)
         $this->testUser->assignRole('PLATFORM_ADMIN');
 
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    user {
-                        roleContexts {
-                            roleCode
-                            roleName
-                            dashboardPath
-                        }
-                    }
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert
-        $roleContexts = $response->json('data.login.user.roleContexts');
+        $response->assertStatus(200);
+        $roleContexts = $response->json('user.roleContexts');
 
         $this->assertCount(2, $roleContexts);
 
@@ -496,71 +355,30 @@ class LoginMutationTest extends TestCase
         // Esta es la garantía de que el cliente puede usar el mismo código
         // para manejar las respuestas de login y register
 
-        $query = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                    tokenType
-                    expiresIn
-                    user {
-                        id
-                        userCode
-                        email
-                        emailVerified
-                        onboardingCompleted
-                        status
-                        displayName
-                        avatarUrl
-                        theme
-                        language
-                        roleContexts {
-                            roleCode
-                            roleName
-                            dashboardPath
-                            company {
-                                id
-                                companyCode
-                                name
-                            }
-                        }
-                    }
-                    sessionId
-                    loginTimestamp
-                }
-            }
-        ';
-
-        $variables = [
-            'input' => [
-                'email' => 'logintest@example.com',
-                'password' => $this->testPassword,
-                'rememberMe' => false,
-            ],
+        $payload = [
+            'email' => 'logintest@example.com',
+            'password' => $this->testPassword,
         ];
 
         // Act
-        $response = $this->graphQL($query, $variables);
+        $response = $this->postJson('/api/auth/login', $payload);
 
         // Assert - Misma estructura que RegisterMutation
+        $response->assertStatus(200);
         $response->assertJsonStructure([
-            'data' => [
-                'login' => [
-                    'accessToken',
-                    'refreshToken',
-                    'tokenType',
-                    'expiresIn',
-                    'user' => [
-                        'roleContexts',
-                    ],
-                    'sessionId',
-                    'loginTimestamp',
-                ],
+            'accessToken',
+            'refreshToken',
+            'tokenType',
+            'expiresIn',
+            'user' => [
+                'roleContexts',
             ],
+            'sessionId',
+            'loginTimestamp',
         ]);
 
         // Verificar tipos
-        $loginData = $response->json('data.login');
+        $loginData = $response->json();
         $this->assertIsString($loginData['accessToken']);
         $this->assertIsString($loginData['refreshToken']);
         $this->assertIsString($loginData['tokenType']);

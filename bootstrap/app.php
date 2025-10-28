@@ -29,13 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
-        // Web middleware aliases
+        // Middleware aliases para autenticación
         $middleware->alias([
             'web.auth' => \App\Http\Middleware\JWT\WebAuthenticationMiddleware::class,
-        ]);
-
-        // GraphQL API middleware aliases
-        $middleware->api(append: [
             'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication
         ]);

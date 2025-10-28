@@ -7,7 +7,7 @@ use App\Features\Authentication\Http\Requests\PasswordResetConfirmRequest;
 use App\Features\Authentication\Http\Resources\PasswordResetStatusResource;
 use App\Features\Authentication\Http\Resources\PasswordResetResultResource;
 use App\Features\Authentication\Services\PasswordResetService;
-use App\Shared\Utilities\DeviceInfoParser;
+use App\Shared\Helpers\DeviceInfoParser;
 use App\Shared\Exceptions\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

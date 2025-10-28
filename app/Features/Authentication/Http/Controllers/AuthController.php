@@ -11,7 +11,7 @@ use App\Features\Authentication\Http\Resources\RefreshPayloadResource;
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
-use App\Shared\Utilities\DeviceInfoParser;
+use App\Shared\Helpers\DeviceInfoParser;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
