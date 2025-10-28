@@ -748,9 +748,6 @@ class PasswordResetCompleteTest extends TestCase
         }
 
         // Arrange
-        // Configure to use Redis queue and mailpit for this test
-        config(['queue.default' => 'redis', 'mail.mailer' => 'mailpit']);
-
         $this->clearMailpit();
 
         // Clear Redis cache to avoid rate limiting from previous test runs
@@ -758,12 +755,11 @@ class PasswordResetCompleteTest extends TestCase
 
         $user = User::factory()->create(['email' => 'resettest@example.com']);
 
-        // Act - Make request (this will queue the email job in Redis since we configured queue to redis)
+        // Act
         $this->postJson('/api/auth/password-reset', [
             'email' => 'resettest@example.com'
         ]);
 
-        // Execute the queue worker to process the email job
         $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
         sleep(1);
 
