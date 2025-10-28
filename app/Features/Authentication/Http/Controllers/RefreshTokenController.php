@@ -8,6 +8,7 @@ use App\Shared\Helpers\DeviceInfoParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use OpenApi\Attributes as OA;
 
 /**
  * RefreshTokenController
@@ -38,6 +39,40 @@ class RefreshTokenController
      * @param Request $request
      * @return JsonResponse
      */
+    #[OA\Post(
+        path: '/api/auth/refresh',
+        summary: 'Refresh access token',
+        description: 'Get a new access token using refresh token from cookie or header. For Swagger testing, use header X-Refresh-Token with the refresh token value.',
+        tags: ['Authentication'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Refresh-Token',
+                description: 'Refresh token (for testing in Swagger). If not provided, uses refresh_token from HttpOnly cookie.',
+                in: 'header',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'refreshToken',
+                        type: 'string',
+                        description: 'Refresh token (alternative method, not recommended)'
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Token refreshed successfully. New refresh token in Set-Cookie header.'
+            ),
+            new OA\Response(response: 401, description: 'Invalid or missing refresh token'),
+        ]
+    )]
     public function refresh(Request $request): JsonResponse
     {
         try {

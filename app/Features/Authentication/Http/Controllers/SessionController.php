@@ -45,6 +45,7 @@ class SessionController
         summary: 'List user sessions',
         description: 'Get all active sessions for authenticated user',
         tags: ['Sessions'],
+        security: [['bearerAuth' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Sessions retrieved'),
             new OA\Response(response: 401, description: 'Unauthenticated'),
@@ -111,6 +112,7 @@ class SessionController
         summary: 'Logout user',
         description: 'Logout from current session or all sessions',
         tags: ['Sessions'],
+        security: [['bearerAuth' => []]],
         requestBody: new OA\RequestBody(
             required: false,
             content: new OA\JsonContent(
@@ -210,6 +212,7 @@ class SessionController
         summary: 'Revoke a session',
         description: 'Revoke a specific session from another device',
         tags: ['Sessions'],
+        security: [['bearerAuth' => []]],
         parameters: [
             new OA\Parameter(
                 name: 'sessionId',

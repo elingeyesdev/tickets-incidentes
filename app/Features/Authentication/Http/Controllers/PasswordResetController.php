@@ -49,6 +49,7 @@ class PasswordResetController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['email'],
                 properties: [
                     new OA\Property(property: 'email', type: 'string', format: 'email'),
@@ -101,6 +102,7 @@ class PasswordResetController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['password', 'passwordConfirmation'],
                 properties: [
                     new OA\Property(property: 'token', type: 'string', nullable: true, description: 'Reset token (32 chars)'),

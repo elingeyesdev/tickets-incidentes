@@ -51,6 +51,7 @@ class AuthController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['email', 'password', 'passwordConfirmation', 'firstName', 'lastName', 'acceptsTerms', 'acceptsPrivacyPolicy'],
                 properties: [
                     new OA\Property(property: 'email', type: 'string', format: 'email'),
@@ -118,6 +119,7 @@ class AuthController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['email', 'password'],
                 properties: [
                     new OA\Property(property: 'email', type: 'string', format: 'email'),
@@ -187,6 +189,7 @@ class AuthController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['googleToken'],
                 properties: [
                     new OA\Property(property: 'googleToken', type: 'string', description: 'Google ID token'),
@@ -211,30 +214,12 @@ class AuthController
     /**
      * Refresh access token
      *
-     * Renueva el access token usando refresh token.
-     * El refresh token puede venir en header X-Refresh-Token, cookie, o body.
+     * ⚠️ DEPRECATED: Use RefreshTokenController@refresh instead
+     * Esta función se mantiene por compatibilidad pero no debe usarse.
+     * La ruta `/api/auth/refresh` está mapeada a RefreshTokenController.
      *
-     * @authenticated false
-     * @response 200 {"accessToken": "...", "refreshToken": "...", "tokenType": "Bearer", "expiresIn": 2592000}
+     * @deprecated Use RefreshTokenController instead
      */
-    #[OA\Post(
-        path: '/api/auth/refresh',
-        summary: 'Refresh access token',
-        description: 'Get a new access token using refresh token',
-        tags: ['Authentication'],
-        requestBody: new OA\RequestBody(
-            required: false,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'refreshToken', type: 'string', nullable: true, description: 'Refresh token (if not in header/cookie)'),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: 'Token refreshed successfully'),
-            new OA\Response(response: 401, description: 'Invalid or missing refresh token'),
-        ]
-    )]
     public function refresh(Request $request): JsonResponse
     {
         try {
@@ -283,6 +268,7 @@ class AuthController
         summary: 'Get authentication status',
         description: 'Get current authenticated user status and session information',
         tags: ['Authentication'],
+        security: [['bearerAuth' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Authentication status retrieved'),
             new OA\Response(response: 401, description: 'Unauthenticated'),

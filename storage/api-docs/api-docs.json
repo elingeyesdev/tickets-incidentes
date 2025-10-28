@@ -178,41 +178,6 @@
                 }
             }
         },
-        "/api/auth/refresh": {
-            "post": {
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Refresh access token",
-                "description": "Get a new access token using refresh token",
-                "operationId": "8547e6cec5b593dead597364d0a21d93",
-                "requestBody": {
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "refreshToken": {
-                                        "description": "Refresh token (if not in header/cookie)",
-                                        "type": "string",
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Token refreshed successfully"
-                    },
-                    "401": {
-                        "description": "Invalid or missing refresh token"
-                    }
-                }
-            }
-        },
         "/api/auth/status": {
             "get": {
                 "tags": [
@@ -228,7 +193,12 @@
                     "401": {
                         "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/auth/email/verify": {
@@ -464,6 +434,51 @@
                 }
             }
         },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "description": "Get a new access token using refresh token from cookie or header. For Swagger testing, use header X-Refresh-Token with the refresh token value.",
+                "operationId": "3c243abb35865fca479a53debfe9abae",
+                "parameters": [
+                    {
+                        "name": "X-Refresh-Token",
+                        "in": "header",
+                        "description": "Refresh token (for testing in Swagger). If not provided, uses refresh_token from HttpOnly cookie.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refreshToken": {
+                                        "description": "Refresh token (alternative method, not recommended)",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully. New refresh token in Set-Cookie header."
+                    },
+                    "401": {
+                        "description": "Invalid or missing refresh token"
+                    }
+                }
+            }
+        },
         "/api/auth/sessions": {
             "get": {
                 "tags": [
@@ -479,7 +494,12 @@
                     "401": {
                         "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/auth/logout": {
@@ -514,7 +534,12 @@
                     "401": {
                         "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/auth/sessions/{sessionId}": {
@@ -552,7 +577,12 @@
                     "409": {
                         "description": "Cannot revoke current session"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },
@@ -581,5 +611,15 @@
             "name": "Sessions",
             "description": "Sessions"
         }
-    ]
+    ],
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "JWT Bearer Token. Include in Authorization header: Bearer <token>",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
 }
