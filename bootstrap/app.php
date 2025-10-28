@@ -4,6 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ApiExceptionHandler;
+use App\Http\Middleware\AuthenticateJwt;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Add middleware to the API group for stateless Inertia & cookie-based refresh tokens
         $middleware->api(prepend: [
+            ApiExceptionHandler::class,  // ← Manejo de excepciones (debe ser primero)
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
@@ -34,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // GraphQL API middleware aliases
         $middleware->api(append: [
             'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,
+            'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

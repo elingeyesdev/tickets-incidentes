@@ -1,0 +1,41 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Helpdesk API - REST",
+        "description": "API REST del Sistema Helpdesk. Migración de GraphQL a REST con autenticación JWT.",
+        "contact": {
+            "name": "API Support",
+            "email": "support@helpdesk.local"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Development Server"
+        }
+    ],
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "description": "Verifica el estado de la API",
+                "operationId": "1c4061d7fcb253d4c29c0060f524b139",
+                "responses": {
+                    "200": {
+                        "description": "API está funcionando"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Health",
+            "description": "Health"
+        }
+    ]
+}
