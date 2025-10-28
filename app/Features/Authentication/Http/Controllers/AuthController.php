@@ -1,22 +1,21 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
-use App\Features\Authentication\Http\Requests\GoogleLoginRequest;
-use App\Features\Authentication\Http\Requests\LoginRequest;
 use App\Features\Authentication\Http\Requests\RegisterRequest;
+use App\Features\Authentication\Http\Requests\LoginRequest;
+use App\Features\Authentication\Http\Requests\GoogleLoginRequest;
 use App\Features\Authentication\Http\Resources\AuthPayloadResource;
 use App\Features\Authentication\Http\Resources\AuthStatusResource;
 use App\Features\Authentication\Http\Resources\RefreshPayloadResource;
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
-use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Utilities\DeviceInfoParser;
+use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 
 /**
@@ -42,7 +41,6 @@ class AuthController
      * Automáticamente crea una sesión y retorna tokens.
      *
      * @authenticated false
-     *
      * @response 201 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
      */
     #[OA\Post(
@@ -92,7 +90,7 @@ class AuthController
                     43200, // minutes: 30 días
                     '/', // path
                     null, // domain
-                    ! app()->isLocal(), // secure
+                    !app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
@@ -110,7 +108,6 @@ class AuthController
      * Retorna access token e inicia una nueva sesión.
      *
      * @authenticated false
-     *
      * @response 200 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
      */
     #[OA\Post(
@@ -147,7 +144,7 @@ class AuthController
             $deviceInfo = DeviceInfoParser::fromRequest($request);
 
             // Si se proveyó deviceName en el input, usarlo
-            if (! empty($request->input('deviceName'))) {
+            if (!empty($request->input('deviceName'))) {
                 $deviceInfo['name'] = $request->input('deviceName');
             }
 
@@ -163,7 +160,7 @@ class AuthController
                     43200, // minutes
                     '/', // path
                     null, // domain
-                    ! app()->isLocal(), // secure
+                    !app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
@@ -180,7 +177,6 @@ class AuthController
      * Si el usuario no existe, lo crea automáticamente.
      *
      * @authenticated false
-     *
      * @response 200 {"accessToken": "...", "refreshToken": "...", "user": {...}, ...}
      */
     #[OA\Post(
@@ -219,7 +215,6 @@ class AuthController
      * El refresh token puede venir en header X-Refresh-Token, cookie, o body.
      *
      * @authenticated false
-     *
      * @response 200 {"accessToken": "...", "refreshToken": "...", "tokenType": "Bearer", "expiresIn": 2592000}
      */
     #[OA\Post(
@@ -248,7 +243,7 @@ class AuthController
                 ?? $request->cookie('refresh_token')
                 ?? $request->input('refreshToken');
 
-            if (! $refreshToken) {
+            if (!$refreshToken) {
                 throw new AuthenticationException('Refresh token required');
             }
 
@@ -264,7 +259,7 @@ class AuthController
                     43200, // minutes
                     '/', // path
                     null, // domain
-                    ! app()->isLocal(), // secure
+                    !app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
@@ -281,7 +276,6 @@ class AuthController
      * Retorna user, sesión actual, e información de tokens.
      *
      * @authenticated true
-     *
      * @response 200 {"isAuthenticated": true, "user": {...}, "currentSession": {...}, "tokenInfo": {...}}
      */
     #[OA\Get(
@@ -300,13 +294,13 @@ class AuthController
             // Obtener usuario autenticado (garantizado por auth:api middleware)
             $user = $request->user();
 
-            if (! $user) {
+            if (!$user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
             // Obtener token del header
             $authHeader = $request->header('Authorization', '');
-            if (! $authHeader) {
+            if (!$authHeader) {
                 throw new AuthenticationException('Missing Authorization header');
             }
 
@@ -352,6 +346,9 @@ class AuthController
      *
      * NOTA: acceptsTerms y acceptsPrivacyPolicy ya están validados por RegisterRequest
      * que valida con 'accepted', garantizando que sean true.
+     *
+     * @param array $input
+     * @return array
      */
     private function mapInputToServiceFormat(array $input): array
     {
@@ -368,13 +365,12 @@ class AuthController
      * Capitaliza nombres correctamente (Primera letra mayúscula, resto minúsculas)
      * También sanitiza quitando HTML tags
      *
-     * @param  string  $name  Nombre a capitalizar
+     * @param string $name Nombre a capitalizar
      * @return string Nombre capitalizado y sanitizado
      */
     private function capitalizeName(string $name): string
     {
         $sanitized = strip_tags(trim($name));
-
         return ucfirst(strtolower($sanitized));
     }
 }

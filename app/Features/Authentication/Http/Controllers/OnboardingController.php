@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
@@ -28,7 +26,6 @@ class OnboardingController
      * Email verification NO es prerequisito del onboarding.
      *
      * @authenticated true
-     *
      * @response 200 {"success": true, "message": "...", "user": {...}}
      */
     #[OA\Post(
@@ -46,7 +43,7 @@ class OnboardingController
         try {
             $user = $request->user();
 
-            if (! $user) {
+            if (!$user) {
                 throw new AuthenticationException('User not authenticated');
             }
 

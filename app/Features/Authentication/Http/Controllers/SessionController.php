@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
@@ -9,8 +7,10 @@ use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
 use App\Shared\Exceptions\AuthenticationException;
+use App\Shared\Exceptions\AuthorizationException;
 use App\Shared\Exceptions\CannotRevokeCurrentSessionException;
 use App\Shared\Exceptions\NotFoundException;
+use App\Shared\Exceptions\TokenInvalidException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -38,7 +38,6 @@ class SessionController
      * Marca cuál es la sesión actual.
      *
      * @authenticated true
-     *
      * @response 200 {"sessions": [{...}, {...}]}
      */
     #[OA\Get(
@@ -56,7 +55,7 @@ class SessionController
         try {
             $user = $request->user();
 
-            if (! $user) {
+            if (!$user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
@@ -105,7 +104,6 @@ class SessionController
      * Revoca los tokens y limpia la cookie.
      *
      * @authenticated true
-     *
      * @response 200 {"success": true, "message": "..."}
      */
     #[OA\Post(
@@ -131,7 +129,7 @@ class SessionController
         try {
             $user = $request->user();
 
-            if (! $user) {
+            if (!$user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
@@ -153,7 +151,7 @@ class SessionController
                     $accessToken = $matches[1];
                 }
 
-                if (! $accessToken) {
+                if (!$accessToken) {
                     throw new AuthenticationException('Access token required for logout');
                 }
 
@@ -161,7 +159,7 @@ class SessionController
                 $refreshToken = $request->header('X-Refresh-Token')
                     ?? $request->cookie('refresh_token');
 
-                if (! $refreshToken) {
+                if (!$refreshToken) {
                     // Si no hay refresh token, solo invalidamos el access token
                     \Illuminate\Support\Facades\Log::warning('Logout without refresh token - only access token will be blacklisted', [
                         'user_id' => $user->id,
@@ -188,7 +186,7 @@ class SessionController
                     0, // minutes
                     '/', // path
                     null, // domain
-                    ! app()->isLocal(), // secure
+                    !app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
@@ -205,7 +203,6 @@ class SessionController
      * No se puede revocar la sesión actual.
      *
      * @authenticated true
-     *
      * @response 200 {"success": true, "message": "..."}
      */
     #[OA\Delete(
@@ -234,7 +231,7 @@ class SessionController
         try {
             $user = $request->user();
 
-            if (! $user) {
+            if (!$user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
@@ -244,7 +241,7 @@ class SessionController
             $session = RefreshToken::find($sessionId);
 
             // Validar que la sesión existe
-            if (! $session) {
+            if (!$session) {
                 throw new NotFoundException("Session '{$sessionId}' not found.");
             }
 
@@ -267,7 +264,7 @@ class SessionController
                 $currentTokenHash = hash('sha256', $currentRefreshToken);
 
                 if ($session->token_hash === $currentTokenHash) {
-                    throw new CannotRevokeCurrentSessionException;
+                    throw new CannotRevokeCurrentSessionException();
                 }
             }
 

@@ -2,8 +2,8 @@
 
 namespace App\Features\Authentication\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
+use Illuminate\Http\JsonResponse;
 
 /**
  * Health Check Controller
