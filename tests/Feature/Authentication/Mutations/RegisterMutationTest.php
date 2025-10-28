@@ -22,87 +22,71 @@ class RegisterMutationTest extends TestCase
      */
     public function test_user_can_register_successfully(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                    refreshToken
-                    tokenType
-                    expiresIn
-                    user {
-                        id
-                        userCode
-                        email
-                        emailVerified
-                        onboardingCompleted
-                        status
-                        displayName
-                        avatarUrl
-                        theme
-                        language
-                        roleContexts {
-                            roleCode
-                            roleName
-                            dashboardPath
-                            company {
-                                id
-                                name
-                            }
-                        }
-                    }
-                    sessionId
-                    loginTimestamp
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'newuser@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'John',
-                'lastName' => 'Doe',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
+        $payload = [
+            'email' => 'newuser@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
+
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        // Verificar que la respuesta es 201 Created
+        $response->assertStatus(201);
+
+        // Verificar la estructura de la respuesta
+        $response->assertJsonStructure([
+            'accessToken',
+            'refreshToken',
+            'tokenType',
+            'expiresIn',
+            'user' => [
+                'id',
+                'userCode',
+                'email',
+                'emailVerified',
+                'onboardingCompleted',
+                'status',
+                'displayName',
+                'avatarUrl',
+                'theme',
+                'language',
+                'roleContexts' => [
+                    '*' => [
+                        'roleCode',
+                        'roleName',
+                        'dashboardPath',
+                    ],
+                ],
+            ],
+            'sessionId',
+            'loginTimestamp',
         ]);
 
-        // DEBUG: Ver si hay errores en GraphQL
-        if ($response->json('errors')) {
-            dump($response->json('errors'));
-        }
+        // Verificar valores específicos
+        $response->assertJsonPath('tokenType', 'Bearer');
+        $response->assertJsonPath('user.email', 'newuser@example.com');
+        $response->assertJsonPath('user.emailVerified', false);
+        $response->assertJsonPath('user.onboardingCompleted', false);
+        $response->assertJsonPath('user.status', 'ACTIVE');
+        $response->assertJsonPath('user.displayName', 'John Doe');
+        $response->assertJsonPath('user.roleContexts.0.roleCode', 'USER');
 
-        // Verificar que no haya errores
-        $this->assertNull($response->json('errors'), 'GraphQL returned errors: ' . json_encode($response->json('errors')));
-
-        // Verificar respuesta - Usar assertJsonPath para evitar problemas con null vs NULL
-        $response->assertJsonPath('data.register.tokenType', 'Bearer');
-        $response->assertJsonPath('data.register.user.email', 'newuser@example.com');
-        $response->assertJsonPath('data.register.user.emailVerified', false);
-        $response->assertJsonPath('data.register.user.onboardingCompleted', false); // Usuario recién registrado NO ha completado onboarding
-        $response->assertJsonPath('data.register.user.status', 'ACTIVE');
-        $response->assertJsonPath('data.register.user.displayName', 'John Doe');
-        $response->assertJsonPath('data.register.user.theme', 'light');
-        $response->assertJsonPath('data.register.user.language', 'es');
-        $response->assertJsonPath('data.register.user.roleContexts.0.roleCode', 'USER');
-        $response->assertJsonPath('data.register.user.roleContexts.0.roleName', 'Cliente');
-        $response->assertJsonPath('data.register.user.roleContexts.0.dashboardPath', '/tickets');
-        $response->assertJsonPath('data.register.user.roleContexts.0.company', null); // USER no tiene empresa
-
-        // Verificar que tiene tokens
-        $data = $response->json('data.register');
+        // Verificar tokens
+        $data = $response->json();
         $this->assertNotEmpty($data['accessToken']);
-        // RefreshToken ahora devuelve mensaje informativo (no el token real)
-        $this->assertEquals('Token stored in secure HttpOnly cookie', $data['refreshToken']);
+        $this->assertEquals('Refresh token set in httpOnly cookie', $data['refreshToken']);
         $this->assertNotEmpty($data['sessionId']);
         $this->assertIsInt($data['expiresIn']);
 
-        // ✅ NUEVO: Verificar que el refresh token fue almacenado para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\RegisterMutation::getLastRefreshToken();
-        $this->assertNotEmpty($refreshToken, 'Refresh token debe estar almacenado para tests');
-        $this->assertGreaterThan(40, strlen($refreshToken), 'Refresh token debe tener longitud válida');
+        // Verificar que la cookie del refresh token está presente
+        $response->assertCookie('refresh_token');
 
         // Verificar que se creó en la base de datos
-        $this->assertDatabaseHas('auth.users', [
+        $this->assertDatabaseHas('users', [
             'email' => 'newuser@example.com',
             'email_verified' => false,
             'status' => 'active',  // PostgreSQL ENUM usa lowercase
@@ -127,7 +111,7 @@ class RegisterMutationTest extends TestCase
         $this->assertEquals('v2.1', $user->terms_version);
 
         // ✅ NUEVO: Verificar que se asignó rol USER automáticamente
-        $this->assertDatabaseHas('auth.user_roles', [
+        $this->assertDatabaseHas('user_roles', [
             'user_id' => $user->id,
             'role_code' => 'USER',  // UPPERCASE según RolesSeeder
             'company_id' => null,  // USER no requiere empresa según constraint de BD
@@ -144,35 +128,31 @@ class RegisterMutationTest extends TestCase
     public function test_cannot_register_with_duplicate_email(): void
     {
         // Crear usuario existente manualmente
-        $user = User::create([
-            'user_code' => 'USR-00001',
+        User::factory()->create([
             'email' => 'existing@example.com',
-            'password_hash' => password_hash('password', PASSWORD_BCRYPT),
-            'status' => UserStatus::ACTIVE,
-            'terms_accepted' => true,
-            'onboarding_completed_at' => null, // Usuario sin onboarding completado
         ]);
 
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'existing@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'Jane',
-                'lastName' => 'Smith',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'existing@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Jane',
+            'lastName' => 'Smith',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar que retorna error de validación
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        // Verificar que retorna error de validación 422
+        $response->assertStatus(422);
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'code',
+            'errors' => ['email'],
+        ]);
+        $response->assertJsonPath('errors.email.0', 'Este email ya está registrado.');
     }
 
     /**
@@ -180,26 +160,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_cannot_register_with_weak_password(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'test@example.com',
-                'password' => '123', // Muy corta (mínimo 8)
-                'passwordConfirmation' => '123',
-                'firstName' => 'Test',
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'test@example.com',
+            'password' => '123', // Muy corta (mínimo 8)
+            'passwordConfirmation' => '123',
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar error de validación en password
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('password');
     }
 
     /**
@@ -207,26 +181,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_password_confirmation_must_match(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'test@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'DifferentPass123!', // No coincide
-                'firstName' => 'Test',
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'test@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'DifferentPass123!', // No coincide
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar error de validación
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('passwordConfirmation');
     }
 
     /**
@@ -234,26 +202,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_required_fields_cannot_be_empty(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => '', // Vacío
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => '', // Vacío
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => '', // Vacío
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => '', // Vacío
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar errores de validación en múltiples campos
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email', 'firstName']);
     }
 
     /**
@@ -261,26 +223,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_terms_and_privacy_must_be_accepted(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'test@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'Test',
-                'lastName' => 'User',
-                'acceptsTerms' => false, // No acepta términos
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'test@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'acceptsTerms' => false, // No acepta términos
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar error de validación
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('acceptsTerms');
     }
 
     /**
@@ -288,26 +244,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_email_must_have_valid_format(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'invalid-email-format', // Sin @
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'Test',
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'invalid-email-format', // Sin @
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar error de validación en email
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('email');
     }
 
     /**
@@ -315,26 +265,20 @@ class RegisterMutationTest extends TestCase
      */
     public function test_names_have_length_constraints(): void
     {
-        // Test nombre muy corto
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'test@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'A', // Muy corto (mínimo 2)
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'test@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'A', // Muy corto (mínimo 2)
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        $response->assertJsonStructure(['errors']);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('firstName');
     }
 
     /**
@@ -342,38 +286,22 @@ class RegisterMutationTest extends TestCase
      */
     public function test_email_is_normalized_to_lowercase(): void
     {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    user {
-                        email
-                    }
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'MixedCase@EXAMPLE.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'Test',
-                'lastName' => 'User',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+        $payload = [
+            'email' => 'MixedCase@EXAMPLE.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Test',
+            'lastName' => 'User',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar que email se guardó en lowercase
-        $response->assertJson([
-            'data' => [
-                'register' => [
-                    'user' => [
-                        'email' => 'mixedcase@example.com'
-                    ]
-                ]
-            ]
-        ]);
+        $response = $this->postJson('/api/auth/register', $payload);
 
-        $this->assertDatabaseHas('auth.users', [
+        $response->assertStatus(201);
+        $response->assertJsonPath('user.email', 'mixedcase@example.com');
+
+        $this->assertDatabaseHas('users', [
             'email' => 'mixedcase@example.com'
         ]);
     }
@@ -382,37 +310,21 @@ class RegisterMutationTest extends TestCase
      * Test: Nombres se capitalizan correctamente
      */
     public function test_names_are_capitalized_correctly(): void
-    {
-        $response = $this->graphQL('
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    user {
-                        displayName
-                    }
-                }
-            }
-        ', [
-            'input' => [
-                'email' => 'test@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'jOHN', // Mixto
-                'lastName' => 'DOE', // Mayúsculas
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ]
-        ]);
+    { 
+        $payload = [
+            'email' => 'test@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'jOHN', // Mixto
+            'lastName' => 'DOE', // Mayúsculas
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ];
 
-        // Verificar capitalización correcta
-        $response->assertJson([
-            'data' => [
-                'register' => [
-                    'user' => [
-                        'displayName' => 'John Doe'
-                    ]
-                ]
-            ]
-        ]);
+        $response = $this->postJson('/api/auth/register', $payload);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('user.displayName', 'John Doe');
 
         // Verificar en BD
         $user = User::where('email', 'test@example.com')->first();

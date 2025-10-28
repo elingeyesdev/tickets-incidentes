@@ -21,7 +21,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Add middleware to the API group for stateless Inertia & cookie-based refresh tokens
         $middleware->api(prepend: [
-            ApiExceptionHandler::class,  // ← Manejo de excepciones (debe ser primero)
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
@@ -37,5 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handle($request, function() use ($e) { throw $e; });
+            }
+        });
     })->create();

@@ -10,14 +10,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
-use Nuwave\Lighthouse\Testing\MakesGraphQLRequests;
 use Tests\TestCase;
 
 /**
  * Password Reset Complete Test Suite (36 Tests)
  *
  * =====================================================================
- * TESTS INCLUIDOS EN ESTE ARCHIVO
+ * CONVERTED FROM GRAPHQL TO REST - PHASE 5
  * =====================================================================
  *
  * A. RESETPASSWORD MUTATION TESTS (Solicitud de reset)
@@ -65,23 +64,10 @@ use Tests\TestCase;
  * G. EDGE CASES
  *    31. token_expires_after_24_hours() - Token expira después de 24 horas
  *    32. password_requirements_are_enforced() - Se validan requisitos de contraseña
- *
- * =====================================================================
- * TOTAL: 32 tests exhaustivos, complejos y completos
- * =====================================================================
- *
- * RATE LIMITING APPLIED:
- * - 1 minuto entre resends del mismo email
- * - máximo 2 emails cada 3 horas por usuario
- *
- * RESET METHODS SUPPORTED:
- * - Link (token de 32 caracteres)
- * - Code (código de 6 dígitos)
- * - Ambos (prefiere link si está presente)
  */
 class PasswordResetCompleteTest extends TestCase
 {
-    use RefreshDatabase, MakesGraphQLRequests;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -101,28 +87,24 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act
-        $response = $this->graphQL('
-            mutation ResetPassword($email: Email!) {
-                resetPassword(email: $email)
-            }
-        ', ['email' => 'user@example.com']);
+        $response = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Assert
-        $this->assertTrue($response->json('data.resetPassword'));
+        $this->assertTrue($response->json('success'));
     }
 
     /** @test */
     public function nonexistent_email_returns_true_for_security()
     {
         // Act
-        $response = $this->graphQL('
-            mutation ResetPassword($email: Email!) {
-                resetPassword(email: $email)
-            }
-        ', ['email' => 'nonexistent@example.com']);
+        $response = $this->postJson('/api/auth/password-reset', [
+            'email' => 'nonexistent@example.com'
+        ]);
 
         // Assert - Por seguridad, NO revela si email existe
-        $this->assertTrue($response->json('data.resetPassword'));
+        $this->assertTrue($response->json('success'));
     }
 
     /** @test */
@@ -134,19 +116,12 @@ class PasswordResetCompleteTest extends TestCase
         // Usar helper para generar token
         $token = $this->generateResetToken($user);
 
-        // Act - Validar token
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    isValid
-                    expiresAt
-                }
-            }
-        ', ['token' => $token]);
+        // Act - Validar token via REST GET endpoint
+        $response = $this->getJson("/api/auth/password-reset/status?token={$token}");
 
         // Assert
-        $this->assertTrue($response->json('data.passwordResetStatus.isValid'));
-        $this->assertNotNull($response->json('data.passwordResetStatus.expiresAt'));
+        $this->assertTrue($response->json('isValid'));
+        $this->assertNotNull($response->json('expiresAt'));
     }
 
     /** @test */
@@ -156,14 +131,12 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act
-        $response = $this->graphQL('
-            mutation ResetPassword($email: Email!) {
-                resetPassword(email: $email)
-            }
-        ', ['email' => 'user@example.com']);
+        $response = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Assert - Reset fue solicitado exitosamente
-        $this->assertTrue($response->json('data.resetPassword'));
+        $this->assertTrue($response->json('success'));
     }
 
     /** @test */
@@ -204,24 +177,21 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act - Primer request (debe pasar)
-        $response1 = $this->graphQL('
-            mutation ResetPassword($email: Email!) {
-                resetPassword(email: $email)
-            }
-        ', ['email' => 'user@example.com']);
+        $response1 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
-        $this->assertTrue($response1->json('data.resetPassword'));
+        $this->assertTrue($response1->json('success'));
 
         // Act - Segundo request inmediato (debe fallar)
-        $response2 = $this->graphQL('
-            mutation ResetPassword($email: Email!) {
-                resetPassword(email: $email)
-            }
-        ', ['email' => 'user@example.com']);
+        $response2 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
-        // Assert
-        $this->assertNotNull($response2->json('errors'));
-        $this->assertStringContainsString('Too many', $response2->json('errors.0.message'));
+        // Assert - REST retorna 429 en lugar de GraphQL errors
+        $this->assertFalse($response2->json('success'));
+        $this->assertStringContainsString('Too many', $response2->json('message'));
+        $response2->assertStatus(429);
     }
 
     /** @test */
@@ -231,105 +201,98 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act - Primer email
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Esperar 1 minuto
         $this->travelTo(now()->addSeconds(61));
 
         // Act - Segundo email (permitido)
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Esperar 1 minuto más
         $this->travelTo(now()->addSeconds(61));
 
         // Act - Tercer email (debe fallar)
-        $response3 = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $response3 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Assert
-        $this->assertNotNull($response3->json('errors'));
+        $this->assertFalse($response3->json('success'));
+        $response3->assertStatus(429);
     }
 
+    /** @test */
     public function allows_reset_after_1_minute_passes()
     {
         // Arrange
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act - Primer request (debe pasar)
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Act - Segundo request inmediato (debe fallar)
-        $response1 = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
-        $this->assertNotNull($response1->json('errors'));
+        $response1 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
+        $this->assertFalse($response1->json('success'));
 
         // Avanzar 1 minuto y 1 segundo
         $this->travelTo(now()->addSeconds(61));
 
         // Act - Tercer request (debe pasar)
-        $response2 = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $response2 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Assert
-        $this->assertTrue($response2->json('data.resetPassword'));
+        $this->assertTrue($response2->json('success'));
     }
 
+    /** @test */
     public function allows_new_reset_after_3_hours_window_expires()
     {
         // Arrange
         $user = User::factory()->create(['email' => 'user@example.com']);
 
         // Act - Primer email (debe pasar)
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Avanzar 1 minuto y 1 segundo
         $this->travelTo(now()->addSeconds(61));
 
         // Act - Segundo email (debe pasar)
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Avanzar 1 minuto y 1 segundo
         $this->travelTo(now()->addSeconds(61));
 
         // Act - Tercer email (debe fallar)
-        $response = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
-        $this->assertNotNull($response->json('errors'));
+        $response = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
+        $this->assertFalse($response->json('success'));
 
         // Avanzar 3 horas y 1 segundo
         $this->travelTo(now()->addHours(3)->addSeconds(1));
 
         // Act - Cuarto email (debe pasar)
-        $response2 = $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'user@example.com']
-        );
+        $response2 = $this->postJson('/api/auth/password-reset', [
+            'email' => 'user@example.com'
+        ]);
 
         // Assert
-        $this->assertTrue($response2->json('data.resetPassword'));
+        $this->assertTrue($response2->json('success'));
     }
 
     // =========================================================================
@@ -344,24 +307,14 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    isValid
-                    email
-                    expiresAt
-                    canReset
-                    attemptsRemaining
-                }
-            }
-        ', ['token' => $token]);
+        $response = $this->getJson("/api/auth/password-reset/status?token={$token}");
 
         // Assert
-        $this->assertTrue($response->json('data.passwordResetStatus.isValid'));
+        $this->assertTrue($response->json('isValid'));
         // Email está enmascarado en la respuesta, verificar que no es null
-        $this->assertNotNull($response->json('data.passwordResetStatus.email'));
-        $this->assertTrue($response->json('data.passwordResetStatus.canReset'));
-        $this->assertNotNull($response->json('data.passwordResetStatus.attemptsRemaining'));
+        $this->assertNotNull($response->json('email'));
+        $this->assertTrue($response->json('canReset'));
+        $this->assertNotNull($response->json('attemptsRemaining'));
     }
 
     /** @test */
@@ -372,16 +325,10 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    expiresAt
-                }
-            }
-        ', ['token' => $token]);
+        $response = $this->getJson("/api/auth/password-reset/status?token={$token}");
 
         // Assert
-        $expiresAt = $response->json('data.passwordResetStatus.expiresAt');
+        $expiresAt = $response->json('expiresAt');
         $this->assertNotNull($expiresAt);
     }
 
@@ -389,18 +336,11 @@ class PasswordResetCompleteTest extends TestCase
     public function invalid_token_returns_false()
     {
         // Act
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    isValid
-                    canReset
-                }
-            }
-        ', ['token' => 'invalid_token_xxxxxx']);
+        $response = $this->getJson("/api/auth/password-reset/status?token=invalid_token_xxxxxx");
 
         // Assert
-        $this->assertFalse($response->json('data.passwordResetStatus.isValid'));
-        $this->assertFalse($response->json('data.passwordResetStatus.canReset'));
+        $this->assertFalse($response->json('isValid'));
+        $this->assertFalse($response->json('canReset'));
     }
 
     /** @test */
@@ -411,18 +351,11 @@ class PasswordResetCompleteTest extends TestCase
         $expiredToken = $this->generateResetToken($user, expiresIn: -1);
 
         // Act
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    isValid
-                    canReset
-                }
-            }
-        ', ['token' => $expiredToken]);
+        $response = $this->getJson("/api/auth/password-reset/status?token={$expiredToken}");
 
         // Assert
-        $this->assertFalse($response->json('data.passwordResetStatus.isValid'));
-        $this->assertFalse($response->json('data.passwordResetStatus.canReset'));
+        $this->assertFalse($response->json('isValid'));
+        $this->assertFalse($response->json('canReset'));
     }
 
     // =========================================================================
@@ -437,35 +370,16 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    message
-                    accessToken
-                    refreshToken
-                    user { id email }
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
-        // Debug
-        if ($response->json('data.confirmPasswordReset') === null) {
-            echo "\n\n=== DEBUG: GraphQL Response ===\n";
-            echo json_encode($response->json(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            echo "\n\n";
-        }
-
         // Assert
-        $this->assertTrue($response->json('data.confirmPasswordReset.success'));
-        $this->assertNotEmpty($response->json('data.confirmPasswordReset.accessToken'));
-        $this->assertNotEmpty($response->json('data.confirmPasswordReset.refreshToken'));
+        $this->assertTrue($response->json('success'));
+        $this->assertNotEmpty($response->json('accessToken'));
+        $this->assertNotEmpty($response->json('refreshToken'));
     }
 
     /** @test */
@@ -476,28 +390,17 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    accessToken
-                    refreshToken
-                    user { id email }
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $this->assertTrue($response->json('data.confirmPasswordReset.success'));
-        $this->assertNotEmpty($response->json('data.confirmPasswordReset.accessToken'));
-        $this->assertNotEmpty($response->json('data.confirmPasswordReset.refreshToken'));
-        $this->assertEquals($user->id, $response->json('data.confirmPasswordReset.user.id'));
+        $this->assertTrue($response->json('success'));
+        $this->assertNotEmpty($response->json('accessToken'));
+        $this->assertNotEmpty($response->json('refreshToken'));
+        $this->assertEquals($user->id, $response->json('user.id'));
     }
 
     /** @test */
@@ -508,23 +411,14 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    accessToken
-                    user { id }
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $accessToken = $response->json('data.confirmPasswordReset.accessToken');
+        $accessToken = $response->json('accessToken');
         $this->assertNotEmpty($accessToken);
         $this->assertTrue($this->isValidJWT($accessToken));
     }
@@ -543,18 +437,10 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act
-        $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert - Sesiones anteriores deben ser inválidas
@@ -567,22 +453,15 @@ class PasswordResetCompleteTest extends TestCase
     public function validates_token_exists()
     {
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                }
-            }
-        ', [
-            'input' => [
-                'token' => 'invalid_token',
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => 'invalid_token',
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $this->assertNotNull($response->json('errors'));
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(401);
     }
 
     /** @test */
@@ -593,22 +472,15 @@ class PasswordResetCompleteTest extends TestCase
         $expiredToken = $this->generateResetToken($user, expiresIn: -1);
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $expiredToken,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $expiredToken,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $this->assertNotNull($response->json('errors'));
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(401);
     }
 
     /** @test */
@@ -619,22 +491,15 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act - Password muy corto
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'short',
-                'passwordConfirmation' => 'short',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'short',
+            'passwordConfirmation' => 'short',
         ]);
 
         // Assert
-        $this->assertNotNull($response->json('errors'));
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(422);  // Laravel Form Request validation (not custom ValidationException)
     }
 
     /** @test */
@@ -645,35 +510,24 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user);
 
         // Act 1 - Primer reset
-        $response1 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response1 = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
-        $this->assertTrue($response1->json('data.confirmPasswordReset.success'));
+        $this->assertTrue($response1->json('success'));
 
         // Act 2 - Intentar reutilizar
-        $response2 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'password' => 'AnotherPass456!',
-                'passwordConfirmation' => 'AnotherPass456!',
-            ],
+        $response2 = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'password' => 'AnotherPass456!',
+            'passwordConfirmation' => 'AnotherPass456!',
         ]);
 
         // Assert
-        $this->assertNotNull($response2->json('errors'));
+        $this->assertFalse($response2->json('success'));
+        $response2->assertStatus(401);
     }
 
     // =========================================================================
@@ -689,26 +543,16 @@ class PasswordResetCompleteTest extends TestCase
         $code = Cache::get("password_reset_code:{$user->id}");
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    accessToken
-                    user { id }
-                }
-            }
-        ', [
-            'input' => [
-                'code' => $code,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $this->assertTrue($response->json('data.confirmPasswordReset.success'));
-        $this->assertNotEmpty($response->json('data.confirmPasswordReset.accessToken'));
-        $this->assertEquals($user->id, $response->json('data.confirmPasswordReset.user.id'));
+        $this->assertTrue($response->json('success'));
+        $this->assertNotEmpty($response->json('accessToken'));
+        $this->assertEquals($user->id, $response->json('user.id'));
     }
 
     /** @test */
@@ -721,19 +565,14 @@ class PasswordResetCompleteTest extends TestCase
         $invalidCodes = ['abc123', '12345', '1234567', 'ABCDEF'];
 
         foreach ($invalidCodes as $invalidCode) {
-            $response = $this->graphQL('
-                mutation ConfirmReset($input: PasswordResetInput!) {
-                    confirmPasswordReset(input: $input) { success }
-                }
-            ', [
-                'input' => [
-                    'code' => $invalidCode,
-                    'password' => 'NewPass123!',
-                    'passwordConfirmation' => 'NewPass123!',
-                ],
+            $response = $this->postJson('/api/auth/password-reset/confirm', [
+                'code' => $invalidCode,
+                'password' => 'NewPass123!',
+                'passwordConfirmation' => 'NewPass123!',
             ]);
 
-            $this->assertNotNull($response->json('errors'));
+            $this->assertFalse($response->json('success'));
+            $response->assertStatus(401);  // AuthenticationException (invalid code format)
         }
     }
 
@@ -749,20 +588,15 @@ class PasswordResetCompleteTest extends TestCase
         if ($wrongCode === $realCode) $wrongCode = '111111';
 
         // Act
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'code' => $wrongCode,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $wrongCode,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert
-        $this->assertNotNull($response->json('errors'));
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(401);
     }
 
     /** @test */
@@ -774,35 +608,24 @@ class PasswordResetCompleteTest extends TestCase
         $code = Cache::get("password_reset_code:{$user->id}");
 
         // Act 1
-        $response1 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'code' => $code,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response1 = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
-        $this->assertTrue($response1->json('data.confirmPasswordReset.success'));
+        $this->assertTrue($response1->json('success'));
 
         // Act 2 - Intentar reutilizar
-        $response2 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'code' => $code,
-                'password' => 'AnotherPass456!',
-                'passwordConfirmation' => 'AnotherPass456!',
-            ],
+        $response2 = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code,
+            'password' => 'AnotherPass456!',
+            'passwordConfirmation' => 'AnotherPass456!',
         ]);
 
         // Assert
-        $this->assertNotNull($response2->json('errors'));
+        $this->assertFalse($response2->json('success'));
+        $response2->assertStatus(401);
     }
 
     // =========================================================================
@@ -820,24 +643,15 @@ class PasswordResetCompleteTest extends TestCase
         $code1 = Cache::get("password_reset_code:{$user1->id}");
 
         // Act - Usar código de user1 correctamente
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    user { id }
-                }
-            }
-        ', [
-            'input' => [
-                'code' => $code1,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code1,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert - Debe resetear user1 (dueño del código)
-        $this->assertTrue($response->json('data.confirmPasswordReset.success'));
-        $this->assertEquals($user1->id, $response->json('data.confirmPasswordReset.user.id'));
+        $this->assertTrue($response->json('success'));
+        $this->assertEquals($user1->id, $response->json('user.id'));
     }
 
     /** @test */
@@ -853,20 +667,14 @@ class PasswordResetCompleteTest extends TestCase
         $this->generateResetToken($user2);
 
         // Act - Usar solo código de user1
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'code' => $code1,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code1,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert - Debe resetear user1 (dueño del código)
-        $this->assertTrue($response->json('data.confirmPasswordReset.success'));
+        $this->assertTrue($response->json('success'));
     }
 
     /** @test */
@@ -883,37 +691,28 @@ class PasswordResetCompleteTest extends TestCase
         $code3 = Cache::get("password_reset_code:{$user3->id}");
 
         // Act - 3 resets diferentes
-        $r1 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    user { id }
-                }
-            }
-        ', ['input' => ['token' => $token1, 'password' => 'NewPass1!', 'passwordConfirmation' => 'NewPass1!']]);
+        $r1 = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token1,
+            'password' => 'NewPass1!',
+            'passwordConfirmation' => 'NewPass1!',
+        ]);
 
-        $r2 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    user { id }
-                }
-            }
-        ', ['input' => ['token' => $token2, 'password' => 'NewPass2!', 'passwordConfirmation' => 'NewPass2!']]);
+        $r2 = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token2,
+            'password' => 'NewPass2!',
+            'passwordConfirmation' => 'NewPass2!',
+        ]);
 
-        $r3 = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) {
-                    success
-                    user { id }
-                }
-            }
-        ', ['input' => ['code' => $code3, 'password' => 'NewPass3!', 'passwordConfirmation' => 'NewPass3!']]);
+        $r3 = $this->postJson('/api/auth/password-reset/confirm', [
+            'code' => $code3,
+            'password' => 'NewPass3!',
+            'passwordConfirmation' => 'NewPass3!',
+        ]);
 
         // Assert
-        $this->assertTrue($r1->json('data.confirmPasswordReset.success'));
-        $this->assertTrue($r2->json('data.confirmPasswordReset.success'));
-        $this->assertTrue($r3->json('data.confirmPasswordReset.success'));
+        $this->assertTrue($r1->json('success'));
+        $this->assertTrue($r2->json('success'));
+        $this->assertTrue($r3->json('success'));
     }
 
     /** @test */
@@ -925,21 +724,16 @@ class PasswordResetCompleteTest extends TestCase
         $code = Cache::get("password_reset_code:{$user->id}");
 
         // Act - Enviar ambos en el mismo request
-        $response = $this->graphQL('
-            mutation ConfirmReset($input: PasswordResetInput!) {
-                confirmPasswordReset(input: $input) { success }
-            }
-        ', [
-            'input' => [
-                'token' => $token,
-                'code' => $code,
-                'password' => 'NewPass123!',
-                'passwordConfirmation' => 'NewPass123!',
-            ],
+        $response = $this->postJson('/api/auth/password-reset/confirm', [
+            'token' => $token,
+            'code' => $code,
+            'password' => 'NewPass123!',
+            'passwordConfirmation' => 'NewPass123!',
         ]);
 
         // Assert - Debe rechazar
-        $this->assertNotNull($response->json('errors'));
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(400);
     }
 
     // =========================================================================
@@ -962,10 +756,9 @@ class PasswordResetCompleteTest extends TestCase
         $user = User::factory()->create(['email' => 'resettest@example.com']);
 
         // Act
-        $this->graphQL(
-            'mutation ResetPassword($email: Email!) { resetPassword(email: $email) }',
-            ['email' => 'resettest@example.com']
-        );
+        $this->postJson('/api/auth/password-reset', [
+            'email' => 'resettest@example.com'
+        ]);
 
         $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
         sleep(1);
@@ -994,18 +787,11 @@ class PasswordResetCompleteTest extends TestCase
         $token = $this->generateResetToken($user, expiresIn: -1);
 
         // Act
-        $response = $this->graphQL('
-            query CheckReset($token: String!) {
-                passwordResetStatus(token: $token) {
-                    isValid
-                    canReset
-                }
-            }
-        ', ['token' => $token]);
+        $response = $this->getJson("/api/auth/password-reset/status?token={$token}");
 
         // Assert
-        $this->assertFalse($response->json('data.passwordResetStatus.isValid'));
-        $this->assertFalse($response->json('data.passwordResetStatus.canReset'));
+        $this->assertFalse($response->json('isValid'));
+        $this->assertFalse($response->json('canReset'));
     }
 
     /** @test */
@@ -1018,19 +804,14 @@ class PasswordResetCompleteTest extends TestCase
         $invalidPasswords = ['short'];
 
         foreach ($invalidPasswords as $invalidPassword) {
-            $response = $this->graphQL('
-                mutation ConfirmReset($input: PasswordResetInput!) {
-                    confirmPasswordReset(input: $input) { success }
-                }
-            ', [
-                'input' => [
-                    'token' => $token,
-                    'password' => $invalidPassword,
-                    'passwordConfirmation' => $invalidPassword,
-                ],
+            $response = $this->postJson('/api/auth/password-reset/confirm', [
+                'token' => $token,
+                'password' => $invalidPassword,
+                'passwordConfirmation' => $invalidPassword,
             ]);
 
-            $this->assertNotNull($response->json('errors'));
+            $this->assertFalse($response->json('success'));
+            $response->assertStatus(422);
         }
     }
 

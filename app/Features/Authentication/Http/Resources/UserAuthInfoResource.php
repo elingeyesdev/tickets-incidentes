@@ -27,19 +27,19 @@ class UserAuthInfoResource extends JsonResource
             'email' => $this->email ?? null,
             'emailVerified' => (bool) ($this->email_verified ?? false),
             'onboardingCompleted' => (bool) ($this->onboarding_completed_at ?? false),
-            'status' => strtoupper($this->status ?? 'ACTIVE'),
+            'status' => strtoupper($this->status?->value ?? 'ACTIVE'),
             'displayName' => $this->getDisplayName(),
             'avatarUrl' => $this->getAvatarUrl(),
             'theme' => $this->getTheme(),
             'language' => $this->getLanguage(),
         ];
 
-        // Cargar roleContexts solo si la relación existe
-        if ($this->relationLoaded('userRoles')) {
-            $data['roleContexts'] = $this->getRoleContexts();
-        } else {
-            $data['roleContexts'] = [];
-        }
+        // Cargar relaciones necesarias si no están ya cargadas
+        $this->loadMissing(['userRoles', 'profile']);
+
+        // Ahora que sabemos que las relaciones están cargadas, podemos usarlas
+        $data['roleContexts'] = $this->getRoleContexts();
+
 
         return $data;
     }

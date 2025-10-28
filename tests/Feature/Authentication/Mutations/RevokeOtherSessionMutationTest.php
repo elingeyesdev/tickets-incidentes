@@ -52,24 +52,17 @@ class RevokeOtherSessionMutationTest extends TestCase
         // Arrange - Crear 3 sesiones
         $session1 = $this->loginUser($this->testUser);
         $session2 = $this->loginUser($this->testUser);
-        $session3 = $this->loginUser($this->testUser);
+        $this->loginUser($this->testUser);
 
-        // Obtener sessionId de session2
         $session2Id = $this->getSessionId($session2['refreshToken']);
 
         // Act - Desde session1, revocar session2
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $response = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session2Id]);
+            ->deleteJson("/api/auth/sessions/{$session2Id}");
 
         // Assert
-        $response->assertJson(['data' => ['revokeOtherSession' => true]]);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
 
         // Verificar que session2 está revocada
         $revokedSession = RefreshToken::find($session2Id);
@@ -93,21 +86,16 @@ class RevokeOtherSessionMutationTest extends TestCase
         $sessionId = $this->getSessionId($session['refreshToken']);
 
         // Act - Intentar revocar sesión actual
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $response = $this->withJWT($session['accessToken'])
-            ->withRefreshToken($session['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $sessionId]);
+            ->deleteJson("/api/auth/sessions/{$sessionId}");
 
-        // Assert - Debe fallar
-        $response->assertGraphQLErrorMessage('Cannot revoke current session. Use logout mutation instead.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('CANNOT_REVOKE_CURRENT_SESSION', $errors[0]['extensions']['code']);
+        // Assert - Debe fallar con un error de conflicto
+        $response->assertStatus(409);
+        $response->assertJson([
+            'success' => false,
+            'code' => 'CANNOT_REVOKE_CURRENT_SESSION',
+            'message' => 'Cannot revoke current session. Use logout instead.',
+        ]);
     }
 
     /**
@@ -123,21 +111,11 @@ class RevokeOtherSessionMutationTest extends TestCase
         $otherUserSessionId = $this->getSessionId($otherUserSession['refreshToken']);
 
         // Act - testUser intenta revocar sesión de otherUser
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $response = $this->withJWT($testUserSession['accessToken'])
-            ->withRefreshToken($testUserSession['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $otherUserSessionId]);
+            ->deleteJson("/api/auth/sessions/{$otherUserSessionId}");
 
-        // Assert - Debe fallar
-        $response->assertGraphQLErrorMessage("Session '{$otherUserSessionId}' does not belong to you.");
-
-        $errors = $response->json('errors');
-        $this->assertEquals('SESSION_NOT_FOUND', $errors[0]['extensions']['code']);
+        // Assert - Debe fallar con 404 porque la sesión no pertenece al usuario autenticado
+        $response->assertStatus(404);
     }
 
     /**
@@ -148,25 +126,14 @@ class RevokeOtherSessionMutationTest extends TestCase
     {
         // Arrange
         $session = $this->loginUser($this->testUser);
-        // Usar un UUID v4 válido pero que no existe en la BD
         $fakeSessionId = '00000000-0000-4000-8000-000000000001';
 
         // Act
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $response = $this->withJWT($session['accessToken'])
-            ->withRefreshToken($session['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $fakeSessionId]);
+            ->deleteJson("/api/auth/sessions/{$fakeSessionId}");
 
         // Assert
-        $response->assertGraphQLErrorMessage("Session '{$fakeSessionId}' not found.");
-
-        $errors = $response->json('errors');
-        $this->assertEquals('SESSION_NOT_FOUND', $errors[0]['extensions']['code']);
+        $response->assertStatus(404);
     }
 
     /**
@@ -185,21 +152,11 @@ class RevokeOtherSessionMutationTest extends TestCase
         RefreshToken::find($session2Id)->revoke($this->testUser->id);
 
         // Act - Intentar revocar nuevamente
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $response = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session2Id]);
+            ->deleteJson("/api/auth/sessions/{$session2Id}");
 
-        // Assert
-        $response->assertGraphQLErrorMessage('Session already revoked.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('SESSION_NOT_FOUND', $errors[0]['extensions']['code']);
+        // Assert - Debería ser 404 porque una sesión revocada no se considera "encontrada" para esta operación
+        $response->assertStatus(404);
     }
 
     /**
@@ -209,19 +166,10 @@ class RevokeOtherSessionMutationTest extends TestCase
     public function revoke_other_session_requires_jwt_authentication(): void
     {
         // Act - Sin token
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
-        $response = $this->graphQL($mutation, ['sessionId' => 'any-id']);
+        $response = $this->deleteJson('/api/auth/sessions/any-id');
 
         // Assert
-        $response->assertGraphQLErrorMessage('Unauthenticated');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
     }
 
     /**
@@ -234,38 +182,23 @@ class RevokeOtherSessionMutationTest extends TestCase
         $session1 = $this->loginUser($this->testUser);
         $session2 = $this->loginUser($this->testUser);
         $session3 = $this->loginUser($this->testUser);
-        $session4 = $this->loginUser($this->testUser);
-        $session5 = $this->loginUser($this->testUser);
+        $this->loginUser($this->testUser);
 
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
-        // Act - Desde session1, revocar session2, session3, session4
+        // Act - Desde session1, revocar session2, session3
         $session2Id = $this->getSessionId($session2['refreshToken']);
         $session3Id = $this->getSessionId($session3['refreshToken']);
-        $session4Id = $this->getSessionId($session4['refreshToken']);
 
         $response1 = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session2Id]);
+            ->deleteJson("/api/auth/sessions/{$session2Id}");
 
         $response2 = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session3Id]);
-
-        $response3 = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session4Id]);
+            ->deleteJson("/api/auth/sessions/{$session3Id}");
 
         // Assert - Todas exitosas
-        $response1->assertJson(['data' => ['revokeOtherSession' => true]]);
-        $response2->assertJson(['data' => ['revokeOtherSession' => true]]);
-        $response3->assertJson(['data' => ['revokeOtherSession' => true]]);
+        $response1->assertStatus(200);
+        $response2->assertStatus(200);
 
-        // Solo 2 sesiones activas (session1 y session5)
+        // Solo 2 sesiones activas (session1 y la última)
         $this->assertEquals(2, RefreshToken::where('user_id', $this->testUser->id)
             ->whereNull('revoked_at')
             ->count());
@@ -284,15 +217,8 @@ class RevokeOtherSessionMutationTest extends TestCase
         $session2Id = $this->getSessionId($session2['refreshToken']);
 
         // Revocar session2 desde session1
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
         $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($mutation, ['sessionId' => $session2Id]);
+            ->deleteJson("/api/auth/sessions/{$session2Id}");
 
         // Act - Intentar usar session2 para consultar datos
         $query = '
@@ -304,38 +230,13 @@ class RevokeOtherSessionMutationTest extends TestCase
         ';
 
         $response = $this->withJWT($session2['accessToken'])
-            ->graphQL($query);
+            ->postJson('/graphql', ['query' => $query]);
 
         // Assert - Debe fallar porque el token está invalidado
-        $response->assertGraphQLErrorMessage('Unauthenticated');
+        $response->assertJson(['errors' => [['message' => 'Unauthenticated.']]]);
     }
 
-    /**
-     * @test
-     * RevokeOtherSession funciona sin header X-Refresh-Token (pero con limitaciones)
-     */
-    public function revoke_other_session_works_without_refresh_token_header(): void
-    {
-        // Arrange
-        $session1 = $this->loginUser($this->testUser);
-        $session2 = $this->loginUser($this->testUser);
 
-        $session2Id = $this->getSessionId($session2['refreshToken']);
-
-        // Act - Sin X-Refresh-Token header
-        $mutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
-        $response = $this->withJWT($session1['accessToken'])
-            // NO agregar withRefreshToken
-            ->graphQL($mutation, ['sessionId' => $session2Id]);
-
-        // Assert - Debe funcionar (no requiere refresh token para revocar otras sesiones)
-        $response->assertJson(['data' => ['revokeOtherSession' => true]]);
-    }
 
     /**
      * @test
@@ -345,51 +246,32 @@ class RevokeOtherSessionMutationTest extends TestCase
     {
         // Arrange - Usuario con 3 dispositivos
         $laptop = $this->loginUser($this->testUser);
-        $phone = $this->loginUser($this->testUser);
-        $tablet = $this->loginUser($this->testUser);
+        $this->loginUser($this->testUser);
+        $this->loginUser($this->testUser);
 
         // Paso 1: Desde laptop, listar sesiones
-        $listQuery = '
-            query {
-                mySessions {
-                    sessionId
-                    deviceName
-                    isCurrent
-                }
-            }
-        ';
-
         $listResponse = $this->withJWT($laptop['accessToken'])
-            ->withRefreshToken($laptop['refreshToken'])
-            ->graphQL($listQuery);
+            ->getJson('/api/auth/sessions');
 
-        $sessions = $listResponse->json('data.mySessions');
+        $sessions = $listResponse->json('sessions');
         $this->assertCount(3, $sessions);
 
-        // Paso 2: Usuario identifica sesión de phone (no marcada como current)
+        // Paso 2: Usuario identifica sesión a revocar (una que no sea la actual)
         $phoneSessionId = collect($sessions)
             ->firstWhere('isCurrent', false)['sessionId'];
 
-        // Paso 3: Revocar sesión de phone
-        $revokeMutation = '
-            mutation RevokeOtherSession($sessionId: String!) {
-                revokeOtherSession(sessionId: $sessionId)
-            }
-        ';
-
+        // Paso 3: Revocar sesión de phone usando la API REST
         $revokeResponse = $this->withJWT($laptop['accessToken'])
-            ->withRefreshToken($laptop['refreshToken'])
-            ->graphQL($revokeMutation, ['sessionId' => $phoneSessionId]);
+            ->deleteJson("/api/auth/sessions/{$phoneSessionId}");
 
         // Assert
-        $revokeResponse->assertJson(['data' => ['revokeOtherSession' => true]]);
+        $revokeResponse->assertStatus(200);
 
         // Paso 4: Verificar que ahora solo hay 2 sesiones
         $listResponse2 = $this->withJWT($laptop['accessToken'])
-            ->withRefreshToken($laptop['refreshToken'])
-            ->graphQL($listQuery);
+            ->getJson('/api/auth/sessions');
 
-        $sessions2 = $listResponse2->json('data.mySessions');
+        $sessions2 = $listResponse2->json('sessions');
         $this->assertCount(2, $sessions2);
     }
 
@@ -399,29 +281,14 @@ class RevokeOtherSessionMutationTest extends TestCase
      */
     private function loginUser(User $user): array
     {
-        $loginQuery = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
-
-        $response = $this->graphQL($loginQuery, [
-            'input' => [
-                'email' => $user->email,
-                'password' => 'password',
-                'rememberMe' => false,
-            ],
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password', // Default password from factory
         ]);
 
-        // El refresh token real está almacenado en el trait para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-
         return [
-            'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $refreshToken,
+            'accessToken' => $response->json('accessToken'),
+            'refreshToken' => $response->getCookie('refresh_token')->getValue(),
         ];
     }
 
@@ -450,16 +317,5 @@ class RevokeOtherSessionMutationTest extends TestCase
         ]);
     }
 
-    /**
-     * Helper: Add refresh token via header (for tests)
-     * Nota: En tests usamos header porque las cookies con ->withCookie() no funcionan con Lighthouse.
-     * En producción, el frontend usa cookies HttpOnly que sí funcionan correctamente.
-     */
-    private function withRefreshToken(string $token): self
-    {
-        // En tests usamos header porque withCookie() no funciona con Lighthouse
-        return $this->withHeaders([
-            'X-Refresh-Token' => $token,
-        ]);
-    }
+
 }

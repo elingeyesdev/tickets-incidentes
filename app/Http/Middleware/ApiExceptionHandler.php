@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
@@ -13,29 +13,30 @@ use App\Shared\Exceptions\AuthorizationException;
 use App\Shared\Exceptions\NotFoundException;
 use App\Shared\Exceptions\ConflictException;
 use App\Shared\Exceptions\RateLimitExceededException;
-use App\Shared\GraphQL\Errors\EnvironmentErrorFormatter;
+use App\Shared\Errors\ErrorCodeRegistry;
 use Illuminate\Database\QueryException;
 
 /**
  * Middleware para Manejo de Excepciones en API REST
  *
- * Convierte todas las excepciones (HelpdeskException y otras) en respuestas JSON
- * con códigos HTTP apropiados y diferenciación DEV/PROD.
+ * Convierte todas las excepciones en respuestas JSON con:
+ * - Códigos de error consistentes (ErrorCodeRegistry)
+ * - HTTP status codes apropiados
+ * - Diferenciación automática DEV/PROD
  *
- * FLUJO:
- * 1. Captura excepción
- * 2. Determina HTTP status code
- * 3. Formatea respuesta JSON
- * 4. Aplica EnvironmentErrorFormatter (DEV/PROD)
- * 5. Retorna respuesta JSON
+ * ARQUITECTURA:
+ * - Usa ErrorCodeRegistry (agnóstico, compartido con GraphQL)
+ * - Excepciones pueden ser HelpdeskException o Laravel ValidationException
+ * - Respuestas incluyen: success, message, code, category, errors (si aplica)
+ * - En DEV: stacktrace + file/line. En PROD: solo timestamp
+ *
+ * MIGRACIÓN FUTURA:
+ * Cuando se elimine GraphQL, ErrorCodeRegistry en app/Shared/Errors/ se queda
+ * porque los códigos son del negocio, no de la implementación.
  */
 class ApiExceptionHandler
 {
-    /**
-     * Mapa de excepciones a códigos HTTP
-     *
-     * Estas excepciones se convierten automáticamente a los códigos indicados
-     */
+    // Mapa de excepciones (mantenido para compatibilidad, pero se reemplaza por ErrorCodeRegistry)
     protected array $statusCodes = [
         ValidationException::class => 422,
         AuthenticationException::class => 401,
@@ -80,8 +81,9 @@ class ApiExceptionHandler
     {
         $response = [
             'success' => false,
-            'message' => 'Errores de validación.',
-            'code' => 'VALIDATION_ERROR',
+            'message' => 'Validation failed.',
+            'code' => ErrorCodeRegistry::VALIDATION_ERROR,
+            'category' => ErrorCodeRegistry::getCategory(ErrorCodeRegistry::VALIDATION_ERROR),
             'errors' => $e->errors(),
         ];
 
@@ -92,27 +94,28 @@ class ApiExceptionHandler
      * Manejar excepción de Helpdesk
      *
      * Convierte a HTTP status code y aplica formateo DEV/PROD
+     * Usa ErrorCodeRegistry para códigos consistentes
      */
     protected function handleHelpdeskException(HelpdeskException $e): \Illuminate\Http\JsonResponse
     {
-        // Determinar status code
-        $statusCode = $this->getStatusCodeFor($e);
+        // Obtener el código de error (HelpdeskException debe tenerlo)
+        $errorCode = $e->getErrorCode();
+
+        // Determinar status code basado en ErrorCodeRegistry
+        $statusCode = ErrorCodeRegistry::getSuggestedHttpStatus($errorCode);
+        $category = ErrorCodeRegistry::getCategory($errorCode);
 
         // Construir respuesta base
         $response = [
             'success' => false,
             'message' => $e->getMessage(),
-            'code' => $e->getErrorCode(),
+            'code' => $errorCode,
+            'category' => $category,
         ];
 
-        // Si la excepción tiene errores de validación, incluirlos
-        if (method_exists($e, 'getErrors')) {
-            $response['errors'] = $e->getErrors();
-        }
-
-        // Agregar información adicional según la excepción
-        if (method_exists($e, 'getCategory')) {
-            $response['category'] = $e->getCategory();
+        // Si la excepción tiene errores de validación (ValidationException), incluirlos
+        if (method_exists($e, 'getErrors') && ($errors = $e->getErrors())) {
+            $response['errors'] = $errors;
         }
 
         // En DESARROLLO, agregar información de debugging
@@ -125,15 +128,15 @@ class ApiExceptionHandler
                 'trace' => $this->formatStackTrace($e),
             ];
         } else {
-            // En PRODUCCIÓN, agregar solo timestamp
+            // En PRODUCCIÓN, agregar solo timestamp para auditoría
             $response['timestamp'] = now()->toIso8601String();
         }
 
         // Log en PRODUCCIÓN
         if (!app()->isLocal()) {
             \Log::error('API Exception: ' . $e->getMessage(), [
-                'code' => $e->getErrorCode(),
-                'category' => $e->getCategory() ?? 'unknown',
+                'code' => $errorCode,
+                'category' => $category,
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
@@ -147,28 +150,37 @@ class ApiExceptionHandler
      */
     protected function handleDatabaseException(QueryException $e): \Illuminate\Http\JsonResponse
     {
+        $code = ErrorCodeRegistry::DATABASE_ERROR;
+        $category = ErrorCodeRegistry::getCategory($code);
+
         if (app()->isLocal()) {
             $response = [
                 'success' => false,
-                'message' => 'Error de base de datos.',
-                'code' => 'DATABASE_ERROR',
+                'message' => 'Database error occurred.',
+                'code' => $code,
+                'category' => $category,
                 'debug' => [
                     'error' => $e->getMessage(),
                     'sql' => $e->getSql(),
                     'bindings' => $e->getBindings(),
+                    'timestamp' => now()->toIso8601String(),
+                    'environment' => app()->environment(),
                 ],
             ];
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Error interno del servidor.',
-                'code' => 'INTERNAL_SERVER_ERROR',
+                'message' => 'Internal server error.',
+                'code' => ErrorCodeRegistry::INTERNAL_SERVER_ERROR,
+                'category' => ErrorCodeRegistry::getCategory(ErrorCodeRegistry::INTERNAL_SERVER_ERROR),
                 'timestamp' => now()->toIso8601String(),
             ];
 
             \Log::error('Database Exception: ' . $e->getMessage(), [
                 'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
         }
 
@@ -180,11 +192,15 @@ class ApiExceptionHandler
      */
     protected function handleGenericException(Throwable $e): \Illuminate\Http\JsonResponse
     {
+        $code = ErrorCodeRegistry::INTERNAL_SERVER_ERROR;
+        $category = ErrorCodeRegistry::getCategory($code);
+
         if (app()->isLocal()) {
             $response = [
                 'success' => false,
                 'message' => $e->getMessage(),
-                'code' => 'INTERNAL_SERVER_ERROR',
+                'code' => $code,
+                'category' => $category,
                 'debug' => [
                     'timestamp' => now()->toIso8601String(),
                     'environment' => app()->environment(),
@@ -196,8 +212,9 @@ class ApiExceptionHandler
         } else {
             $response = [
                 'success' => false,
-                'message' => 'Error interno del servidor.',
-                'code' => 'INTERNAL_SERVER_ERROR',
+                'message' => 'Internal server error.',
+                'code' => $code,
+                'category' => $category,
                 'timestamp' => now()->toIso8601String(),
             ];
 

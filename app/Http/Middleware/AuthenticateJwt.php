@@ -47,6 +47,10 @@ class AuthenticateJwt
 
             // Establecer en auth() helper
             auth()->setUser($user);
+        } catch (\App\Features\Authentication\Exceptions\TokenExpiredException $e) {
+            throw \App\Shared\Exceptions\AuthenticationException::tokenExpired();
+        } catch (\App\Features\Authentication\Exceptions\TokenInvalidException $e) {
+            throw \App\Shared\Exceptions\AuthenticationException::tokenInvalid();
         } catch (\Exception $e) {
             throw new AuthenticationException($e->getMessage());
         }

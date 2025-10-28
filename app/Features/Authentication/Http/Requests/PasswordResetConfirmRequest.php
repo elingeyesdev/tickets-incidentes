@@ -27,12 +27,12 @@ class PasswordResetConfirmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => 'nullable|string|size:32|required_without:code',
-            'code' => 'nullable|string|regex:/^\d{6}$/|required_without:token',
+            'token' => 'nullable|string|required_without:code',  // NO validar size:32 (dejar al controlador)
+            'code' => 'nullable|string|required_without:token',  // NO validar regex (dejar al controlador)
             'password' => [
                 'required',
                 'min:8',
-                'confirmed',
+                'same:passwordConfirmation',  // Usa camelCase (no 'confirmed' que espera snake_case)
                 Password::min(8)
                     ->letters()
                     ->numbers()
