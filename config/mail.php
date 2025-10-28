@@ -79,6 +79,17 @@ return [
             'transport' => 'array',
         ],
 
+        'mailpit' => [
+            'transport' => 'smtp',
+            'scheme' => env('MAIL_SCHEME'),
+            'host' => env('MAIL_HOST', 'mailpit'),
+            'port' => env('MAIL_PORT', 1025),
+            'username' => null,
+            'password' => null,
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
