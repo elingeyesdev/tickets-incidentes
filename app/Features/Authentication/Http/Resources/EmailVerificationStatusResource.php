@@ -19,12 +19,16 @@ class EmailVerificationStatusResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'isVerified' => $this['isVerified'] ?? false,
+            'isVerified' => $this['is_verified'] ?? false,
             'email' => $this['email'] ?? null,
-            'verificationSentAt' => $this['verificationSentAt']?->toIso8601String(),
-            'canResend' => $this['canResend'] ?? true,
-            'resendAvailableAt' => $this['resendAvailableAt']?->toIso8601String(),
-            'attemptsRemaining' => $this['attemptsRemaining'] ?? 5,
+            'verificationSentAt' => isset($this['verified_at']) && $this['verified_at']
+                ? $this['verified_at']->toIso8601String()
+                : null,
+            'canResend' => $this['can_resend'] ?? true,
+            'resendAvailableAt' => isset($this['resend_available_at']) && $this['resend_available_at']
+                ? $this['resend_available_at']->toIso8601String()
+                : null,
+            'attemptsRemaining' => $this['attempts_remaining'] ?? 5,
         ];
     }
 }

@@ -23,9 +23,13 @@ class SessionInfoResource extends JsonResource
             'deviceName' => $this->device_name,
             'ipAddress' => $this->ip_address,
             'userAgent' => $this->user_agent,
-            'lastUsedAt' => $this->last_used_at?->toIso8601String(),
-            'expiresAt' => $this->expires_at?->toIso8601String(),
-            'isCurrent' => $this->isCurrent ?? false,
+            'lastUsedAt' => $this->last_used_at
+                ? $this->last_used_at->toIso8601String()
+                : null,
+            'expiresAt' => $this->expires_at
+                ? $this->expires_at->toIso8601String()
+                : null,
+            'isCurrent' => $this->isCurrent ?? $this->is_current ?? false,
         ];
     }
 }

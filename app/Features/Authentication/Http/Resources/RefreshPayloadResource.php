@@ -19,10 +19,10 @@ class RefreshPayloadResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'accessToken' => $this['accessToken'],
+            'accessToken' => $this['access_token'],
             'refreshToken' => 'New token set in httpOnly cookie',
-            'tokenType' => $this['tokenType'] ?? 'Bearer',
-            'expiresIn' => $this['expiresIn'] ?? 2592000, // 30 days
+            'tokenType' => $this['token_type'] ?? 'Bearer',
+            'expiresIn' => $this['expires_in'] ?? 2592000, // 30 days
         ];
     }
 }

@@ -3,12 +3,14 @@
 namespace App\Features\Authentication\Http\Controllers;
 
 use App\Features\Authentication\Http\Resources\SessionInfoResource;
+use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
 use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Exceptions\AuthorizationException;
 use App\Shared\Exceptions\CannotRevokeCurrentSessionException;
 use App\Shared\Exceptions\NotFoundException;
+use App\Shared\Exceptions\TokenInvalidException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -58,7 +60,8 @@ class SessionController
             }
 
             // Obtener todas las sesiones activas del usuario
-            $sessions = $user->refreshTokens()
+            $sessions = RefreshToken::query()
+                ->where('user_id', $user->id)
                 ->whereNull('revoked_at')
                 ->where('expires_at', '>', now())
                 ->orderByDesc('last_used_at')
@@ -129,11 +132,17 @@ class SessionController
                 $this->authService->logoutAllDevices($user->id);
             } else {
                 // Logout solo de la sesión actual
-                $accessToken = str_replace('Bearer ', '', $request->header('Authorization', ''));
+                $authHeader = $request->header('Authorization', '');
+                $accessToken = $authHeader ? str_replace('Bearer ', '', $authHeader) : '';
                 $refreshToken = $request->header('X-Refresh-Token')
                     ?? $request->cookie('refresh_token');
 
-                $this->authService->logout($accessToken, $refreshToken ?? '', $user->id);
+                if ($accessToken && $refreshToken) {
+                    $this->authService->logout($accessToken, $refreshToken, $user->id);
+                } else {
+                    // Si falta alguno, logout de todas las sesiones
+                    $this->authService->logoutAllDevices($user->id);
+                }
             }
 
             return response()
@@ -196,7 +205,12 @@ class SessionController
             }
 
             // Obtener token actual del header o cookie
-            $accessToken = str_replace('Bearer ', '', $request->header('Authorization', ''));
+            $authHeader = $request->header('Authorization', '');
+            if (!$authHeader) {
+                throw new AuthenticationException('Missing Authorization header');
+            }
+
+            $accessToken = str_replace('Bearer ', '', $authHeader);
             $tokenPayload = $this->tokenService->validateAccessToken($accessToken);
             $currentSessionId = $tokenPayload['session_id'];
 
@@ -207,8 +221,9 @@ class SessionController
                 );
             }
 
-            // Obtener la sesión
-            $session = $user->refreshTokens()
+            // Obtener la sesión usando query directa
+            $session = RefreshToken::query()
+                ->where('user_id', $user->id)
                 ->where('id', $sessionId)
                 ->first();
 
@@ -216,15 +231,11 @@ class SessionController
                 throw new NotFoundException('Session not found');
             }
 
-            // Verificar que pertenece al usuario
-            if ($session->user_id !== $user->id) {
-                throw new AuthorizationException('Not authorized to revoke this session');
-            }
+            // Revocar la sesión usando el método del model
+            $session->revoke('manual_revocation');
 
-            // Revocar la sesión
+            // También añadir a blacklist para mayor seguridad
             $this->tokenService->blacklistToken($sessionId);
-            $session->revoked_at = now();
-            $session->save();
 
             return response()->json([
                 'success' => true,

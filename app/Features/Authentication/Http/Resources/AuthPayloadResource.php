@@ -19,13 +19,15 @@ class AuthPayloadResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'accessToken' => $this['accessToken'],
+            'accessToken' => $this['access_token'],
             'refreshToken' => 'Refresh token set in httpOnly cookie',
-            'tokenType' => $this['tokenType'] ?? 'Bearer',
-            'expiresIn' => $this['expiresIn'] ?? 2592000, // 30 days
+            'tokenType' => $this['token_type'] ?? 'Bearer',
+            'expiresIn' => $this['expires_in'] ?? 2592000, // 30 days
             'user' => new UserAuthInfoResource($this['user']),
-            'sessionId' => $this['sessionId'],
-            'loginTimestamp' => $this['loginTimestamp']?->toIso8601String() ?? now()->toIso8601String(),
+            'sessionId' => $this['session_id'] ?? null,
+            'loginTimestamp' => isset($this['login_timestamp'])
+                ? $this['login_timestamp']->toIso8601String()
+                : now()->toIso8601String(),
         ];
     }
 }

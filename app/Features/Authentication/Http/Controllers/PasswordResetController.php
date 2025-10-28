@@ -66,7 +66,7 @@ class PasswordResetController
             // Solicitar reset - siempre retorna true
             $this->passwordResetService->requestReset($email);
 
-            // Retornar success=true incluso si email no existe
+            // Retornar success=true incluso si email no existe (por seguridad)
             return response()->json([
                 'success' => true,
                 'message' => 'Si el email existe en nuestro sistema, recibirás un enlace para resetear tu contraseña.',
@@ -116,7 +116,7 @@ class PasswordResetController
             $token = $request->input('token');
             $code = $request->input('code');
             $password = $request->input('password');
-            $deviceInfo = DeviceInfoParser::parse($request);
+            $deviceInfo = DeviceInfoParser::fromRequest($request);
 
             // Usar token o code
             if ($token) {
@@ -137,7 +137,7 @@ class PasswordResetController
                 ->json(new PasswordResetResultResource($result), 200)
                 ->cookie(
                     'refresh_token',
-                    $result['refreshToken'],
+                    $result['refresh_token'],
                     minutes: 43200,
                     path: '/',
                     domain: null,

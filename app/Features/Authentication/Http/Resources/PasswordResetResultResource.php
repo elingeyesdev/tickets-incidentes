@@ -22,10 +22,10 @@ class PasswordResetResultResource extends JsonResource
         return [
             'success' => $this['success'] ?? true,
             'message' => $this['message'] ?? 'Contraseña reseteada correctamente. Sesión iniciada automáticamente.',
-            'accessToken' => $this['accessToken'],
+            'accessToken' => $this['access_token'],
             'refreshToken' => 'Token set in httpOnly cookie',
-            'tokenType' => $this['tokenType'] ?? 'Bearer',
-            'expiresIn' => $this['expiresIn'] ?? 2592000,
+            'tokenType' => $this['token_type'] ?? 'Bearer',
+            'expiresIn' => $this['expires_in'] ?? 2592000,
             'user' => new UserAuthInfoResource($this['user']),
         ];
     }

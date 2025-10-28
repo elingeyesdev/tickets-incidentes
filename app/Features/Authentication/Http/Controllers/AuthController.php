@@ -8,12 +8,14 @@ use App\Features\Authentication\Http\Requests\GoogleLoginRequest;
 use App\Features\Authentication\Http\Resources\AuthPayloadResource;
 use App\Features\Authentication\Http\Resources\AuthStatusResource;
 use App\Features\Authentication\Http\Resources\RefreshPayloadResource;
+use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
 use App\Shared\Utilities\DeviceInfoParser;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 
 /**
@@ -71,20 +73,22 @@ class AuthController
     {
         try {
             // Extraer device info del contexto HTTP
-            $deviceInfo = DeviceInfoParser::parse($request);
+            $deviceInfo = DeviceInfoParser::fromRequest($request);
+
+            // Transformar camelCase a snake_case para el servicio
+            $data = collect($request->validated())
+                ->mapKeys(fn($value, $key) => Str::snake($key))
+                ->all();
 
             // Delegar al servicio
-            $payload = $this->authService->register(
-                $request->validated(),
-                $deviceInfo
-            );
+            $payload = $this->authService->register($data, $deviceInfo);
 
-            // Usar SetsRefreshTokenCookie trait functionality
+            // Retornar con refresh token en cookie
             return response()
                 ->json(new AuthPayloadResource($payload), 201)
                 ->cookie(
                     'refresh_token',
-                    $payload['refreshToken'],
+                    $payload['refresh_token'],
                     minutes: 43200, // 30 días
                     path: '/',
                     domain: null,
@@ -133,7 +137,7 @@ class AuthController
     public function login(LoginRequest $request): JsonResponse
     {
         try {
-            $deviceInfo = DeviceInfoParser::parse($request);
+            $deviceInfo = DeviceInfoParser::fromRequest($request);
 
             $payload = $this->authService->login(
                 $request->input('email'),
@@ -145,7 +149,7 @@ class AuthController
                 ->json(new AuthPayloadResource($payload), 200)
                 ->cookie(
                     'refresh_token',
-                    $payload['refreshToken'],
+                    $payload['refresh_token'],
                     minutes: 43200,
                     path: '/',
                     domain: null,
@@ -235,7 +239,7 @@ class AuthController
                 throw new AuthenticationException('Refresh token required');
             }
 
-            $deviceInfo = DeviceInfoParser::parse($request);
+            $deviceInfo = DeviceInfoParser::fromRequest($request);
 
             $payload = $this->authService->refreshToken($refreshToken, $deviceInfo);
 
@@ -243,7 +247,7 @@ class AuthController
                 ->json(new RefreshPayloadResource($payload), 200)
                 ->cookie(
                     'refresh_token',
-                    $payload['refreshToken'],
+                    $payload['refresh_token'],
                     minutes: 43200,
                     path: '/',
                     domain: null,
@@ -286,18 +290,24 @@ class AuthController
             }
 
             // Obtener token del header
-            $token = str_replace('Bearer ', '', $request->header('Authorization', ''));
+            $authHeader = $request->header('Authorization', '');
+            if (!$authHeader) {
+                throw new AuthenticationException('Missing Authorization header');
+            }
+
+            $token = str_replace('Bearer ', '', $authHeader);
 
             // Validar token y obtener payload
             $tokenPayload = $this->tokenService->validateAccessToken($token);
 
-            // Obtener sesión actual
-            $currentSession = $user->refreshTokens()
+            // Obtener sesión actual usando query directa
+            $currentSession = RefreshToken::query()
+                ->where('user_id', $user->id)
                 ->where('id', $tokenPayload['session_id'])
                 ->first();
 
             // Cargar relaciones necesarias
-            $user->load(['profile', 'roleContexts']);
+            $user->load(['profile', 'userRoles']);
 
             $status = [
                 'isAuthenticated' => true,

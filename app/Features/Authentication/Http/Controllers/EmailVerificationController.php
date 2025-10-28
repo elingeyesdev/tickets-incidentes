@@ -7,6 +7,7 @@ use App\Features\Authentication\Http\Resources\EmailVerificationStatusResource;
 use App\Features\Authentication\Http\Resources\EmailVerificationResultResource;
 use App\Features\Authentication\Services\AuthService;
 use App\Shared\Exceptions\AuthenticationException;
+use App\Shared\Exceptions\TokenInvalidException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -69,11 +70,19 @@ class EmailVerificationController
                 'success' => true,
                 'message' => 'Email verificado correctamente.',
             ], 200);
-        } catch (AuthenticationException $e) {
+        } catch (TokenInvalidException $e) {
             // Token inválido o expirado - retornar error pero con 200
             return response()->json([
                 'success' => false,
                 'message' => 'El token de verificación es inválido o ha expirado.',
+                'canResend' => true,
+                'resendAvailableAt' => null,
+            ], 200);
+        } catch (AuthenticationException $e) {
+            // Otros errores de autenticación
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
                 'canResend' => true,
                 'resendAvailableAt' => null,
             ], 200);

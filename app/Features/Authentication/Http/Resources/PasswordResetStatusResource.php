@@ -19,11 +19,13 @@ class PasswordResetStatusResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'isValid' => $this['isValid'] ?? true,
-            'canReset' => $this['canReset'] ?? true,
+            'isValid' => $this['is_valid'] ?? true,
+            'canReset' => $this['can_reset'] ?? true,
             'email' => $this['email'] ?? null,
-            'expiresAt' => $this['expiresAt']?->toIso8601String(),
-            'attemptsRemaining' => $this['attemptsRemaining'] ?? 3,
+            'expiresAt' => isset($this['expires_at']) && $this['expires_at']
+                ? $this['expires_at']->toIso8601String()
+                : null,
+            'attemptsRemaining' => $this['attempts_remaining'] ?? 3,
         ];
     }
 }

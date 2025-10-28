@@ -20,10 +20,10 @@ class RoleContextResource extends JsonResource
     {
         return [
             'roleId' => $this->role_id,
-            'roleCode' => $this->role?->role_code,
-            'roleName' => $this->role?->name,
+            'roleCode' => $this->role?->role_code ?? null,
+            'roleName' => $this->role?->name ?? null,
             'companyId' => $this->company_id,
-            'companyCode' => $this->company?->company_code,
+            'companyCode' => $this->company?->company_code ?? null,
         ];
     }
 }

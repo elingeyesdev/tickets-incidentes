@@ -22,7 +22,9 @@ class AuthStatusResource extends JsonResource
         return [
             'isAuthenticated' => $this['isAuthenticated'] ?? true,
             'user' => new UserAuthInfoResource($this['user']),
-            'currentSession' => new SessionInfoResource($this['currentSession']),
+            'currentSession' => $this['currentSession']
+                ? new SessionInfoResource($this['currentSession'])
+                : null,
             'tokenInfo' => [
                 'expiresIn' => $this['tokenInfo']['expiresIn'] ?? 2592000,
                 'issuedAt' => $this['tokenInfo']['issuedAt'] ?? now()->toIso8601String(),
