@@ -47,10 +47,9 @@ fi
 echo "🗄️  Running database migrations..."
 php artisan migrate --force
 
-# --- 5.1. Seed default user ---
-echo "👤 Seeding default user..."
+# --- 5.1. Seed database (roles + default user) ---
+echo "🌱 Seeding database..."
 php artisan db:seed --class="Database\\Seeders\\DatabaseSeeder" || true
-php artisan db:seed --class="App\\Features\\UserManagement\\Database\\Seeders\\DefaultUserSeeder" || true
 
 # --- 6. Clear and optimize cache ---
 echo "🧹 Clearing and optimizing cache..."
