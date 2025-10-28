@@ -249,8 +249,8 @@ class RevokeOtherSessionMutationTest extends TestCase
         $this->loginUser($this->testUser);
         $this->loginUser($this->testUser);
 
-        // Paso 1: Desde laptop, listar sesiones
-        $listResponse = $this->withJWT($laptop['accessToken'])
+        // Paso 1: Desde laptop, listar sesiones (pasa refresh token para identificar la sesión actual)
+        $listResponse = $this->withJWT($laptop['accessToken'], $laptop['refreshToken'])
             ->getJson('/api/auth/sessions');
 
         $sessions = $listResponse->json('sessions');
@@ -261,16 +261,16 @@ class RevokeOtherSessionMutationTest extends TestCase
             ->firstWhere('isCurrent', false)['sessionId'];
 
         // Paso 3: Revocar sesión de phone usando la API REST
-        $revokeResponse = $this->withJWT($laptop['accessToken'])
+        $revokeResponse = $this->withJWT($laptop['accessToken'], $laptop['refreshToken'])
             ->deleteJson("/api/auth/sessions/{$phoneSessionId}");
 
-        // Assert
         $revokeResponse->assertStatus(200);
 
         // Paso 4: Verificar que ahora solo hay 2 sesiones
-        $listResponse2 = $this->withJWT($laptop['accessToken'])
+        $listResponse2 = $this->withJWT($laptop['accessToken'], $laptop['refreshToken'])
             ->getJson('/api/auth/sessions');
 
+        $listResponse2->assertStatus(200);
         $sessions2 = $listResponse2->json('sessions');
         $this->assertCount(2, $sessions2);
     }
