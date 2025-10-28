@@ -9,8 +9,12 @@ use Nuwave\Lighthouse\Execution\ErrorHandler;
 
 final class RateLimitExceededErrorHandler implements ErrorHandler
 {
-    public function handle(Error $error, Closure $next): Error
+    public function __invoke(?Error $error, Closure $next): ?array
     {
+        if ($error === null) {
+            return $next($error);
+        }
+
         $previous = $error->getPrevious();
 
         if ($previous instanceof RateLimitExceededException) {
@@ -20,12 +24,5 @@ final class RateLimitExceededErrorHandler implements ErrorHandler
         }
 
         return $next($error);
-        public function __invoke(?Error $error, Closure $next): ?array
-        {
-            if ($error === null) {
-                return null;
-            }
-    
-            return $this->handle($error, $next)->toSerializableArray();
-        }
     }
+}

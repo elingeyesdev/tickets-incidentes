@@ -81,10 +81,13 @@ class AuthController
             // 3. Delegar al servicio (TODA la lógica de negocio está aquí)
             $payload = $this->authService->register($input, $deviceInfo);
 
-            // 4. Retornar con refresh token en cookie
+            // 4. Retornar con refresh token en cookie (201 Created)
             return response()
-                ->json(['data' => new AuthPayloadResource($payload)], 200)
+                ->json(new AuthPayloadResource($payload), 201)
                 ->cookie(
+                    'refresh_token',
+                    $payload['refresh_token'],
+                    43200, // minutes
                     '/', // path
                     null, // domain
                     !app()->isLocal(), // secure

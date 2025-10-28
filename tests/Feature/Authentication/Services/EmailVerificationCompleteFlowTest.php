@@ -47,11 +47,11 @@ class EmailVerificationCompleteFlowTest extends TestCase
             'acceptsPrivacyPolicy' => true,
         ]);
 
-        $accessToken = $registerResponse->json('data.accessToken');
-        $userId = $registerResponse->json('data.user.id');
+        $accessToken = $registerResponse->json('accessToken');
+        $userId = $registerResponse->json('user.id');
 
         // Verificar que el usuario NO está verificado
-        $this->assertFalse($registerResponse->json('data.user.emailVerified'));
+        $this->assertFalse($registerResponse->json('user.emailVerified'));
 
         // =====================================================
         // PASO 2: VERIFICAR ESTADO (NO VERIFICADO) - REST
@@ -330,7 +330,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
             'acceptsPrivacyPolicy' => true,
         ]);
 
-        $registerResponse->assertStatus(200);
+        $registerResponse->assertStatus(201);
 
         // Process queued jobs (Redis queue)
         $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
