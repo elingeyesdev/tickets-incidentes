@@ -74,7 +74,7 @@ GRAPHQL;
             // Verificar si hubo error en la validación del token (middleware)
             $jwtError = $request->attributes->get('jwt_error');
             if ($jwtError) {
-                throw new \Exception("JWT Error Found: " . $jwtError);
+                throw AuthenticationException::unauthenticated();
             }
 
             // Obtener user_id del token validado
