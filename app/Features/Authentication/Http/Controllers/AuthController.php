@@ -41,7 +41,7 @@ class AuthController
      * Automáticamente crea una sesión y retorna tokens.
      *
      * @authenticated false
-     * @response 201 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
+     * @response 200 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
      */
     #[OA\Post(
         path: '/api/auth/register',
@@ -64,7 +64,7 @@ class AuthController
             )
         ),
         responses: [
-            new OA\Response(response: 201, description: 'User created successfully'),
+            new OA\Response(response: 200, description: 'User created successfully'),
             new OA\Response(response: 422, description: 'Validation error'),
             new OA\Response(response: 409, description: 'Email already exists'),
         ]
@@ -83,11 +83,8 @@ class AuthController
 
             // 4. Retornar con refresh token en cookie
             return response()
-                ->json(new AuthPayloadResource($payload), 201)
+                ->json(['data' => new AuthPayloadResource($payload)], 200)
                 ->cookie(
-                    'refresh_token',
-                    $payload['refresh_token'],
-                    43200, // minutes: 30 días
                     '/', // path
                     null, // domain
                     !app()->isLocal(), // secure

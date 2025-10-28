@@ -163,6 +163,12 @@ trait JWTAuthenticationTrait
 
         // CRITICAL: Also inject into request for compatibility
         $request->merge(['_authenticated_user_id' => $user->id]);
+
+        // CRITICAL: Set user resolver so $request->user() works
+        $request->setUserResolver(fn() => $user);
+
+        // CRITICAL: Also set in auth() helper for compatibility
+        auth()->setUser($user);
     }
 
     /**

@@ -31,8 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware aliases para autenticación
         $middleware->alias([
             'web.auth' => \App\Http\Middleware\JWT\WebAuthenticationMiddleware::class,
-            'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,
-            'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication
+            'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,           // ← Autenticación OPCIONAL
+            'jwt.require' => \App\Http\Middleware\JWT\RequireJWTAuthentication::class,        // ← Autenticación OBLIGATORIA
+            'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -47,16 +47,16 @@ Route::prefix('auth')->group(function () {
 
     // ========== Email (Público) ==========
     Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('auth.email.verify');
-    Route::get('/email/status', [EmailVerificationController::class, 'status'])->name('auth.email.status');
 
-    // ========== Rutas Autenticadas (Requieren JWT) ==========
-    Route::middleware('auth:api')->group(function () {
+    // ========== Rutas Autenticadas (Requieren JWT OBLIGATORIAMENTE) ==========
+    Route::middleware('jwt.require')->group(function () {
         // ========== Sesiones ==========
         Route::post('/logout', [SessionController::class, 'logout'])->name('auth.logout');
         Route::get('/sessions', [SessionController::class, 'index'])->name('auth.sessions');
         Route::delete('/sessions/{sessionId}', [SessionController::class, 'revoke'])->name('auth.session.revoke');
 
         // ========== Email (Autenticado) ==========
+        Route::get('/email/status', [EmailVerificationController::class, 'status'])->name('auth.email.status');
         Route::post('/email/verify/resend', [EmailVerificationController::class, 'resend'])->name('auth.email.resend');
 
         // ========== Info del Usuario ==========

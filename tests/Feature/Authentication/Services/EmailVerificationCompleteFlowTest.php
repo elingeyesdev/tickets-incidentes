@@ -6,6 +6,7 @@ use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -34,68 +35,36 @@ class EmailVerificationCompleteFlowTest extends TestCase
     public function complete_email_verification_flow_works_correctly(): void
     {
         // =====================================================
-        // PASO 1: REGISTRO (genera token de verificación)
+        // PASO 1: REGISTRO (genera token de verificación) - REST
         // =====================================================
-        $registerQuery = '
-            mutation Register($input: RegisterInput!) {
-                register(input: $input) {
-                    accessToken
-                    refreshToken
-                    user {
-                        id
-                        email
-                        emailVerified
-                        onboardingCompleted
-                    }
-                }
-            }
-        ';
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'flowtest@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Flow',
+            'lastName' => 'Test',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ]);
 
-        $registerVars = [
-            'input' => [
-                'email' => 'flowtest@example.com',
-                'password' => 'SecurePass123!',
-                'passwordConfirmation' => 'SecurePass123!',
-                'firstName' => 'Flow',
-                'lastName' => 'Test',
-                'acceptsTerms' => true,
-                'acceptsPrivacyPolicy' => true,
-            ],
-        ];
-
-        $registerResponse = $this->graphQL($registerQuery, $registerVars);
-
-        $accessToken = $registerResponse->json('data.register.accessToken');
-        $userId = $registerResponse->json('data.register.user.id');
+        $accessToken = $registerResponse->json('data.accessToken');
+        $userId = $registerResponse->json('data.user.id');
 
         // Verificar que el usuario NO está verificado
-        $this->assertFalse($registerResponse->json('data.register.user.emailVerified'));
+        $this->assertFalse($registerResponse->json('data.user.emailVerified'));
 
         // =====================================================
-        // PASO 2: VERIFICAR ESTADO (NO VERIFICADO)
+        // PASO 2: VERIFICAR ESTADO (NO VERIFICADO) - REST
         // =====================================================
-        $statusQuery = '
-            query {
-                emailVerificationStatus {
-                    isVerified
-                    email
-                    canResend
-                    attemptsRemaining
-                }
-            }
-        ';
-
-        $statusResponse = $this->withJWT($accessToken)->graphQL($statusQuery);
+        $statusResponse = $this->withHeaders([
+            'Authorization' => "Bearer {$accessToken}"
+        ])->getJson('/api/auth/email/status');
 
         $statusResponse->assertJson([
-            'data' => [
-                'emailVerificationStatus' => [
-                    'isVerified' => false,
-                    'email' => 'flowtest@example.com',
-                    'canResend' => true,
-                    'attemptsRemaining' => 3,
-                ],
-            ],
+            'isVerified' => false,
+            'email' => 'flowtest@example.com',
+            'canResend' => true,
+            'attemptsRemaining' => 3,
         ]);
 
         // =====================================================
@@ -107,46 +76,30 @@ class EmailVerificationCompleteFlowTest extends TestCase
         $this->assertNotEmpty($verificationToken, 'El token de verificación debe existir en cache');
 
         // =====================================================
-        // PASO 4: VERIFICAR EMAIL CON TOKEN
+        // PASO 4: VERIFICAR EMAIL CON TOKEN - REST
         // =====================================================
-        $verifyQuery = '
-            mutation VerifyEmail($token: String!) {
-                verifyEmail(token: $token) {
-                    success
-                    message
-                    canResend
-                }
-            }
-        ';
-
-        $verifyVars = ['token' => $verificationToken];
-
-        $verifyResponse = $this->graphQL($verifyQuery, $verifyVars);
+        $verifyResponse = $this->postJson('/api/auth/email/verify', [
+            'token' => $verificationToken
+        ]);
 
         $verifyResponse->assertJson([
-            'data' => [
-                'verifyEmail' => [
-                    'success' => true,
-                    'message' => '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.',
-                    'canResend' => false,
-                ],
-            ],
+            'success' => true,
+            'message' => '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.',
+            'canResend' => false,
         ]);
 
         // =====================================================
-        // PASO 5: VERIFICAR ESTADO (VERIFICADO)
+        // PASO 5: VERIFICAR ESTADO (VERIFICADO) - REST
         // =====================================================
-        $statusAfterResponse = $this->withJWT($accessToken)->graphQL($statusQuery);
+        $statusAfterResponse = $this->withHeaders([
+            'Authorization' => "Bearer {$accessToken}"
+        ])->getJson('/api/auth/email/status');
 
         $statusAfterResponse->assertJson([
-            'data' => [
-                'emailVerificationStatus' => [
-                    'isVerified' => true,
-                    'email' => 'flowtest@example.com',
-                    'canResend' => false,
-                    'attemptsRemaining' => 0,
-                ],
-            ],
+            'isVerified' => true,
+            'email' => 'flowtest@example.com',
+            'canResend' => false,
+            'attemptsRemaining' => 0,
         ]);
 
         // Verificar en la base de datos
@@ -160,7 +113,7 @@ class EmailVerificationCompleteFlowTest extends TestCase
 
     /**
      * @test
-     * Puede reenviar email ANTES de verificar
+     * Puede reenviar email ANTES de verificar - REST
      */
     public function can_resend_verification_email_before_verifying(): void
     {
@@ -172,39 +125,26 @@ class EmailVerificationCompleteFlowTest extends TestCase
             ->withRole('USER')
             ->create(['email_verified' => false]);
 
-        $accessToken = $this->loginAsUser($user);
+        $accessToken = $this->generateAccessToken($user);
 
         // Act - Reenviar verificación
-        $resendQuery = '
-            mutation {
-                resendVerification {
-                    success
-                    message
-                    canResend
-                    resendAvailableAt
-                }
-            }
-        ';
-
-        $response = $this->withJWT($accessToken)->graphQL($resendQuery);
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$accessToken}"
+        ])->postJson('/api/auth/email/verify/resend');
 
         // Assert
         $response->assertJson([
-            'data' => [
-                'resendVerification' => [
-                    'success' => true,
-                    'message' => 'Email de verificación enviado correctamente. Revisa tu bandeja de entrada.',
-                    'canResend' => false, // No puede reenviar inmediatamente (rate limit)
-                ],
-            ],
+            'success' => true,
+            'message' => 'Email de verificación enviado correctamente. Revisa tu bandeja de entrada.',
+            'canResend' => false, // No puede reenviar inmediatamente (rate limit)
         ]);
 
-        $this->assertNotNull($response->json('data.resendVerification.resendAvailableAt'));
+        $this->assertNotNull($response->json('resendAvailableAt'));
     }
 
     /**
      * @test
-     * NO puede reenviar email si ya está verificado
+     * NO puede reenviar email si ya está verificado - REST
      */
     public function cannot_resend_verification_if_already_verified(): void
     {
@@ -215,71 +155,45 @@ class EmailVerificationCompleteFlowTest extends TestCase
             ->verified()
             ->create();
 
-        $accessToken = $this->loginAsUser($user);
+        $accessToken = $this->generateAccessToken($user);
 
         // Act
-        $resendQuery = '
-            mutation {
-                resendVerification {
-                    success
-                    message
-                    canResend
-                }
-            }
-        ';
-
-        $response = $this->withJWT($accessToken)->graphQL($resendQuery);
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$accessToken}"
+        ])->postJson('/api/auth/email/verify/resend');
 
         // Assert
         $response->assertJson([
-            'data' => [
-                'resendVerification' => [
-                    'success' => false,
-                    'message' => 'El email ya está verificado',
-                    'canResend' => false,
-                ],
-            ],
+            'success' => false,
+            'message' => 'El email ya está verificado',
+            'canResend' => false,
         ]);
     }
 
     /**
      * @test
-     * NO puede verificar con token inválido
+     * NO puede verificar con token inválido - REST
      */
     public function cannot_verify_with_invalid_token(): void
     {
-        $verifyQuery = '
-            mutation VerifyEmail($token: String!) {
-                verifyEmail(token: $token) {
-                    success
-                    message
-                    canResend
-                }
-            }
-        ';
-
-        $verifyVars = ['token' => 'invalid-token-12345'];
-
         // Act
-        $response = $this->graphQL($verifyQuery, $verifyVars);
+        $response = $this->postJson('/api/auth/email/verify', [
+            'token' => 'invalid-token-12345'
+        ]);
 
         // Assert - Sistema global de errores
         $response->assertJson([
-            'data' => [
-                'verifyEmail' => [
-                    'success' => false,
-                    'canResend' => true,
-                ],
-            ],
+            'success' => false,
+            'canResend' => true,
         ]);
 
-        $message = $response->json('data.verifyEmail.message');
+        $message = $response->json('message');
         $this->assertStringContainsString('invalid', strtolower($message));
     }
 
     /**
      * @test
-     * NO puede verificar con token expirado
+     * NO puede verificar con token expirado - REST
      */
     public function cannot_verify_with_expired_token(): void
     {
@@ -292,79 +206,49 @@ class EmailVerificationCompleteFlowTest extends TestCase
         // Simular token expirado (generado hace 25 horas)
         $expiredToken = hash('sha256', $user->id . now()->subHours(25)->timestamp);
 
-        $verifyQuery = '
-            mutation VerifyEmail($token: String!) {
-                verifyEmail(token: $token) {
-                    success
-                    message
-                }
-            }
-        ';
-
         // Act
-        $response = $this->graphQL($verifyQuery, ['token' => $expiredToken]);
+        $response = $this->postJson('/api/auth/email/verify', [
+            'token' => $expiredToken
+        ]);
 
         // Assert
         $response->assertJson([
-            'data' => [
-                'verifyEmail' => [
-                    'success' => false,
-                ],
-            ],
+            'success' => false,
         ]);
 
-        $message = $response->json('data.verifyEmail.message');
+        $message = $response->json('message');
         $this->assertStringContainsString('expired', strtolower($message));
     }
 
     /**
      * @test
-     * emailVerificationStatus requiere autenticación JWT
+     * emailVerificationStatus requiere autenticación JWT - REST
      */
     public function email_verification_status_requires_authentication(): void
     {
-        $query = '
-            query {
-                emailVerificationStatus {
-                    isVerified
-                }
-            }
-        ';
-
         // Act - Sin token JWT
-        $response = $this->graphQL($query);
+        $response = $this->getJson('/api/auth/email/status');
 
-        // Assert - Sistema global de errores (AuthenticationException)
-        $response->assertGraphQLErrorMessage('Unauthenticated');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
+        // Assert - Debe retornar 401 Unauthorized
+        $response->assertStatus(401);
     }
 
     /**
      * @test
-     * resendVerification requiere autenticación JWT
+     * resendVerification requiere autenticación JWT - REST
      */
     public function resend_verification_requires_authentication(): void
     {
-        $query = '
-            mutation {
-                resendVerification {
-                    success
-                }
-            }
-        ';
-
         // Act - Sin token JWT
-        $response = $this->graphQL($query);
+        $response = $this->postJson('/api/auth/email/verify/resend');
 
-        // Assert
-        $response->assertGraphQLErrorMessage('Unauthenticated');
+        // Assert - Debe retornar 401 Unauthorized
+        $response->assertStatus(401);
     }
 
     /**
      * @test
-     * verifyEmail NO requiere autenticación (token identifica al usuario)
+     * verifyEmail NO requiere autenticación (token identifica al usuario) - REST
      */
     public function verify_email_does_not_require_authentication(): void
     {
@@ -378,30 +262,20 @@ class EmailVerificationCompleteFlowTest extends TestCase
         $token = hash('sha256', $user->id . now()->timestamp);
         Cache::put("email_verification:{$user->id}", $token, now()->addHours(24));
 
-        $verifyQuery = '
-            mutation VerifyEmail($token: String!) {
-                verifyEmail(token: $token) {
-                    success
-                }
-            }
-        ';
-
         // Act - Sin JWT (el token de verificación es suficiente)
-        $response = $this->graphQL($verifyQuery, ['token' => $token]);
+        $response = $this->postJson('/api/auth/email/verify', [
+            'token' => $token
+        ]);
 
         // Assert - Debe funcionar
         $response->assertJson([
-            'data' => [
-                'verifyEmail' => [
-                    'success' => true,
-                ],
-            ],
+            'success' => true,
         ]);
     }
 
     /**
      * @test
-     * emailVerificationStatus retorna información correcta
+     * emailVerificationStatus retorna información correcta - REST
      */
     public function email_verification_status_returns_correct_information(): void
     {
@@ -414,66 +288,103 @@ class EmailVerificationCompleteFlowTest extends TestCase
                 'email_verified' => false,
             ]);
 
-        $accessToken = $this->loginAsUser($user);
+        $accessToken = $this->generateAccessToken($user);
 
         // Act
-        $query = '
-            query {
-                emailVerificationStatus {
-                    isVerified
-                    email
-                    verificationSentAt
-                    canResend
-                    resendAvailableAt
-                    attemptsRemaining
-                }
-            }
-        ';
-
-        $response = $this->withJWT($accessToken)->graphQL($query);
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$accessToken}"
+        ])->getJson('/api/auth/email/status');
 
         // Assert
-        $status = $response->json('data.emailVerificationStatus');
-
-        $this->assertFalse($status['isVerified']);
-        $this->assertEquals('statustest@example.com', $status['email']);
-        $this->assertTrue($status['canResend']);
-        $this->assertEquals(3, $status['attemptsRemaining']);
-        $this->assertNotNull($status['verificationSentAt']);
-        $this->assertNotNull($status['resendAvailableAt']);
+        $this->assertFalse($response->json('isVerified'));
+        $this->assertEquals('statustest@example.com', $response->json('email'));
+        $this->assertTrue($response->json('canResend'));
+        $this->assertEquals(3, $response->json('attemptsRemaining'));
+        $this->assertNotNull($response->json('verifiedAt'));
+        $this->assertNotNull($response->json('resendAvailableAt'));
     }
 
     /**
-     * Helper: Login as user and get JWT token
+     * @test
+     * Verification email arrives to mailpit - REST
      */
-    private function loginAsUser(User $user): string
+    public function verification_email_arrives_to_mailpit(): void
     {
-        $loginQuery = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                }
-            }
-        ';
+        // Skip if Mailpit not available
+        if (!$this->isMailpitAvailable()) {
+            $this->markTestSkipped('Mailpit is not available');
+        }
 
-        $response = $this->graphQL($loginQuery, [
-            'input' => [
-                'email' => $user->email,
-                'password' => 'password', // Default password from factory
-                'rememberMe' => false,
-            ],
+        // Arrange - Clean mailpit and Redis
+        $this->clearMailpit();
+        \Illuminate\Support\Facades\Redis::connection('default')->flushdb();
+
+        // Act - Register user (generates verification email)
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'verifytest@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Verify',
+            'lastName' => 'Test',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
         ]);
 
-        return $response->json('data.login.accessToken');
+        $registerResponse->assertStatus(200);
+
+        // Process queued jobs (Redis queue)
+        $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
+        sleep(1);
+
+        // Assert - Email arrived to mailpit
+        $messages = $this->getMailpitMessages();
+        $verificationEmail = collect($messages)->first(function ($msg) {
+            return str_contains($msg['To'][0]['Address'] ?? '', 'verifytest@example.com');
+        });
+
+        $this->assertNotNull($verificationEmail, 'Verification email should arrive to Mailpit');
+
+        // Verify email contains verification token
+        $emailBody = $this->getMailpitMessageBody($verificationEmail['ID']);
+        $this->assertMatchesRegularExpression('/\?token=[a-zA-Z0-9]+/', $emailBody, 'Email should contain verification token');
     }
 
-    /**
-     * Helper: Add JWT authorization header
-     */
-    private function withJWT(string $token): self
+    protected function isMailpitAvailable(): bool
     {
-        return $this->withHeaders([
-            'Authorization' => "Bearer {$token}",
-        ]);
+        try {
+            $response = \Illuminate\Support\Facades\Http::get('http://mailpit:8025/api/v1/messages');
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    protected function clearMailpit(): void
+    {
+        try {
+            \Illuminate\Support\Facades\Http::delete('http://mailpit:8025/api/v1/messages');
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+    }
+
+    protected function getMailpitMessages(): array
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get('http://mailpit:8025/api/v1/messages');
+            return $response->json('messages') ?? [];
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    protected function getMailpitMessageBody(string $messageId): string
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::get("http://mailpit:8025/api/v1/message/{$messageId}");
+            return $response->json('HTML') ?? $response->json('Text') ?? '';
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 }

@@ -21,7 +21,7 @@ class EmailVerificationStatusResource extends JsonResource
         return [
             'isVerified' => $this['is_verified'] ?? false,
             'email' => $this['email'] ?? null,
-            'verificationSentAt' => isset($this['verified_at']) && $this['verified_at']
+            'verifiedAt' => isset($this['verified_at']) && $this['verified_at']
                 ? $this['verified_at']->toIso8601String()
                 : null,
             'canResend' => $this['can_resend'] ?? true,
