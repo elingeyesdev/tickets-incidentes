@@ -747,24 +747,38 @@ class PasswordResetCompleteTest extends TestCase
     /** @test */
     public function password_reset_email_arrives_to_mailpit_with_token_and_code()
     {
-        // Arrange
-        Mail::fake();
-        Queue::fake();
+        // Skip if Mailpit not available
+        if (!$this->isMailpitAvailable()) {
+            $this->markTestSkipped('Mailpit is not available');
+        }
+
+        // Arrange - Clean mailpit and Redis
+        $this->clearMailpit();
+        \Illuminate\Support\Facades\Redis::connection('default')->flushdb();
 
         $user = User::factory()->create(['email' => 'resettest@example.com']);
 
-        // Act
+        // Act - Send password reset via REST
         $this->postJson('/api/auth/password-reset', [
             'email' => 'resettest@example.com'
         ]);
 
-        // Process queued jobs
-        $this->executeQueuedJobs();
+        // Process queued jobs (Redis queue)
+        $this->artisan('queue:work', ['--once' => true, '--queue' => 'emails']);
+        sleep(1);
 
-        // Assert - Email was sent to the correct recipient
-        Mail::assertSent(\App\Features\Authentication\Mail\PasswordResetMail::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
+        // Assert - Email arrived to mailpit
+        $messages = $this->getMailpitMessages();
+        $resetEmail = collect($messages)->first(function ($msg) {
+            return str_contains($msg['To'][0]['Address'] ?? '', 'resettest@example.com');
         });
+
+        $this->assertNotNull($resetEmail, 'Password reset email should arrive to Mailpit');
+
+        // Verify email contains token and code
+        $emailBody = $this->getMailpitMessageBody($resetEmail['ID']);
+        $this->assertMatchesRegularExpression('/[a-zA-Z0-9]{32}/', $emailBody, 'Email should contain 32-char token');
+        $this->assertMatchesRegularExpression('/\b\d{6}\b/', $emailBody, 'Email should contain 6-digit code');
     }
 
     // =========================================================================
