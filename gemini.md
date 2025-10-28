@@ -50,3 +50,4 @@ Ante cualquier fallo en los tests o comportamiento inesperado, seguiremos estric
 2.  **Commits Atómicos y Basados en Tests:** Realizaremos un `commit` únicamente cuando un conjunto de tests para una funcionalidad (ej. `register`, `login`, etc.) esté pasando al 100%. El mensaje del commit será claro, conciso y describirá la funcionalidad migrada.
 
 3.  **Comunicación Proactiva:** Te mantendré informado en cada paso y solicitaré tu intervención cuando sea necesario, especialmente al finalizar una tarea o al necesitar una decisión (como en la Capa 5).
+4. **responde en espanol**

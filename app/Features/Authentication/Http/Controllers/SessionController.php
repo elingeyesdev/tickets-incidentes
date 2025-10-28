@@ -8,7 +8,7 @@ use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
 use App\Shared\Exceptions\AuthenticationException;
 use App\Shared\Exceptions\AuthorizationException;
-use App\Shared\Exceptions\CannotRevokeCurrentSessionException;
+use App\Features\Authentication\Exceptions\CannotRevokeCurrentSessionException;
 use App\Shared\Exceptions\NotFoundException;
 use App\Shared\Exceptions\TokenInvalidException;
 use Illuminate\Http\JsonResponse;
@@ -90,7 +90,7 @@ class SessionController
             })->toArray();
 
             return response()->json([
-                'sessions' => SessionInfoResource::collection($sessions),
+                'sessions' => $sessionsData,
             ], 200);
         } catch (\Exception $e) {
             throw $e;

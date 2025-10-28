@@ -50,59 +50,27 @@ class RefreshTokenAndLogoutTest extends TestCase
         // Esperar 1 segundo (para asegurar que el nuevo token sea diferente)
         sleep(1);
 
-        // Act - Refresh token
-        $refreshQuery = '
-            mutation {
-                refreshToken {
-                    accessToken
-                    refreshToken
-                    tokenType
-                    expiresIn
-                }
-            }
-        ';
-
-        $response = $this->withJWT($oldAccessToken)
-            ->withRefreshToken($refreshToken)
-            ->graphQL($refreshQuery);
+        // Act - Refresh token (REST endpoint)
+        $response = $this->withJWT($oldAccessToken, $refreshToken)
+            ->postJson('/api/auth/refresh', []);
 
         // Assert
         $response->assertJsonStructure([
-            'data' => [
-                'refreshToken' => [
-                    'accessToken',
-                    'refreshToken',
-                    'tokenType',
-                    'expiresIn',
-                ],
-            ],
+            'accessToken',
+            'tokenType',
+            'expiresIn',
         ]);
 
-        $newAccessToken = $response->json('data.refreshToken.accessToken');
-
-        // El refreshToken en JSON es ahora un mensaje informativo
-        $this->assertEquals('Token stored in secure HttpOnly cookie', $response->json('data.refreshToken.refreshToken'));
-
-        // El refresh token real está almacenado en el trait para tests
-        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
+        $newAccessToken = $response->json('accessToken');
 
         // El nuevo access token debe ser diferente
         $this->assertNotEquals($oldAccessToken, $newAccessToken);
 
-        // El nuevo refresh token debe ser diferente (token rotation)
-        $this->assertNotEquals($refreshToken, $newRefreshToken);
+        // Verificar que el nuevo token funciona (REST endpoint)
+        $statusResponse = $this->withJWT($newAccessToken)
+            ->getJson('/api/auth/status');
 
-        // Verificar que el nuevo token funciona
-        $statusQuery = '
-            query {
-                emailVerificationStatus {
-                    email
-                }
-            }
-        ';
-
-        $statusResponse = $this->withJWT($newAccessToken)->graphQL($statusQuery);
-        $statusResponse->assertJsonPath('data.emailVerificationStatus.email', $this->testUser->email);
+        $statusResponse->assertJsonPath('user.email', $this->testUser->email);
     }
 
     /**
@@ -116,31 +84,16 @@ class RefreshTokenAndLogoutTest extends TestCase
         $oldRefreshToken = $loginResponse['refreshToken'];
 
         // Act - Refresh una vez
-        $refreshQuery = '
-            mutation {
-                refreshToken {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
+        $firstRefresh = $this->withJWT($loginResponse['accessToken'], $oldRefreshToken)
+            ->postJson('/api/auth/refresh', []);
 
-        $firstRefresh = $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($oldRefreshToken)
-            ->graphQL($refreshQuery);
-
-        // El nuevo refresh token está almacenado en el trait
-        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
+        $newAccessToken = $firstRefresh->json('accessToken');
 
         // Assert - El token viejo ya NO debe funcionar
-        $secondRefresh = $this->withJWT($firstRefresh->json('data.refreshToken.accessToken'))
-            ->withRefreshToken($oldRefreshToken)
-            ->graphQL($refreshQuery);
+        $secondRefresh = $this->withJWT($newAccessToken, $oldRefreshToken)
+            ->postJson('/api/auth/refresh', []);
 
-        $secondRefresh->assertGraphQLErrorMessage('Refresh token is invalid or has been revoked.');
-
-        $errors = $secondRefresh->json('errors');
-        $this->assertEquals('INVALID_TOKEN', $errors[0]['extensions']['code']);
+        $secondRefresh->assertStatus(401);
     }
 
     /**
@@ -152,19 +105,12 @@ class RefreshTokenAndLogoutTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        $query = '
-            mutation {
-                refreshToken {
-                    accessToken
-                }
-            }
-        ';
-
         // Act - Con access token pero SIN refresh token (ni cookie ni header)
-        $response = $this->withJWT($loginResponse['accessToken'])->graphQL($query);
+        $response = $this->withJWT($loginResponse['accessToken'])
+            ->postJson('/api/auth/refresh', []);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Refresh token required. Send it via X-Refresh-Token header or refresh_token cookie.');
+        $response->assertStatus(401);
     }
 
     /**
@@ -177,35 +123,22 @@ class RefreshTokenAndLogoutTest extends TestCase
         $session1 = $this->loginUser();
         $session2 = $this->loginUser();
 
-        // Act - Logout solo sesión 1
-        $logoutQuery = '
-            mutation {
-                logout(everywhere: false)
-            }
-        ';
-
-        $response = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($logoutQuery);
+        // Act - Logout solo sesión 1 (REST endpoint)
+        $response = $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
         // Assert
-        $response->assertJson(['data' => ['logout' => true]]);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
 
         // Sesión 1 debe estar invalidada
-        $testQuery = '
-            query {
-                emailVerificationStatus {
-                    email
-                }
-            }
-        ';
-
-        $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Unauthenticated');
+        $test1 = $this->withJWT($session1['accessToken'])->getJson('/api/auth/status');
+        $test1->assertStatus(401);
 
         // Sesión 2 debe seguir funcionando
-        $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
-        $test2->assertJsonPath('data.emailVerificationStatus.email', $this->testUser->email);
+        $test2 = $this->withJWT($session2['accessToken'])->getJson('/api/auth/status');
+        $test2->assertStatus(200);
+        $test2->assertJsonPath('user.email', $this->testUser->email);
     }
 
     /**
@@ -224,19 +157,13 @@ class RefreshTokenAndLogoutTest extends TestCase
             ->whereNull('revoked_at')
             ->count());
 
-        // Act - Logout everywhere desde sesión 1
-        $logoutQuery = '
-            mutation {
-                logout(everywhere: true)
-            }
-        ';
-
-        $response = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($logoutQuery);
+        // Act - Logout everywhere desde sesión 1 (REST endpoint)
+        $response = $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => true]);
 
         // Assert
-        $response->assertJson(['data' => ['logout' => true]]);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
 
         // Verificar que TODOS los refresh tokens están revocados
         $this->assertEquals(0, RefreshToken::where('user_id', $this->testUser->id)
@@ -244,22 +171,14 @@ class RefreshTokenAndLogoutTest extends TestCase
             ->count());
 
         // Ninguna sesión debe funcionar
-        $testQuery = '
-            query {
-                emailVerificationStatus {
-                    email
-                }
-            }
-        ';
+        $test1 = $this->withJWT($session1['accessToken'])->getJson('/api/auth/status');
+        $test1->assertStatus(401);
 
-        $test1 = $this->withJWT($session1['accessToken'])->graphQL($testQuery);
-        $test1->assertGraphQLErrorMessage('Unauthenticated');
+        $test2 = $this->withJWT($session2['accessToken'])->getJson('/api/auth/status');
+        $test2->assertStatus(401);
 
-        $test2 = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
-        $test2->assertGraphQLErrorMessage('Unauthenticated');
-
-        $test3 = $this->withJWT($session3['accessToken'])->graphQL($testQuery);
-        $test3->assertGraphQLErrorMessage('Unauthenticated');
+        $test3 = $this->withJWT($session3['accessToken'])->getJson('/api/auth/status');
+        $test3->assertStatus(401);
     }
 
     /**
@@ -268,17 +187,11 @@ class RefreshTokenAndLogoutTest extends TestCase
      */
     public function logout_requires_jwt_authentication(): void
     {
-        $query = '
-            mutation {
-                logout
-            }
-        ';
-
         // Act - Sin JWT
-        $response = $this->graphQL($query);
+        $response = $this->postJson('/api/auth/logout', ['everywhere' => false]);
 
         // Assert
-        $response->assertGraphQLErrorMessage('Unauthenticated');
+        $response->assertStatus(401);
     }
 
     /**
@@ -290,29 +203,17 @@ class RefreshTokenAndLogoutTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        $logoutQuery = '
-            mutation {
-                logout
-            }
-        ';
-
         // Act - Con access token pero SIN refresh token
-        $response = $this->withJWT($loginResponse['accessToken'])->graphQL($logoutQuery);
+        $response = $this->withJWT($loginResponse['accessToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
-        // Assert - Debe funcionar (con warning en logs)
-        $response->assertJson(['data' => ['logout' => true]]);
+        // Assert - Debe funcionar
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
 
         // El access token debe estar invalidado
-        $testQuery = '
-            query {
-                emailVerificationStatus {
-                    email
-                }
-            }
-        ';
-
-        $test = $this->withJWT($loginResponse['accessToken'])->graphQL($testQuery);
-        $test->assertGraphQLErrorMessage('Unauthenticated');
+        $test = $this->withJWT($loginResponse['accessToken'])->getJson('/api/auth/status');
+        $test->assertStatus(401);
     }
 
     /**
@@ -325,31 +226,18 @@ class RefreshTokenAndLogoutTest extends TestCase
         $session1 = $this->loginUser();
         $session2 = $this->loginUser();
 
-        $logoutQuery = '
-            mutation {
-                logout
-            }
-        ';
-
-        // Act - Logout sin parámetro everywhere
-        $response = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($logoutQuery);
+        // Act - Logout sin parámetro everywhere (REST endpoint)
+        $response = $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
         // Assert
-        $response->assertJson(['data' => ['logout' => true]]);
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
 
         // Sesión 2 debe seguir funcionando
-        $testQuery = '
-            query {
-                emailVerificationStatus {
-                    email
-                }
-            }
-        ';
-
-        $test = $this->withJWT($session2['accessToken'])->graphQL($testQuery);
-        $test->assertJsonPath('data.emailVerificationStatus.email', $this->testUser->email);
+        $test = $this->withJWT($session2['accessToken'])->getJson('/api/auth/status');
+        $test->assertStatus(200);
+        $test->assertJsonPath('user.email', $this->testUser->email);
     }
 
     /**
@@ -361,35 +249,16 @@ class RefreshTokenAndLogoutTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        // Act 1 - Logout
-        $logoutQuery = '
-            mutation {
-                logout
-            }
-        ';
+        // Act 1 - Logout (REST endpoint)
+        $this->withJWT($loginResponse['accessToken'], $loginResponse['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
-        $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($loginResponse['refreshToken'])
-            ->graphQL($logoutQuery);
-
-        // Act 2 - Intentar refresh
-        $refreshQuery = '
-            mutation {
-                refreshToken {
-                    accessToken
-                }
-            }
-        ';
-
-        $response = $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($loginResponse['refreshToken'])
-            ->graphQL($refreshQuery);
+        // Act 2 - Intentar refresh (REST endpoint)
+        $response = $this->withJWT($loginResponse['accessToken'], $loginResponse['refreshToken'])
+            ->postJson('/api/auth/refresh', []);
 
         // Assert - Debe fallar porque el refresh token fue revocado en el logout
-        $response->assertGraphQLErrorMessage('Refresh token is invalid or has been revoked.');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('INVALID_TOKEN', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
     }
 
     /**
@@ -403,82 +272,49 @@ class RefreshTokenAndLogoutTest extends TestCase
         $refreshToken = $loginResponse['refreshToken'];
 
         // Act - Intentar refresh con el mismo token 2 veces simultáneamente
-        $refreshQuery = '
-            mutation {
-                refreshToken {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
+        $response1 = $this->withJWT($loginResponse['accessToken'], $refreshToken)
+            ->postJson('/api/auth/refresh', []);
 
-        $response1 = $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($refreshToken)
-            ->graphQL($refreshQuery);
-
-        $response2 = $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($refreshToken)
-            ->graphQL($refreshQuery);
+        $response2 = $this->withJWT($loginResponse['accessToken'], $refreshToken)
+            ->postJson('/api/auth/refresh', []);
 
         // Assert - Solo UNO debe funcionar, el otro debe fallar
-        $success = $response1->json('data.refreshToken.accessToken') ? 1 : 0;
-        $success += $response2->json('data.refreshToken.accessToken') ? 1 : 0;
+        $success = $response1->json('accessToken') ? 1 : 0;
+        $success += $response2->json('accessToken') ? 1 : 0;
 
         $this->assertEquals(1, $success, 'Solo un refresh debe funcionar (token rotation)');
     }
 
     /**
-     * Helper: Login and get tokens
-     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
+     * Helper: Login and get tokens (REST API)
      */
     private function loginUser(): array
     {
-        $loginQuery = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
-
-        $response = $this->graphQL($loginQuery, [
-            'input' => [
-                'email' => $this->testUser->email,
-                'password' => 'password',
-                'rememberMe' => false,
-            ],
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $this->testUser->email,
+            'password' => 'password',
+            'rememberMe' => false,
         ]);
 
-        // El refresh token real está almacenado en el trait para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-
         return [
-            'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $refreshToken,
+            'accessToken' => $response->json('accessToken'),
+            'refreshToken' => $response->getCookie('refresh_token')->getValue(),
         ];
     }
 
     /**
-     * Helper: Add JWT authorization header
+     * Helper: Add JWT authorization header and optional refresh token
      */
-    private function withJWT(string $token): self
+    private function withJWT(string $token, ?string $refreshToken = null): self
     {
-        return $this->withHeaders([
+        $headers = [
             'Authorization' => "Bearer {$token}",
-        ]);
-    }
+        ];
 
-    /**
-     * Helper: Add refresh token via header (for tests)
-     * Nota: En tests usamos header porque las cookies con ->withCookie() no funcionan con Lighthouse.
-     * En producción, el frontend usa cookies HttpOnly que sí funcionan correctamente.
-     */
-    private function withRefreshToken(string $token): self
-    {
-        // En tests usamos header porque withCookie() no funciona con Lighthouse
-        return $this->withHeaders([
-            'X-Refresh-Token' => $token,
-        ]);
+        if ($refreshToken) {
+            $headers['X-Refresh-Token'] = $refreshToken;
+        }
+
+        return $this->withHeaders($headers);
     }
 }

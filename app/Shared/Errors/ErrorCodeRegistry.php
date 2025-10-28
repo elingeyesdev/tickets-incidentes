@@ -217,7 +217,7 @@ class ErrorCodeRegistry
             self::INVALID_REFRESH_TOKEN,
             self::REFRESH_TOKEN_REQUIRED,
             self::SESSION_NOT_FOUND,
-            self::CANNOT_REVOKE_CURRENT_SESSION,
+            
             self::ACCOUNT_SUSPENDED => 'authentication',
 
             self::FORBIDDEN,
@@ -234,6 +234,7 @@ class ErrorCodeRegistry
             self::DUPLICATE_EMAIL,
             self::DUPLICATE_CODE,
             self::CONFLICT,
+            self::CANNOT_REVOKE_CURRENT_SESSION,
             self::INVALID_STATE => 'business_logic',
 
             self::NOT_FOUND,

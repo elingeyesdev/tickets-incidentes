@@ -41,8 +41,15 @@ class RefreshTokenController
     public function refresh(Request $request): JsonResponse
     {
         try {
-            // Obtener refresh token desde cookie HttpOnly
-            $refreshToken = $request->cookie('refresh_token');
+            // Obtener refresh token de múltiples fuentes (en orden de prioridad):
+            // 1. Header X-Refresh-Token (más seguro, recomendado)
+            // 2. Cookie refresh_token (para web con HttpOnly cookies)
+            // 3. Body refreshToken (para clientes limitados)
+            // REPLICA EXACTAMENTE la lógica de RefreshTokenMutation de GraphQL
+            $refreshToken = $request->header('X-Refresh-Token')
+                ?? $request->cookie('refresh_token')
+                ?? $request->input('refreshToken')
+                ?? null;
 
             if (!$refreshToken) {
                 throw new RefreshTokenRequiredException();

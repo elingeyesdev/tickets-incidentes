@@ -20,14 +20,12 @@ final class RateLimitExceededErrorHandler implements ErrorHandler
         }
 
         return $next($error);
-    }
-
-    public function __invoke(?Error $error, Closure $next): ?array
-    {
-        if ($error === null) {
-            return null;
+        public function __invoke(?Error $error, Closure $next): ?array
+        {
+            if ($error === null) {
+                return null;
+            }
+    
+            return $this->handle($error, $next)->toSerializableArray();
         }
-
-        return $this->handle($error, $next)->toSerializableArray();
     }
-}

@@ -42,30 +42,16 @@ class MySessionsQueryTest extends TestCase
     public function can_list_multiple_active_sessions(): void
     {
         // Arrange - Crear 3 sesiones (3 dispositivos)
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
-        $session3 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
+        $session3 = $this->loginUser($this->testUser);
 
-        // Act - Consultar sesiones desde session2
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    deviceName
-                    ipAddress
-                    lastUsedAt
-                    expiresAt
-                    isCurrent
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session2['accessToken'])
-            ->withRefreshToken($session2['refreshToken'])
-            ->graphQL($query);
+        // Act - Consultar sesiones desde session2 (REST endpoint)
+        $response = $this->withJWT($session2['accessToken'], $session2['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
 
         $this->assertCount(3, $sessions);
 
@@ -90,33 +76,22 @@ class MySessionsQueryTest extends TestCase
     public function correctly_identifies_current_session(): void
     {
         // Arrange - Crear 3 sesiones
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
-        $session3 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
+        $session3 = $this->loginUser($this->testUser);
 
-        // Act - Consultar desde cada sesión y verificar que marque la correcta
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    isCurrent
-                }
-            }
-        ';
-
+        // Act - Consultar desde cada sesión y verificar que marque la correcta (REST endpoint)
         // Desde session1
-        $response1 = $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($query);
+        $response1 = $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Desde session2
-        $response2 = $this->withJWT($session2['accessToken'])
-            ->withRefreshToken($session2['refreshToken'])
-            ->graphQL($query);
+        $response2 = $this->withJWT($session2['accessToken'], $session2['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert - Cada respuesta debe marcar una sesión diferente como current
-        $sessions1 = $response1->json('data.mySessions');
-        $sessions2 = $response2->json('data.mySessions');
+        $sessions1 = $response1->json('sessions');
+        $sessions2 = $response2->json('sessions');
 
         $currentSession1Id = collect($sessions1)->firstWhere('isCurrent', true)['sessionId'];
         $currentSession2Id = collect($sessions2)->firstWhere('isCurrent', true)['sessionId'];
@@ -131,30 +106,20 @@ class MySessionsQueryTest extends TestCase
     public function only_shows_active_sessions_not_revoked(): void
     {
         // Arrange - Crear 3 sesiones
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
-        $session3 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
+        $session3 = $this->loginUser($this->testUser);
 
         // Revocar session1 manualmente
         $tokenHash1 = hash('sha256', $session1['refreshToken']);
         RefreshToken::where('token_hash', $tokenHash1)->first()->revoke($this->testUser->id);
 
-        // Act - Consultar sesiones desde session2
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    isCurrent
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session2['accessToken'])
-            ->withRefreshToken($session2['refreshToken'])
-            ->graphQL($query);
+        // Act - Consultar sesiones desde session2 (REST endpoint)
+        $response = $this->withJWT($session2['accessToken'], $session2['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert - Solo 2 sesiones activas (session2 y session3)
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(2, $sessions);
 
         // Verificar que session1 NO está en la lista
@@ -168,22 +133,11 @@ class MySessionsQueryTest extends TestCase
      */
     public function my_sessions_requires_jwt_authentication(): void
     {
-        // Act - Sin token
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                }
-            }
-        ';
-
-        $response = $this->graphQL($query);
+        // Act - Sin token, REST endpoint
+        $response = $this->getJson('/api/auth/sessions');
 
         // Assert
-        $response->assertGraphQLErrorMessage('Unauthenticated');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
     }
 
     /**
@@ -193,24 +147,15 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_works_without_refresh_token(): void
     {
         // Arrange
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
 
-        // Act - Solo con access token, SIN refresh token
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    isCurrent
-                }
-            }
-        ';
-
+        // Act - Solo con access token, SIN refresh token (REST endpoint)
         $response = $this->withJWT($session1['accessToken'])
-            ->graphQL($query);
+            ->getJson('/api/auth/sessions');
 
         // Assert - Debe listar sesiones pero ninguna marcada como current
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(2, $sessions);
 
         $currentSessions = array_filter($sessions, fn($s) => $s['isCurrent'] === true);
@@ -224,35 +169,20 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_empty_after_logout_everywhere(): void
     {
         // Arrange - Crear 3 sesiones
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
-        $session3 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
+        $session3 = $this->loginUser($this->testUser);
 
-        // Hacer logout everywhere desde session1
-        $logoutQuery = '
-            mutation {
-                logout(everywhere: true)
-            }
-        ';
-
-        $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($logoutQuery);
+        // Hacer logout everywhere desde session1 (REST endpoint)
+        $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => true]);
 
         // Act - Intentar consultar sesiones con session2 (ya invalidada)
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                }
-            }
-        ';
-
         $response = $this->withJWT($session2['accessToken'])
-            ->graphQL($query);
+            ->getJson('/api/auth/sessions');
 
         // Assert - Debe fallar porque el token está invalidado
-        $response->assertGraphQLErrorMessage('Unauthenticated');
+        $response->assertStatus(401);
     }
 
     /**
@@ -262,36 +192,20 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_after_single_logout(): void
     {
         // Arrange - Crear 3 sesiones
-        $session1 = $this->loginUser();
-        $session2 = $this->loginUser();
-        $session3 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
+        $session2 = $this->loginUser($this->testUser);
+        $session3 = $this->loginUser($this->testUser);
 
-        // Hacer logout de session1 (solo esa sesión)
-        $logoutQuery = '
-            mutation {
-                logout(everywhere: false)
-            }
-        ';
+        // Hacer logout de session1 (solo esa sesión) - REST endpoint
+        $this->withJWT($session1['accessToken'], $session1['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
-        $this->withJWT($session1['accessToken'])
-            ->withRefreshToken($session1['refreshToken'])
-            ->graphQL($logoutQuery);
-
-        // Act - Consultar sesiones desde session2 (debe seguir activa)
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session2['accessToken'])
-            ->withRefreshToken($session2['refreshToken'])
-            ->graphQL($query);
+        // Act - Consultar sesiones desde session2 (debe seguir activa) - REST endpoint
+        $response = $this->withJWT($session2['accessToken'], $session2['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert - Solo 2 sesiones activas (session2 y session3)
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(2, $sessions);
     }
 
@@ -302,24 +216,14 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_with_single_session(): void
     {
         // Arrange - Solo una sesión
-        $session = $this->loginUser();
+        $session = $this->loginUser($this->testUser);
 
-        // Act
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    isCurrent
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session['accessToken'])
-            ->withRefreshToken($session['refreshToken'])
-            ->graphQL($query);
+        // Act - REST endpoint
+        $response = $this->withJWT($session['accessToken'], $session['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(1, $sessions);
         $this->assertTrue($sessions[0]['isCurrent']);
     }
@@ -331,29 +235,14 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_shows_complete_device_info(): void
     {
         // Arrange - Crear sesión con info de dispositivo específica
-        $session = $this->loginUser();
+        $session = $this->loginUser($this->testUser);
 
-        // Act
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    deviceName
-                    ipAddress
-                    userAgent
-                    lastUsedAt
-                    expiresAt
-                    isCurrent
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session['accessToken'])
-            ->withRefreshToken($session['refreshToken'])
-            ->graphQL($query);
+        // Act - REST endpoint
+        $response = $this->withJWT($session['accessToken'], $session['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert - Estructura completa
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(1, $sessions);
 
         $sessionData = $sessions[0];
@@ -375,28 +264,18 @@ class MySessionsQueryTest extends TestCase
     public function my_sessions_ordered_by_last_used_desc(): void
     {
         // Arrange - Crear 3 sesiones con delays
-        $session1 = $this->loginUser();
+        $session1 = $this->loginUser($this->testUser);
         sleep(1);
-        $session2 = $this->loginUser();
+        $session2 = $this->loginUser($this->testUser);
         sleep(1);
-        $session3 = $this->loginUser();
+        $session3 = $this->loginUser($this->testUser);
 
-        // Act
-        $query = '
-            query {
-                mySessions {
-                    sessionId
-                    lastUsedAt
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session3['accessToken'])
-            ->withRefreshToken($session3['refreshToken'])
-            ->graphQL($query);
+        // Act - REST endpoint
+        $response = $this->withJWT($session3['accessToken'], $session3['refreshToken'])
+            ->getJson('/api/auth/sessions');
 
         // Assert - Sesiones ordenadas por lastUsedAt desc
-        $sessions = $response->json('data.mySessions');
+        $sessions = $response->json('sessions');
         $this->assertCount(3, $sessions);
 
         // Verificar que están ordenadas (más reciente primero)
@@ -408,57 +287,34 @@ class MySessionsQueryTest extends TestCase
     }
 
     /**
-     * Helper: Login and get tokens
-     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
+     * Helper: Login and get tokens (REST API)
      */
-    private function loginUser(): array
+    private function loginUser(User $user): array
     {
-        $loginQuery = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
-
-        $response = $this->graphQL($loginQuery, [
-            'input' => [
-                'email' => $this->testUser->email,
-                'password' => 'password',
-                'rememberMe' => false,
-            ],
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password', // Default password from factory
         ]);
 
-        // El refresh token real está almacenado en el trait para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-
         return [
-            'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $refreshToken,
+            'accessToken' => $response->json('accessToken'),
+            'refreshToken' => $response->getCookie('refresh_token')->getValue(),
         ];
     }
 
     /**
-     * Helper: Add JWT authorization header
+     * Helper: Add JWT authorization header and optional refresh token
      */
-    private function withJWT(string $token): self
+    private function withJWT(string $token, ?string $refreshToken = null): self
     {
-        return $this->withHeaders([
+        $headers = [
             'Authorization' => "Bearer {$token}",
-        ]);
-    }
+        ];
 
-    /**
-     * Helper: Add refresh token via header (for tests)
-     * Nota: En tests usamos header porque las cookies con ->withCookie() no funcionan con Lighthouse.
-     * En producción, el frontend usa cookies HttpOnly que sí funcionan correctamente.
-     */
-    private function withRefreshToken(string $token): self
-    {
-        // En tests usamos header porque withCookie() no funciona con Lighthouse
-        return $this->withHeaders([
-            'X-Refresh-Token' => $token,
-        ]);
+        if ($refreshToken) {
+            $headers['X-Refresh-Token'] = $refreshToken;
+        }
+
+        return $this->withHeaders($headers);
     }
 }

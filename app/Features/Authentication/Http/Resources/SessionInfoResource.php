@@ -18,6 +18,13 @@ class SessionInfoResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Determine if this is the current session
+        // The is_current attribute is set by the controller/resolver
+        $isCurrent = false;
+        if ($this->resource instanceof \App\Features\Authentication\Models\RefreshToken) {
+            $isCurrent = (bool) ($this->resource->getAttribute('is_current') ?? false);
+        }
+
         return [
             'sessionId' => $this->id,
             'deviceName' => $this->device_name,
@@ -29,7 +36,7 @@ class SessionInfoResource extends JsonResource
             'expiresAt' => $this->expires_at
                 ? $this->expires_at->toIso8601String()
                 : null,
-            'isCurrent' => $this->isCurrent ?? $this->is_current ?? false,
+            'isCurrent' => $isCurrent,
         ];
     }
 }

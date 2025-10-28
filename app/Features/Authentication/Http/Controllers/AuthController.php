@@ -306,11 +306,22 @@ class AuthController
             // Validar token y obtener payload
             $tokenPayload = $this->tokenService->validateAccessToken($token);
 
-            // Obtener sesión actual usando query directa
-            $currentSession = RefreshToken::query()
-                ->where('user_id', $user->id)
-                ->where('id', $tokenPayload['session_id'])
-                ->first();
+            // Obtener sesión actual usando session_id del JWT
+            $currentSession = null;
+            $currentSessionId = $tokenPayload->session_id ?? null;
+            if ($currentSessionId) {
+                $currentSession = RefreshToken::query()
+                    ->where('user_id', $user->id)
+                    ->where('id', $currentSessionId)
+                    ->whereNull('revoked_at')
+                    ->where('expires_at', '>', now())
+                    ->first();
+
+                // Marcar que es la sesión actual agregando un atributo
+                if ($currentSession) {
+                    $currentSession->setAttribute('is_current', true);
+                }
+            }
 
             // Cargar relaciones necesarias
             $user->load(['profile', 'userRoles']);
@@ -320,8 +331,8 @@ class AuthController
                 'user' => $user,
                 'currentSession' => $currentSession,
                 'tokenInfo' => [
-                    'expiresIn' => $tokenPayload['exp'] - now()->timestamp,
-                    'issuedAt' => now()->setTimestamp($tokenPayload['iat'])->toIso8601String(),
+                    'expiresIn' => max(0, ($tokenPayload->exp ?? 0) - now()->timestamp),
+                    'issuedAt' => now()->toIso8601String(),
                     'tokenType' => 'Bearer',
                 ],
             ];

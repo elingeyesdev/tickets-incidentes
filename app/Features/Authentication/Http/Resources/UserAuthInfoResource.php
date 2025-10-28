@@ -128,13 +128,15 @@ class UserAuthInfoResource extends JsonResource
                 'dashboardPath' => $dashboardPaths[$roleCode] ?? '/dashboard',
             ];
 
-            // Si el rol tiene empresa asociada, incluirla
+            // Si el rol tiene empresa asociada, incluirla; de lo contrario, null
             if ($userRole->company) {
                 $context['company'] = [
                     'id' => $userRole->company->id,
                     'companyCode' => $userRole->company->company_code,
                     'name' => $userRole->company->name,
                 ];
+            } else {
+                $context['company'] = null;
             }
 
             $roleContexts[] = $context;

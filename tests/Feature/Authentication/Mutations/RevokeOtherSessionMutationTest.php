@@ -86,7 +86,7 @@ class RevokeOtherSessionMutationTest extends TestCase
         $sessionId = $this->getSessionId($session['refreshToken']);
 
         // Act - Intentar revocar sesión actual
-        $response = $this->withJWT($session['accessToken'])
+        $response = $this->withJWT($session['accessToken'], $session['refreshToken'])
             ->deleteJson("/api/auth/sessions/{$sessionId}");
 
         // Assert - Debe fallar con un error de conflicto
@@ -94,7 +94,7 @@ class RevokeOtherSessionMutationTest extends TestCase
         $response->assertJson([
             'success' => false,
             'code' => 'CANNOT_REVOKE_CURRENT_SESSION',
-            'message' => 'Cannot revoke current session. Use logout instead.',
+            'message' => 'Cannot revoke current session. Use logout mutation instead.',
         ]);
     }
 
@@ -308,13 +308,19 @@ class RevokeOtherSessionMutationTest extends TestCase
     }
 
     /**
-     * Helper: Add JWT authorization header
+     * Helper: Add JWT authorization header and optional refresh token
      */
-    private function withJWT(string $token): self
+    private function withJWT(string $token, ?string $refreshToken = null): self
     {
-        return $this->withHeaders([
+        $headers = [
             'Authorization' => "Bearer {$token}",
-        ]);
+        ];
+
+        if ($refreshToken) {
+            $headers['X-Refresh-Token'] = $refreshToken;
+        }
+
+        return $this->withHeaders($headers);
     }
 
 

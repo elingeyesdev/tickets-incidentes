@@ -43,81 +43,34 @@ class AuthStatusQueryTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        // Act
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                    user {
-                        id
-                        email
-                        emailVerified
-                        onboardingCompleted
-                        displayName
-                        avatarUrl
-                        theme
-                        language
-                        roleContexts {
-                            roleCode
-                            roleName
-                            dashboardPath
-                            company {
-                                id
-                                companyCode
-                                name
-                                logoUrl
-                            }
-                        }
-                    }
-                    tokenInfo {
-                        expiresIn
-                        tokenType
-                    }
-                    currentSession {
-                        sessionId
-                        deviceName
-                        ipAddress
-                        isCurrent
-                    }
-                }
-            }
-        ';
-
-        $response = $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($loginResponse['refreshToken'])
-            ->graphQL($query);
+        // Act - REST endpoint
+        $response = $this->withJWT($loginResponse['accessToken'], $loginResponse['refreshToken'])
+            ->getJson('/api/auth/status');
 
         // Assert
         $response->assertJsonStructure([
-            'data' => [
-                'authStatus' => [
-                    'isAuthenticated',
-                    'user' => [
-                        'id',
-                        'email',
-                        'displayName',
-                        'roleContexts' => [
-                            '*' => ['roleCode', 'roleName', 'dashboardPath', 'company'],
-                        ],
-                    ],
-                    'tokenInfo' => ['expiresIn', 'tokenType'],
-                    'currentSession' => ['sessionId', 'deviceName', 'isCurrent'],
-                ],
+            'isAuthenticated',
+            'user' => [
+                'id',
+                'email',
+                'displayName',
             ],
+            'tokenInfo' => ['expiresIn', 'tokenType'],
+            'currentSession' => ['sessionId', 'deviceName', 'isCurrent'],
         ]);
 
-        $response->assertJsonPath('data.authStatus.isAuthenticated', true);
-        $response->assertJsonPath('data.authStatus.user.email', $this->testUser->email);
-        $response->assertJsonPath('data.authStatus.tokenInfo.tokenType', 'Bearer');
-        $response->assertJsonPath('data.authStatus.currentSession.isCurrent', true);
+        $response->assertJsonPath('isAuthenticated', true);
+        $response->assertJsonPath('user.email', $this->testUser->email);
+        $response->assertJsonPath('tokenInfo.tokenType', 'Bearer');
+        $response->assertJsonPath('currentSession.isCurrent', true);
 
         // Verificar que expiresIn es un número positivo
-        $expiresIn = $response->json('data.authStatus.tokenInfo.expiresIn');
+        $expiresIn = $response->json('tokenInfo.expiresIn');
         $this->assertGreaterThan(0, $expiresIn);
         $this->assertLessThanOrEqual(config('jwt.ttl') * 60, $expiresIn);
 
-        // Validar roleContexts (ahora dentro de user)
-        $user = $response->json('data.authStatus.user');
+        // Validar roleContexts (dentro de user)
+        $user = $response->json('user');
         $this->assertArrayHasKey('roleContexts', $user);
         $this->assertIsArray($user['roleContexts']);
         $this->assertNotEmpty($user['roleContexts']);
@@ -138,33 +91,21 @@ class AuthStatusQueryTest extends TestCase
 
     /**
      * @test
-     * Obtener estado de autenticación sin Bearer prefix (Apollo Studio)
+     * Obtener estado de autenticación sin Bearer prefix
      */
     public function can_get_auth_status_without_bearer_prefix(): void
     {
         // Arrange
         $loginResponse = $this->loginUser();
 
-        // Act - Token directo sin "Bearer "
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                    user {
-                        email
-                        onboardingCompleted
-                    }
-                }
-            }
-        ';
-
+        // Act - Token directo sin "Bearer " (REST endpoint)
         $response = $this->withHeaders([
             'Authorization' => $loginResponse['accessToken'], // Sin "Bearer"
-        ])->graphQL($query);
+        ])->getJson('/api/auth/status');
 
         // Assert - Debe funcionar correctamente
-        $response->assertJsonPath('data.authStatus.isAuthenticated', true);
-        $response->assertJsonPath('data.authStatus.user.email', $this->testUser->email);
+        $response->assertJsonPath('isAuthenticated', true);
+        $response->assertJsonPath('user.email', $this->testUser->email);
     }
 
     /**
@@ -173,22 +114,11 @@ class AuthStatusQueryTest extends TestCase
      */
     public function auth_status_requires_jwt_authentication(): void
     {
-        // Act - Sin token
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                }
-            }
-        ';
-
-        $response = $this->graphQL($query);
+        // Act - Sin token (REST endpoint)
+        $response = $this->getJson('/api/auth/status');
 
         // Assert
-        $response->assertGraphQLErrorMessage('Unauthenticated');
-
-        $errors = $response->json('errors');
-        $this->assertEquals('UNAUTHENTICATED', $errors[0]['extensions']['code']);
+        $response->assertStatus(401);
     }
 
     /**
@@ -200,32 +130,15 @@ class AuthStatusQueryTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        // Act - Solo con access token, SIN refresh token header
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                    user {
-                        email
-                        onboardingCompleted
-                    }
-                    currentSession {
-                        sessionId
-                        deviceName
-                        isCurrent
-                    }
-                }
-            }
-        ';
-
+        // Act - Solo con access token, SIN refresh token header (REST endpoint)
         $response = $this->withJWT($loginResponse['accessToken'])
-            ->graphQL($query);
+            ->getJson('/api/auth/status');
 
         // Assert - Debe mostrar currentSession porque session_id viene en el JWT
-        $response->assertJsonPath('data.authStatus.isAuthenticated', true);
-        $response->assertJsonPath('data.authStatus.user.email', $this->testUser->email);
-        $this->assertNotNull($response->json('data.authStatus.currentSession'));
-        $response->assertJsonPath('data.authStatus.currentSession.isCurrent', true);
+        $response->assertJsonPath('isAuthenticated', true);
+        $response->assertJsonPath('user.email', $this->testUser->email);
+        $this->assertNotNull($response->json('currentSession'));
+        $response->assertJsonPath('currentSession.isCurrent', true);
     }
 
     /**
@@ -240,45 +153,20 @@ class AuthStatusQueryTest extends TestCase
 
         sleep(1); // Asegurar timestamp diferente
 
-        // Hacer refresh para obtener nuevo token
-        $refreshQuery = '
-            mutation {
-                refreshToken {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
+        // Hacer refresh para obtener nuevo token (REST endpoint)
+        $refreshResponse = $this->withJWT($oldAccessToken, $loginResponse['refreshToken'])
+            ->postJson('/api/auth/refresh', []);
 
-        $refreshResponse = $this->withJWT($oldAccessToken)
-            ->withRefreshToken($loginResponse['refreshToken'])
-            ->graphQL($refreshQuery);
+        $newAccessToken = $refreshResponse->json('accessToken');
 
-        $newAccessToken = $refreshResponse->json('data.refreshToken.accessToken');
-        // El refresh token real está almacenado en el trait para tests
-        $newRefreshToken = \App\Features\Authentication\GraphQL\Mutations\RefreshTokenMutation::getLastRefreshToken();
-
-        // Act - Consultar estado con nuevo token
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                    tokenInfo {
-                        expiresIn
-                        tokenType
-                    }
-                }
-            }
-        ';
-
+        // Act - Consultar estado con nuevo token (REST endpoint)
         $response = $this->withJWT($newAccessToken)
-            ->withRefreshToken($newRefreshToken)
-            ->graphQL($query);
+            ->getJson('/api/auth/status');
 
         // Assert - Token info debe reflejar nuevo token
-        $response->assertJsonPath('data.authStatus.isAuthenticated', true);
+        $response->assertJsonPath('isAuthenticated', true);
 
-        $newExpiresIn = $response->json('data.authStatus.tokenInfo.expiresIn');
+        $newExpiresIn = $response->json('tokenInfo.expiresIn');
         $this->assertGreaterThan(0, $newExpiresIn);
     }
 
@@ -291,31 +179,16 @@ class AuthStatusQueryTest extends TestCase
         // Arrange - Login
         $loginResponse = $this->loginUser();
 
-        // Hacer logout
-        $logoutQuery = '
-            mutation {
-                logout
-            }
-        ';
+        // Hacer logout (REST endpoint)
+        $this->withJWT($loginResponse['accessToken'], $loginResponse['refreshToken'])
+            ->postJson('/api/auth/logout', ['everywhere' => false]);
 
-        $this->withJWT($loginResponse['accessToken'])
-            ->withRefreshToken($loginResponse['refreshToken'])
-            ->graphQL($logoutQuery);
-
-        // Act - Intentar consultar estado con token revocado
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                }
-            }
-        ';
-
+        // Act - Intentar consultar estado con token revocado (REST endpoint)
         $response = $this->withJWT($loginResponse['accessToken'])
-            ->graphQL($query);
+            ->getJson('/api/auth/status');
 
         // Assert - Debe fallar
-        $response->assertGraphQLErrorMessage('Unauthenticated');
+        $response->assertStatus(401);
     }
 
     /**
@@ -327,49 +200,26 @@ class AuthStatusQueryTest extends TestCase
         // Arrange
         $loginResponse = $this->loginUser();
 
-        // Act
-        $query = '
-            query {
-                authStatus {
-                    user {
-                        id
-                        email
-                        userCode
-                        status
-                        emailVerified
-                        onboardingCompleted
-                        displayName
-                        avatarUrl
-                        theme
-                        language
-                    }
-                }
-            }
-        ';
-
+        // Act - REST endpoint
         $response = $this->withJWT($loginResponse['accessToken'])
-            ->graphQL($query);
+            ->getJson('/api/auth/status');
 
         // Assert - Estructura completa
         $response->assertJsonStructure([
-            'data' => [
-                'authStatus' => [
-                    'user' => [
-                        'id',
-                        'email',
-                        'userCode',
-                        'status',
-                        'emailVerified',
-                        'onboardingCompleted',
-                        'displayName',
-                        'theme',
-                        'language',
-                    ],
-                ],
+            'user' => [
+                'id',
+                'email',
+                'userCode',
+                'status',
+                'emailVerified',
+                'onboardingCompleted',
+                'displayName',
+                'theme',
+                'language',
             ],
         ]);
 
-        $user = $response->json('data.authStatus.user');
+        $user = $response->json('user');
         $this->assertNotNull($user['displayName']);
         $this->assertNotNull($user['email']);
     }
@@ -385,81 +235,49 @@ class AuthStatusQueryTest extends TestCase
         $session2 = $this->loginUser();
         $session3 = $this->loginUser();
 
-        // Act - Consultar estado desde sesión 2
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                    currentSession {
-                        sessionId
-                        isCurrent
-                    }
-                }
-            }
-        ';
-
-        $response = $this->withJWT($session2['accessToken'])
-            ->withRefreshToken($session2['refreshToken'])
-            ->graphQL($query);
+        // Act - Consultar estado desde sesión 2 (REST endpoint)
+        $response = $this->withJWT($session2['accessToken'], $session2['refreshToken'])
+            ->getJson('/api/auth/status');
 
         // Assert - Debe mostrar la sesión correcta
-        $response->assertJsonPath('data.authStatus.isAuthenticated', true);
-        $response->assertJsonPath('data.authStatus.currentSession.isCurrent', true);
+        $response->assertJsonPath('isAuthenticated', true);
+        $response->assertJsonPath('currentSession.isCurrent', true);
 
         // La sessionId debe corresponder a session2 (no session1 ni session3)
-        $sessionId = $response->json('data.authStatus.currentSession.sessionId');
+        $sessionId = $response->json('currentSession.sessionId');
         $this->assertNotNull($sessionId);
     }
 
     /**
-     * Helper: Login and get tokens
-     * NOTE: Con HttpOnly cookies, el refreshToken ahora viene en la cookie, no en el JSON
+     * Helper: Login and get tokens (REST API)
      */
     private function loginUser(): array
     {
-        $loginQuery = '
-            mutation Login($input: LoginInput!) {
-                login(input: $input) {
-                    accessToken
-                    refreshToken
-                }
-            }
-        ';
-
-        $response = $this->graphQL($loginQuery, [
-            'input' => [
-                'email' => $this->testUser->email,
-                'password' => 'password',
-                'rememberMe' => false,
-            ],
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $this->testUser->email,
+            'password' => 'password',
+            'rememberMe' => false,
         ]);
 
-        // El refresh token real está almacenado en el trait para tests
-        $refreshToken = \App\Features\Authentication\GraphQL\Mutations\LoginMutation::getLastRefreshToken();
-
         return [
-            'accessToken' => $response->json('data.login.accessToken'),
-            'refreshToken' => $refreshToken,
+            'accessToken' => $response->json('accessToken'),
+            'refreshToken' => $response->getCookie('refresh_token')->getValue(),
         ];
     }
 
     /**
-     * Helper: Add JWT authorization header
+     * Helper: Add JWT authorization header and optional refresh token
      */
-    private function withJWT(string $token): self
+    private function withJWT(string $token, ?string $refreshToken = null): self
     {
-        return $this->withHeaders([
+        $headers = [
             'Authorization' => "Bearer {$token}",
-        ]);
-    }
+        ];
 
-    /**
-     * Helper: Add refresh token header
-     */
-    private function withRefreshToken(string $token): self
-    {
-        return $this->withHeaders([
-            'X-Refresh-Token' => $token,
-        ]);
+        if ($refreshToken) {
+            $headers['X-Refresh-Token'] = $refreshToken;
+        }
+
+        return $this->withHeaders($headers);
     }
 }
