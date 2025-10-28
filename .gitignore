@@ -82,7 +82,7 @@ database/*.sqlite-journal
 coverage/
 .phpunit.result.cache
 .phpunit.cache
-phpunit.xml
+# phpunit.xml is NOT ignored - it's a configuration file that should be committed
 .php_cs.cache
 .php-cs-fixer.cache
 
