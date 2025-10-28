@@ -83,9 +83,9 @@ Route::middleware(['web.auth'])->group(function () {
         return Inertia::render('Authenticated/RoleSelector');
     })->name('role.selector');
 
-    // Dashboard route
+    // Dashboard route - renders User/Dashboard for USER role
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        return Inertia::render('User/Dashboard');
     })->name('dashboard');
 
     // Admin routes
@@ -185,10 +185,10 @@ Route::middleware(['web.auth'])->group(function () {
         })->name('agent.knowledge.base');
     });
 
-    // User tickets
+    // User tickets - routes to User/Dashboard
     Route::prefix('tickets')->group(function () {
         Route::get('/', function () {
-            return Inertia::render('Tickets/Index');
+            return Inertia::render('User/Dashboard');
         })->name('tickets.index');
 
         Route::get('/create', function () {

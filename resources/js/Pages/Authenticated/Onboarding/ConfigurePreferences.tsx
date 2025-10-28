@@ -7,7 +7,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { router } from '@inertiajs/react';
 import { useMutation } from '@apollo/client/react';
 import { Globe, Palette, Bell, CheckCircle2 } from 'lucide-react';
-import { AuthGuard } from '@/components/Auth/AuthGuard';
+import { OnboardingRoute } from '@/components/guards/OnboardingRoute';
 import { OnboardingLayout } from '@/Layouts/Onboarding/OnboardingLayout';
 import { Card, Button, OnboardingFormSkeleton } from '@/Components/ui';
 import { useAuth, useNotification, useLocale, useTheme } from '@/contexts';
@@ -18,14 +18,14 @@ export default function ConfigurePreferences() {
     const [progressPercentage, setProgressPercentage] = useState(50); // Empieza en 50% (paso anterior completado)
 
     return (
-        <AuthGuard>
+        <OnboardingRoute>
             <OnboardingLayout title="Configurar Preferencias">
                 <ConfigurePreferencesContent
                     setProgressPercentage={setProgressPercentage}
                     progressPercentage={progressPercentage}
                 />
             </OnboardingLayout>
-        </AuthGuard>
+        </OnboardingRoute>
     );
 }
 

@@ -308,15 +308,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
      * Verifica si el usuario ha completado el proceso de onboarding
      * (VerifyEmail → CompleteProfile → ConfigurePreferences)
      * Usa el helper centralizado de onboarding
-     * IMPORTANTE: Memoizada con useCallback para evitar loops en useEffect
+     * IMPORTANTE: Memoizada con useMemo para evitar re-cálculos innecesarios
      */
+    const onboardingCompletedValue = useMemo(() => {
+        return checkOnboardingCompleted(user);
+    }, [user?.onboardingCompletedAt]); // Solo depende de onboardingCompletedAt, no del objeto user completo
+
     const hasCompletedOnboarding = useCallback((): boolean => {
-        console.log('[hasCompletedOnboarding] user:', user);
-        console.log('[hasCompletedOnboarding] onboardingCompletedAt:', user?.onboardingCompletedAt);
-        const result = checkOnboardingCompleted(user);
-        console.log('[hasCompletedOnboarding] result:', result);
-        return result;
-    }, [user]);
+        return onboardingCompletedValue;
+    }, [onboardingCompletedValue]);
 
     // Memoizar el contexto para prevenir re-renderizados innecesarios
     const value: AuthContextType = useMemo(() => ({

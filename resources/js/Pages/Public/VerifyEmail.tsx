@@ -132,7 +132,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
         }
 
         // Verificar si el usuario ya completó el onboarding
-        const hasCompletedOnboarding = user.onboardingCompleted;
+        const hasCompletedOnboarding = user.onboardingCompletedAt !== null && user.onboardingCompletedAt !== undefined;
         
         if (!hasCompletedOnboarding) {
             // Usuario nuevo, ir a onboarding
@@ -317,7 +317,7 @@ function VerifyEmailContent({ token }: VerifyEmailPageProps) {
                             className="w-full bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700"
                             onClick={() => {
                                 // Verificar si ya completó onboarding
-                                const hasCompletedOnboarding = user?.onboardingCompleted;
+                                const hasCompletedOnboarding = user?.onboardingCompletedAt !== null && user?.onboardingCompletedAt !== undefined;
                                 
                                 if (!hasCompletedOnboarding) {
                                     // Usuario nuevo, ir a onboarding

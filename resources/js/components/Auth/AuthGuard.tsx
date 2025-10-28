@@ -14,7 +14,7 @@ interface AuthGuardProps {
  *
  * This component centralizes all authorization logic:
  * 1. Verifies the user is authenticated.
- * 2. Verifies onboarding is complete.
+ * 2. Verifies onboarding is complete (except on onboarding pages).
  * 3. Verifies the user has selected a role if they have multiple.
  * 4. Verifies the selected role is allowed to access the current page.
  */
@@ -44,8 +44,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles = [
                 return;
             }
 
-            // 2. Onboarding Check
-            if (!hasCompletedOnboarding()) {
+            // Check if we're on an onboarding page
+            const isOnOnboardingPage = typeof window !== 'undefined' && 
+                window.location.pathname.startsWith('/onboarding/');
+
+            // 2. Onboarding Check (skip if already on onboarding page)
+            if (!isOnOnboardingPage && !hasCompletedOnboarding()) {
                 router.visit('/onboarding/profile', { replace: true });
                 return;
             }
@@ -68,7 +72,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, allowedRoles = [
 
         setIsVerifying(false);
 
-    }, [authLoading, isAuthenticated, user, hasCompletedOnboarding, lastSelectedRole, allowedRoles]);
+    }, [authLoading, isAuthenticated, user, lastSelectedRole, allowedRoles]);
 
     if (authLoading || isVerifying) {
         return <FullscreenLoader message="Verificando acceso..." />;

@@ -82,11 +82,12 @@ class UserRoleContextsBatchLoader
                 $roleCode = strtoupper($userRole->role_code);
 
                 // Mapear dashboard paths según rol
+                // Estas URLs corresponden a rutas en routes/web-jwt-pure.php
                 $dashboardPaths = [
-                    'USER' => '/tickets',
-                    'AGENT' => '/agent/dashboard',
-                    'COMPANY_ADMIN' => '/empresa/dashboard',
-                    'PLATFORM_ADMIN' => '/admin/dashboard',
+                    'USER' => '/dashboard',        // User dashboard (routes/web-jwt-pure.php:87-89 - renders User/Dashboard.tsx)
+                    'AGENT' => '/agent/dashboard', // Agent dashboard (routes/web-jwt-pure.php:171-173 - renders Agent/Dashboard.tsx)
+                    'COMPANY_ADMIN' => '/empresa/dashboard', // Company admin dashboard (routes/web-jwt-pure.php:140-142)
+                    'PLATFORM_ADMIN' => '/admin/dashboard',  // Platform admin dashboard (routes/web-jwt-pure.php:93-95)
                 ];
 
                 // Mapear nombres legibles de roles
