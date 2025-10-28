@@ -90,61 +90,57 @@ trait HandlesTimeTravelWithCache
     {
         try {
             $prefix = config('cache.prefix', '');
-            $pattern = $prefix . '*';
             $currentTime = now()->timestamp;
-            $keysToDelete = [];
+            $timeTraveled = $currentTime - self::$baseTime;
 
-            // Obtener todas las keys en Redis
-            $allKeys = Redis::keys($pattern);
+            // Patrones específicos de keys que típicamente usan TTL y son afectadas por time-travel
+            $timeSensitivePatterns = [
+                'password_reset*',      // Password reset tokens y códigos
+                'rate_limit*',          // Rate limiting
+                'session*',             // Sesiones con expiración
+                'remember_*',           // Remember me tokens
+            ];
 
-            foreach ($allKeys as $fullKey) {
-                // Obtener el TTL en segundos
-                $ttl = Redis::ttl($fullKey);
+            foreach ($timeSensitivePatterns as $pattern) {
+                $fullPattern = $prefix . $pattern;
+                $keys = Redis::keys($fullPattern);
 
-                // TTL en Redis:
-                // > 0: segundos hasta expiración
-                // -1: key existe sin expiración
-                // -2: key no existe
+                foreach ($keys as $fullKey) {
+                    $ttl = Redis::ttl($fullKey);
 
-                // Ignorar keys sin expiración
-                if ($ttl === -1 || $ttl === -2) {
-                    continue;
+                    // TTL en Redis:
+                    // > 0: segundos hasta expiración
+                    // -1: key existe sin expiración
+                    // -2: key no existe
+
+                    // Ignorar keys sin expiración o inexistentes
+                    if ($ttl <= 0 && $ttl !== -1) {
+                        continue; // Ya está expirada
+                    }
+
+                    if ($ttl === -1) {
+                        continue; // Sin expiración
+                    }
+
+                    // LÓGICA DE EXPIRACIÓN MEJORADA:
+                    // Si viajamos hacia adelante en el tiempo, los keys con TTL pequeño probablemente expiraron
+                    // Heurística: Si TTL < tiempo viajado, la key ha expirado
+
+                    if ($timeTraveled > 0 && $ttl > 0) {
+                        // Si el TTL es menor que el tiempo que viajamos hacia adelante,
+                        // es probable que la key haya expirado
+                        // Ejemplo:
+                        //   - Key almacenada con TTL 60 en time = T0
+                        //   - Viajamos a T0 + 70 segundos
+                        //   - Redis reporta TTL = 60 (no sabe que viajamos)
+                        //   - Pero TTL debería ser = 60 - 70 = -10 (expirado)
+                        //   - Condición: TTL (60) < timeTraveled (70) → Expirar
+
+                        if ($ttl < $timeTraveled) {
+                            Redis::del($fullKey);
+                        }
+                    }
                 }
-
-                // Si TTL es positivo, aún es válido (Redis lo manejará)
-                // Pero si TTL es muy pequeño, podría estar casi expirado
-                // Para simular correctamente, verificamos el estado esperado
-
-                // Obtener el momento de creación aproximado
-                // Usamos la creación desde el baseTime + el TTL
-                // Si TTL original era N, la key debería expirar en baseTime + N
-                // Si ahora > baseTime + N, debe estar expirada
-
-                // Pero necesitamos saber N (TTL original).
-                // Lo estimamos usando el TTL actual:
-                // Si actualmente TTL = 50, y viajamos 20 segundos,
-                // el TTL reportado debería ser 30, pero Redis reportará 50
-
-                // Estrategia: Si el TTL reportado es mayor que el tiempo viajado,
-                // significa que la key aún es válida. Si es menor, deletear.
-
-                // Calcular tiempo viajado
-                $timeTraveled = $currentTime - self::$baseTime;
-
-                // Si TTL original era menor que el tiempo viajado,
-                // la key debería estar expirada
-                // (asumiendo que se almacenó hace poco después del baseTime)
-
-                // Heurística: si TTL reportado < timeTraveled, probablemente expiró
-                if ($timeTraveled > 0 && $ttl > 0 && $ttl < ($timeTraveled + 5)) {
-                    // El key probablemente expiró (pequeño margen para incertidumbre)
-                    $keysToDelete[] = $fullKey;
-                }
-            }
-
-            // Deletear las keys expiradas
-            foreach ($keysToDelete as $key) {
-                Redis::del($key);
             }
 
         } catch (\Exception $e) {
