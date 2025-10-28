@@ -237,18 +237,36 @@ class PasswordResetController
     public function status(Request $request): JsonResponse
     {
         try {
+            // Replicar exactamente PasswordResetStatusQuery
+
             $token = $request->input('token');
 
             if (!$token) {
                 return response()->json([
                     'isValid' => false,
-                    'message' => 'Token es requerido',
-                ], 422);
+                    'canReset' => false,
+                    'email' => null,
+                    'expiresAt' => null,
+                    'attemptsRemaining' => 0,
+                ], 200); // Retornar 200 incluso si token falta (como query)
             }
 
+            // Validar token
             $status = $this->passwordResetService->validateResetToken($token);
 
-            return response()->json(new PasswordResetStatusResource($status), 200);
+            // Agregar campos computados (como calcula la query)
+            // Convertir timestamp a ISO8601 si es necesario
+            $statusFormatted = [
+                'is_valid' => $status['is_valid'],
+                'can_reset' => $status['is_valid'],
+                'email' => $status['email'],
+                'expires_at' => $status['expires_at']
+                    ? \Carbon\Carbon::createFromTimestamp($status['expires_at'])->toIso8601String()
+                    : null,
+                'attempts_remaining' => $status['attempts_remaining'] ?? 0,
+            ];
+
+            return response()->json(new PasswordResetStatusResource($statusFormatted), 200);
         } catch (\Exception $e) {
             throw $e;
         }

@@ -196,9 +196,28 @@ class EmailVerificationController
                 throw new AuthenticationException('User not authenticated');
             }
 
+            // Replicar exactamente EmailVerificationStatusQuery
+
+            // Obtener status del servicio
             $status = $this->authService->getEmailVerificationStatus($user->id);
 
-            return response()->json(new EmailVerificationStatusResource($status), 200);
+            // Calcular si puede reenviar (rate limit: 3 intentos cada 5 minutos)
+            // Por simplicidad, siempre puede reenviar si no está verificado
+            // El rate limit real lo maneja el middleware
+            $canResend = !$status['is_verified'];
+            $resendAvailableAt = $canResend ? now() : null;
+
+            // Agregar campos computados (como los calcula la query)
+            $statusWithComputed = [
+                'is_verified' => $status['is_verified'],
+                'email' => $status['email'],
+                'verified_at' => $status['verified_at'] ?? $user->created_at,
+                'can_resend' => $canResend,
+                'resend_available_at' => $resendAvailableAt,
+                'attempts_remaining' => $canResend ? 3 : 0, // Rate limit de 3 intentos
+            ];
+
+            return response()->json(new EmailVerificationStatusResource($statusWithComputed), 200);
         } catch (\Exception $e) {
             throw $e;
         }
