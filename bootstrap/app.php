@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 
+        // API routes are stateless - disable CSRF protection for all /api/* routes
+        $middleware->validateCsrfTokens(except: [
+            'api/*',  // All API routes bypass CSRF (they use JWT instead)
+        ]);
+
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
         // Middleware aliases para autenticación
