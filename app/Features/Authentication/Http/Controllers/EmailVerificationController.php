@@ -63,32 +63,35 @@ class EmailVerificationController
         try {
             $token = $request->input('token');
 
-            // Intentar verificar email
-            $this->authService->verifyEmail($token);
+            // Verificar email usando token (replicar exactamente VerifyEmailMutation)
+            $user = $this->authService->verifyEmail($token);
+
+            \Illuminate\Support\Facades\Log::info('Email verified successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Email verificado correctamente.',
-            ], 200);
-        } catch (TokenInvalidException $e) {
-            // Token inválido o expirado - retornar error pero con 200
-            return response()->json([
-                'success' => false,
-                'message' => 'El token de verificación es inválido o ha expirado.',
-                'canResend' => true,
+                'message' => '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.',
+                'canResend' => false,
                 'resendAvailableAt' => null,
             ], 200);
+
         } catch (AuthenticationException $e) {
-            // Otros errores de autenticación
+            // Error de verificación (token inválido, expirado, email ya verificado)
+            \Illuminate\Support\Facades\Log::warning('Email verification failed', [
+                'token_preview' => substr($request->input('token', ''), 0, 10) . '...',
+                'error' => $e->getMessage(),
+            ]);
+
+            // Retornar error como resultado (no throw - compatible con cliente)
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'canResend' => true,
-                'resendAvailableAt' => null,
+                'resendAvailableAt' => now()->toIso8601String(),
             ], 200);
-        } catch (\Exception $e) {
-            // Excepciones esperadas se disparan al middleware
-            throw $e;
         }
     }
 
@@ -122,6 +125,8 @@ class EmailVerificationController
                 throw new AuthenticationException('User not authenticated');
             }
 
+            // Replicar exactamente ResendVerificationMutation
+
             // Verificar que el usuario no esté ya verificado
             if ($user->hasVerifiedEmail()) {
                 return response()->json([
@@ -132,8 +137,13 @@ class EmailVerificationController
                 ], 200);
             }
 
-            // Reenviar verificación
-            $this->authService->resendEmailVerification($user->id);
+            // Reenviar verificación (AuthService dispara evento UserRegistered que envía email)
+            $token = $this->authService->resendEmailVerification($user->id);
+
+            \Illuminate\Support\Facades\Log::info('Email verification resent', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -141,8 +151,20 @@ class EmailVerificationController
                 'canResend' => false,
                 'resendAvailableAt' => now()->addMinutes(5)->toIso8601String(),
             ], 200);
-        } catch (\Exception $e) {
-            throw $e;
+
+        } catch (AuthenticationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to resend verification email', [
+                'user_id' => $user->id ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+
+            // Retornar error como resultado (no throw - compatible con cliente)
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'canResend' => true,
+                'resendAvailableAt' => now()->addMinute()->toIso8601String(),
+            ], 200);
         }
     }
 

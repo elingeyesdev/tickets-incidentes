@@ -8,8 +8,10 @@ use App\Features\Authentication\Http\Resources\PasswordResetStatusResource;
 use App\Features\Authentication\Http\Resources\PasswordResetResultResource;
 use App\Features\Authentication\Services\PasswordResetService;
 use App\Shared\Utilities\DeviceInfoParser;
+use App\Shared\Exceptions\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
 /**
@@ -61,7 +63,8 @@ class PasswordResetController
     public function store(PasswordResetRequest $request): JsonResponse
     {
         try {
-            $email = $request->input('email');
+            // Replicar exactamente ResetPasswordMutation
+            $email = strtolower(trim($request->input('email') ?? ''));
 
             // Solicitar reset - siempre retorna true
             $this->passwordResetService->requestReset($email);
@@ -72,6 +75,10 @@ class PasswordResetController
                 'message' => 'Si el email existe en nuestro sistema, recibirás un enlace para resetear tu contraseña.',
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Exception in PasswordResetController::store', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             throw $e;
         }
     }
@@ -113,11 +120,52 @@ class PasswordResetController
     public function confirm(PasswordResetConfirmRequest $request): JsonResponse
     {
         try {
+            // Replicar exactamente ConfirmPasswordResetMutation
+
+            // === EXTRAER Y VALIDAR INPUTS ===
             $token = $request->input('token');
             $code = $request->input('code');
             $password = $request->input('password');
-            $deviceInfo = DeviceInfoParser::fromRequest($request);
+            $passwordConfirmation = $request->input('passwordConfirmation');
 
+            // === VALIDACIONES (replicar mutation) ===
+            if (!$password) {
+                throw ValidationException::fieldRequired('password');
+            }
+
+            if (!$passwordConfirmation) {
+                throw ValidationException::fieldRequired('passwordConfirmation');
+            }
+
+            if ($password !== $passwordConfirmation) {
+                throw ValidationException::withField('passwordConfirmation', 'The passwords do not match');
+            }
+
+            if (strlen($password) < 8) {
+                throw ValidationException::withField('password', 'The password must be at least 8 characters');
+            }
+
+            // Validar que hay token O código, pero NO ambos
+            if ($token && $code) {
+                throw ValidationException::withField('input', 'Provide either token or code, not both');
+            }
+
+            if (!$token && !$code) {
+                throw ValidationException::withField('input', 'Provide either token or code');
+            }
+
+            // === PREPARAR DEVICE INFO (con fallback como en mutation) ===
+            $deviceInfo = [];
+            try {
+                $deviceInfo = DeviceInfoParser::fromRequest($request);
+                // Sobrescribir name con el estándar de mutation
+                $deviceInfo['name'] = 'Password Reset Login';
+            } catch (\Exception $e) {
+                // En contexto de testing o sin request, usar valores por defecto
+                $deviceInfo = ['name' => 'Password Reset Login'];
+            }
+
+            // === CONFIRMAR RESET ===
             // Usar token o code
             if ($token) {
                 $result = $this->passwordResetService->confirmReset(
@@ -146,6 +194,14 @@ class PasswordResetController
                     sameSite: 'lax'
                 );
         } catch (\Exception $e) {
+            // Log the exception for debugging (replicar mutation)
+            Log::error('ConfirmPasswordResetMutation error', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             throw $e;
         }
     }

@@ -6,6 +6,7 @@ use App\Features\Authentication\Http\Resources\MarkOnboardingCompletedResource;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
 /**
@@ -46,8 +47,16 @@ class OnboardingController
                 throw new AuthenticationException('User not authenticated');
             }
 
+            // Replicar exactamente MarkOnboardingCompletedMutation
+
             // Si ya está completado, retornar éxito sin modificar
             if ($user->onboarding_completed_at !== null) {
+                Log::info('Onboarding already completed', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'onboarding_completed_at' => $user->onboarding_completed_at->toDateTimeString(),
+                ]);
+
                 return response()->json(new MarkOnboardingCompletedResource([
                     'success' => true,
                     'message' => 'El onboarding ya estaba completado',
@@ -55,9 +64,15 @@ class OnboardingController
                 ]), 200);
             }
 
-            // Marcar como completado
+            // Marcar onboarding como completado (establece timestamp)
             $user->onboarding_completed_at = now();
             $user->save();
+
+            Log::info('Onboarding marked as completed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'onboarding_completed_at' => $user->onboarding_completed_at->toDateTimeString(),
+            ]);
 
             return response()->json(new MarkOnboardingCompletedResource([
                 'success' => true,

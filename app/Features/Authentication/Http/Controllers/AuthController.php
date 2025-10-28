@@ -72,18 +72,16 @@ class AuthController
     public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            // Extraer device info del contexto HTTP
+            // 1. Preparar datos para el servicio (REST camelCase → Service snake_case)
+            $input = $this->mapInputToServiceFormat($request->validated());
+
+            // 2. Extraer información del dispositivo desde contexto HTTP
             $deviceInfo = DeviceInfoParser::fromRequest($request);
 
-            // Transformar camelCase a snake_case para el servicio
-            $data = collect($request->validated())
-                ->mapKeys(fn($value, $key) => Str::snake($key))
-                ->all();
+            // 3. Delegar al servicio (TODA la lógica de negocio está aquí)
+            $payload = $this->authService->register($input, $deviceInfo);
 
-            // Delegar al servicio
-            $payload = $this->authService->register($data, $deviceInfo);
-
-            // Retornar con refresh token en cookie
+            // 4. Retornar con refresh token en cookie
             return response()
                 ->json(new AuthPayloadResource($payload), 201)
                 ->cookie(
@@ -137,14 +135,22 @@ class AuthController
     public function login(LoginRequest $request): JsonResponse
     {
         try {
+            // 1. Normalizar email (lowercase y trim)
+            $email = strtolower(trim($request->input('email')));
+            $password = $request->input('password');
+
+            // 2. Extraer información del dispositivo desde contexto HTTP
             $deviceInfo = DeviceInfoParser::fromRequest($request);
 
-            $payload = $this->authService->login(
-                $request->input('email'),
-                $request->input('password'),
-                $deviceInfo
-            );
+            // Si se proveyó deviceName en el input, usarlo
+            if (!empty($request->input('deviceName'))) {
+                $deviceInfo['name'] = $request->input('deviceName');
+            }
 
+            // 3. Delegar al servicio (TODA la lógica de negocio está aquí)
+            $payload = $this->authService->login($email, $password, $deviceInfo);
+
+            // 4. Retornar con refresh token en cookie
             return response()
                 ->json(new AuthPayloadResource($payload), 200)
                 ->cookie(
@@ -324,5 +330,44 @@ class AuthController
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    // ==================== PRIVATE HELPER METHODS ====================
+
+    /**
+     * Mapea inputs REST (camelCase) a formato esperado por AuthService (snake_case)
+     *
+     * También sanitiza y normaliza los datos:
+     * - Email: lowercase y trimmed
+     * - Nombres: Capitalizados y trimmed
+     *
+     * NOTA: acceptsTerms y acceptsPrivacyPolicy ya están validados por RegisterRequest
+     * que valida con 'accepted', garantizando que sean true.
+     *
+     * @param array $input
+     * @return array
+     */
+    private function mapInputToServiceFormat(array $input): array
+    {
+        return [
+            'email' => strtolower(trim($input['email'])),
+            'password' => $input['password'],
+            'first_name' => $this->capitalizeName($input['firstName']),
+            'last_name' => $this->capitalizeName($input['lastName']),
+            'terms_accepted' => true, // Validado por RegisterRequest con 'accepted'
+        ];
+    }
+
+    /**
+     * Capitaliza nombres correctamente (Primera letra mayúscula, resto minúsculas)
+     * También sanitiza quitando HTML tags
+     *
+     * @param string $name Nombre a capitalizar
+     * @return string Nombre capitalizado y sanitizado
+     */
+    private function capitalizeName(string $name): string
+    {
+        $sanitized = strip_tags(trim($name));
+        return ucfirst(strtolower($sanitized));
     }
 }
