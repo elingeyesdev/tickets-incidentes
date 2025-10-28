@@ -16,6 +16,293 @@
         }
     ],
     "paths": {
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user",
+                "description": "Create a new user account and return authentication tokens",
+                "operationId": "021e877864f2b053f14af19f4fce5dd7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password",
+                                    "passwordConfirmation",
+                                    "firstName",
+                                    "lastName",
+                                    "acceptsTerms",
+                                    "acceptsPrivacyPolicy"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "passwordConfirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "firstName": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "lastName": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "acceptsTerms": {
+                                        "type": "boolean"
+                                    },
+                                    "acceptsPrivacyPolicy": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User created successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "409": {
+                        "description": "Email already exists"
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login user",
+                "description": "Authenticate user with email and password",
+                "operationId": "7571e1edb2e53d940f2029c7829e720d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "deviceName": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "rememberMe": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/auth/login/google": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login with Google",
+                "description": "Authenticate user using Google ID token",
+                "operationId": "09fd714107f3ee9528c85d31498e16ab",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "googleToken"
+                                ],
+                                "properties": {
+                                    "googleToken": {
+                                        "description": "Google ID token",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Invalid token"
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "description": "Get a new access token using refresh token",
+                "operationId": "8547e6cec5b593dead597364d0a21d93",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "refreshToken": {
+                                        "description": "Refresh token (if not in header/cookie)",
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully"
+                    },
+                    "401": {
+                        "description": "Invalid or missing refresh token"
+                    }
+                }
+            }
+        },
+        "/api/auth/status": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authentication status",
+                "description": "Get current authenticated user status and session information",
+                "operationId": "8a24b7b2f49b7e0cb087a5b10704059b",
+                "responses": {
+                    "200": {
+                        "description": "Authentication status retrieved"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/api/auth/email/verify": {
+            "post": {
+                "tags": [
+                    "Email Verification"
+                ],
+                "summary": "Verify email",
+                "description": "Verify user email with token. Always returns 200.",
+                "operationId": "077140d57b4d70ffd89a68e5a5899364",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification result (check success field)"
+                    }
+                }
+            }
+        },
+        "/api/auth/email/verify/resend": {
+            "post": {
+                "tags": [
+                    "Email Verification"
+                ],
+                "summary": "Resend verification email",
+                "description": "Resend verification email to authenticated user (rate limited: 3 per 5 minutes)",
+                "operationId": "68696da7a70f3e6377685eab5496aa04",
+                "responses": {
+                    "200": {
+                        "description": "Email resent"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/api/auth/email/status": {
+            "get": {
+                "tags": [
+                    "Email Verification"
+                ],
+                "summary": "Get email verification status",
+                "description": "Get email verification status for authenticated user",
+                "operationId": "f9d76d9ffd5f5b4d7f72eee0ba75f695",
+                "responses": {
+                    "200": {
+                        "description": "Status retrieved"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
         "/api/health": {
             "get": {
                 "tags": [
@@ -30,12 +317,269 @@
                     }
                 }
             }
+        },
+        "/api/auth/onboarding/completed": {
+            "post": {
+                "tags": [
+                    "Onboarding"
+                ],
+                "summary": "Mark onboarding as completed",
+                "description": "Mark onboarding process as completed for authenticated user",
+                "operationId": "d7efab01fa98353947198030b8eb5e4d",
+                "responses": {
+                    "200": {
+                        "description": "Onboarding marked as completed"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/api/auth/password-reset": {
+            "post": {
+                "tags": [
+                    "Password Reset"
+                ],
+                "summary": "Request password reset",
+                "description": "Request a password reset. Always returns success for security.",
+                "operationId": "67699b55b6b45dc8a8f476a6a079595b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reset requested (always success)"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/auth/password-reset/confirm": {
+            "post": {
+                "tags": [
+                    "Password Reset"
+                ],
+                "summary": "Confirm password reset",
+                "description": "Confirm password reset with new password and token/code",
+                "operationId": "4f87e9e00e2080d94b31eb313af97f9c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "password",
+                                    "passwordConfirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "description": "Reset token (32 chars)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "code": {
+                                        "description": "Reset code (6 digits)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "passwordConfirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "404": {
+                        "description": "Invalid token/code"
+                    },
+                    "401": {
+                        "description": "Token expired"
+                    }
+                }
+            }
+        },
+        "/api/auth/password-reset/status": {
+            "get": {
+                "tags": [
+                    "Password Reset"
+                ],
+                "summary": "Get password reset status",
+                "description": "Validate password reset token and return its status",
+                "operationId": "ff2ace448696392eb45ebde2e5e43915",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "description": "Reset token",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token status retrieved"
+                    },
+                    "404": {
+                        "description": "Token not found"
+                    },
+                    "410": {
+                        "description": "Token expired"
+                    }
+                }
+            }
+        },
+        "/api/auth/sessions": {
+            "get": {
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "List user sessions",
+                "description": "Get all active sessions for authenticated user",
+                "operationId": "9c723308a97b1e896f71b03ef5541c5a",
+                "responses": {
+                    "200": {
+                        "description": "Sessions retrieved"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "Logout user",
+                "description": "Logout from current session or all sessions",
+                "operationId": "b471d4a100ddd7d6def4d28f7f51b1e1",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "everywhere": {
+                                        "description": "Logout from all sessions",
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logout successful"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/api/auth/sessions/{sessionId}": {
+            "delete": {
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "Revoke a session",
+                "description": "Revoke a specific session from another device",
+                "operationId": "f80106f8794ae1d6b079027b9d102edb",
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session revoked"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Not authorized"
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    },
+                    "409": {
+                        "description": "Cannot revoke current session"
+                    }
+                }
+            }
         }
     },
     "tags": [
         {
+            "name": "Authentication",
+            "description": "Authentication"
+        },
+        {
+            "name": "Email Verification",
+            "description": "Email Verification"
+        },
+        {
             "name": "Health",
             "description": "Health"
+        },
+        {
+            "name": "Onboarding",
+            "description": "Onboarding"
+        },
+        {
+            "name": "Password Reset",
+            "description": "Password Reset"
+        },
+        {
+            "name": "Sessions",
+            "description": "Sessions"
         }
     ]
 }
