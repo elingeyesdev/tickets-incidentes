@@ -1,10 +1,11 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
-use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Exceptions\RefreshTokenRequiredException;
-use App\Shared\Helpers\DeviceInfoParser;
+use App\Features\Authentication\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -34,9 +35,6 @@ class RefreshTokenController
 
     /**
      * Renovar access token usando refresh token desde cookie
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function refresh(Request $request): JsonResponse
     {
@@ -44,8 +42,8 @@ class RefreshTokenController
             // Obtener refresh token desde cookie HttpOnly
             $refreshToken = $request->cookie('refresh_token');
 
-            if (!$refreshToken) {
-                throw new RefreshTokenRequiredException();
+            if (! $refreshToken) {
+                throw new RefreshTokenRequiredException;
             }
 
             // Extraer información del dispositivo
@@ -113,13 +111,10 @@ class RefreshTokenController
 
     /**
      * Detectar nombre del dispositivo desde user agent
-     *
-     * @param string|null $userAgent
-     * @return string
      */
     private function detectDeviceName(?string $userAgent): string
     {
-        if (!$userAgent) {
+        if (! $userAgent) {
             return 'Unknown Device';
         }
 

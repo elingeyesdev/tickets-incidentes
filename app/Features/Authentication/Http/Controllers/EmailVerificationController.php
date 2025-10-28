@@ -1,12 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
 use App\Features\Authentication\Http\Requests\EmailVerifyRequest;
 use App\Features\Authentication\Http\Resources\EmailVerificationStatusResource;
-use App\Features\Authentication\Http\Resources\EmailVerificationResultResource;
 use App\Features\Authentication\Services\AuthService;
-use App\Features\Authentication\Exceptions\TokenInvalidException;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +38,7 @@ class EmailVerificationController
      * Siempre retorna 200, pero success puede ser false.
      *
      * @authenticated false
+     *
      * @response 200 {"success": true, "message": "..."}
      */
     #[OA\Post(
@@ -81,7 +82,7 @@ class EmailVerificationController
         } catch (AuthenticationException $e) {
             // Error de verificación (token inválido, expirado, email ya verificado)
             \Illuminate\Support\Facades\Log::warning('Email verification failed', [
-                'token_preview' => substr($request->input('token', ''), 0, 10) . '...',
+                'token_preview' => substr($request->input('token', ''), 0, 10).'...',
                 'error' => $e->getMessage(),
             ]);
 
@@ -103,6 +104,7 @@ class EmailVerificationController
      * Siempre retorna success (no revela si ya verificado).
      *
      * @authenticated true
+     *
      * @response 200 {"success": true, "message": "...", "canResend": false, "resendAvailableAt": "..."}
      */
     #[OA\Post(
@@ -121,7 +123,7 @@ class EmailVerificationController
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
@@ -175,6 +177,7 @@ class EmailVerificationController
      * Retorna si está verificado, cuándo se envió el email, etc.
      *
      * @authenticated true
+     *
      * @response 200 {"isVerified": false, "email": "...", "verificationSentAt": "...", ...}
      */
     #[OA\Get(
@@ -192,7 +195,7 @@ class EmailVerificationController
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 throw new AuthenticationException('User not authenticated');
             }
 
@@ -204,7 +207,7 @@ class EmailVerificationController
             // Calcular si puede reenviar (rate limit: 3 intentos cada 5 minutos)
             // Por simplicidad, siempre puede reenviar si no está verificado
             // El rate limit real lo maneja el middleware
-            $canResend = !$status['is_verified'];
+            $canResend = ! $status['is_verified'];
             $resendAvailableAt = $canResend ? now() : null;
 
             // Agregar campos computados (como los calcula la query)

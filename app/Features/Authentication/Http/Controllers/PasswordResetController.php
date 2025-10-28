@@ -1,14 +1,16 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Features\Authentication\Http\Controllers;
 
-use App\Features\Authentication\Http\Requests\PasswordResetRequest;
 use App\Features\Authentication\Http\Requests\PasswordResetConfirmRequest;
-use App\Features\Authentication\Http\Resources\PasswordResetStatusResource;
+use App\Features\Authentication\Http\Requests\PasswordResetRequest;
 use App\Features\Authentication\Http\Resources\PasswordResetResultResource;
+use App\Features\Authentication\Http\Resources\PasswordResetStatusResource;
 use App\Features\Authentication\Services\PasswordResetService;
-use App\Shared\Utilities\DeviceInfoParser;
 use App\Shared\Exceptions\ValidationException;
+use App\Shared\Utilities\DeviceInfoParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -39,6 +41,7 @@ class PasswordResetController
      * No revela si el email existe en el sistema.
      *
      * @authenticated false
+     *
      * @response 200 {"success": true, "message": "..."}
      */
     #[OA\Post(
@@ -91,6 +94,7 @@ class PasswordResetController
      * Retorna tokens de sesión automáticamente.
      *
      * @authenticated false
+     *
      * @response 200 {"success": true, "message": "...", "accessToken": "...", "user": {...}}
      */
     #[OA\Post(
@@ -129,11 +133,11 @@ class PasswordResetController
             $passwordConfirmation = $request->input('passwordConfirmation');
 
             // === VALIDACIONES (replicar mutation) ===
-            if (!$password) {
+            if (! $password) {
                 throw ValidationException::fieldRequired('password');
             }
 
-            if (!$passwordConfirmation) {
+            if (! $passwordConfirmation) {
                 throw ValidationException::fieldRequired('passwordConfirmation');
             }
 
@@ -150,7 +154,7 @@ class PasswordResetController
                 throw ValidationException::withField('input', 'Provide either token or code, not both');
             }
 
-            if (!$token && !$code) {
+            if (! $token && ! $code) {
                 throw ValidationException::withField('input', 'Provide either token or code');
             }
 
@@ -189,7 +193,7 @@ class PasswordResetController
                     43200, // minutes
                     '/', // path
                     null, // domain
-                    !app()->isLocal(), // secure
+                    ! app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
@@ -214,6 +218,7 @@ class PasswordResetController
      * Usado para verificar si un token es válido antes de mostrar formulario.
      *
      * @authenticated false
+     *
      * @response 200 {"isValid": true, "canReset": true, "email": "...", "expiresAt": "...", ...}
      */
     #[OA\Get(
@@ -242,7 +247,7 @@ class PasswordResetController
 
             $token = $request->input('token');
 
-            if (!$token) {
+            if (! $token) {
                 return response()->json([
                     'isValid' => false,
                     'canReset' => false,
