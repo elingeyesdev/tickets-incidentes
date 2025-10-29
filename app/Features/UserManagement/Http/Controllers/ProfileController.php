@@ -60,7 +60,13 @@ class ProfileController
         // Reload the user to get fresh updated_at
         $user->refresh();
 
-        return response()->json(['data' => new ProfileResource($profile)]);
+        return response()->json([
+            'data' => [
+                'userId' => $user->id,
+                'profile' => (new ProfileResource($profile))->resolve($request),
+                'updatedAt' => $user->updated_at->toIso8601String(),
+            ]
+        ]);
     }
 
     /**
@@ -78,6 +84,18 @@ class ProfileController
             $request->validated()
         );
 
-        return response()->json(['data' => new PreferencesResource($preferences)]);
+        // Touch the user to update updated_at timestamp
+        $user->touch();
+
+        // Reload the user to get fresh updated_at
+        $user->refresh();
+
+        return response()->json([
+            'data' => [
+                'userId' => $user->id,
+                'preferences' => (new PreferencesResource($preferences))->resolve($request),
+                'updatedAt' => $user->updated_at->toIso8601String(),
+            ]
+        ]);
     }
 }

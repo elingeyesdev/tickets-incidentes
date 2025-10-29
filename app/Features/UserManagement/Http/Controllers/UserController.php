@@ -118,12 +118,11 @@ class UserController extends Controller
 
         return response()->json([
             'data' => UserResource::collection($users->items()),
-            'pagination' => [
+            'meta' => [
                 'total' => $users->total(),
-                'perPage' => $users->perPage(),
-                'currentPage' => $users->currentPage(),
-                'lastPage' => $users->lastPage(),
-                'hasMorePages' => $users->hasMorePages(),
+                'per_page' => $users->perPage(),
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
             ],
         ]);
     }
@@ -151,7 +150,8 @@ class UserController extends Controller
         $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
         $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
 
-        if (!$isPlatformAdmin && !$isCompanyAdmin) {
+        // Allow user to view themselves
+        if (!$isPlatformAdmin && !$isCompanyAdmin && $currentUser->id != $id) {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to view user details',
@@ -395,7 +395,7 @@ class UserController extends Controller
 
         // Status filter
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $query->where('status', strtolower($request->input('status')));
         }
 
         // Email verified filter
@@ -464,8 +464,8 @@ class UserController extends Controller
             'last_activity_at',
         ];
 
-        $orderBy = $request->input('orderBy', 'created_at');
-        $order = strtolower($request->input('order', 'desc'));
+        $orderBy = $request->input('order_by', 'created_at');
+        $order = strtolower($request->input('order_direction', 'desc'));
 
         // Validate orderBy field
         if (!in_array($orderBy, $allowedOrderBy)) {

@@ -2,7 +2,9 @@
 
 namespace App\Features\UserManagement\Http\Requests;
 
+use App\Features\CompanyManagement\Models\Company;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AssignRoleRequest extends FormRequest
 {
@@ -22,7 +24,7 @@ class AssignRoleRequest extends FormRequest
                 'required_if:roleCode,AGENT,COMPANY_ADMIN',
                 'nullable',
                 'uuid',
-                'exists:business.companies,id',
+                Rule::exists(Company::class, 'id'),
             ],
         ];
     }

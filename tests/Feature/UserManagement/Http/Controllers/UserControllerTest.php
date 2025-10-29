@@ -1035,7 +1035,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}?reason=GDPR+compliance", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}?reason=GDPR+compliance", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1068,7 +1068,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1096,7 +1096,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1124,7 +1124,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->companyAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1147,7 +1147,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->regularUser);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1185,7 +1185,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$fakeId}", [
+        $response = $this->deleteJson("/api/users/{$fakeId}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1203,7 +1203,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$this->platformAdmin->id}", [
+        $response = $this->deleteJson("/api/users/{$this->platformAdmin->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1226,7 +1226,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $this->deleteJson("/api/users/{$targetUser->id}", [
+        $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1250,7 +1250,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $this->deleteJson("/api/users/{$targetUser->id}", [
+        $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1274,7 +1274,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $response = $this->deleteJson("/api/users/{$targetUser->id}", [
+        $response = $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1303,7 +1303,7 @@ class UserControllerTest extends TestCase
         $token = $this->generateAccessToken($this->platformAdmin);
 
         // Act
-        $this->deleteJson("/api/users/{$targetUser->id}", [
+        $this->deleteJson("/api/users/{$targetUser->id}", [], [
             'Authorization' => "Bearer $token"
         ]);
 
@@ -1330,6 +1330,7 @@ class UserControllerTest extends TestCase
         // Act
         $response = $this->deleteJson(
             "/api/users/{$targetUser->id}?reason=" . urlencode('GDPR Art. 17 - Right to erasure'),
+            [],
             [
                 'Authorization' => "Bearer $token"
             ]

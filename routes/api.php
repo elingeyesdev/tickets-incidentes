@@ -87,11 +87,13 @@ Route::middleware('jwt.require')->group(function () {
         ->middleware('throttle:50,60')  // 50 requests per hour
         ->name('users.preferences.update');
 
+    // ========== User Viewing (Any Authenticated User can view themselves, admins can view others) ==========
+    Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+
     // ========== Admin Endpoints (PLATFORM_ADMIN or COMPANY_ADMIN) ==========
     Route::middleware(['role:PLATFORM_ADMIN,COMPANY_ADMIN'])->group(function () {
-        // User listing and viewing
+        // User listing
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 
         // Role management
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');

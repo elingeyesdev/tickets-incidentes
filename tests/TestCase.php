@@ -40,6 +40,10 @@ abstract class TestCase extends BaseTestCase
         // Force JWT blacklist to be enabled in tests
         // This ensures logout invalidation works correctly in tests
         config(['jwt.blacklist_enabled' => true]);
+
+        // Disable rate limiting in tests to prevent "Too Many Attempts" errors
+        // Clear all rate limiter attempts at the start of each test
+        \Illuminate\Support\Facades\Cache::flush();
     }
 
     /**

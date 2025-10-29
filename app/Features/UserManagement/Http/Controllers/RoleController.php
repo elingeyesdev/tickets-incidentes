@@ -75,10 +75,11 @@ class RoleController extends Controller
 
         $statusCode = $result['wasReactivated'] ? 200 : 201;
         $message = $result['wasReactivated']
-            ? 'Role reactivated successfully.'
-            : 'Role assigned successfully.';
+            ? 'Rol reactivado exitosamente'
+            : 'Rol asignado exitosamente';
 
         return response()->json([
+            'success' => true,
             'message' => $message,
             'data' => new UserRoleResource($role),
         ], $statusCode);
@@ -124,7 +125,8 @@ class RoleController extends Controller
         );
 
         return response()->json([
-            'message' => 'Role removed successfully.',
+            'success' => true,
+            'message' => 'Rol removido exitosamente',
         ], 200);
     }
 }

@@ -19,7 +19,7 @@ class UserRoleResource extends JsonResource
                 'logoUrl' => $this->company->logo_url,
             ] : null,
             'isActive' => $this->is_active,
-            'assignedAt' => $this->created_at->toIso8601String(),
+            'assignedAt' => $this->assigned_at?->toIso8601String(),
             'assignedBy' => $this->assignedByUser ? [
                 'id' => $this->assignedByUser->id,
                 'userCode' => $this->assignedByUser->user_code,
