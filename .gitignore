@@ -196,3 +196,12 @@ npm-debug.log
 # Custom Application Files (adjust as needed)
 # -----------------------------------------------------------------------------
 NUL
+CON
+PRN
+AUX
+LPT1
+LPT2
+LPT3
+COM1
+COM2
+COM3
