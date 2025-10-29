@@ -458,7 +458,7 @@ class RoleControllerTest extends TestCase
 
         // Assert
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['roleCode' => 'requires company context']);
+            ->assertJsonValidationErrors(['companyId']);
     }
 
     /**
@@ -482,7 +482,7 @@ class RoleControllerTest extends TestCase
 
         // Assert
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['roleCode' => 'cannot have company context']);
+            ->assertJsonValidationErrors(['companyId']);
     }
 
     /**
@@ -1044,7 +1044,7 @@ class RoleControllerTest extends TestCase
             'Authorization' => "Bearer $token",
         ]);
 
-        $this->assertOk($response1->status());
+        $response1->assertOk();
 
         // Act - Remover rol PLATFORM_ADMIN
         $adminRole = $this->targetUser->userRoles()->where('role_code', 'PLATFORM_ADMIN')->first();
@@ -1053,7 +1053,7 @@ class RoleControllerTest extends TestCase
         ]);
 
         // Assert
-        $this->assertOk($response2->status());
+        $response2->assertOk();
 
         // Solo USER activo
         $activeRoles = $this->targetUser->userRoles()
