@@ -14,7 +14,7 @@ class UserResource extends JsonResource
             'userCode' => $this->user_code,
             'email' => $this->email,
             'emailVerified' => $this->email_verified,
-            'status' => $this->status->value,
+            'status' => $this->status->name,
             'authProvider' => $this->auth_provider,
             'profile' => new ProfileResource($this->whenLoaded('profile')),
             'roleContexts' => $this->transformRoleContexts(),

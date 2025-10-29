@@ -52,7 +52,6 @@ class UserController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
             'data' => new UserResource($user),
         ]);
     }
@@ -93,7 +92,6 @@ class UserController extends Controller
 
         if (!$isPlatformAdmin && !$isCompanyAdmin) {
             return response()->json([
-                'success' => false,
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to list users',
             ], 403);
@@ -119,7 +117,6 @@ class UserController extends Controller
         $users = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
-            'success' => true,
             'data' => UserResource::collection($users->items()),
             'pagination' => [
                 'total' => $users->total(),
@@ -156,7 +153,6 @@ class UserController extends Controller
 
         if (!$isPlatformAdmin && !$isCompanyAdmin) {
             return response()->json([
-                'success' => false,
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to view user details',
             ], 403);
@@ -171,7 +167,6 @@ class UserController extends Controller
 
         if (!$user) {
             return response()->json([
-                'success' => false,
                 'code' => 'USER_NOT_FOUND',
                 'message' => 'User not found',
             ], 404);
@@ -197,7 +192,6 @@ class UserController extends Controller
 
             if (!$hasSharedCompany) {
                 return response()->json([
-                    'success' => false,
                     'code' => 'INSUFFICIENT_PERMISSIONS',
                     'message' => 'You can only view users from your company',
                 ], 403);
@@ -205,7 +199,6 @@ class UserController extends Controller
         }
 
         return response()->json([
-            'success' => true,
             'data' => new UserResource($user),
         ]);
     }
@@ -234,7 +227,6 @@ class UserController extends Controller
         // Authorization: Only PLATFORM_ADMIN
         if (!$currentUser->hasRole('PLATFORM_ADMIN')) {
             return response()->json([
-                'success' => false,
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'Only platform administrators can update user status',
             ], 403);
@@ -245,7 +237,6 @@ class UserController extends Controller
 
         if (!$user) {
             return response()->json([
-                'success' => false,
                 'code' => 'USER_NOT_FOUND',
                 'message' => 'User not found',
             ], 404);
@@ -263,7 +254,6 @@ class UserController extends Controller
             }
 
             return response()->json([
-                'success' => true,
                 'data' => [
                     'userId' => $user->id,
                     'status' => $user->status->value,
@@ -272,7 +262,6 @@ class UserController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
                 'code' => 'STATUS_UPDATE_FAILED',
                 'message' => 'Failed to update user status: ' . $e->getMessage(),
             ], 400);
@@ -307,7 +296,6 @@ class UserController extends Controller
         // Authorization: Only PLATFORM_ADMIN
         if (!$currentUser->hasRole('PLATFORM_ADMIN')) {
             return response()->json([
-                'success' => false,
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'Only platform administrators can delete users',
             ], 403);
@@ -316,10 +304,9 @@ class UserController extends Controller
         // Prevent self-deletion
         if ($currentUser->id === $id) {
             return response()->json([
-                'success' => false,
                 'code' => 'CANNOT_DELETE_SELF',
                 'message' => 'You cannot delete your own account',
-            ], 400);
+            ], 422);
         }
 
         // Find user
@@ -327,7 +314,6 @@ class UserController extends Controller
 
         if (!$user) {
             return response()->json([
-                'success' => false,
                 'code' => 'USER_NOT_FOUND',
                 'message' => 'User not found',
             ], 404);
@@ -335,18 +321,18 @@ class UserController extends Controller
 
         try {
             // Delete user (soft delete)
-            $this->userService->deleteUser($id);
+            $success = $this->userService->deleteUser($id);
 
             // TODO: Log reason in audit table when implemented
             $reason = $request->query('reason');
 
             return response()->json([
-                'success' => true,
-                'message' => 'User deleted successfully',
+                'data' => [
+                    'success' => $success,
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
                 'code' => 'DELETE_FAILED',
                 'message' => 'Failed to delete user: ' . $e->getMessage(),
             ], 400);

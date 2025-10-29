@@ -746,7 +746,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
             'reason' => 'Violación de términos de servicio',
         ], [
             'Authorization' => "Bearer $token"
@@ -764,7 +764,7 @@ class UserControllerTest extends TestCase
 
         $result = $response->json('data');
         $this->assertEquals($targetUser->id, $result['userId']);
-        $this->assertEquals('SUSPENDED', $result['status']);
+        $this->assertEquals('suspended', $result['status']);
         $this->assertNotNull($result['updatedAt']);
 
         // Verificar en base de datos
@@ -788,7 +788,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'ACTIVE',
+            'status' => 'active',
         ], [
             'Authorization' => "Bearer $token"
         ]);
@@ -797,7 +797,7 @@ class UserControllerTest extends TestCase
         $response->assertStatus(200);
         $result = $response->json('data');
         $this->assertEquals($targetUser->id, $result['userId']);
-        $this->assertEquals('ACTIVE', $result['status']);
+        $this->assertEquals('active', $result['status']);
 
         // Verificar en base de datos
         $targetUser->refresh();
@@ -820,14 +820,14 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ], [
             'Authorization' => "Bearer $token"
         ]);
 
         // Assert
         $result = $response->json('data');
-        $this->assertEquals('SUSPENDED', $result['status']);
+        $this->assertEquals('suspended', $result['status']);
     }
 
     /**
@@ -846,7 +846,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ], [
             'Authorization' => "Bearer $token"
         ]);
@@ -871,7 +871,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ], [
             'Authorization' => "Bearer $token"
         ]);
@@ -894,7 +894,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ]);
 
         // Assert
@@ -967,7 +967,7 @@ class UserControllerTest extends TestCase
 
         // Act
         $response = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ], [
             'Authorization' => "Bearer $token"
         ]);
@@ -996,22 +996,22 @@ class UserControllerTest extends TestCase
 
         // Act - Suspender
         $suspendResponse = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'SUSPENDED',
+            'status' => 'suspended',
         ], [
             'Authorization' => "Bearer $token"
         ]);
 
-        $this->assertEquals('SUSPENDED', $suspendResponse->json('data.status'));
+        $this->assertEquals('suspended', $suspendResponse->json('data.status'));
 
         // Act - Activar
         $activateResponse = $this->putJson("/api/users/{$targetUser->id}/status", [
-            'status' => 'ACTIVE',
+            'status' => 'active',
         ], [
             'Authorization' => "Bearer $token"
         ]);
 
         // Assert
-        $this->assertEquals('ACTIVE', $activateResponse->json('data.status'));
+        $this->assertEquals('active', $activateResponse->json('data.status'));
 
         // Verificar estado final en BD
         $targetUser->refresh();

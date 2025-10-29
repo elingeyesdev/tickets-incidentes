@@ -21,8 +21,7 @@ use Illuminate\Http\Request;
 class ProfileController
 {
     public function __construct(
-        private readonly ProfileService $profileService,
-        private readonly JWTHelper $jwtHelper
+        private readonly ProfileService $profileService
     ) {}
 
     /**
@@ -33,11 +32,11 @@ class ProfileController
      */
     public function show(Request $request): JsonResponse
     {
-        $user = $this->jwtHelper->getUserFromRequest($request);
+        $user = JWTHelper::getAuthenticatedUser();
 
         $profile = $this->profileService->getProfileByUserId($user->id);
 
-        return response()->json(new ProfileResource($profile));
+        return response()->json(['data' => new ProfileResource($profile)]);
     }
 
     /**
@@ -48,7 +47,7 @@ class ProfileController
      */
     public function update(UpdateProfileRequest $request): JsonResponse
     {
-        $user = $this->jwtHelper->getUserFromRequest($request);
+        $user = JWTHelper::getAuthenticatedUser();
 
         $profile = $this->profileService->updateProfile(
             $user->id,
@@ -61,7 +60,7 @@ class ProfileController
         // Reload the user to get fresh updated_at
         $user->refresh();
 
-        return response()->json(new ProfileResource($profile));
+        return response()->json(['data' => new ProfileResource($profile)]);
     }
 
     /**
@@ -72,13 +71,13 @@ class ProfileController
      */
     public function updatePreferences(UpdatePreferencesRequest $request): JsonResponse
     {
-        $user = $this->jwtHelper->getUserFromRequest($request);
+        $user = JWTHelper::getAuthenticatedUser();
 
         $preferences = $this->profileService->updatePreferences(
             $user->id,
             $request->validated()
         );
 
-        return response()->json(new PreferencesResource($preferences));
+        return response()->json(['data' => new PreferencesResource($preferences)]);
     }
 }

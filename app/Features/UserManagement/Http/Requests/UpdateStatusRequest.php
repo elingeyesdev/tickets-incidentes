@@ -19,7 +19,6 @@ class UpdateStatusRequest extends FormRequest
                 'in:active,suspended',
             ],
             'reason' => [
-                'required_if:status,suspended',
                 'nullable',
                 'string',
                 'min:10',
@@ -33,7 +32,6 @@ class UpdateStatusRequest extends FormRequest
         return [
             'status.required' => 'Status is required',
             'status.in' => 'Status must be either "active" or "suspended"',
-            'reason.required_if' => 'Reason is required when suspending a user',
             'reason.min' => 'Reason must be at least 10 characters',
             'reason.max' => 'Reason cannot exceed 500 characters',
         ];

@@ -28,7 +28,7 @@ class RoleController extends Controller
     public function index(): JsonResponse
     {
         // Authorization: PLATFORM_ADMIN or COMPANY_ADMIN
-        $currentUser = JWTHelper::getCurrentUser();
+        $currentUser = JWTHelper::getAuthenticatedUser();
 
         if (!$currentUser->hasRole('PLATFORM_ADMIN') && !$currentUser->hasRole('COMPANY_ADMIN')) {
             return response()->json([
@@ -53,7 +53,7 @@ class RoleController extends Controller
     public function assign(AssignRoleRequest $request, string $userId): JsonResponse
     {
         // Authorization: PLATFORM_ADMIN or COMPANY_ADMIN
-        $currentUser = JWTHelper::getCurrentUser();
+        $currentUser = JWTHelper::getAuthenticatedUser();
 
         if (!$currentUser->hasRole('PLATFORM_ADMIN') && !$currentUser->hasRole('COMPANY_ADMIN')) {
             return response()->json([
@@ -94,7 +94,7 @@ class RoleController extends Controller
     public function remove(Request $request, string $roleId): JsonResponse
     {
         // Authorization: PLATFORM_ADMIN or COMPANY_ADMIN
-        $currentUser = JWTHelper::getCurrentUser();
+        $currentUser = JWTHelper::getAuthenticatedUser();
 
         if (!$currentUser->hasRole('PLATFORM_ADMIN') && !$currentUser->hasRole('COMPANY_ADMIN')) {
             return response()->json([
