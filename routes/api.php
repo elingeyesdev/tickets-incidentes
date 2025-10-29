@@ -7,6 +7,9 @@ use App\Features\Authentication\Http\Controllers\PasswordResetController;
 use App\Features\Authentication\Http\Controllers\EmailVerificationController;
 use App\Features\Authentication\Http\Controllers\SessionController;
 use App\Features\Authentication\Http\Controllers\OnboardingController;
+use App\Features\UserManagement\Http\Controllers\UserController;
+use App\Features\UserManagement\Http\Controllers\ProfileController;
+use App\Features\UserManagement\Http\Controllers\RoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,5 +67,45 @@ Route::prefix('auth')->group(function () {
 
         // ========== Onboarding ==========
         Route::post('/onboarding/completed', [OnboardingController::class, 'markCompleted'])->name('auth.onboarding.completed');
+    });
+});
+
+// ================================================================================
+// REST API ENDPOINTS - User Management
+// ================================================================================
+
+Route::middleware('jwt.require')->group(function () {
+    // ========== Current User Endpoints (Any Authenticated User) ==========
+    Route::get('/users/me', [UserController::class, 'me'])->name('users.me');
+    Route::get('/users/me/profile', [ProfileController::class, 'show'])->name('users.profile.show');
+
+    Route::patch('/users/me/profile', [ProfileController::class, 'update'])
+        ->middleware('throttle:30,60')  // 30 requests per hour
+        ->name('users.profile.update');
+
+    Route::patch('/users/me/preferences', [ProfileController::class, 'updatePreferences'])
+        ->middleware('throttle:50,60')  // 50 requests per hour
+        ->name('users.preferences.update');
+
+    // ========== Admin Endpoints (PLATFORM_ADMIN or COMPANY_ADMIN) ==========
+    Route::middleware(['role:PLATFORM_ADMIN,COMPANY_ADMIN'])->group(function () {
+        // User listing and viewing
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+
+        // Role management
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+
+        Route::post('/users/{userId}/roles', [RoleController::class, 'assign'])
+            ->middleware('throttle:100,60')  // 100 requests per hour
+            ->name('users.roles.assign');
+
+        Route::delete('/users/roles/{roleId}', [RoleController::class, 'remove'])->name('users.roles.remove');
+    });
+
+    // ========== Platform Admin Only Endpoints ==========
+    Route::middleware(['role:PLATFORM_ADMIN'])->group(function () {
+        Route::put('/users/{id}/status', [UserController::class, 'updateStatus'])->name('users.status.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 });

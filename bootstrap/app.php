@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,           // ← Autenticación OPCIONAL
             'jwt.require' => \App\Http\Middleware\JWT\RequireJWTAuthentication::class,        // ← Autenticación OBLIGATORIA
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
