@@ -10,6 +10,7 @@ use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * User Controller
@@ -40,6 +41,39 @@ class UserController extends Controller
      *
      * @return JsonResponse
      */
+    #[OA\Get(
+        path: '/api/users/me',
+        summary: 'Get authenticated user information',
+        description: 'Returns complete user info with profile, roles, companies, and statistics',
+        security: [['bearerAuth' => []]],
+        tags: ['User Management - Users'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'User information retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'userCode', type: 'string'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email'),
+                                new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended', 'deleted']),
+                                new OA\Property(property: 'emailVerified', type: 'boolean'),
+                                new OA\Property(property: 'profile', type: 'object'),
+                                new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object')),
+                                new OA\Property(property: 'statistics', type: 'object'),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+        ]
+    )]
     public function me(): JsonResponse
     {
         $user = JWTHelper::getAuthenticatedUser();
@@ -82,6 +116,51 @@ class UserController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
+    #[OA\Get(
+        path: '/api/users',
+        summary: 'List users with filters and pagination',
+        description: 'Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN sees only users from their company',
+        security: [['bearerAuth' => []]],
+        tags: ['User Management - Users'],
+        parameters: [
+            new OA\Parameter(name: 'search', in: 'query', description: 'Search by email, user_code, or profile name', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'status', in: 'query', description: 'Filter by status', schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'deleted'])),
+            new OA\Parameter(name: 'emailVerified', in: 'query', description: 'Filter by email verification', schema: new OA\Schema(type: 'boolean')),
+            new OA\Parameter(name: 'role', in: 'query', description: 'Filter by role', schema: new OA\Schema(type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'])),
+            new OA\Parameter(name: 'companyId', in: 'query', description: 'Filter by company UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'recentActivity', in: 'query', description: 'Filter users active in last 7 days', schema: new OA\Schema(type: 'boolean')),
+            new OA\Parameter(name: 'createdAfter', in: 'query', description: 'Filter users created after datetime', schema: new OA\Schema(type: 'string', format: 'date-time')),
+            new OA\Parameter(name: 'createdBefore', in: 'query', description: 'Filter users created before datetime', schema: new OA\Schema(type: 'string', format: 'date-time')),
+            new OA\Parameter(name: 'order_by', in: 'query', description: 'Order by field', schema: new OA\Schema(type: 'string', enum: ['created_at', 'updated_at', 'email', 'status', 'last_login_at', 'last_activity_at'], default: 'created_at')),
+            new OA\Parameter(name: 'order_direction', in: 'query', description: 'Order direction', schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], default: 'desc')),
+            new OA\Parameter(name: 'page', in: 'query', description: 'Page number', schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\Parameter(name: 'per_page', in: 'query', description: 'Items per page (max 50)', schema: new OA\Schema(type: 'integer', default: 15)),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Users list retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'total', type: 'integer'),
+                                new OA\Property(property: 'per_page', type: 'integer'),
+                                new OA\Property(property: 'current_page', type: 'integer'),
+                                new OA\Property(property: 'last_page', type: 'integer'),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Insufficient permissions'),
+        ]
+    )]
     public function index(Request $request): JsonResponse
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
@@ -142,6 +221,31 @@ class UserController extends Controller
      * @param string $id User UUID
      * @return JsonResponse
      */
+    #[OA\Get(
+        path: '/api/users/{id}',
+        summary: 'Get specific user by ID',
+        description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only',
+        security: [['bearerAuth' => []]],
+        tags: ['User Management - Users'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'User retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'data', type: 'object'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Insufficient permissions'),
+            new OA\Response(response: 404, description: 'User not found'),
+        ]
+    )]
     public function show(string $id): JsonResponse
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
@@ -220,6 +324,51 @@ class UserController extends Controller
      * @param UpdateStatusRequest $request
      * @return JsonResponse
      */
+    #[OA\Put(
+        path: '/api/users/{id}/status',
+        summary: 'Update user status',
+        description: 'Suspend or activate a user. Only PLATFORM_ADMIN can perform this action',
+        security: [['bearerAuth' => []]],
+        tags: ['User Management - Users'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                type: 'object',
+                required: ['status'],
+                properties: [
+                    new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended']),
+                    new OA\Property(property: 'reason', type: 'string', description: 'Required when status is suspended'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'User status updated successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'userId', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'status', type: 'string'),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Only platform administrators can update user status'),
+            new OA\Response(response: 404, description: 'User not found'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
+    )]
     public function updateStatus(string $id, UpdateStatusRequest $request): JsonResponse
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
@@ -289,6 +438,39 @@ class UserController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
+    #[OA\Delete(
+        path: '/api/users/{id}',
+        summary: 'Delete user (soft delete)',
+        description: 'Soft delete a user (sets status to deleted and deleted_at timestamp). Only PLATFORM_ADMIN can perform this action. User cannot delete themselves',
+        security: [['bearerAuth' => []]],
+        tags: ['User Management - Users'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'reason', in: 'query', description: 'Optional deletion reason', schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'User deleted successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'success', type: 'boolean'),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Only platform administrators can delete users'),
+            new OA\Response(response: 404, description: 'User not found'),
+            new OA\Response(response: 422, description: 'Cannot delete self'),
+        ]
+    )]
     public function destroy(string $id, Request $request): JsonResponse
     {
         $currentUser = JWTHelper::getAuthenticatedUser();

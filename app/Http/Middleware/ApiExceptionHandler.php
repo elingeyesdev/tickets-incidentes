@@ -15,6 +15,7 @@ use App\Shared\Exceptions\ConflictException;
 use App\Shared\Exceptions\RateLimitExceededException;
 use App\Shared\Errors\ErrorCodeRegistry;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Middleware para Manejo de Excepciones en API REST
@@ -66,6 +67,9 @@ class ApiExceptionHandler
         } catch (QueryException $e) {
             // Errores de base de datos
             return $this->handleDatabaseException($e);
+        } catch (ModelNotFoundException $e) {
+            // Manejar ModelNotFoundException (ej. findOrFail)
+            return $this->handleModelNotFoundException($e);
         } catch (Throwable $e) {
             // Cualquier otra excepción
             return $this->handleGenericException($e);
@@ -226,6 +230,36 @@ class ApiExceptionHandler
         }
 
         return response()->json($response, 500);
+    }
+
+    /**
+     * Manejar ModelNotFoundException
+     */
+    protected function handleModelNotFoundException(ModelNotFoundException $e): \Illuminate\Http\JsonResponse
+    {
+        $errorCode = ErrorCodeRegistry::NOT_FOUND;
+        $category = ErrorCodeRegistry::getCategory($errorCode);
+
+        $response = [
+            'success' => false,
+            'message' => 'Resource not found.',
+            'code' => $errorCode,
+            'category' => $category,
+        ];
+
+        if (app()->isLocal()) {
+            $response['debug'] = [
+                'timestamp' => now()->toIso8601String(),
+                'environment' => app()->environment(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $this->formatStackTrace($e),
+            ];
+        } else {
+            $response['timestamp'] = now()->toIso8601String();
+        }
+
+        return response()->json($response, 404);
     }
 
     /**

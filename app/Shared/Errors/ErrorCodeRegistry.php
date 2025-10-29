@@ -267,7 +267,7 @@ class ErrorCodeRegistry
             'business_logic' => 409, // Conflict
             'rate_limit' => 429,
             'server_error' => 500,
-            'validation' => 400,
+            'validation' => 422, // Laravel convention: Unprocessable Entity
             default => 500,
         };
     }

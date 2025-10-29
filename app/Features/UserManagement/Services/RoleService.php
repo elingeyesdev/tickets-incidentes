@@ -151,7 +151,7 @@ class RoleService
             }
 
             throw ValidationException::withField(
-                'role_code',
+                'roleCode',
                 'El usuario ya tiene este rol asignado'
             );
         }
