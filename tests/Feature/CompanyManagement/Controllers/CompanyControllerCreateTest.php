@@ -212,7 +212,7 @@ class CompanyControllerCreateTest extends TestCase
 
         // Assert
         $response->assertStatus(403)
-            ->assertJsonFragment(['message' => 'Unauthenticated']);
+            ->assertJsonFragment(['message' => 'Insufficient permissions']);
     }
 
     /** @test */
@@ -233,7 +233,7 @@ class CompanyControllerCreateTest extends TestCase
 
         // Assert
         $response->assertStatus(403)
-            ->assertJsonFragment(['message' => 'Unauthenticated']);
+            ->assertJsonFragment(['message' => 'Insufficient permissions']);
     }
 
     /** @test */
@@ -339,6 +339,6 @@ class CompanyControllerCreateTest extends TestCase
 
         // Assert
         $response->assertStatus(401)
-            ->assertJsonFragment(['message' => 'Unauthenticated']);
+            ->assertJson(['code' => 'UNAUTHENTICATED']);
     }
 }

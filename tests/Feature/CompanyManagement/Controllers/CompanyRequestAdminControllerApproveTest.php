@@ -242,8 +242,9 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
 
         // Assert
         $response->assertStatus(422)
-            ->assertJson([
-                'message' => 'Only pending requests can be approved'
+            ->assertJsonValidationErrors(['company_request'])
+            ->assertJsonFragment([
+                'Only pending requests can be approved. Current status: approved'
             ]);
     }
 
@@ -265,7 +266,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions'
             ]);
     }
 
@@ -286,7 +287,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions'
             ]);
     }
 
@@ -302,7 +303,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         // Assert
         $response->assertStatus(401)
             ->assertJson([
-                'message' => 'Unauthenticated'
+                'code' => 'UNAUTHENTICATED'
             ]);
     }
 

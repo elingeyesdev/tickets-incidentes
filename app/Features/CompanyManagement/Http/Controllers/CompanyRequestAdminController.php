@@ -65,7 +65,7 @@ class CompanyRequestAdminController extends Controller
             'message' => $message,
             'company' => $company,
             'admin_email' => $adminUser->email,
-            'admin_name' => $adminUser->profile->full_name ?? $adminUser->email,
+            'admin_name' => $adminUser->profile->display_name ?? $adminUser->email,
             'new_user_created' => $newUserCreated,
             'notification_sent_to' => $adminUser->email,
         ];

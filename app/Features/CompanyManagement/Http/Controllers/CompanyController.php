@@ -126,8 +126,9 @@ class CompanyController extends Controller
 
         // Agregar campo is_followed_by_me en memoria (evita N+1)
         $companies->getCollection()->transform(function ($company) use ($followedCompanyIds) {
-            $company->is_followed_by_me = in_array($company->id, $followedCompanyIds);
-
+            if ($company && isset($company->id)) {
+                $company->is_followed_by_me = in_array($company->id, $followedCompanyIds);
+            }
             return $company;
         });
 
@@ -159,9 +160,6 @@ class CompanyController extends Controller
                 'userRoles as active_agents_count' => function ($q) {
                     $q->where('role_code', 'AGENT')->where('is_active', true);
                 },
-                'userRoles as total_users_count' => function ($q) {
-                    $q->where('is_active', true)->distinct('user_id');
-                },
             ]);
 
         // Filtros
@@ -185,6 +183,14 @@ class CompanyController extends Controller
         $query->orderBy($sortBy, $sortDirection);
 
         $companies = $query->paginate($request->input('per_page', 20));
+
+        // Cargar total_users_count después de paginate (en memoria)
+        $companies->getCollection()->each(function ($company) {
+            $company->total_users_count = $company->userRoles()
+                ->where('is_active', true)
+                ->distinct('user_id')
+                ->count();
+        });
 
         return CompanyResource::collection($companies);
     }
@@ -347,6 +353,11 @@ class CompanyController extends Controller
                 'userRoles as active_agents_count' => fn ($q) => $q->where('role_code', 'AGENT')->where('is_active', true),
                 'userRoles as total_users_count' => fn ($q) => $q->where('is_active', true)->distinct('user_id'),
             ]);
+
+        // Agregar is_followed_by_me (contexto autenticado)
+        $updated->is_followed_by_me = CompanyFollower::where('user_id', JWTHelper::getUserId())
+            ->where('company_id', $updated->id)
+            ->exists();
 
         return new CompanyResource($updated);
     }

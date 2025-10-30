@@ -53,10 +53,13 @@ class UpdateCompanyRequest extends FormRequest
             'contact_info.state' => ['sometimes', 'nullable', 'string', 'max:100'],
             'contact_info.country' => ['sometimes', 'nullable', 'string', 'max:100'],
             'contact_info.postal_code' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'contact_info.tax_id' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'contact_info.legal_representative' => ['sometimes', 'nullable', 'string', 'max:200'],
 
             // Configuración
             'config.timezone' => ['sometimes', 'nullable', 'string', 'timezone'],
             'config.business_hours' => ['sometimes', 'nullable', 'array'],
+            'config.settings' => ['sometimes', 'nullable', 'array'],
             'config.max_agents' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
             'config.max_tickets_per_month' => ['sometimes', 'nullable', 'integer', 'min:1'],
 
@@ -83,6 +86,8 @@ class UpdateCompanyRequest extends FormRequest
                 'contact_state' => $contactInfo['state'] ?? null,
                 'contact_country' => $contactInfo['country'] ?? null,
                 'contact_postal_code' => $contactInfo['postal_code'] ?? null,
+                'tax_id' => $contactInfo['tax_id'] ?? null,
+                'legal_representative' => $contactInfo['legal_representative'] ?? null,
             ]);
         }
 
@@ -92,6 +97,7 @@ class UpdateCompanyRequest extends FormRequest
             $this->merge([
                 'timezone' => $config['timezone'] ?? null,
                 'business_hours' => $config['business_hours'] ?? null,
+                'settings' => $config['settings'] ?? null,
                 'max_agents' => $config['max_agents'] ?? null,
                 'max_tickets_per_month' => $config['max_tickets_per_month'] ?? null,
             ]);

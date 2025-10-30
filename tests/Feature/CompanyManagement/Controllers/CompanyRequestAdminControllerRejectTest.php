@@ -189,8 +189,9 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
 
         // Assert
         $response->assertStatus(422)
-            ->assertJson([
-                'message' => 'Only pending requests can be rejected'
+            ->assertJsonValidationErrors(['company_request'])
+            ->assertJsonFragment([
+                'Only pending requests can be rejected. Current status: approved'
             ]);
     }
 
@@ -214,7 +215,7 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions'
             ]);
     }
 
@@ -237,7 +238,7 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions'
             ]);
     }
 
@@ -276,7 +277,7 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
         // Assert
         $response->assertStatus(401)
             ->assertJson([
-                'message' => 'Unauthenticated'
+                'code' => 'UNAUTHENTICATED'
             ]);
     }
 
@@ -550,7 +551,8 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
 
         $request = CompanyRequest::factory()->create(['status' => 'pending']);
 
-        $longReason = str_repeat('This is a detailed explanation of why the request was rejected. ', 50);
+        // Crear una razón larga pero dentro del límite de 1000 caracteres
+        $longReason = str_repeat('This is a detailed explanation. ', 20); // = 660 caracteres aprox
 
         // Act
         $response = $this->postJson("/api/company-requests/{$request->id}/reject", [

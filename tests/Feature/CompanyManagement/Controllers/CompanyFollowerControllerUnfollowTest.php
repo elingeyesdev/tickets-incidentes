@@ -102,8 +102,10 @@ class CompanyFollowerControllerUnfollowTest extends TestCase
         // Assert
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'You are not following this company',
-            ]);
+                'code' => 'NOT_FOLLOWING',
+                'category' => 'validation',
+            ])
+            ->assertJsonStructure(['message', 'code', 'category']);
 
         $error = $response->json();
         $this->assertEquals('NOT_FOLLOWING', $error['code']);

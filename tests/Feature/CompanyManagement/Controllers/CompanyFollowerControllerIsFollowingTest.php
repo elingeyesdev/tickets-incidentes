@@ -111,9 +111,7 @@ class CompanyFollowerControllerIsFollowingTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'message' => 'Company not found',
-                'error' => [
-                    'code' => 'COMPANY_NOT_FOUND'
-                ]
+                'code' => 'COMPANY_NOT_FOUND'
             ]);
     }
 

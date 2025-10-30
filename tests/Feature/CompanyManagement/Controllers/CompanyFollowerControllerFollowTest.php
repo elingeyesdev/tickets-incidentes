@@ -119,8 +119,10 @@ class CompanyFollowerControllerFollowTest extends TestCase
         // Assert
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'You are already following this company',
-            ]);
+                'code' => 'ALREADY_FOLLOWING',
+                'category' => 'validation',
+            ])
+            ->assertJsonStructure(['message', 'code', 'category']);
 
         $error = $response->json();
         $this->assertEquals('ALREADY_FOLLOWING', $error['code']);
@@ -143,8 +145,10 @@ class CompanyFollowerControllerFollowTest extends TestCase
         // Assert
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'Cannot follow a suspended company',
-            ]);
+                'code' => 'COMPANY_SUSPENDED',
+                'category' => 'validation',
+            ])
+            ->assertJsonStructure(['message', 'code', 'category']);
 
         $error = $response->json();
         $this->assertEquals('COMPANY_SUSPENDED', $error['code']);
@@ -177,8 +181,10 @@ class CompanyFollowerControllerFollowTest extends TestCase
         // Assert
         $response->assertStatus(422)
             ->assertJson([
-                'message' => 'You have reached the maximum number of companies you can follow',
-            ]);
+                'code' => 'MAX_FOLLOWS_EXCEEDED',
+                'category' => 'validation',
+            ])
+            ->assertJsonStructure(['message', 'code', 'category']);
 
         $error = $response->json();
         $this->assertEquals('MAX_FOLLOWS_EXCEEDED', $error['code']);

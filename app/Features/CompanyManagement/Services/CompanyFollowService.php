@@ -22,6 +22,15 @@ class CompanyFollowService
      */
     public function follow(User $user, Company $company): CompanyFollower
     {
+        // Verificar si la empresa está suspendida
+        if ($company->status === 'suspended') {
+            throw GraphQLErrorWithExtensions::validation(
+                'Cannot follow a suspended company',
+                'COMPANY_SUSPENDED',
+                ['companyId' => $company->id]
+            );
+        }
+
         // Verificar si ya está siguiendo
         if ($this->isFollowing($user, $company)) {
             throw GraphQLErrorWithExtensions::validation(

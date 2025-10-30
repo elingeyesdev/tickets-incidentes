@@ -22,18 +22,26 @@ class CompanyApprovalResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $company = $this->resource['company'] ?? [];
+        $adminUser = $company['admin'] ?? null;
+        $adminProfile = $adminUser?->profile ?? null;
+
         return [
             'success' => $this->resource['success'] ?? true,
-            'message' => $this->resource['message'] ?? 'Solicitud aprobada exitosamente',
+            'message' => $this->resource['message'] ?? 'Request approved successfully',
             'company' => [
-                'id' => $this->resource['company']['id'] ?? null,
-                'company_code' => $this->resource['company']['company_code'] ?? null,
-                'name' => $this->resource['company']['name'] ?? null,
-                'admin_email' => $this->resource['company']['admin_email'] ?? null,
-                'status' => isset($this->resource['company']['status']) ? strtoupper($this->resource['company']['status']) : 'ACTIVE',
+                'id' => $company['id'] ?? null,
+                'companyCode' => $company['company_code'] ?? null,
+                'name' => $company['name'] ?? null,
+                'legalName' => $company['legal_name'] ?? null,
+                'status' => isset($company['status']) ? strtoupper($company['status']) : 'ACTIVE',
+                'adminId' => $company['admin_user_id'] ?? null,
+                'adminName' => $adminProfile ? trim($adminProfile->first_name . ' ' . $adminProfile->last_name) : 'Unknown',
+                'adminEmail' => $adminUser?->email ?? null,
+                'createdAt' => isset($company['created_at']) ? $company['created_at']->toIso8601String() : null,
             ],
-            'new_user_created' => $this->resource['new_user_created'] ?? false,
-            'notification_sent_to' => $this->resource['notification_sent_to'] ?? null,
+            'newUserCreated' => $this->resource['new_user_created'] ?? false,
+            'notificationSentTo' => $this->resource['notification_sent_to'] ?? null,
         ];
     }
 }

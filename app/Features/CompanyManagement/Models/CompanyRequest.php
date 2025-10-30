@@ -125,6 +125,20 @@ class CompanyRequest extends Model
     }
 
     /**
+     * Get reviewed_at as reviewedAt (camelCase accessor)
+     */
+    public function getReviewedAtAttribute()
+    {
+        $value = $this->attributes['reviewed_at'] ?? null;
+
+        if ($value && $this->hasCast('reviewed_at', ['datetime', 'immutable_datetime'])) {
+            return $this->asDateTime($value);
+        }
+
+        return $value;
+    }
+
+    /**
      * Marcar solicitud como aprobada.
      */
     public function markAsApproved(User $reviewer, Company $createdCompany): void

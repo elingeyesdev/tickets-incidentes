@@ -87,7 +87,9 @@ class CompanyFollowerController extends Controller
             ->exists();
 
         return response()->json([
-            'is_following' => $isFollowing,
+            'data' => [
+                'isFollowing' => $isFollowing,
+            ],
         ]);
     }
 
@@ -124,9 +126,7 @@ class CompanyFollowerController extends Controller
             'followed_at' => $follower->followed_at,
         ];
 
-        return (new CompanyFollowResource($data))
-            ->response()
-            ->setStatusCode(201);
+        return new CompanyFollowResource($data);
     }
 
     /**
@@ -146,9 +146,12 @@ class CompanyFollowerController extends Controller
         // Llamar al Service para dejar de seguir
         $success = $followService->unfollow(JWTHelper::getAuthenticatedUser(), $company);
 
-        return response()->json([
+        // Preparar datos para el Resource
+        $data = [
             'success' => $success,
             'message' => "Dejaste de seguir a {$company->name}.",
-        ]);
+        ];
+
+        return new CompanyFollowResource($data);
     }
 }

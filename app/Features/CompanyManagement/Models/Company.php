@@ -123,6 +123,32 @@ class Company extends Model
     }
 
     /**
+     * Retrieve the model for a bound value (Route Model Binding).
+     *
+     * Throws a custom exception when the company is not found.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \Illuminate\Database\Eloquent\Model|null
+     *
+     * @throws \App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $company = $this->where($field ?? 'id', $value)->first();
+
+        if (!$company) {
+            throw \App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions::notFound(
+                'Company not found',
+                'COMPANY_NOT_FOUND',
+                ['companyId' => $value]
+            );
+        }
+
+        return $company;
+    }
+
+    /**
      * Scope: Solo empresas suspendidas.
      */
     public function scopeSuspended($query)
@@ -199,21 +225,27 @@ class Company extends Model
      */
     public function getAdminNameAttribute(): string
     {
-        if (!$this->relationLoaded('admin')) {
-            $this->load('admin.profile');
-        }
+        try {
+            if (!$this->relationLoaded('admin')) {
+                $this->load('admin.profile');
+            }
 
-        $admin = $this->admin;
-        if (!$admin) {
+            $admin = $this->admin;
+            if (!$admin) {
+                return 'Unknown';
+            }
+
+            $profile = $admin->profile;
+            if (!$profile) {
+                return $admin->email ?? 'Unknown';
+            }
+
+            $firstName = $profile->first_name ?? '';
+            $lastName = $profile->last_name ?? '';
+            return trim("$firstName $lastName") ?: 'Unknown';
+        } catch (\Exception $e) {
             return 'Unknown';
         }
-
-        $profile = $admin->profile;
-        if (!$profile) {
-            return $admin->email;
-        }
-
-        return $profile->first_name . ' ' . $profile->last_name;
     }
 
     /**

@@ -36,10 +36,7 @@ class CompanyExploreResource extends JsonResource
             'primaryColor' => $this->primary_color ?? null,
             'status' => $this->status ? strtoupper($this->status) : null,
             'followersCount' => $this->followers_count ?? 0,
-            'isFollowedByMe' => $this->when(
-                JWTHelper::isAuthenticated(),
-                fn() => $this->is_followed_by_me ?? false
-            ),
+            'isFollowedByMe' => $this->is_followed_by_me ?? false,
         ];
     }
 }

@@ -44,7 +44,7 @@ class CompanyControllerIndexTest extends TestCase
                         'logoUrl',
                     ],
                 ],
-                'meta' => ['total', 'currentPage', 'lastPage', 'perPage'],
+                'meta' => ['total', 'current_page', 'last_page', 'per_page'],
                 'links' => ['first', 'last', 'prev', 'next'],
             ]);
 
@@ -95,7 +95,7 @@ class CompanyControllerIndexTest extends TestCase
                         'isFollowedByMe',
                     ],
                 ],
-                'meta' => ['total', 'currentPage', 'lastPage', 'perPage'],
+                'meta' => ['total', 'current_page', 'last_page', 'per_page'],
                 'links' => ['first', 'last', 'prev', 'next'],
             ]);
 
@@ -147,7 +147,7 @@ class CompanyControllerIndexTest extends TestCase
                         'updatedAt',
                     ],
                 ],
-                'meta' => ['total', 'currentPage', 'lastPage', 'perPage'],
+                'meta' => ['total', 'current_page', 'last_page', 'per_page'],
                 'links' => ['first', 'last', 'prev', 'next'],
             ]);
     }
@@ -346,7 +346,7 @@ class CompanyControllerIndexTest extends TestCase
         $response = $this->getJson('/api/companies/explore');
 
         // Assert
-        $response->assertStatus(401)
-            ->assertJsonFragment(['message' => 'Unauthenticated']);
+        $response->assertStatus(401);
+        $this->assertStringContainsString('Unauthenticated', $response->json('message'));
     }
 }

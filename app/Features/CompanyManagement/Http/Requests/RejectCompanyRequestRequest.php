@@ -37,7 +37,7 @@ class RejectCompanyRequestRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $companyRequest = $this->route('company_request');
+            $companyRequest = $this->route('companyRequest');
 
             if (!$companyRequest) {
                 $validator->errors()->add('company_request', 'La solicitud de empresa no existe.');
@@ -48,7 +48,7 @@ class RejectCompanyRequestRequest extends FormRequest
             if (!$companyRequest->isPending()) {
                 $validator->errors()->add(
                     'company_request',
-                    'Solo se pueden rechazar solicitudes en estado pendiente. Estado actual: ' . $companyRequest->status
+                    'Only pending requests can be rejected. Current status: ' . $companyRequest->status
                 );
             }
         });

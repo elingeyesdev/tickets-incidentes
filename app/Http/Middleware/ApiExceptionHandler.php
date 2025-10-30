@@ -14,6 +14,7 @@ use App\Shared\Exceptions\NotFoundException;
 use App\Shared\Exceptions\ConflictException;
 use App\Shared\Exceptions\RateLimitExceededException;
 use App\Shared\Errors\ErrorCodeRegistry;
+use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -61,6 +62,9 @@ class ApiExceptionHandler
         } catch (LaravelValidationException $e) {
             // Validación de Laravel Form Requests
             return $this->handleValidationException($e);
+        } catch (GraphQLErrorWithExtensions $e) {
+            // Excepciones de GraphQL (usadas temporalmente en Services)
+            return $this->handleGraphQLException($e);
         } catch (HelpdeskException $e) {
             // Excepciones custom de Helpdesk
             return $this->handleHelpdeskException($e);
@@ -92,6 +96,70 @@ class ApiExceptionHandler
         ];
 
         return response()->json($response, 422);
+    }
+
+    /**
+     * Manejar excepción de GraphQL (usada temporalmente en Services)
+     *
+     * Convierte GraphQLErrorWithExtensions a respuesta REST
+     */
+    protected function handleGraphQLException(GraphQLErrorWithExtensions $e): \Illuminate\Http\JsonResponse
+    {
+        $extensions = $e->getExtensions();
+        $code = $extensions['code'] ?? 'UNKNOWN_ERROR';
+        $category = 'validation'; // Asumimos validation por defecto
+
+        // Determinar status code y category basado en el código de error
+        $statusCodeMap = [
+            'ALREADY_FOLLOWING' => 422,
+            'MAX_FOLLOWS_EXCEEDED' => 422,
+            'COMPANY_SUSPENDED' => 422,
+            'NOT_FOLLOWING' => 422,
+            'COMPANY_NOT_FOUND' => 404,
+            'USER_NOT_FOUND' => 404,
+            'UNAUTHENTICATED' => 401,
+            'UNAUTHORIZED' => 403,
+        ];
+
+        $categoryMap = [
+            'COMPANY_NOT_FOUND' => 'resource',
+            'USER_NOT_FOUND' => 'resource',
+            'UNAUTHENTICATED' => 'authentication',
+            'UNAUTHORIZED' => 'authorization',
+        ];
+
+        $statusCode = $statusCodeMap[$code] ?? 422;
+        $category = $categoryMap[$code] ?? 'validation';
+
+        // Construir respuesta base
+        $response = [
+            'success' => false,
+            'message' => $e->getMessage(),
+            'code' => $code,
+            'category' => $category,
+        ];
+
+        // Agregar extensiones adicionales (currentFollows, maxAllowed, etc.)
+        foreach ($extensions as $key => $value) {
+            if ($key !== 'code' && $key !== 'category') {
+                $response[$key] = $value;
+            }
+        }
+
+        // En DESARROLLO, agregar información de debugging
+        if (app()->isLocal()) {
+            $response['debug'] = [
+                'timestamp' => now()->toIso8601String(),
+                'environment' => app()->environment(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ];
+        } else {
+            // En PRODUCCIÓN, agregar solo timestamp
+            $response['timestamp'] = now()->toIso8601String();
+        }
+
+        return response()->json($response, $statusCode);
     }
 
     /**
@@ -237,12 +305,28 @@ class ApiExceptionHandler
      */
     protected function handleModelNotFoundException(ModelNotFoundException $e): \Illuminate\Http\JsonResponse
     {
+        // Determinar el tipo de modelo
+        $model = $e->getModel();
         $errorCode = ErrorCodeRegistry::NOT_FOUND;
-        $category = ErrorCodeRegistry::getCategory($errorCode);
+        $message = 'Resource not found.';
+
+        // Asignar códigos específicos según el modelo
+        if ($model === 'App\\Features\\CompanyManagement\\Models\\Company') {
+            $errorCode = 'COMPANY_NOT_FOUND';
+            $message = 'Company not found';
+        } elseif ($model === 'App\\Features\\UserManagement\\Models\\User') {
+            $errorCode = 'USER_NOT_FOUND';
+            $message = 'User not found';
+        } elseif ($model === 'App\\Features\\CompanyManagement\\Models\\CompanyRequest') {
+            $errorCode = 'REQUEST_NOT_FOUND';
+            $message = 'Request not found';
+        }
+
+        $category = 'resource';
 
         $response = [
             'success' => false,
-            'message' => 'Resource not found.',
+            'message' => $message,
             'code' => $errorCode,
             'category' => $category,
         ];
@@ -253,7 +337,7 @@ class ApiExceptionHandler
                 'environment' => app()->environment(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $this->formatStackTrace($e),
+                'model' => $model,
             ];
         } else {
             $response['timestamp'] = now()->toIso8601String();

@@ -139,7 +139,7 @@ Route::middleware('jwt.require')->group(function () {
     Route::get('/companies/followed', [CompanyFollowerController::class, 'followed'])->name('companies.followed');
 
     // Check if following a company
-    Route::get('/companies/{company}/following', [CompanyFollowerController::class, 'isFollowing'])
+    Route::get('/companies/{company}/is-following', [CompanyFollowerController::class, 'isFollowing'])
         ->name('companies.following');
 
     // Follow/Unfollow company

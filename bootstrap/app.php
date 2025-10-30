@@ -44,6 +44,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Manejar ModelNotFoundException para rutas API
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handle($request, function() use ($e) { throw $e; });
+            }
+        });
+
+        // Manejar todas las demás excepciones para rutas API
         $exceptions->render(function (Throwable $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
                 $handler = new ApiExceptionHandler();

@@ -79,10 +79,7 @@ class CompanyResource extends JsonResource
             'followersCount' => $this->followers_count ?? 0,
 
             // Campo contextual (solo si usuario autenticado)
-            'isFollowedByMe' => $this->when(
-                JWTHelper::isAuthenticated(),
-                fn() => $this->is_followed_by_me ?? false
-            ),
+            'isFollowedByMe' => $this->is_followed_by_me ?? false,
 
             // Relaciones opcionales (usar whenLoaded)
             'createdFromRequestId' => $this->created_from_request_id ?? null,
