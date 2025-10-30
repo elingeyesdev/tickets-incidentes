@@ -351,8 +351,13 @@ class CompanyController extends Controller
             ->loadCount([
                 'followers',
                 'userRoles as active_agents_count' => fn ($q) => $q->where('role_code', 'AGENT')->where('is_active', true),
-                'userRoles as total_users_count' => fn ($q) => $q->where('is_active', true)->distinct('user_id'),
             ]);
+
+        // Calcular total_users_count (distinct user_id) manualmente
+        $updated->total_users_count = $updated->userRoles()
+            ->where('is_active', true)
+            ->distinct('user_id')
+            ->count();
 
         // Agregar is_followed_by_me (contexto autenticado)
         $updated->is_followed_by_me = CompanyFollower::where('user_id', JWTHelper::getUserId())
