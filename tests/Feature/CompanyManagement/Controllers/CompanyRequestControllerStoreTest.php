@@ -53,19 +53,19 @@ class CompanyRequestControllerStoreTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'id',
-                    'request_code',
-                    'company_name',
-                    'admin_email',
+                    'requestCode',
+                    'companyName',
+                    'adminEmail',
                     'status',
-                    'created_at',
+                    'createdAt',
                 ],
             ]);
 
         $request = $response->json('data');
-        $this->assertEquals('Innovación Digital SRL', $request['company_name']);
-        $this->assertEquals('admin@innovaciondigital.bo', $request['admin_email']);
+        $this->assertEquals('Innovación Digital SRL', $request['companyName']);
+        $this->assertEquals('admin@innovaciondigital.bo', $request['adminEmail']);
         $this->assertEquals('PENDING', $request['status']);
-        $this->assertNotEmpty($request['request_code']);
+        $this->assertNotEmpty($request['requestCode']);
 
         // Verificar en BD
         $this->assertDatabaseHas('business.company_requests', [
@@ -93,11 +93,11 @@ class CompanyRequestControllerStoreTest extends TestCase
         $response->assertStatus(201);
 
         $request = $response->json('data');
-        $this->assertNotEmpty($request['request_code']);
+        $this->assertNotEmpty($request['requestCode']);
         $this->assertEquals('PENDING', $request['status']);
 
         // Verificar formato de requestCode (REQ-YYYY-NNNNN)
-        $this->assertMatchesRegularExpression('/^REQ-\d{4}-\d{5}$/', $request['request_code']);
+        $this->assertMatchesRegularExpression('/^REQ-\d{4}-\d{5}$/', $request['requestCode']);
     }
 
     /** @test */
@@ -203,8 +203,8 @@ class CompanyRequestControllerStoreTest extends TestCase
         $response2 = $this->postJson('/api/company-requests', $input2);
 
         // Assert
-        $requestCode1 = $response1->json('data.request_code');
-        $requestCode2 = $response2->json('data.request_code');
+        $requestCode1 = $response1->json('data.requestCode');
+        $requestCode2 = $response2->json('data.requestCode');
 
         $this->assertNotEquals($requestCode1, $requestCode2);
         $this->assertMatchesRegularExpression('/^REQ-\d{4}-\d{5}$/', $requestCode1);
@@ -229,8 +229,8 @@ class CompanyRequestControllerStoreTest extends TestCase
         $response->assertStatus(201)
             ->assertJson([
                 'data' => [
-                    'company_name' => 'Minimal Company',
-                    'admin_email' => 'minimal@company.com',
+                    'companyName' => 'Minimal Company',
+                    'adminEmail' => 'minimal@company.com',
                     'status' => 'PENDING',
                 ],
             ]);

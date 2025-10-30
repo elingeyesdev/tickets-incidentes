@@ -63,17 +63,17 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
                 'data' => [
                     'success',
                     'message',
-                    'new_user_created',
-                    'notification_sent_to',
+                    'newUserCreated',
+                    'notificationSentTo',
                     'company' => [
                         'id',
-                        'company_code',
+                        'companyCode',
                         'name',
                         'status',
-                        'admin_id',
-                        'admin_name',
-                        'admin_email',
-                        'created_at',
+                        'adminId',
+                        'adminName',
+                        'adminEmail',
+                        'createdAt',
                     ],
                 ],
             ]);
@@ -84,7 +84,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         $company = $data['company'];
         $this->assertEquals('Test Company', $company['name']);
         $this->assertEquals('ACTIVE', $company['status']);
-        $this->assertNotEmpty($company['company_code']);
+        $this->assertNotEmpty($company['companyCode']);
     }
 
     /** @test */
@@ -106,6 +106,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
 
         // Assert
         $companyId = $response->json('data.company.id');
+
 
         $this->assertDatabaseHas('business.companies', [
             'id' => $companyId,
@@ -165,7 +166,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         $response->assertStatus(200);
 
         $company = $response->json('data.company');
-        $adminUserId = $company['admin_id'];
+        $adminUserId = $company['adminId'];
         $companyId = $company['id'];
 
         $this->assertDatabaseHas('auth.user_roles', [
@@ -201,7 +202,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
 
         $request->refresh();
         $this->assertEquals('approved', $request->status);
-        $this->assertNotNull($request->reviewed_at);
+        $this->assertNotNull($request->reviewedAt);
     }
 
     /** @test */
@@ -326,14 +327,14 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
                     'success',
                     'company' => [
                         'id',
-                        'company_code',
+                        'companyCode',
                         'name',
-                        'legal_name',
+                        'legalName',
                         'status',
-                        'admin_id',
-                        'admin_name',
-                        'admin_email',
-                        'created_at',
+                        'adminId',
+                        'adminName',
+                        'adminEmail',
+                        'createdAt',
                     ],
                 ],
             ]);
@@ -343,7 +344,7 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
 
         $company = $approval['company'];
         $this->assertNotEmpty($company['id']);
-        $this->assertNotEmpty($company['company_code']);
+        $this->assertNotEmpty($company['companyCode']);
         $this->assertEquals('ACTIVE', $company['status']);
     }
 
@@ -372,11 +373,11 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         $this->assertEquals($initialUserCount, User::count());
 
         $data = $response->json('data');
-        $this->assertFalse($data['new_user_created']);
+        $this->assertFalse($data['newUserCreated']);
 
         // Se usó el usuario existente
         $company = $data['company'];
-        $this->assertEquals($existingUser->id, $company['admin_id']);
+        $this->assertEquals($existingUser->id, $company['adminId']);
     }
 
     // =========================================================================
@@ -545,12 +546,12 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         $loginResponse->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    'access_token',
+                    'accessToken',
                     'user' => ['email'],
                 ]
             ]);
 
-        $this->assertNotNull($loginResponse->json('data.access_token'));
+        $this->assertNotNull($loginResponse->json('data.accessToken'));
     }
 
     /** @test */

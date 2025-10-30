@@ -44,9 +44,9 @@ class CompanyRequestController extends Controller
         $query = CompanyRequest::query()
             ->with(['reviewer.profile', 'createdCompany']);
 
-        // Filtro por status
+        // Filtro por status (convertir a lowercase para compatibilidad con DB)
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->where('status', strtolower($request->status));
         }
 
         $requests = $query->orderBy('created_at', 'desc')

@@ -47,9 +47,9 @@ class CompanyRequestControllerIndexTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'request_code',
-                        'company_name',
-                        'admin_email',
+                        'requestCode',
+                        'companyName',
+                        'adminEmail',
                         'status',
                     ],
                 ],
@@ -77,7 +77,8 @@ class CompanyRequestControllerIndexTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions',
+                'code' => 'INSUFFICIENT_PERMISSIONS'
             ]);
     }
 
@@ -98,7 +99,8 @@ class CompanyRequestControllerIndexTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Unauthorized'
+                'message' => 'Insufficient permissions',
+                'code' => 'INSUFFICIENT_PERMISSIONS'
             ]);
     }
 
@@ -255,20 +257,20 @@ class CompanyRequestControllerIndexTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'request_code',
-                        'company_name',
-                        'admin_email',
-                        'business_description',
+                        'requestCode',
+                        'companyName',
+                        'adminEmail',
+                        'businessDescription',
                         'status',
-                        'created_at',
-                        'updated_at',
+                        'createdAt',
+                        'updatedAt',
                     ],
                 ],
             ]);
 
         $request = $response->json('data.0');
-        $this->assertEquals('Test Company', $request['company_name']);
-        $this->assertEquals('admin@test.com', $request['admin_email']);
+        $this->assertEquals('Test Company', $request['companyName']);
+        $this->assertEquals('admin@test.com', $request['adminEmail']);
     }
 
     /** @test */

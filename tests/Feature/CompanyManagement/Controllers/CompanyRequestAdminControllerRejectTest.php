@@ -92,7 +92,7 @@ class CompanyRequestAdminControllerRejectTest extends TestCase
 
         $request->refresh();
         $this->assertEquals('rejected', $request->status);
-        $this->assertNotNull($request->reviewed_at);
+        $this->assertNotNull($request->reviewedAt);
     }
 
     /** @test */

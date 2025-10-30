@@ -49,7 +49,7 @@ class CompanyControllerUpdateTest extends TestCase
                 'data' => [
                     'id' => $company->id,
                     'name' => 'Updated Name',
-                    'support_email' => 'newsupport@company.com',
+                    'supportEmail' => 'newsupport@company.com',
                 ],
             ]);
 
@@ -166,8 +166,8 @@ class CompanyControllerUpdateTest extends TestCase
             ->assertJson([
                 'data' => [
                     'name' => 'New Company Name',
-                    'legal_name' => 'New Legal Name SRL',
-                    'support_email' => 'new@support.com',
+                    'legalName' => 'New Legal Name SRL',
+                    'supportEmail' => 'new@support.com',
                     'phone' => '+59133998877',
                     'website' => 'https://newwebsite.com',
                 ],
@@ -269,9 +269,9 @@ class CompanyControllerUpdateTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'logo_url' => 'https://cdn.example.com/new-logo.png',
-                    'primary_color' => '#2563EB',
-                    'secondary_color' => '#1E3A8A',
+                    'logoUrl' => 'https://cdn.example.com/new-logo.png',
+                    'primaryColor' => '#2563EB',
+                    'secondaryColor' => '#1E3A8A',
                 ],
             ]);
 
@@ -319,13 +319,13 @@ class CompanyControllerUpdateTest extends TestCase
                 'data' => [
                     'id',
                     'name',
-                    'updated_at',
+                    'updatedAt',
                 ],
             ]);
 
         $updated = $response->json('data');
         $this->assertEquals('Updated Company', $updated['name']);
-        $this->assertNotEmpty($updated['updated_at']);
+        $this->assertNotEmpty($updated['updatedAt']);
     }
 
     /** @test */

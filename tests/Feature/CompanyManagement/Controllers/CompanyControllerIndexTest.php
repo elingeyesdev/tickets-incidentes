@@ -213,7 +213,7 @@ class CompanyControllerIndexTest extends TestCase
         $this->assertCount(2, $items);
 
         foreach ($items as $item) {
-            $this->assertTrue($item['is_followed_by_me']);
+            $this->assertTrue($item['isFollowedByMe']);
         }
     }
 
@@ -303,7 +303,7 @@ class CompanyControllerIndexTest extends TestCase
 
         // Assert
         $items = $response->json('data');
-        $this->assertTrue($items[0]['is_followed_by_me']);
+        $this->assertTrue($items[0]['isFollowedByMe']);
     }
 
     /** @test */
@@ -319,7 +319,7 @@ class CompanyControllerIndexTest extends TestCase
 
         // Assert
         $items = $response->json('data');
-        $this->assertFalse($items[0]['is_followed_by_me']);
+        $this->assertFalse($items[0]['isFollowedByMe']);
     }
 
     /** @test */

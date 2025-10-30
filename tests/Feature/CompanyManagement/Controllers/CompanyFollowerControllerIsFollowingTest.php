@@ -48,7 +48,7 @@ class CompanyFollowerControllerIsFollowingTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'is_following' => true,
+                    'isFollowing' => true,
                 ],
             ]);
     }
@@ -73,7 +73,7 @@ class CompanyFollowerControllerIsFollowingTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'is_following' => false,
+                    'isFollowing' => false,
                 ],
             ]);
     }
@@ -142,7 +142,7 @@ class CompanyFollowerControllerIsFollowingTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'is_following' => false,
+                    'isFollowing' => false,
                 ],
             ]);
     }
@@ -175,7 +175,7 @@ class CompanyFollowerControllerIsFollowingTest extends TestCase
         ]);
 
         // Assert
-        $this->assertTrue($response1->json('data.is_following'));
-        $this->assertFalse($response2->json('data.is_following'));
+        $this->assertTrue($response1->json('data.isFollowing'));
+        $this->assertFalse($response2->json('data.isFollowing'));
     }
 }

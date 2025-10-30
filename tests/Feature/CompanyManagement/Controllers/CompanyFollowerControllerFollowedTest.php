@@ -83,12 +83,12 @@ class CompanyFollowerControllerFollowedTest extends TestCase
                         'id',
                         'company' => [
                             'id',
-                            'company_code',
+                            'companyCode',
                             'name',
-                            'logo_url',
+                            'logoUrl',
                         ],
-                        'followed_at',
-                        'my_tickets_count',
+                        'followedAt',
+                        'myTicketsCount',
                     ],
                 ],
             ]);
@@ -189,18 +189,18 @@ class CompanyFollowerControllerFollowedTest extends TestCase
                     '*' => [
                         'id',
                         'company',
-                        'followed_at',
-                        'my_tickets_count',
-                        'last_ticket_created_at',
-                        'has_unread_announcements',
+                        'followedAt',
+                        'myTicketsCount',
+                        'lastTicketCreatedAt',
+                        'hasUnreadAnnouncements',
                     ],
                 ],
             ]);
 
         $followedCompany = $response->json('data.0');
-        $this->assertIsInt($followedCompany['my_tickets_count']);
-        $this->assertIsBool($followedCompany['has_unread_announcements']);
-        $this->assertNotEmpty($followedCompany['followed_at']);
+        $this->assertIsInt($followedCompany['myTicketsCount']);
+        $this->assertIsBool($followedCompany['hasUnreadAnnouncements']);
+        $this->assertNotEmpty($followedCompany['followedAt']);
     }
 
     /** @test */
