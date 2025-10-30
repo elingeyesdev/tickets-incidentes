@@ -27,7 +27,7 @@ class UserAuthInfoResource extends JsonResource
             'email' => $this->email ?? null,
             'emailVerified' => (bool) ($this->email_verified ?? false),
             'onboardingCompleted' => (bool) ($this->onboarding_completed_at ?? false),
-            'status' => $this->status?->name ?? 'ACTIVE',
+            'status' => $this->status ? strtoupper($this->status->name) : 'ACTIVE',
             'displayName' => $this->getDisplayName(),
             'avatarUrl' => $this->getAvatarUrl(),
             'theme' => $this->getTheme(),

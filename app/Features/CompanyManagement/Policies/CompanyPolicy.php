@@ -24,17 +24,17 @@ class CompanyPolicy
     public function view(User $user, Company $company): bool
     {
         // PLATFORM_ADMIN puede ver cualquier empresa
-        if ($user->hasRole('platform_admin')) {
+        if ($user->hasRole('PLATFORM_ADMIN')) {
             return true;
         }
 
         // COMPANY_ADMIN puede ver su propia empresa
-        if ($user->hasRole('company_admin') && $user->hasRoleInCompany('company_admin', $company->id)) {
+        if ($user->hasRole('COMPANY_ADMIN') && $user->hasRoleInCompany('COMPANY_ADMIN', $company->id)) {
             return true;
         }
 
         // AGENT puede ver su empresa
-        if ($user->hasRole('agent') && $user->hasRoleInCompany('agent', $company->id)) {
+        if ($user->hasRole('AGENT') && $user->hasRoleInCompany('AGENT', $company->id)) {
             return true;
         }
 
@@ -48,7 +48,7 @@ class CompanyPolicy
     public function create(User $user): bool
     {
         // Solo PLATFORM_ADMIN puede crear empresas directamente
-        return $user->hasRole('platform_admin');
+        return $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -57,12 +57,12 @@ class CompanyPolicy
     public function update(User $user, Company $company): bool
     {
         // PLATFORM_ADMIN puede actualizar cualquier empresa
-        if ($user->hasRole('platform_admin')) {
+        if ($user->hasRole('PLATFORM_ADMIN')) {
             return true;
         }
 
         // COMPANY_ADMIN puede actualizar su propia empresa
-        if ($user->hasRole('company_admin') && $user->hasRoleInCompany('company_admin', $company->id)) {
+        if ($user->hasRole('COMPANY_ADMIN') && $user->hasRoleInCompany('COMPANY_ADMIN', $company->id)) {
             return true;
         }
 
@@ -75,7 +75,7 @@ class CompanyPolicy
     public function delete(User $user, Company $company): bool
     {
         // Solo PLATFORM_ADMIN puede eliminar empresas
-        return $user->hasRole('platform_admin');
+        return $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -84,7 +84,7 @@ class CompanyPolicy
     public function suspend(User $user, Company $company): bool
     {
         // Solo PLATFORM_ADMIN puede suspender empresas
-        return $user->hasRole('platform_admin');
+        return $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -93,7 +93,7 @@ class CompanyPolicy
     public function activate(User $user, Company $company): bool
     {
         // Solo PLATFORM_ADMIN puede activar empresas
-        return $user->hasRole('platform_admin');
+        return $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -102,7 +102,7 @@ class CompanyPolicy
     public function manageRequests(User $user): bool
     {
         // Solo PLATFORM_ADMIN puede aprobar/rechazar solicitudes
-        return $user->hasRole('platform_admin');
+        return $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -111,17 +111,17 @@ class CompanyPolicy
     public function viewStats(User $user, Company $company): bool
     {
         // PLATFORM_ADMIN puede ver estadísticas de cualquier empresa
-        if ($user->hasRole('platform_admin')) {
+        if ($user->hasRole('PLATFORM_ADMIN')) {
             return true;
         }
 
         // COMPANY_ADMIN puede ver estadísticas de su propia empresa
-        if ($user->hasRole('company_admin') && $user->hasRoleInCompany('company_admin', $company->id)) {
+        if ($user->hasRole('COMPANY_ADMIN') && $user->hasRoleInCompany('COMPANY_ADMIN', $company->id)) {
             return true;
         }
 
         // AGENT puede ver estadísticas básicas de su empresa
-        if ($user->hasRole('agent') && $user->hasRoleInCompany('agent', $company->id)) {
+        if ($user->hasRole('AGENT') && $user->hasRoleInCompany('AGENT', $company->id)) {
             return true;
         }
 

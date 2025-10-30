@@ -10,6 +10,10 @@ use App\Features\Authentication\Http\Controllers\OnboardingController;
 use App\Features\UserManagement\Http\Controllers\UserController;
 use App\Features\UserManagement\Http\Controllers\ProfileController;
 use App\Features\UserManagement\Http\Controllers\RoleController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyFollowerController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -109,5 +113,76 @@ Route::middleware('jwt.require')->group(function () {
     Route::middleware(['role:PLATFORM_ADMIN'])->group(function () {
         Route::put('/users/{id}/status', [UserController::class, 'updateStatus'])->name('users.status.update');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+});
+
+// ================================================================================
+// REST API ENDPOINTS - Company Management
+// ================================================================================
+
+// ========== Public Routes (No Authentication Required) ==========
+Route::get('/companies/minimal', [CompanyController::class, 'minimal'])->name('companies.minimal');
+
+Route::post('/company-requests', [CompanyRequestController::class, 'store'])
+    ->middleware('throttle:3,60')  // 3 requests per hour
+    ->name('company-requests.store');
+
+// ========== Authenticated Routes (Require JWT) ==========
+Route::middleware('jwt.require')->group(function () {
+
+    // ========== COMPANIES - User Endpoints ==========
+
+    // Explore companies (authenticated users)
+    Route::get('/companies/explore', [CompanyController::class, 'explore'])->name('companies.explore');
+
+    // Companies followed by the user
+    Route::get('/companies/followed', [CompanyFollowerController::class, 'followed'])->name('companies.followed');
+
+    // Check if following a company
+    Route::get('/companies/{company}/following', [CompanyFollowerController::class, 'isFollowing'])
+        ->name('companies.following');
+
+    // Follow/Unfollow company
+    Route::post('/companies/{company}/follow', [CompanyFollowerController::class, 'follow'])
+        ->middleware('throttle:20,60')  // 20 requests per hour
+        ->name('companies.follow');
+
+    Route::delete('/companies/{company}/unfollow', [CompanyFollowerController::class, 'unfollow'])
+        ->name('companies.unfollow');
+
+    // View company details (with policy)
+    Route::get('/companies/{company}', [CompanyController::class, 'show'])
+        ->can('view', 'company')
+        ->name('companies.show');
+
+    // ========== COMPANIES - Admin Endpoints ==========
+
+    // List companies (PLATFORM_ADMIN or COMPANY_ADMIN)
+    Route::middleware(['role:PLATFORM_ADMIN,COMPANY_ADMIN'])->group(function () {
+        Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+    });
+
+    // Create company (PLATFORM_ADMIN only)
+    Route::post('/companies', [CompanyController::class, 'store'])
+        ->middleware(['role:PLATFORM_ADMIN', 'throttle:10,60'])  // 10 per hour
+        ->name('companies.store');
+
+    // Update company (PLATFORM_ADMIN or COMPANY_ADMIN owner with policy)
+    Route::match(['put', 'patch'], '/companies/{company}', [CompanyController::class, 'update'])
+        ->can('update', 'company')
+        ->name('companies.update');
+
+    // ========== COMPANY REQUESTS - Admin Endpoints ==========
+
+    Route::middleware(['role:PLATFORM_ADMIN'])->prefix('company-requests')->group(function () {
+        // List company requests
+        Route::get('/', [CompanyRequestController::class, 'index'])->name('company-requests.index');
+
+        // Approve/Reject company requests
+        Route::post('/{companyRequest}/approve', [CompanyRequestAdminController::class, 'approve'])
+            ->name('company-requests.approve');
+
+        Route::post('/{companyRequest}/reject', [CompanyRequestAdminController::class, 'reject'])
+            ->name('company-requests.reject');
     });
 });

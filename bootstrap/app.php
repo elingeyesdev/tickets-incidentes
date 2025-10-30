@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.require' => \App\Http\Middleware\JWT\RequireJWTAuthentication::class,        // ← Autenticación OBLIGATORIA
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization
+            'company.ownership' => \App\Features\CompanyManagement\Http\Middleware\EnsureCompanyOwnership::class,  // ← Company ownership validation
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

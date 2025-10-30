@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,5 +30,19 @@ class AppServiceProvider extends ServiceProvider
             app_path('Features/TicketManagement/Database/Migrations'),
             app_path('Features/ContentManagement/Database/Migrations'),
         ]);
+
+        // Register Policies (Feature-First Architecture)
+        $this->registerPolicies();
+    }
+
+    /**
+     * Registrar policies del sistema
+     */
+    protected function registerPolicies(): void
+    {
+        Gate::policy(
+            \App\Features\CompanyManagement\Models\Company::class,
+            \App\Features\CompanyManagement\Policies\CompanyPolicy::class
+        );
     }
 }
