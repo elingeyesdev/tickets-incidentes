@@ -105,11 +105,10 @@ abstract class TestCase extends BaseTestCase
 
         // Add Authorization header to all subsequent requests
         // The JWTAuthenticationMiddleware will process this header automatically
-        $this->withHeaders([
+        // CRITICAL: Must return the result of withHeaders() for proper chaining
+        return $this->withHeaders([
             'Authorization' => "Bearer {$token}",
         ]);
-
-        return $this;
     }
 
     /**

@@ -52,7 +52,21 @@ class CompanyRequestController extends Controller
         $requests = $query->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
 
-        return CompanyRequestResource::collection($requests);
+        return response()->json([
+            'data' => CompanyRequestResource::collection($requests->items()),
+            'meta' => [
+                'total' => $requests->total(),
+                'current_page' => $requests->currentPage(),
+                'last_page' => $requests->lastPage(),
+                'per_page' => $requests->perPage(),
+            ],
+            'links' => [
+                'first' => $requests->url(1),
+                'last' => $requests->url($requests->lastPage()),
+                'prev' => $requests->previousPageUrl(),
+                'next' => $requests->nextPageUrl(),
+            ],
+        ]);
     }
 
     /**

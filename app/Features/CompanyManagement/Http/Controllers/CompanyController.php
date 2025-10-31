@@ -62,7 +62,21 @@ class CompanyController extends Controller
 
         $companies = $query->paginate($request->input('per_page', 50));
 
-        return CompanyMinimalResource::collection($companies);
+        return response()->json([
+            'data' => CompanyMinimalResource::collection($companies->items()),
+            'meta' => [
+                'total' => $companies->total(),
+                'current_page' => $companies->currentPage(),
+                'last_page' => $companies->lastPage(),
+                'per_page' => $companies->perPage(),
+            ],
+            'links' => [
+                'first' => $companies->url(1),
+                'last' => $companies->url($companies->lastPage()),
+                'prev' => $companies->previousPageUrl(),
+                'next' => $companies->nextPageUrl(),
+            ],
+        ]);
     }
 
     /**
@@ -91,19 +105,21 @@ class CompanyController extends Controller
             ->pluck('company_id')
             ->toArray();
 
-        $query = Company::query()
-            ->select([
-                'id', 'company_code', 'name', 'logo_url',
-                'business_description', 'industry_type',
-                'contact_city', 'contact_country', 'primary_color', 'status',
-            ])
-            ->where('status', 'active')
-            ->withCount('followers');  // Agregar followers_count
+        $query = Company::query();
+
+        // Status filter (default: 'active' for explore context, but can be overridden)
+        // Use case-insensitive ILIKE for status comparison
+        if ($request->filled('status')) {
+            $query->where('status', 'ILIKE', $request->status);
+        } else {
+            $query->where('status', 'active');  // Default: only active companies in explore
+        }
 
         // Aplicar filtros
-        if ($request->filled('industry')) {
-            $query->where('industry_type', $request->industry);
-        }
+        // Note: Campo industry no existe en la BD, omitir por ahora
+        // if ($request->filled('industry')) {
+        //     $query->where('industry_type', $request->industry);
+        // }
 
         if ($request->filled('country')) {
             $query->where('contact_country', $request->country);
@@ -124,15 +140,33 @@ class CompanyController extends Controller
 
         $companies = $query->paginate($request->input('per_page', 20));
 
-        // Agregar campo is_followed_by_me en memoria (evita N+1)
+        // Agregar campos calculados en memoria (evita N+1 y problemas con withTimestamps)
         $companies->getCollection()->transform(function ($company) use ($followedCompanyIds) {
             if ($company && isset($company->id)) {
+                // followers_count - Query directa igual que GraphQL resolver
+                $company->followers_count = CompanyFollower::where('company_id', $company->id)->count();
+
+                // is_followed_by_me
                 $company->is_followed_by_me = in_array($company->id, $followedCompanyIds);
             }
             return $company;
         });
 
-        return CompanyExploreResource::collection($companies);
+        return response()->json([
+            'data' => CompanyExploreResource::collection($companies->items()),
+            'meta' => [
+                'total' => $companies->total(),
+                'current_page' => $companies->currentPage(),
+                'last_page' => $companies->lastPage(),
+                'per_page' => $companies->perPage(),
+            ],
+            'links' => [
+                'first' => $companies->url(1),
+                'last' => $companies->url($companies->lastPage()),
+                'prev' => $companies->previousPageUrl(),
+                'next' => $companies->nextPageUrl(),
+            ],
+        ]);
     }
 
     /**
@@ -143,7 +177,8 @@ class CompanyController extends Controller
      * Propósito: Administración completa de empresas
      *
      * Campos retornados: TODOS los campos del modelo + campos calculados + admin info
-     * Eager loading: ->with(['admin.profile']), ->withCount([...])
+     * Eager loading: ->with(['admin.profile', 'userRoles'])
+     * N+1 Prevention: Eager load userRoles, calcular counts en memoria
      * Filtros: status, search
      * Restricciones: COMPANY_ADMIN solo ve su empresa
      * Ordenamiento: Configurable (default: created_at DESC)
@@ -154,13 +189,7 @@ class CompanyController extends Controller
     public function index(ListCompaniesRequest $request)
     {
         $query = Company::query()
-            ->with(['admin.profile'])
-            ->withCount([
-                'followers',
-                'userRoles as active_agents_count' => function ($q) {
-                    $q->where('role_code', 'AGENT')->where('is_active', true);
-                },
-            ]);
+            ->with(['admin.profile']);
 
         // Filtros
         if ($request->filled('status')) {
@@ -184,15 +213,45 @@ class CompanyController extends Controller
 
         $companies = $query->paginate($request->input('per_page', 20));
 
-        // Cargar total_users_count después de paginate (en memoria)
+        // Eager load userRoles.role ONLY (avoid loading followers due to withTimestamps issue)
+        $companies->load(['userRoles.role']);
+
+        // Calcular counts en memoria (evita problemas con loadCount y distinct)
+        // Nota: NO cargamos followers(), usamos query directa como en GraphQL
         $companies->getCollection()->each(function ($company) {
-            $company->total_users_count = $company->userRoles()
+            // followers_count - Query directa (sin cargar relación) igual que GraphQL resolver
+            $company->followers_count = CompanyFollower::where('company_id', $company->id)->count();
+
+            // active_agents_count (role_code = AGENT + is_active = true)
+            $company->active_agents_count = $company->userRoles
                 ->where('is_active', true)
-                ->distinct('user_id')
+                ->filter(function ($userRole) {
+                    return $userRole->role && $userRole->role->role_code === 'AGENT';
+                })
+                ->count();
+
+            // total_users_count (distinct user_id + is_active = true)
+            $company->total_users_count = $company->userRoles
+                ->where('is_active', true)
+                ->unique('user_id')
                 ->count();
         });
 
-        return CompanyResource::collection($companies);
+        return response()->json([
+            'data' => CompanyResource::collection($companies->items()),
+            'meta' => [
+                'total' => $companies->total(),
+                'current_page' => $companies->currentPage(),
+                'last_page' => $companies->lastPage(),
+                'per_page' => $companies->perPage(),
+            ],
+            'links' => [
+                'first' => $companies->url(1),
+                'last' => $companies->url($companies->lastPage()),
+                'prev' => $companies->previousPageUrl(),
+                'next' => $companies->nextPageUrl(),
+            ],
+        ]);
     }
 
     /**
@@ -203,25 +262,35 @@ class CompanyController extends Controller
      * Propósito: Ver detalle completo de empresa
      *
      * Campos retornados: TODOS los campos del modelo + campos calculados + admin info
-     * Eager loading: ->load(['admin.profile']), ->loadCount([...])
-     * N+1 Prevention: Cargar relaciones después del Route Model Binding
+     * Eager loading: ->load(['admin.profile', 'userRoles', 'followers'])
+     * N+1 Prevention: Eager load relaciones, calcular counts en memoria
      * Permisos: Manejado por Policy en rutas
      *
      * @return CompanyResource
      */
     public function show(Company $company)
     {
-        // Cargar relaciones necesarias
-        $company->load(['admin.profile'])
-            ->loadCount([
-                'followers',
-                'userRoles as active_agents_count' => function ($q) {
-                    $q->where('role_code', 'AGENT')->where('is_active', true);
-                },
-                'userRoles as total_users_count' => function ($q) {
-                    $q->where('is_active', true)->distinct('user_id');
-                },
-            ]);
+        // Eager load solo relaciones simples (evita N+1)
+        $company->load(['admin.profile']);
+
+        // Calcular counts usando queries SEPARADAS (evita problemas con loadCount y distinct en PostgreSQL)
+        // Sin N+1 porque no hay loops - son queries directas paralelas
+        $company->followers_count = CompanyFollower::where('company_id', $company->id)
+            ->count();
+
+        $company->active_agents_count = \DB::table('auth.user_roles')
+            ->where('auth.user_roles.company_id', $company->id)
+            ->where('auth.user_roles.is_active', true)
+            ->join('auth.roles', 'auth.roles.role_code', '=', 'auth.user_roles.role_code')
+            ->where('auth.roles.role_code', 'AGENT')
+            ->distinct('auth.user_roles.user_id')
+            ->count();
+
+        $company->total_users_count = \DB::table('auth.user_roles')
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->distinct('user_id')
+            ->count('user_id');
 
         // Agregar is_followed_by_me si está autenticado
         if (JWTHelper::isAuthenticated()) {
@@ -346,17 +415,23 @@ class CompanyController extends Controller
         // Llamar al Service (NO modificarlo, solo usarlo)
         $updated = $companyService->update($company, $data);
 
-        // Cargar relaciones para el Resource
-        $updated->load(['admin.profile'])
-            ->loadCount([
-                'followers',
-                'userRoles as active_agents_count' => fn ($q) => $q->where('role_code', 'AGENT')->where('is_active', true),
-            ]);
+        // Eager load relaciones (ONLY admin.profile and userRoles, avoid followers due to withTimestamps issue)
+        $updated->load(['admin.profile', 'userRoles.role']);
 
-        // Calcular total_users_count (distinct user_id) manualmente
-        $updated->total_users_count = $updated->userRoles()
+        // Calcular counts en memoria (evita problemas con loadCount y distinct)
+        // followers_count - Query directa (sin cargar relación) igual que GraphQL resolver
+        $updated->followers_count = CompanyFollower::where('company_id', $updated->id)->count();
+
+        $updated->active_agents_count = $updated->userRoles
             ->where('is_active', true)
-            ->distinct('user_id')
+            ->filter(function ($userRole) {
+                return $userRole->role && $userRole->role->role_code === 'AGENT';
+            })
+            ->count();
+
+        $updated->total_users_count = $updated->userRoles
+            ->where('is_active', true)
+            ->unique('user_id')
             ->count();
 
         // Agregar is_followed_by_me (contexto autenticado)

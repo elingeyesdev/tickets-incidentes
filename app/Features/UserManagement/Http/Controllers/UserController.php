@@ -203,6 +203,12 @@ class UserController extends Controller
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),
             ],
+            'links' => [
+                'first' => $users->url(1),
+                'last' => $users->url($users->lastPage()),
+                'prev' => $users->previousPageUrl(),
+                'next' => $users->nextPageUrl(),
+            ],
         ]);
     }
 

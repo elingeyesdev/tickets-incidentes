@@ -23,6 +23,29 @@ class ListCompaniesRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Normalizar status a lowercase para ser case-insensitive
+        if ($this->has('status')) {
+            $this->merge([
+                'status' => strtolower($this->status),
+            ]);
+        }
+
+        // Convert string "true"/"false" to proper boolean values for followed_by_me
+        if ($this->has('followed_by_me')) {
+            $value = $this->followed_by_me;
+            if (is_string($value)) {
+                $this->merge([
+                    'followed_by_me' => in_array($value, ['true', '1', 'yes', 'on'], true) ? 1 : 0,
+                ]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
