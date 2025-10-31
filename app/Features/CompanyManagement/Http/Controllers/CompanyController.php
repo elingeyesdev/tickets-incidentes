@@ -14,7 +14,9 @@ use App\Features\CompanyManagement\Services\CompanyService;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\Helpers\JWTHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CompanyController
@@ -36,19 +38,17 @@ class CompanyController extends Controller
     /**
      * Lista mínima de empresas para selectores (público).
      *
-     * Endpoint: GET /api/v1/companies/minimal
+     * Endpoint: GET /api/companies/minimal
      * Contexto: PÚBLICO (sin autenticación)
-     * Propósito: Selectores, referencias rápidas, campos anidados
+     * Propósito: Selectores, referencias rápidas
      *
-     * Campos retornados: id, company_code, name, logo_url
-     * Eager loading: NINGUNO (campos directos)
-     * Filtros: search (opcional)
-     * Ordenamiento: Por nombre (ASC)
-     * Paginación: 50 por página (configurable)
+     * Query Parameters:
+     * - search: string (opcional) - Filtrar por nombre
+     * - per_page: integer (opcional, default 50) - Items por página
      *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     * Response: JSON con array de empresas minimalistas
      */
-    public function minimal(ListCompaniesRequest $request)
+    public function minimal(ListCompaniesRequest $request): JsonResponse
     {
         $query = Company::query()
             ->select(['id', 'company_code', 'name', 'logo_url'])
@@ -82,21 +82,22 @@ class CompanyController extends Controller
     /**
      * Lista extendida de empresas para explorar (autenticado).
      *
-     * Endpoint: GET /api/v1/companies/explore
-     * Contexto: AUTH (requiere autenticación)
-     * Propósito: Explorar empresas públicas, cards de empresas
+     * Endpoint: GET /api/companies/explore
+     * Contexto: AUTH (requiere autenticación JWT)
+     * Propósito: Explorar empresas públicas con filtros
      *
-     * Campos retornados: id, company_code, name, logo_url, description, industry,
-     *                    city, country, primary_color, status, followers_count, is_followed_by_me
-     * Eager loading: ->withCount('followers')
-     * N+1 Prevention: Pre-load followed IDs, agregar is_followed_by_me en memoria
-     * Filtros: industry, country, search, followed_by_me
-     * Ordenamiento: Configurable (default: name ASC)
-     * Paginación: 20 por página (configurable)
+     * Query Parameters:
+     * - search: string (opcional) - Buscar por nombre
+     * - country: string (opcional) - Filtrar por país
+     * - followed_by_me: boolean (opcional) - Solo empresas que sigo
+     * - sort_by: string (opcional, default 'name') - Campo para ordenar
+     * - sort_direction: string (opcional, default 'asc') - asc o desc
+     * - per_page: integer (opcional, default 20) - Items por página
      *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     * Response: JSON con array de empresas extendidas
+     * Security: Requiere Bearer token
      */
-    public function explore(ListCompaniesRequest $request)
+    public function explore(ListCompaniesRequest $request): JsonResponse
     {
         $userId = JWTHelper::getUserId();
 

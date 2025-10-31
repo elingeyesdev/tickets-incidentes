@@ -199,12 +199,6 @@ class ErrorFormattingTest extends TestCase
 
         $this->assertArrayNotHasKey('fieldErrors', $devError['extensions']);
         $this->assertArrayHasKey('fieldErrors', $prodError['extensions']);
-
-        echo "\n\n=== DEV ERROR ===\n";
-        echo json_encode($devError, JSON_PRETTY_PRINT);
-
-        echo "\n\n=== PROD ERROR ===\n";
-        echo json_encode($prodError, JSON_PRETTY_PRINT);
     }
 
     /**
