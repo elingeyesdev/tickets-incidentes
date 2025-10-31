@@ -130,31 +130,9 @@ class PasswordResetController
             $password = $request->input('password');
             $passwordConfirmation = $request->input('passwordConfirmation');
 
-            // === VALIDACIONES (replicar mutation) ===
-            if (!$password) {
-                throw ValidationException::fieldRequired('password');
-            }
-
-            if (!$passwordConfirmation) {
-                throw ValidationException::fieldRequired('passwordConfirmation');
-            }
-
-            if ($password !== $passwordConfirmation) {
-                throw ValidationException::withField('passwordConfirmation', 'The passwords do not match');
-            }
-
-            if (strlen($password) < 8) {
-                throw ValidationException::withField('password', 'The password must be at least 8 characters');
-            }
-
-            // Validar que hay token O código, pero NO ambos
-            if ($token && $code) {
-                throw ValidationException::withField('input', 'Provide either token or code, not both');
-            }
-
-            if (!$token && !$code) {
-                throw ValidationException::withField('input', 'Provide either token or code');
-            }
+            // === VALIDACIONES ===
+            // FormRequest ya validó todo: token XOR code, password, passwordConfirmation
+            // Solo extraemos los valores validados
 
             // === PREPARAR DEVICE INFO (con fallback como en mutation) ===
             $deviceInfo = [];

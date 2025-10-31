@@ -23,11 +23,13 @@ class CompanyRejectionResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'success' => $this->resource['success'] ?? true,
-            'message' => $this->resource['message'] ?? 'Solicitud rechazada exitosamente',
-            'reason' => $this->resource['reason'] ?? null,
-            'notification_sent_to' => $this->resource['notification_sent_to'] ?? null,
-            'request_code' => $this->resource['request_code'] ?? null,
+            'data' => [
+                'success' => $this->resource['success'] ?? true,
+                'message' => $this->resource['message'] ?? 'Solicitud rechazada exitosamente',
+                'reason' => $this->resource['reason'] ?? null,
+                'notification_sent_to' => $this->resource['notification_sent_to'] ?? null,
+                'request_code' => $this->resource['request_code'] ?? null,
+            ],
         ];
     }
 }

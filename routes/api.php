@@ -103,7 +103,7 @@ Route::middleware('jwt.require')->group(function () {
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
 
         Route::post('/users/{userId}/roles', [RoleController::class, 'assign'])
-            ->middleware('throttle:100,60')  // 100 requests per hour
+            ->middleware('throttle.user:100,60,assign-role')  // 100 requests per 60 minutes per authenticated user
             ->name('users.roles.assign');
 
         Route::delete('/users/roles/{roleId}', [RoleController::class, 'remove'])->name('users.roles.remove');
@@ -152,7 +152,6 @@ Route::middleware('jwt.require')->group(function () {
 
     // View company details (with policy)
     Route::get('/companies/{company}', [CompanyController::class, 'show'])
-        ->can('view', 'company')
         ->name('companies.show');
 
     // ========== COMPANIES - Admin Endpoints ==========
@@ -169,7 +168,6 @@ Route::middleware('jwt.require')->group(function () {
 
     // Update company (PLATFORM_ADMIN or COMPANY_ADMIN owner with policy)
     Route::match(['put', 'patch'], '/companies/{company}', [CompanyController::class, 'update'])
-        ->can('update', 'company')
         ->name('companies.update');
 
     // ========== COMPANY REQUESTS - Admin Endpoints ==========
@@ -180,9 +178,25 @@ Route::middleware('jwt.require')->group(function () {
 
         // Approve/Reject company requests
         Route::post('/{companyRequest}/approve', [CompanyRequestAdminController::class, 'approve'])
-            ->name('company-requests.approve');
+            ->name('company-requests.approve')
+            ->missing(function () {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request not found',
+                    'code' => 'REQUEST_NOT_FOUND',
+                    'category' => 'resource',
+                ], 404);
+            });
 
         Route::post('/{companyRequest}/reject', [CompanyRequestAdminController::class, 'reject'])
-            ->name('company-requests.reject');
+            ->name('company-requests.reject')
+            ->missing(function () {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request not found',
+                    'code' => 'REQUEST_NOT_FOUND',
+                    'category' => 'resource',
+                ], 404);
+            });
     });
 });

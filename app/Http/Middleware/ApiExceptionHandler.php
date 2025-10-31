@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException as LaravelValidationException;
+use Illuminate\Auth\Access\AuthorizationException as LaravelAuthorizationException;
 use Throwable;
 use App\Shared\Exceptions\HelpdeskException;
 use App\Shared\Exceptions\ValidationException;
@@ -62,6 +63,9 @@ class ApiExceptionHandler
         } catch (LaravelValidationException $e) {
             // Validación de Laravel Form Requests
             return $this->handleValidationException($e);
+        } catch (LaravelAuthorizationException $e) {
+            // Excepciones de autorización nativas de Laravel (->can() middleware)
+            return $this->handleLaravelAuthorizationException($e);
         } catch (GraphQLErrorWithExtensions $e) {
             // Excepciones de GraphQL (usadas temporalmente en Services)
             return $this->handleGraphQLException($e);
@@ -85,7 +89,7 @@ class ApiExceptionHandler
      *
      * Laravel Form Requests lanzan LaravelValidationException
      */
-    protected function handleValidationException(LaravelValidationException $e): \Illuminate\Http\JsonResponse
+    public function handleValidationException(LaravelValidationException $e): \Illuminate\Http\JsonResponse
     {
         $response = [
             'success' => false,
@@ -99,11 +103,44 @@ class ApiExceptionHandler
     }
 
     /**
+     * Manejar excepción de autorización nativa de Laravel
+     *
+     * Laravel Policy + ->can() middleware lanzan LaravelAuthorizationException
+     */
+    public function handleLaravelAuthorizationException(LaravelAuthorizationException $e): \Illuminate\Http\JsonResponse
+    {
+        $code = ErrorCodeRegistry::FORBIDDEN;
+        $category = ErrorCodeRegistry::getCategory($code);
+
+        $response = [
+            'success' => false,
+            'message' => $e->getMessage() ?: 'This action is unauthorized',
+            'code' => $code,
+            'category' => $category,
+        ];
+
+        // En DESARROLLO, agregar información de debugging
+        if (app()->isLocal()) {
+            $response['debug'] = [
+                'timestamp' => now()->toIso8601String(),
+                'environment' => app()->environment(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ];
+        } else {
+            // En PRODUCCIÓN, agregar solo timestamp
+            $response['timestamp'] = now()->toIso8601String();
+        }
+
+        return response()->json($response, 403);
+    }
+
+    /**
      * Manejar excepción de GraphQL (usada temporalmente en Services)
      *
      * Convierte GraphQLErrorWithExtensions a respuesta REST
      */
-    protected function handleGraphQLException(GraphQLErrorWithExtensions $e): \Illuminate\Http\JsonResponse
+    public function handleGraphQLException(GraphQLErrorWithExtensions $e): \Illuminate\Http\JsonResponse
     {
         $extensions = $e->getExtensions();
         $code = $extensions['code'] ?? 'UNKNOWN_ERROR';
@@ -168,7 +205,7 @@ class ApiExceptionHandler
      * Convierte a HTTP status code y aplica formateo DEV/PROD
      * Usa ErrorCodeRegistry para códigos consistentes
      */
-    protected function handleHelpdeskException(HelpdeskException $e): \Illuminate\Http\JsonResponse
+    public function handleHelpdeskException(HelpdeskException $e): \Illuminate\Http\JsonResponse
     {
         // Obtener el código de error (HelpdeskException debe tenerlo)
         $errorCode = $e->getErrorCode();
@@ -220,7 +257,7 @@ class ApiExceptionHandler
     /**
      * Manejar excepción de base de datos
      */
-    protected function handleDatabaseException(QueryException $e): \Illuminate\Http\JsonResponse
+    public function handleDatabaseException(QueryException $e): \Illuminate\Http\JsonResponse
     {
         $code = ErrorCodeRegistry::DATABASE_ERROR;
         $category = ErrorCodeRegistry::getCategory($code);
@@ -262,7 +299,7 @@ class ApiExceptionHandler
     /**
      * Manejar excepción genérica
      */
-    protected function handleGenericException(Throwable $e): \Illuminate\Http\JsonResponse
+    public function handleGenericException(Throwable $e): \Illuminate\Http\JsonResponse
     {
         $code = ErrorCodeRegistry::INTERNAL_SERVER_ERROR;
         $category = ErrorCodeRegistry::getCategory($code);
@@ -303,7 +340,7 @@ class ApiExceptionHandler
     /**
      * Manejar ModelNotFoundException
      */
-    protected function handleModelNotFoundException(ModelNotFoundException $e): \Illuminate\Http\JsonResponse
+    public function handleModelNotFoundException(ModelNotFoundException $e): \Illuminate\Http\JsonResponse
     {
         // Determinar el tipo de modelo
         $model = $e->getModel();

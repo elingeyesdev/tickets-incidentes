@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            ApiExceptionHandler::class,  // ← API exception handler
         ]);
 
         // API routes are stateless - disable CSRF protection for all /api/* routes
@@ -41,22 +42,82 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization
             'company.ownership' => \App\Features\CompanyManagement\Http\Middleware\EnsureCompanyOwnership::class,  // ← Company ownership validation
+            'throttle.user' => \App\Http\Middleware\ThrottleByUser::class,  // ← User-based rate limiting (requires JWT)
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Manejar ModelNotFoundException para rutas API
-        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+        $exceptions->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+            \Log::debug('ModelNotFoundException renderable called', [
+                'path' => $request->path(),
+                'is_api' => $request->is('api/*'),
+                'exception' => get_class($e),
+            ]);
+
+            if ($request->is('api/*')) {
+                try {
+                    $handler = new ApiExceptionHandler();
+                    return $handler->handleModelNotFoundException($e);
+                } catch (\Throwable $handlerError) {
+                    // If handler itself fails, return a generic 500 error
+                    \Log::error('ApiExceptionHandler failed: ' . $handlerError->getMessage(), [
+                        'exception' => $handlerError,
+                        'original_exception' => $e,
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Internal server error while handling ModelNotFoundException',
+                        'error' => $handlerError->getMessage(),
+                    ], 500);
+                }
+            }
+        });
+
+        // Manejar ValidationException para rutas API
+        $exceptions->renderable(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
                 $handler = new ApiExceptionHandler();
-                return $handler->handle($request, function() use ($e) { throw $e; });
+                return $handler->handleValidationException($e);
+            }
+        });
+
+        // Manejar AuthorizationException para rutas API
+        $exceptions->renderable(function (\Illuminate\Auth\Access\AuthorizationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handleLaravelAuthorizationException($e);
+            }
+        });
+
+        // Manejar GraphQLErrorWithExtensions para rutas API
+        $exceptions->renderable(function (\App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handleGraphQLException($e);
+            }
+        });
+
+        // Manejar HelpdeskException para rutas API
+        $exceptions->renderable(function (\App\Shared\Exceptions\HelpdeskException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handleHelpdeskException($e);
+            }
+        });
+
+        // Manejar QueryException para rutas API
+        $exceptions->renderable(function (\Illuminate\Database\QueryException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $handler = new ApiExceptionHandler();
+                return $handler->handleDatabaseException($e);
             }
         });
 
         // Manejar todas las demás excepciones para rutas API
-        $exceptions->render(function (Throwable $e, \Illuminate\Http\Request $request) {
+        $exceptions->renderable(function (Throwable $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
                 $handler = new ApiExceptionHandler();
-                return $handler->handle($request, function() use ($e) { throw $e; });
+                return $handler->handleGenericException($e);
             }
         });
     })->create();

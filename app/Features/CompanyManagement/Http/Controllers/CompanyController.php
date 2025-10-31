@@ -389,6 +389,9 @@ class CompanyController extends Controller
      */
     public function update(UpdateCompanyRequest $request, Company $company, CompanyService $companyService)
     {
+        // NOTA: Autorización ya validada en UpdateCompanyRequest::authorize()
+        // No duplicar lógica aquí. FormRequest confía en que solo usuarios autorizados llegan aquí.
+
         // Preparar datos actualizados (solo campos presentes en request)
         $data = array_filter([
             'name' => $request->name,

@@ -27,21 +27,23 @@ class CompanyApprovalResource extends JsonResource
         $adminProfile = $adminUser?->profile ?? null;
 
         return [
-            'success' => $this->resource['success'] ?? true,
-            'message' => $this->resource['message'] ?? 'Request approved successfully',
-            'company' => [
-                'id' => $company['id'] ?? null,
-                'companyCode' => $company['company_code'] ?? null,
-                'name' => $company['name'] ?? null,
-                'legalName' => $company['legal_name'] ?? null,
-                'status' => isset($company['status']) ? strtoupper($company['status']) : 'ACTIVE',
-                'adminId' => $company['admin_user_id'] ?? null,
-                'adminName' => $adminProfile ? trim($adminProfile->first_name . ' ' . $adminProfile->last_name) : 'Unknown',
-                'adminEmail' => $adminUser?->email ?? null,
-                'createdAt' => isset($company['created_at']) ? $company['created_at']->toIso8601String() : null,
+            'data' => [
+                'success' => $this->resource['success'] ?? true,
+                'message' => $this->resource['message'] ?? 'Request approved successfully',
+                'company' => [
+                    'id' => $company['id'] ?? null,
+                    'companyCode' => $company['company_code'] ?? null,
+                    'name' => $company['name'] ?? null,
+                    'legalName' => $company['legal_name'] ?? null,
+                    'status' => isset($company['status']) ? strtoupper($company['status']) : 'ACTIVE',
+                    'adminId' => $company['admin_user_id'] ?? null,
+                    'adminName' => $adminProfile ? trim($adminProfile->first_name . ' ' . $adminProfile->last_name) : 'Unknown',
+                    'adminEmail' => $adminUser?->email ?? null,
+                    'createdAt' => isset($company['created_at']) ? $company['created_at']->toIso8601String() : null,
+                ],
+                'newUserCreated' => $this->resource['new_user_created'] ?? false,
+                'notificationSentTo' => $this->resource['notification_sent_to'] ?? null,
             ],
-            'newUserCreated' => $this->resource['new_user_created'] ?? false,
-            'notificationSentTo' => $this->resource['notification_sent_to'] ?? null,
         ];
     }
 }

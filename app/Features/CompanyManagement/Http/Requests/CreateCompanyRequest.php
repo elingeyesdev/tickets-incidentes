@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\Http\Requests;
 
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\UserManagement\Models\User;
+use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,10 +18,16 @@ class CreateCompanyRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * JWT Pure Stateless: Use JWTHelper to get authenticated user,
+     * NOT Laravel's Auth facade (which uses Sessions).
+     *
+     * Matches GraphQL pattern: CreateCompanyMutation line 22-23
      */
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->hasRole('PLATFORM_ADMIN');
+        $user = JWTHelper::getAuthenticatedUser();
+        return $user && $user->hasRole('PLATFORM_ADMIN');
     }
 
     /**
@@ -49,6 +56,8 @@ class CreateCompanyRequest extends FormRequest
             'contact_info.state' => ['nullable', 'string', 'max:100'],
             'contact_info.country' => ['nullable', 'string', 'max:100'],
             'contact_info.postal_code' => ['nullable', 'string', 'max:20'],
+            'contact_info.tax_id' => ['nullable', 'string', 'max:50'],
+            'contact_info.legal_representative' => ['nullable', 'string', 'max:200'],
 
             // Configuración inicial
             'initial_config.timezone' => ['nullable', 'string', 'timezone'],
@@ -86,7 +95,7 @@ class CreateCompanyRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Aplanar datos anidados para validación
+        // Aplanar datos anidados para validación (matches UpdateCompanyRequest pattern)
         if ($this->has('contact_info')) {
             $contactInfo = $this->input('contact_info');
 
@@ -96,6 +105,8 @@ class CreateCompanyRequest extends FormRequest
                 'contact_state' => $contactInfo['state'] ?? null,
                 'contact_country' => $contactInfo['country'] ?? null,
                 'contact_postal_code' => $contactInfo['postal_code'] ?? null,
+                'tax_id' => $contactInfo['tax_id'] ?? null,
+                'legal_representative' => $contactInfo['legal_representative'] ?? null,
             ]);
         }
 
@@ -134,6 +145,8 @@ class CreateCompanyRequest extends FormRequest
             'contact_info.state.max' => 'El estado no puede superar 100 caracteres.',
             'contact_info.country.max' => 'El país no puede superar 100 caracteres.',
             'contact_info.postal_code.max' => 'El código postal no puede superar 20 caracteres.',
+            'contact_info.tax_id.max' => 'El ID fiscal no puede superar 50 caracteres.',
+            'contact_info.legal_representative.max' => 'El nombre del representante legal no puede superar 200 caracteres.',
             'initial_config.timezone.timezone' => 'La zona horaria no es válida.',
             'initial_config.max_agents.integer' => 'El máximo de agentes debe ser un número entero.',
             'initial_config.max_agents.min' => 'Debe haber al menos 1 agente.',

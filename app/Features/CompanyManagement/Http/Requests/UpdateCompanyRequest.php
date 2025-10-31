@@ -3,6 +3,7 @@
 namespace App\Features\CompanyManagement\Http\Requests;
 
 use App\Shared\Helpers\JWTHelper;
+use App\Shared\Exceptions\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -15,23 +16,34 @@ class UpdateCompanyRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * JWT Pure Stateless: Matches UpdateCompanyMutation pattern (lines 32-51)
+     * - PLATFORM_ADMIN can update any company
+     * - COMPANY_ADMIN can update ONLY their own company
+     * - Different error messages for COMPANY_ADMIN trying to access other company vs. lacking role entirely
      */
     public function authorize(): bool
     {
         $user = JWTHelper::getAuthenticatedUser();
         $company = $this->route('company');
 
-        // PLATFORM_ADMIN puede actualizar cualquier empresa
-        if ($user->hasRole('PLATFORM_ADMIN')) {
-            return true;
+        $isPlatformAdmin = $user->hasRole('PLATFORM_ADMIN');
+        $isCompanyAdmin = $user->hasRoleInCompany('COMPANY_ADMIN', $company->id);
+
+        if (!$isPlatformAdmin && !$isCompanyAdmin) {
+            // Check if user has COMPANY_ADMIN role for any company (but not this one)
+            $hasCompanyAdminRoleElsewhere = $user->hasRole('COMPANY_ADMIN');
+
+            if ($hasCompanyAdminRoleElsewhere) {
+                // User is a COMPANY_ADMIN but not for THIS company
+                throw new AuthorizationException('This action is unauthorized');
+            } else {
+                // User doesn't have the required role at all
+                throw new AuthorizationException('Insufficient permissions');
+            }
         }
 
-        // COMPANY_ADMIN solo puede actualizar su propia empresa
-        if ($user->hasRole('COMPANY_ADMIN') && $company) {
-            return $company->admin_user_id === $user->id;
-        }
-
-        return false;
+        return true;
     }
 
     /**

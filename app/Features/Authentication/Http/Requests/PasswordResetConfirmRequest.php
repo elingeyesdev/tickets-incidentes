@@ -27,8 +27,8 @@ class PasswordResetConfirmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token' => 'nullable|string|required_without:code',  // NO validar size:32 (dejar al controlador)
-            'code' => 'nullable|string|required_without:token',  // NO validar regex (dejar al controlador)
+            'token' => 'nullable|string|required_without:code|prohibits:code',
+            'code' => 'nullable|string|required_without:token|prohibits:token',
             'password' => [
                 'required',
                 'min:8',
@@ -50,8 +50,10 @@ class PasswordResetConfirmRequest extends FormRequest
         return [
             'token.size' => 'El token debe tener 32 caracteres.',
             'token.required_without' => 'Debes proporcionar un token o código.',
+            'token.prohibits' => 'Solo puede proporcionar uno de los dos: token o código.',
             'code.regex' => 'El código debe ser de 6 dígitos.',
             'code.required_without' => 'Debes proporcionar un token o código.',
+            'code.prohibits' => 'Solo puede proporcionar uno de los dos: código o token.',
             'password.required' => 'La contraseña es requerida.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed' => 'Las contraseñas no coinciden.',

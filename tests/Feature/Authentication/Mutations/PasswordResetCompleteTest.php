@@ -735,9 +735,9 @@ class PasswordResetCompleteTest extends TestCase
             'passwordConfirmation' => 'NewPass123!',
         ]);
 
-        // Assert - Debe rechazar
+        // Assert - Debe rechazar con 422 (Laravel validation error)
         $this->assertFalse($response->json('success'));
-        $response->assertStatus(400);
+        $response->assertStatus(422);
     }
 
     // =========================================================================

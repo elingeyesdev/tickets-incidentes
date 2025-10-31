@@ -41,8 +41,8 @@ class EnsureCompanyOwnership
             return $next($request);
         }
 
-        // COMPANY_ADMIN solo puede acceder a su propia empresa
-        if ($user->hasRole('COMPANY_ADMIN') && $company->admin_user_id === $user->id) {
+        // COMPANY_ADMIN solo puede acceder a su propia empresa (comprobación estricta por empresa)
+        if ($user->hasRoleInCompany('COMPANY_ADMIN', $company->id) && $company->admin_user_id === $user->id) {
             return $next($request);
         }
 
