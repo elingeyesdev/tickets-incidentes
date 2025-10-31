@@ -2,14 +2,16 @@
 
 namespace App\Features\CompanyManagement\Http\Controllers;
 
-use Illuminate\Routing\Controller;
-use App\Shared\Helpers\JWTHelper;
+use App\Features\CompanyManagement\Http\Requests\FollowCompanyRequest;
 use App\Features\CompanyManagement\Http\Resources\CompanyFollowInfoResource;
 use App\Features\CompanyManagement\Http\Resources\CompanyFollowResource;
-use App\Features\CompanyManagement\Http\Requests\FollowCompanyRequest;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use App\Features\CompanyManagement\Services\CompanyFollowService;
+use App\Shared\Helpers\JWTHelper;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * CompanyFollowerController
@@ -23,40 +25,73 @@ use App\Features\CompanyManagement\Services\CompanyFollowService;
  * Fase 3: Métodos de ESCRITURA
  * - follow(): Seguir una empresa
  * - unfollow(): Dejar de seguir una empresa
- *
- * @package App\Features\CompanyManagement\Http\Controllers
  */
 class CompanyFollowerController extends Controller
 {
     /**
-     * Obtiene las empresas seguidas por el usuario autenticado.
-     *
-     * Lista todas las empresas que el usuario autenticado está siguiendo,
-     * ordenadas por fecha de seguimiento (más recientes primero).
-     *
-     * Eager loading: Incluye la relación 'company' para evitar consultas N+1.
-     *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     *
-     * @response 200 {
-     *   "data": [
-     *     {
-     *       "id": "uuid",
-     *       "company": {
-     *         "id": "uuid",
-     *         "company_code": "COMP001",
-     *         "name": "Acme Corp",
-     *         "logo_url": "https://...",
-     *         "status": "active"
-     *       },
-     *       "followed_at": "2025-10-29T12:00:00Z",
-     *       "my_tickets_count": 5,
-     *       "last_ticket_created_at": "2025-10-28T10:00:00Z",
-     *       "has_unread_announcements": true
-     *     }
-     *   ]
-     * }
+     * List companies followed by authenticated user
      */
+    #[OA\Get(
+        path: '/api/companies/followed',
+        operationId: 'list_followed_companies',
+        summary: 'List companies followed by user',
+        description: 'Returns all companies that the authenticated user is following, ordered by most recent follow first. Includes company details and user-specific metrics like ticket count.',
+        tags: ['Company Followers'],
+        parameters: [
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                required: false,
+                description: 'Page number for pagination',
+                schema: new OA\Schema(type: 'integer', minimum: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Number of items per page',
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'List of companies followed by the authenticated user',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                    new OA\Property(
+                                        property: 'company',
+                                        type: 'object',
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                            new OA\Property(property: 'company_code', type: 'string'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                            new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
+                                            new OA\Property(property: 'status', type: 'string'),
+                                        ]
+                                    ),
+                                    new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
+                                    new OA\Property(property: 'my_tickets_count', type: 'integer'),
+                                    new OA\Property(property: 'last_ticket_created_at', type: 'string', format: 'date-time', nullable: true),
+                                    new OA\Property(property: 'has_unread_announcements', type: 'boolean'),
+                                ]
+                            )
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+        ],
+        security: [['bearerAuth' => []]]
+    )]
     public function followed()
     {
         $follows = CompanyFollower::where('user_id', JWTHelper::getUserId())
@@ -68,19 +103,47 @@ class CompanyFollowerController extends Controller
     }
 
     /**
-     * Verifica si el usuario autenticado sigue la empresa.
-     *
-     * Comprueba si existe un registro de seguimiento activo entre
-     * el usuario autenticado y la empresa especificada.
-     *
-     * @param Company $company Empresa a verificar (Route Model Binding)
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "is_following": true
-     * }
+     * Check if user follows a company
      */
-    public function isFollowing(Company $company)
+    #[OA\Get(
+        path: '/api/companies/{company}/is-following',
+        operationId: 'check_if_following',
+        summary: 'Check if user follows a company',
+        description: 'Verifies if the authenticated user is currently following the specified company.',
+        tags: ['Company Followers'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                in: 'path',
+                required: true,
+                description: 'Company UUID or identifier',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Follow status retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'isFollowing', type: 'boolean'),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 404, description: 'Company not found'),
+        ],
+        security: [['bearerAuth' => []]]
+    )]
+    public function isFollowing(Company $company): JsonResponse
     {
         $isFollowing = CompanyFollower::where('user_id', JWTHelper::getUserId())
             ->where('company_id', $company->id)
@@ -94,26 +157,80 @@ class CompanyFollowerController extends Controller
     }
 
     /**
-     * Permite al usuario autenticado seguir una empresa.
-     *
-     * @param Company $company
-     * @param FollowCompanyRequest $request
-     * @param CompanyFollowService $followService
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 201 {
-     *   "success": true,
-     *   "message": "Ahora sigues a Tech Solutions Inc.",
-     *   "company": {
-     *     "id": "uuid",
-     *     "company_code": "CMP-2025-00001",
-     *     "name": "Tech Solutions Inc.",
-     *     "logo_url": "https://..."
-     *   },
-     *   "followed_at": "2025-10-29T12:00:00Z"
-     * }
+     * Follow a company
      */
-    public function follow(Company $company, FollowCompanyRequest $request, CompanyFollowService $followService)
+    #[OA\Post(
+        path: '/api/companies/{company}/follow',
+        operationId: 'follow_company',
+        summary: 'Follow a company',
+        description: 'Allows the authenticated user to start following a company. If already following, returns current follow status. Rate limited to 20 requests per hour.',
+        tags: ['Company Followers'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                in: 'path',
+                required: true,
+                description: 'Company UUID or identifier',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Already following the company',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean'),
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'company',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'company_code', type: 'string'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
+                            ]
+                        ),
+                        new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'isFollowing', type: 'boolean'),
+                        new OA\Property(property: 'followersCount', type: 'integer'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 201,
+                description: 'Successfully started following the company',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean'),
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'company',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'company_code', type: 'string'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
+                            ]
+                        ),
+                        new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'isFollowing', type: 'boolean'),
+                        new OA\Property(property: 'followersCount', type: 'integer'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 404, description: 'Company not found'),
+            new OA\Response(response: 409, description: 'Already following this company'),
+            new OA\Response(response: 429, description: 'Too many follow requests (rate limit exceeded)'),
+        ],
+        security: [['bearerAuth' => []]]
+    )]
+    public function follow(Company $company, FollowCompanyRequest $request, CompanyFollowService $followService): JsonResponse
     {
         // Llamar al Service para seguir la empresa
         $follower = $followService->follow(JWTHelper::getAuthenticatedUser(), $company);
@@ -130,18 +247,44 @@ class CompanyFollowerController extends Controller
     }
 
     /**
-     * Permite al usuario autenticado dejar de seguir una empresa.
-     *
-     * @param Company $company
-     * @param CompanyFollowService $followService
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Dejaste de seguir a Tech Solutions Inc."
-     * }
+     * Unfollow a company
      */
-    public function unfollow(Company $company, CompanyFollowService $followService)
+    #[OA\Delete(
+        path: '/api/companies/{company}/unfollow',
+        operationId: 'unfollow_company',
+        summary: 'Unfollow a company',
+        description: 'Allows the authenticated user to stop following a company. Returns an error if the user is not currently following the company.',
+        tags: ['Company Followers'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                in: 'path',
+                required: true,
+                description: 'Company UUID or identifier',
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successfully unfollowed the company',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean'),
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'isFollowing', type: 'boolean'),
+                        new OA\Property(property: 'followersCount', type: 'integer'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 404, description: 'Company not found'),
+            new OA\Response(response: 409, description: 'User is not following this company'),
+        ],
+        security: [['bearerAuth' => []]]
+    )]
+    public function unfollow(Company $company, CompanyFollowService $followService): JsonResponse
     {
         // Llamar al Service para dejar de seguir
         $success = $followService->unfollow(JWTHelper::getAuthenticatedUser(), $company);

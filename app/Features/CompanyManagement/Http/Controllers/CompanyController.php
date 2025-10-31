@@ -17,6 +17,7 @@ use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 /**
  * CompanyController
@@ -35,18 +36,75 @@ use Illuminate\Support\Facades\DB;
  */
 class CompanyController extends Controller
 {
+    #[OA\Get(
+        path: '/api/companies/minimal',
+        operationId: 'list_companies_minimal',
+        summary: 'Lista mínima de empresas para selectores',
+        description: 'Retorna un listado paginado de empresas activas con información mínima (id, código, nombre, logo). Endpoint público sin autenticación.',
+        tags: ['Companies'],
+        parameters: [
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                description: 'Filtrar empresas por nombre (búsqueda case-insensitive)',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'Acme')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Número de items por página',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 50)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Listado de empresas minimalistas con paginación',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                    new OA\Property(property: 'company_code', type: 'string', example: 'CMP-2025-00001'),
+                                    new OA\Property(property: 'name', type: 'string', example: 'Acme Corporation'),
+                                    new OA\Property(property: 'logo_url', type: 'string', nullable: true, example: 'https://example.com/logo.png'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'total', type: 'integer', example: 150),
+                                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                new OA\Property(property: 'last_page', type: 'integer', example: 3),
+                                new OA\Property(property: 'per_page', type: 'integer', example: 50),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', nullable: true),
+                                new OA\Property(property: 'last', type: 'string', nullable: true),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true),
+                                new OA\Property(property: 'next', type: 'string', nullable: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Lista mínima de empresas para selectores (público).
-     *
-     * Endpoint: GET /api/companies/minimal
-     * Contexto: PÚBLICO (sin autenticación)
-     * Propósito: Selectores, referencias rápidas
-     *
-     * Query Parameters:
-     * - search: string (opcional) - Filtrar por nombre
-     * - per_page: integer (opcional, default 50) - Items por página
-     *
-     * Response: JSON con array de empresas minimalistas
+     * Lista mínima de empresas para selectores.
      */
     public function minimal(ListCompaniesRequest $request): JsonResponse
     {
@@ -79,23 +137,118 @@ class CompanyController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: '/api/companies/explore',
+        operationId: 'explore_companies',
+        summary: 'Explorar empresas con filtros',
+        description: 'Retorna listado paginado de empresas con información extendida para exploración. Incluye indicadores de seguimiento del usuario autenticado. Requiere autenticación JWT.',
+        security: [['bearerAuth' => []]],
+        tags: ['Companies'],
+        parameters: [
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                description: 'Buscar empresas por nombre',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'Tech')
+            ),
+            new OA\Parameter(
+                name: 'country',
+                in: 'query',
+                description: 'Filtrar por país',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'Chile')
+            ),
+            new OA\Parameter(
+                name: 'followed_by_me',
+                in: 'query',
+                description: 'Mostrar solo empresas seguidas por el usuario',
+                required: false,
+                schema: new OA\Schema(type: 'boolean', example: false)
+            ),
+            new OA\Parameter(
+                name: 'sort_by',
+                in: 'query',
+                description: 'Campo para ordenar resultados',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'name')
+            ),
+            new OA\Parameter(
+                name: 'sort_direction',
+                in: 'query',
+                description: 'Dirección del ordenamiento',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'asc')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Número de items por página',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 20)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Listado de empresas con información extendida',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                    new OA\Property(property: 'company_code', type: 'string'),
+                                    new OA\Property(property: 'name', type: 'string'),
+                                    new OA\Property(property: 'logo_url', type: 'string', nullable: true),
+                                    new OA\Property(property: 'website', type: 'string', nullable: true),
+                                    new OA\Property(property: 'contact_country', type: 'string', nullable: true),
+                                    new OA\Property(property: 'followers_count', type: 'integer'),
+                                    new OA\Property(property: 'is_followed_by_me', type: 'boolean'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'total', type: 'integer'),
+                                new OA\Property(property: 'current_page', type: 'integer'),
+                                new OA\Property(property: 'last_page', type: 'integer'),
+                                new OA\Property(property: 'per_page', type: 'integer'),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', nullable: true),
+                                new OA\Property(property: 'last', type: 'string', nullable: true),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true),
+                                new OA\Property(property: 'next', type: 'string', nullable: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'No autenticado (token JWT inválido o ausente)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Lista extendida de empresas para explorar (autenticado).
-     *
-     * Endpoint: GET /api/companies/explore
-     * Contexto: AUTH (requiere autenticación JWT)
-     * Propósito: Explorar empresas públicas con filtros
-     *
-     * Query Parameters:
-     * - search: string (opcional) - Buscar por nombre
-     * - country: string (opcional) - Filtrar por país
-     * - followed_by_me: boolean (opcional) - Solo empresas que sigo
-     * - sort_by: string (opcional, default 'name') - Campo para ordenar
-     * - sort_direction: string (opcional, default 'asc') - asc o desc
-     * - per_page: integer (opcional, default 20) - Items por página
-     *
-     * Response: JSON con array de empresas extendidas
-     * Security: Requiere Bearer token
+     * Explorar empresas con filtros.
      */
     public function explore(ListCompaniesRequest $request): JsonResponse
     {
@@ -170,22 +323,122 @@ class CompanyController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: '/api/companies',
+        operationId: 'list_companies',
+        summary: 'Listar todas las empresas (admin)',
+        description: 'Retorna listado completo de empresas con toda la información y campos calculados. Requiere rol HELPDESK_ADMIN o COMPANY_ADMIN. Los COMPANY_ADMIN solo ven su propia empresa.',
+        security: [['bearerAuth' => []]],
+        tags: ['Companies'],
+        parameters: [
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                description: 'Buscar empresas por nombre',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'Tech')
+            ),
+            new OA\Parameter(
+                name: 'status',
+                in: 'query',
+                description: 'Filtrar por estado de la empresa',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'inactive'], example: 'active')
+            ),
+            new OA\Parameter(
+                name: 'sort_by',
+                in: 'query',
+                description: 'Campo para ordenar resultados',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: 'created_at')
+            ),
+            new OA\Parameter(
+                name: 'sort_direction',
+                in: 'query',
+                description: 'Dirección del ordenamiento',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'desc')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Número de items por página',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 20)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Listado completo de empresas con información administrativa',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                    new OA\Property(property: 'company_code', type: 'string'),
+                                    new OA\Property(property: 'name', type: 'string'),
+                                    new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended', 'inactive']),
+                                    new OA\Property(property: 'admin', type: 'object'),
+                                    new OA\Property(property: 'followers_count', type: 'integer'),
+                                    new OA\Property(property: 'active_agents_count', type: 'integer'),
+                                    new OA\Property(property: 'total_users_count', type: 'integer'),
+                                    new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                                ]
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'total', type: 'integer'),
+                                new OA\Property(property: 'current_page', type: 'integer'),
+                                new OA\Property(property: 'last_page', type: 'integer'),
+                                new OA\Property(property: 'per_page', type: 'integer'),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', nullable: true),
+                                new OA\Property(property: 'last', type: 'string', nullable: true),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true),
+                                new OA\Property(property: 'next', type: 'string', nullable: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'No autenticado (token JWT inválido o ausente)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Sin permisos (requiere rol de administrador)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Forbidden.'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Lista completa de empresas para administración (admin).
-     *
-     * Endpoint: GET /api/v1/companies
-     * Contexto: ADMIN (requiere rol HELPDESK_ADMIN o COMPANY_ADMIN)
-     * Propósito: Administración completa de empresas
-     *
-     * Campos retornados: TODOS los campos del modelo + campos calculados + admin info
-     * Eager loading: ->with(['admin.profile', 'userRoles'])
-     * N+1 Prevention: Eager load userRoles, calcular counts en memoria
-     * Filtros: status, search
-     * Restricciones: COMPANY_ADMIN solo ve su empresa
-     * Ordenamiento: Configurable (default: created_at DESC)
-     * Paginación: 20 por página (configurable)
-     *
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     * Listar todas las empresas (admin).
      */
     public function index(ListCompaniesRequest $request)
     {
@@ -255,19 +508,82 @@ class CompanyController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: '/api/companies/{company}',
+        operationId: 'show_company',
+        summary: 'Ver detalle completo de una empresa',
+        description: 'Retorna toda la información de una empresa específica incluyendo campos calculados, admin info y estado de seguimiento del usuario. Requiere autenticación y permisos de acceso.',
+        security: [['bearerAuth' => []]],
+        tags: ['Companies'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                in: 'path',
+                description: 'ID o UUID de la empresa',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Detalle completo de la empresa',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'company_code', type: 'string'),
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'legal_name', type: 'string', nullable: true),
+                        new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended', 'inactive']),
+                        new OA\Property(property: 'support_email', type: 'string', format: 'email'),
+                        new OA\Property(property: 'phone', type: 'string', nullable: true),
+                        new OA\Property(property: 'website', type: 'string', nullable: true),
+                        new OA\Property(property: 'logo_url', type: 'string', nullable: true),
+                        new OA\Property(property: 'admin', type: 'object'),
+                        new OA\Property(property: 'followers_count', type: 'integer'),
+                        new OA\Property(property: 'active_agents_count', type: 'integer'),
+                        new OA\Property(property: 'total_users_count', type: 'integer'),
+                        new OA\Property(property: 'is_followed_by_me', type: 'boolean'),
+                        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'No autenticado (token JWT inválido o ausente)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Sin permisos para ver esta empresa',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Forbidden.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Empresa no encontrada',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Company not found.'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Mostrar detalle completo de una empresa específica (autenticado + permisos).
-     *
-     * Endpoint: GET /api/v1/companies/{company}
-     * Contexto: AUTH (requiere autenticación + permisos)
-     * Propósito: Ver detalle completo de empresa
-     *
-     * Campos retornados: TODOS los campos del modelo + campos calculados + admin info
-     * Eager loading: ->load(['admin.profile', 'userRoles', 'followers'])
-     * N+1 Prevention: Eager load relaciones, calcular counts en memoria
-     * Permisos: Manejado por Policy en rutas
-     *
-     * @return CompanyResource
+     * Ver detalle completo de una empresa.
      */
     public function show(Company $company)
     {
@@ -303,26 +619,96 @@ class CompanyController extends Controller
         return new CompanyResource($company);
     }
 
+    #[OA\Post(
+        path: '/api/companies',
+        operationId: 'create_company',
+        summary: 'Crear nueva empresa',
+        description: 'Crea una nueva empresa directamente sin proceso de solicitud. Solo disponible para usuarios con rol PLATFORM_ADMIN. Asigna automáticamente el rol COMPANY_ADMIN al usuario designado como administrador.',
+        security: [['bearerAuth' => []]],
+        tags: ['Companies'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Datos de la nueva empresa',
+            content: new OA\JsonContent(
+                required: ['name', 'legal_name', 'support_email', 'admin_user_id'],
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', description: 'Nombre comercial de la empresa', example: 'Acme Corporation'),
+                    new OA\Property(property: 'legal_name', type: 'string', description: 'Razón social legal', example: 'Acme Corp S.A.'),
+                    new OA\Property(property: 'support_email', type: 'string', format: 'email', description: 'Email de soporte', example: 'support@acme.com'),
+                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Teléfono de contacto', example: '+56912345678'),
+                    new OA\Property(property: 'website', type: 'string', nullable: true, description: 'Sitio web', example: 'https://acme.com'),
+                    new OA\Property(property: 'admin_user_id', type: 'string', format: 'uuid', description: 'ID del usuario que será administrador de la empresa'),
+                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Dirección física'),
+                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'Ciudad'),
+                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'Estado/Región'),
+                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'País'),
+                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Código postal'),
+                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'RUT/NIT/Tax ID'),
+                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Representante legal'),
+                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Horario de atención (JSONB)'),
+                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Zona horaria', example: 'America/Santiago'),
+                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Configuraciones adicionales (JSONB)'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Empresa creada exitosamente',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'company_code', type: 'string'),
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'status', type: 'string', example: 'active'),
+                        new OA\Property(property: 'admin', type: 'object'),
+                        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'No autenticado',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Sin permisos (requiere rol PLATFORM_ADMIN)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Forbidden.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\AdditionalProperties(
+                                type: 'array',
+                                items: new OA\Items(type: 'string')
+                            )
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Crea una nueva empresa directamente (solo PLATFORM_ADMIN).
-     *
-     * Endpoint: POST /api/v1/companies
-     * Contexto: PLATFORM_ADMIN (requiere rol PLATFORM_ADMIN)
-     * Propósito: Crear empresas sin proceso de solicitud
-     *
-     * @param CreateCompanyRequest $request
-     * @param CompanyService $companyService
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 201 {
-     *   "data": {
-     *     "id": "uuid",
-     *     "company_code": "CMP-2025-00001",
-     *     "name": "New Company",
-     *     "status": "active",
-     *     ...
-     *   }
-     * }
+     * Crear nueva empresa (PLATFORM_ADMIN).
      */
     public function store(CreateCompanyRequest $request, CompanyService $companyService, RoleService $roleService)
     {
@@ -367,26 +753,121 @@ class CompanyController extends Controller
             ->setStatusCode(201);
     }
 
+    #[OA\Patch(
+        path: '/api/companies/{company}',
+        operationId: 'update_company',
+        summary: 'Actualizar empresa',
+        description: 'Actualiza la información de una empresa existente. Requiere ser PLATFORM_ADMIN o COMPANY_ADMIN propietario de la empresa. Todos los campos son opcionales.',
+        security: [['bearerAuth' => []]],
+        tags: ['Companies'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                in: 'path',
+                description: 'ID o UUID de la empresa a actualizar',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Datos a actualizar (todos los campos son opcionales)',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'name', type: 'string', nullable: true, description: 'Nombre comercial'),
+                    new OA\Property(property: 'legal_name', type: 'string', nullable: true, description: 'Razón social'),
+                    new OA\Property(property: 'support_email', type: 'string', format: 'email', nullable: true, description: 'Email de soporte'),
+                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Teléfono'),
+                    new OA\Property(property: 'website', type: 'string', nullable: true, description: 'Sitio web'),
+                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Dirección'),
+                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'Ciudad'),
+                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'Estado/Región'),
+                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'País'),
+                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Código postal'),
+                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'RUT/NIT/Tax ID'),
+                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Representante legal'),
+                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Horario de atención'),
+                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Zona horaria'),
+                    new OA\Property(property: 'logo_url', type: 'string', nullable: true, description: 'URL del logo'),
+                    new OA\Property(property: 'favicon_url', type: 'string', nullable: true, description: 'URL del favicon'),
+                    new OA\Property(property: 'primary_color', type: 'string', nullable: true, description: 'Color primario (hex)', example: '#FF5733'),
+                    new OA\Property(property: 'secondary_color', type: 'string', nullable: true, description: 'Color secundario (hex)', example: '#33FF57'),
+                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Configuraciones adicionales'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Empresa actualizada exitosamente',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'company_code', type: 'string'),
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'status', type: 'string'),
+                        new OA\Property(property: 'admin', type: 'object'),
+                        new OA\Property(property: 'followers_count', type: 'integer'),
+                        new OA\Property(property: 'active_agents_count', type: 'integer'),
+                        new OA\Property(property: 'total_users_count', type: 'integer'),
+                        new OA\Property(property: 'is_followed_by_me', type: 'boolean'),
+                        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'No autenticado',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Sin permisos para actualizar esta empresa',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Forbidden.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Empresa no encontrada',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Company not found.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Error de validación',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\AdditionalProperties(
+                                type: 'array',
+                                items: new OA\Items(type: 'string')
+                            )
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
-     * Actualiza una empresa existente.
-     *
-     * Endpoint: PUT/PATCH /api/v1/companies/{company}
-     * Contexto: PLATFORM_ADMIN o COMPANY_ADMIN owner
-     * Propósito: Actualizar información de la empresa
-     *
-     * @param UpdateCompanyRequest $request
-     * @param Company $company
-     * @param CompanyService $companyService
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @response 200 {
-     *   "data": {
-     *     "id": "uuid",
-     *     "company_code": "CMP-2025-00001",
-     *     "name": "Updated Company",
-     *     ...
-     *   }
-     * }
+     * Actualizar empresa existente.
      */
     public function update(UpdateCompanyRequest $request, Company $company, CompanyService $companyService)
     {
