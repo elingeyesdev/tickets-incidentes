@@ -10,10 +10,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Contexto: MANAGEMENT
  * Propósito: Administración completa de empresas
- * Campos: TODOS los campos del modelo + campos calculados + admin como campos planos
+ * Campos: TODOS los campos del modelo + campos calculados + admin como campos planos + industry (nested)
  * Campos calculados: active_agents_count, total_users_count, total_tickets_count, open_tickets_count, is_followed_by_me
  * Admin: Desestructurado en campos planos (admin_id, admin_name, admin_email, admin_avatar)
- * Eager loading: Requiere admin.profile para evitar N+1
+ * Eager loading: Requiere admin.profile para evitar N+1, 'industry' es opcional
+ * V8.0 Changes: Added description and industry relationship
  */
 class CompanyResource extends JsonResource
 {
@@ -31,6 +32,18 @@ class CompanyResource extends JsonResource
             'companyCode' => $this->company_code,
             'name' => $this->name,
             'legalName' => $this->legal_name ?? null,
+            'description' => $this->description ?? null,
+
+            // Industria
+            'industryId' => $this->industry_id ?? null,
+            'industry' => $this->when($this->relationLoaded('industry'), function () {
+                return [
+                    'id' => $this->industry->id,
+                    'code' => $this->industry->code,
+                    'name' => $this->industry->name,
+                    'description' => $this->industry->description,
+                ];
+            }),
 
             // Contacto y comunicación
             'supportEmail' => $this->support_email ?? null,

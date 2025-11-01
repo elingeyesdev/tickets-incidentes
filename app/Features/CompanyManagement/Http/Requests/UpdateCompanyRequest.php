@@ -55,6 +55,8 @@ class UpdateCompanyRequest extends FormRequest
             // Información básica
             'name' => ['sometimes', 'string', 'min:2', 'max:200'],
             'legal_name' => ['sometimes', 'nullable', 'string', 'min:2', 'max:200'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'industry_id' => ['sometimes', 'uuid', 'exists:business.company_industries,id'],
             'support_email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'website' => ['sometimes', 'nullable', 'url', 'max:255'],
@@ -137,6 +139,9 @@ class UpdateCompanyRequest extends FormRequest
             'name.max' => 'El nombre no puede superar 200 caracteres.',
             'legal_name.min' => 'El nombre legal debe tener al menos 2 caracteres.',
             'legal_name.max' => 'El nombre legal no puede superar 200 caracteres.',
+            'description.max' => 'La descripción no puede superar los 1000 caracteres.',
+            'industry_id.uuid' => 'El ID de industria debe ser un UUID válido.',
+            'industry_id.exists' => 'La industria seleccionada no es válida.',
             'support_email.email' => 'El email de soporte debe ser válido.',
             'support_email.max' => 'El email no puede superar 255 caracteres.',
             'phone.max' => 'El teléfono no puede superar 20 caracteres.',

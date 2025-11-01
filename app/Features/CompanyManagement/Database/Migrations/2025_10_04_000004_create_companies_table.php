@@ -19,9 +19,13 @@ return new class extends Migration
                 -- Basic information
                 name VARCHAR(200) NOT NULL,
                 legal_name VARCHAR(250),
+                description TEXT,
                 support_email CITEXT,
                 phone VARCHAR(20),
                 website VARCHAR(200),
+
+                -- Industry classification
+                industry_id UUID NOT NULL,
 
                 -- Address
                 contact_address TEXT,
@@ -72,8 +76,18 @@ return new class extends Migration
         // Crear índices para rendimiento
         DB::statement('CREATE INDEX idx_companies_status ON business.companies(status)');
         DB::statement('CREATE INDEX idx_companies_admin_user_id ON business.companies(admin_user_id)');
+        DB::statement('CREATE INDEX idx_companies_industry_id ON business.companies(industry_id)');
         DB::statement('CREATE INDEX idx_companies_company_code ON business.companies(company_code)');
         DB::statement('CREATE INDEX idx_companies_created_at ON business.companies(created_at DESC)');
+
+        // Agregar FK a company_industries
+        DB::statement('
+            ALTER TABLE business.companies
+            ADD CONSTRAINT fk_companies_industry
+            FOREIGN KEY (industry_id)
+            REFERENCES business.company_industries(id)
+            ON DELETE RESTRICT
+        ');
 
         // Crear trigger para updated_at
         DB::statement("
@@ -121,6 +135,9 @@ return new class extends Migration
 
         // Eliminar FK desde company_requests
         DB::statement('ALTER TABLE business.company_requests DROP CONSTRAINT IF EXISTS fk_company_requests_created_company');
+
+        // Eliminar FK a company_industries
+        DB::statement('ALTER TABLE business.companies DROP CONSTRAINT IF EXISTS fk_companies_industry');
 
         // Eliminar tabla
         DB::statement('DROP TABLE IF EXISTS business.companies CASCADE');

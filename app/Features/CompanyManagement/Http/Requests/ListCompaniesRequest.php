@@ -58,6 +58,7 @@ class ListCompaniesRequest extends FormRequest
             // Filtros
             'status' => ['nullable', 'string', 'in:active,suspended,inactive'],
             'industry' => ['nullable', 'string', 'max:100'],
+            'industry_id' => ['sometimes', 'nullable', 'uuid', 'exists:business.company_industries,id'],
             'country' => ['nullable', 'string', 'max:100'],
             'has_active_tickets' => ['nullable', 'boolean'],
             'followed_by_me' => ['nullable', 'boolean'],
@@ -86,6 +87,8 @@ class ListCompaniesRequest extends FormRequest
             'per_page.max' => 'No se pueden mostrar más de 100 elementos por página.',
             'status.in' => 'El estado debe ser: active, suspended o inactive.',
             'industry.max' => 'La industria no puede superar 100 caracteres.',
+            'industry_id.uuid' => 'El ID de industria debe ser un UUID válido.',
+            'industry_id.exists' => 'La industria seleccionada no es válida.',
             'country.max' => 'El país no puede superar 100 caracteres.',
             'has_active_tickets.boolean' => 'El filtro de tickets activos debe ser verdadero o falso.',
             'followed_by_me.boolean' => 'El filtro de seguidos debe ser verdadero o falso.',

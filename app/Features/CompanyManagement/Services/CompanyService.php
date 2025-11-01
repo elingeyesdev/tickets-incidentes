@@ -38,6 +38,8 @@ class CompanyService
                 'company_code' => $companyCode,
                 'name' => $data['name'],
                 'legal_name' => $data['legal_name'] ?? null,
+                'description' => $data['description'] ?? null,
+                'industry_id' => $data['industry_id'] ?? null,
                 'admin_user_id' => $adminUser->id,
                 'support_email' => $data['support_email'] ?? null,
                 'phone' => $data['phone'] ?? null,
@@ -175,10 +177,51 @@ class CompanyService
     /**
      * Obtener todas las empresas activas.
      */
-    public function getActive(int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getActive(int $limit = 50, ?array $filters = null): \Illuminate\Database\Eloquent\Collection
     {
-        return Company::active()
-            ->orderBy('name')
+        $query = Company::active()
+            ->with(['adminUser.profile', 'industry', 'followers']);
+
+        // Aplicar filtro de industria si se proporciona
+        if (isset($filters['industry_id'])) {
+            $query->where('industry_id', $filters['industry_id']);
+        }
+
+        return $query->orderBy('name')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Obtener empresas con filtros avanzados.
+     */
+    public function index(array $filters = [], int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = Company::query()
+            ->with(['adminUser.profile', 'industry', 'followers']);
+
+        // Filtro por industria
+        if (isset($filters['industry_id'])) {
+            $query->where('industry_id', $filters['industry_id']);
+        }
+
+        // Filtro por estado
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        } else {
+            // Por defecto solo activas
+            $query->active();
+        }
+
+        // Búsqueda por nombre
+        if (isset($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'ILIKE', "%{$filters['search']}%")
+                  ->orWhere('legal_name', 'ILIKE', "%{$filters['search']}%");
+            });
+        }
+
+        return $query->orderBy('name')
             ->limit($limit)
             ->get();
     }

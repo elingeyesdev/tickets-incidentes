@@ -10,8 +10,9 @@ use App\Features\UserManagement\Http\Resources\UserMinimalResource;
  *
  * Propósito: Información completa de solicitudes de empresas
  * Modelo base: CompanyRequest
- * Campos: Todos los campos del modelo + reviewer (nested) + createdCompany (nested)
- * Eager loading: Requiere 'reviewer', 'createdCompany' relations
+ * Campos: Todos los campos del modelo + reviewer (nested) + createdCompany (nested) + industry (nested)
+ * Eager loading: Requiere 'reviewer', 'createdCompany', 'industry' relations
+ * V8.0 Changes: Removed businessDescription/industryType, added companyDescription/requestMessage/industry relation
  */
 class CompanyRequestResource extends JsonResource
 {
@@ -32,9 +33,15 @@ class CompanyRequestResource extends JsonResource
             'companyName' => $this->company_name,
             'legalName' => $this->legal_name ?? null,
             'adminEmail' => $this->admin_email,
-            'businessDescription' => $this->business_description ?? null,
+            'companyDescription' => $this->company_description ?? null,
+            'requestMessage' => $this->request_message ?? null,
             'website' => $this->website ?? null,
-            'industryType' => $this->industry_type ?? null,
+            'industryId' => $this->industry_id ?? null,
+            'industry' => [
+                'id' => $this->industry?->id,
+                'code' => $this->industry?->code,
+                'name' => $this->industry?->name,
+            ],
             'estimatedUsers' => $this->estimated_users ?? null,
 
             // Dirección

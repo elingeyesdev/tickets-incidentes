@@ -3,7 +3,7 @@
 ## 🎯 CONTEXTO DEL PROYECTO
 
 **Ubicación:** `app/Features/CompanyManagement/`
-**Arquitectura:** Feature-first Laravel con GraphQL API
+**Arquitectura:** Feature-first Laravel QUE FUE GRAPHQL Y AHORA SE MIGRA A REST!
 **Testing:** PHPUnit con RefreshDatabase
 
 Necesito implementar cambios en la base de datos V8.0 del sistema Helpdesk. Los cambios son:
@@ -35,7 +35,7 @@ CREATE TABLE business.company_industries (
 **Feature afectado:** `app/Features/CompanyManagement/`
 
 Los cambios impactan:
-1. **Migraciones**: Crear nueva migración para V8.0
+1. **Migraciones**: Crear nueva migración para V8.0 de nueva tabla y actualizar migraciones anteriores para reflejar cambios
 2. **Modelos**: `Company.php`, `CompanyRequest.php`, nuevo `CompanyIndustry.php`
 3. **Requests**: `RequestCompanyInput.php`, `CreateCompanyInput.php`
 4. **Resources**: Todos los GraphQL types que exponen estos campos
@@ -105,14 +105,11 @@ Quiero que me ayudes a:
 
 ---
 
-### FASE 5: CAPA DE PRESENTACIÓN (GraphQL)
+### FASE 5: CAPA DE PRESENTACIÓN REST
 **Orden sugerido:**
-1. Actualizar GraphQL Types (Company, CompanyRequest, CompanyIndustry)
-2. Actualizar Inputs (RequestCompanyInput, CreateCompanyInput)
-3. Actualizar Resolvers si es necesario
-4. Actualizar Resources
 
-**Validación:** Tests de integración GraphQL
+2. Actualizar Controllers, resourcesm, request donde sea necesario
+
 
 ---
 
@@ -123,18 +120,7 @@ Quiero que me ayudes a:
 3. Agregar tests para catálogo de industrias
 4. Verificar cobertura de código
 
-**Validación:** `php artisan test --coverage`
-
----
-
-### FASE 7: MIGRACIÓN DE DATOS
-**Orden sugerido:**
-1. Crear script de migración de datos existentes
-2. Mapear `industry_type` (string) → `industry_id` (UUID)
-3. Copiar `business_description` → `company_description` en requests existentes
-4. Validar integridad de datos
-
-**Validación:** Verificar que no hay datos perdidos
+**Validación:** `DOCKER php artisan test --coverage`
 
 ---
 
@@ -142,7 +128,6 @@ Quiero que me ayudes a:
 
 ### NO HACER:
 - ❌ NO modificar múltiples archivos a la vez sin plan
-- ❌ NO borrar campos sin verificar dependencias
 - ❌ NO hacer cambios sin tests
 - ❌ NO commitear código que rompa tests existentes
 
@@ -159,8 +144,6 @@ Quiero que me ayudes a:
 
 1. **¿Has leído todos los archivos del feature CompanyManagement?**
 2. **¿Identificaste alguna dependencia que pueda romperse?**
-3. **¿Hay datos en producción que debamos migrar?**
-4. **¿Los cambios afectan APIs públicas documentadas?**
 5. **¿Propones algún cambio adicional para mejorar la implementación?**
 
 ---
@@ -168,11 +151,9 @@ Quiero que me ayudes a:
 ## 📦 ENTREGABLES ESPERADOS
 
 Al finalizar, deberías tener:
-- [ ] Migración V8.0 ejecutada exitosamente
+- [ ] Migración actualizada V8.0 ejecutada exitosamente
 - [ ] Todos los tests pasando (100% green)
-- [ ] Datos existentes migrados correctamente
 - [ ] Documentación actualizada
-- [ ] No hay breaking changes en la API
 - [ ] Cobertura de tests >= 80%
 
 ---
@@ -184,7 +165,6 @@ Al finalizar, deberías tener:
 1. **Lee este plan completo**
 2. **Analiza el feature CompanyManagement** en el proyecto
 3. **Propón un orden de implementación específico** con nombres de archivos
-4. **Identifica riesgos** que yo deba conocer
 5. **Dame un checklist** de tareas para aprobar antes de empezar
 
 **Formato de respuesta esperado:**
@@ -200,9 +180,6 @@ Al finalizar, deberías tener:
 2. [Tarea 2 con archivos específicos]
 ...
 
-### Riesgos identificados:
-- [Riesgo 1]
-- [Riesgo 2]
 
 ### Preguntas antes de empezar:
 - [Pregunta 1]

@@ -4,15 +4,17 @@ namespace App\Features\CompanyManagement\Http\Resources;
 
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 /**
  * CompanyExploreResource
  *
  * Contexto: EXPLORE
  * Propósito: Explorar empresas públicas, cards de empresas
- * Campos: 11 campos (info básica + descripción + branding + contadores)
+ * Campos: 12 campos (info básica + descripción truncada + industry + branding + contadores)
  * Campos calculados: followers_count, is_followed_by_me
- * Eager loading: NINGUNO requerido (contadores se calculan con atributos del modelo)
+ * Eager loading: 'industry' recomendado para evitar N+1
+ * V8.0 Changes: Fixed field names (description, industry relation), added industryCode, truncated description to 120 chars
  */
 class CompanyExploreResource extends JsonResource
 {
@@ -29,8 +31,9 @@ class CompanyExploreResource extends JsonResource
             'companyCode' => $this->company_code,
             'name' => $this->name,
             'logoUrl' => $this->logo_url,
-            'description' => $this->business_description ?? null,
-            'industry' => $this->industry_type ?? null,
+            'description' => Str::limit($this->description ?? '', 120),
+            'industry' => $this->industry?->name ?? null,
+            'industryCode' => $this->industry?->code ?? null,
             'city' => $this->contact_city ?? null,
             'country' => $this->contact_country ?? null,
             'primaryColor' => $this->primary_color ?? null,

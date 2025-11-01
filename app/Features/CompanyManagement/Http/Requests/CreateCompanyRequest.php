@@ -39,6 +39,8 @@ class CreateCompanyRequest extends FormRequest
             // Información básica
             'name' => ['required', 'string', 'min:2', 'max:200'],
             'legal_name' => ['nullable', 'string', 'min:2', 'max:200'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'industry_id' => ['required', 'uuid', 'exists:business.company_industries,id'],
             'admin_user_id' => [
                 'required',
                 'uuid',
@@ -132,6 +134,10 @@ class CreateCompanyRequest extends FormRequest
             'name.max' => 'El nombre no puede superar 200 caracteres.',
             'legal_name.min' => 'El nombre legal debe tener al menos 2 caracteres.',
             'legal_name.max' => 'El nombre legal no puede superar 200 caracteres.',
+            'description.max' => 'La descripción no puede superar los 1000 caracteres.',
+            'industry_id.required' => 'Debe seleccionar una industria.',
+            'industry_id.uuid' => 'El ID de industria debe ser un UUID válido.',
+            'industry_id.exists' => 'La industria seleccionada no es válida.',
             'admin_user_id.required' => 'El ID del administrador es obligatorio.',
             'admin_user_id.uuid' => 'El ID del administrador debe ser un UUID válido.',
             'admin_user_id.exists' => 'El usuario administrador no existe.',

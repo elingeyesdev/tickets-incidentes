@@ -9,8 +9,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Contexto: MINIMAL
  * Propósito: Selectores, referencias rápidas, campos anidados
- * Campos: 4 campos básicos (id, company_code, name, logo_url)
- * Eager loading: NINGUNO requerido
+ * Campos: 5 campos básicos (id, company_code, name, logo_url, industry_code)
+ * Eager loading: 'industry' opcional (for industryCode field)
+ * V8.0 Changes: Added industryCode for filtering UI
  */
 class CompanyMinimalResource extends JsonResource
 {
@@ -27,6 +28,7 @@ class CompanyMinimalResource extends JsonResource
             'companyCode' => $this->company_code,
             'name' => $this->name,
             'logoUrl' => $this->logo_url,
+            'industryCode' => $this->industry?->code ?? null,
         ];
     }
 }

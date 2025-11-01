@@ -3,6 +3,7 @@
 namespace App\Features\CompanyManagement\Database\Factories;
 
 use App\Features\CompanyManagement\Models\Company;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,6 +26,7 @@ class CompanyFactory extends Factory
             'company_code' => $companyCode,
             'name' => $this->faker->company(),
             'legal_name' => $this->faker->company() . ' SRL',
+            'description' => $this->faker->optional(0.8)->realText(200),
             'support_email' => $this->faker->companyEmail(),
             'phone' => '+591' . $this->faker->numerify('########'),  // E.164 format for Bolivia
             'website' => $this->faker->url(),
@@ -50,6 +52,8 @@ class CompanyFactory extends Factory
             'settings' => [],
             'status' => 'active',
             'admin_user_id' => User::factory(),
+            'industry_id' => CompanyIndustry::inRandomOrder()->first()?->id
+                ?? CompanyIndustry::factory()->create()->id,
         ];
     }
 
@@ -60,6 +64,17 @@ class CompanyFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'suspended',
+        ]);
+    }
+
+    /**
+     * Indicar que la empresa pertenece a una industria específica.
+     */
+    public function withIndustry(string $industryCode): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'industry_id' => CompanyIndustry::where('code', $industryCode)->first()?->id
+                ?? CompanyIndustry::factory()->create(['code' => $industryCode])->id,
         ]);
     }
 }

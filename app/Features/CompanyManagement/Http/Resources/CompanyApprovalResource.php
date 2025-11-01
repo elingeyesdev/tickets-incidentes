@@ -9,8 +9,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Propósito: Response de aprobación de solicitud de empresa
  * Entrada: Array con datos de aprobación (no un modelo Eloquent)
- * Campos: success, message, company (datos limitados), new_user_created, notification_sent_to
+ * Campos: success, message, company (datos limitados + industry), new_user_created, notification_sent_to
  * Uso: Transformar el resultado del Service después de aprobar una solicitud
+ * V8.0 Changes: Added description and industry fields to company data
  */
 class CompanyApprovalResource extends JsonResource
 {
@@ -25,6 +26,7 @@ class CompanyApprovalResource extends JsonResource
         $company = $this->resource['company'] ?? [];
         $adminUser = $company['admin'] ?? null;
         $adminProfile = $adminUser?->profile ?? null;
+        $industry = $company['industry'] ?? null;
 
         return [
             'data' => [
@@ -35,7 +37,14 @@ class CompanyApprovalResource extends JsonResource
                     'companyCode' => $company['company_code'] ?? null,
                     'name' => $company['name'] ?? null,
                     'legalName' => $company['legal_name'] ?? null,
+                    'description' => $company['description'] ?? null,
                     'status' => isset($company['status']) ? strtoupper($company['status']) : 'ACTIVE',
+                    'industryId' => $company['industry_id'] ?? null,
+                    'industry' => $industry ? [
+                        'id' => $industry->id,
+                        'code' => $industry->code,
+                        'name' => $industry->name,
+                    ] : null,
                     'adminId' => $company['admin_user_id'] ?? null,
                     'adminName' => $adminProfile ? trim($adminProfile->first_name . ' ' . $adminProfile->last_name) : 'Unknown',
                     'adminEmail' => $adminUser?->email ?? null,

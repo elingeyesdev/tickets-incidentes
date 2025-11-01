@@ -160,6 +160,13 @@ class CompanyController extends Controller
                 schema: new OA\Schema(type: 'string', example: 'Tech')
             ),
             new OA\Parameter(
+                name: 'industry_id',
+                in: 'query',
+                description: 'Filter by industry UUID',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+            new OA\Parameter(
                 name: 'country',
                 in: 'query',
                 description: 'Filter by country',
@@ -284,10 +291,9 @@ class CompanyController extends Controller
         }
 
         // Aplicar filtros
-        // Note: Campo industry no existe en la BD, omitir por ahora
-        // if ($request->filled('industry')) {
-        //     $query->where('industry_type', $request->industry);
-        // }
+        if ($request->filled('industry_id')) {
+            $query->where('industry_id', $request->industry_id);
+        }
 
         if ($request->filled('country')) {
             $query->where('contact_country', $request->country);
@@ -358,6 +364,13 @@ class CompanyController extends Controller
                 description: 'Filter by company status',
                 required: false,
                 schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'inactive'], example: 'active')
+            ),
+            new OA\Parameter(
+                name: 'industry_id',
+                in: 'query',
+                description: 'Filter by industry UUID',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
             ),
             new OA\Parameter(
                 name: 'sort_by',
@@ -464,11 +477,15 @@ class CompanyController extends Controller
     public function index(ListCompaniesRequest $request)
     {
         $query = Company::query()
-            ->with(['admin.profile']);
+            ->with(['admin.profile', 'industry']);
 
         // Filtros
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('industry_id')) {
+            $query->where('industry_id', $request->industry_id);
         }
 
         if ($request->filled('search')) {
@@ -609,7 +626,7 @@ class CompanyController extends Controller
     public function show(Company $company)
     {
         // Eager load solo relaciones simples (evita N+1)
-        $company->load(['admin.profile']);
+        $company->load(['admin.profile', 'industry']);
 
         // Calcular counts usando queries SEPARADAS (evita problemas con loadCount y distinct en PostgreSQL)
         // Sin N+1 porque no hay loops - son queries directas paralelas
