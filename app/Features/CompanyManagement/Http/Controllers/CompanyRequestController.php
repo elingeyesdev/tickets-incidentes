@@ -92,8 +92,26 @@ class CompanyRequestController extends Controller
                                     new OA\Property(property: 'companyName', type: 'string'),
                                     new OA\Property(property: 'legalName', type: 'string', nullable: true),
                                     new OA\Property(property: 'adminEmail', type: 'string', format: 'email'),
+                                    new OA\Property(property: 'businessDescription', type: 'string', nullable: true),
+                                    new OA\Property(property: 'requestMessage', type: 'string', nullable: true),
+                                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true),
+                                    new OA\Property(property: 'industryId', type: 'string', format: 'uuid', nullable: true),
+                                    new OA\Property(
+                                        property: 'industry',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                            new OA\Property(property: 'code', type: 'string'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                        ]
+                                    ),
+                                    new OA\Property(property: 'estimatedUsers', type: 'integer', nullable: true),
                                     new OA\Property(property: 'status', type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED']),
+                                    new OA\Property(property: 'reviewedAt', type: 'string', format: 'date-time', nullable: true),
+                                    new OA\Property(property: 'rejectionReason', type: 'string', nullable: true),
                                     new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
+                                    new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
                                 ]
                             )
                         ),
@@ -169,7 +187,7 @@ class CompanyRequestController extends Controller
             description: 'Company request data',
             content: new OA\JsonContent(
                 type: 'object',
-                required: ['company_name', 'admin_email', 'business_description', 'industry_type'],
+                required: ['company_name', 'admin_email', 'company_description', 'industry_id'],
                 properties: [
                     new OA\Property(
                         property: 'company_name',
@@ -197,11 +215,11 @@ class CompanyRequestController extends Controller
                         example: 'admin@techcorp.com'
                     ),
                     new OA\Property(
-                        property: 'business_description',
+                        property: 'company_description',
                         type: 'string',
-                        description: 'Business description (50-2000 characters)',
+                        description: 'Company description (50-1000 characters)',
                         minLength: 50,
-                        maxLength: 2000,
+                        maxLength: 1000,
                         example: 'We are a leading technology solutions company with over 10 years of experience...'
                     ),
                     new OA\Property(
@@ -214,11 +232,19 @@ class CompanyRequestController extends Controller
                         example: 'https://techcorp.com'
                     ),
                     new OA\Property(
-                        property: 'industry_type',
+                        property: 'industry_id',
                         type: 'string',
-                        description: 'Industry type (max 100 characters)',
-                        maxLength: 100,
-                        example: 'Technology / Software'
+                        format: 'uuid',
+                        description: 'Industry UUID (reference to company_industries)',
+                        example: '550e8400-e29b-41d4-a716-446655440000'
+                    ),
+                    new OA\Property(
+                        property: 'request_message',
+                        type: 'string',
+                        description: 'Request message (10-500 characters)',
+                        minLength: 10,
+                        maxLength: 500,
+                        example: 'We need a professional helpdesk system for our customer support'
                     ),
                     new OA\Property(
                         property: 'estimated_users',
