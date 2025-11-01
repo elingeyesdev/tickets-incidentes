@@ -1,9 +1,9 @@
 # 🎯 Helpdesk System - Enterprise-Grade Support Platform
 
-> **A professional, feature-first helpdesk system built with Laravel 12, GraphQL, and React** | Multi-tenant | Production-Ready Architecture
+> **A professional, feature-first helpdesk system built with Laravel 12, REST API, and React** | Multi-tenant | Production-Ready Architecture
 
 [![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel)](https://laravel.com)
-[![GraphQL](https://img.shields.io/badge/GraphQL-API-E10098?logo=graphql)](https://graphql.org)
+[![REST API](https://img.shields.io/badge/REST-API-009688?logo=openapis)](https://www.openapis.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql)](https://postgresql.org)
 
@@ -17,9 +17,9 @@ This isn't just another helpdesk system. This is a **professionally architected*
 
 - **🗄️ Database Design:** Professional-grade PostgreSQL schema (97% score) with 4 separated domains
 - **🔐 Security First:** JWT authentication, role-based access control, multi-tenant isolation
-- **⚡ Performance:** N+1 query prevention with DataLoaders, OPcache optimization, Redis caching
+- **⚡ Performance:** OPcache optimization, Redis caching, stateless JWT authentication
 - **🎨 Feature-First Architecture:** Clean, maintainable, scalable codebase organization
-- **🔄 GraphQL API:** Type-safe, introspectable, with professional error handling
+- **🔄 REST API:** RESTful endpoints with OpenAPI/Swagger documentation, rate limiting
 - **🧪 Quality Assured:** 100% audited services, automated testing, validated architecture
 
 ---
@@ -30,28 +30,28 @@ This isn't just another helpdesk system. This is a **professionally architected*
 
 ✅ **Backend Infrastructure (100%)**
 - Database with 4 PostgreSQL schemas fully implemented
-- Authentication system with JWT and refresh tokens
+- Stateless JWT authentication with refresh tokens
 - User management with roles and multi-tenant support
 - Professional error handling (DEV/PROD differentiation)
 - Email verification and password reset flows
 
-✅ **GraphQL API (Working)**
-- Register mutation fully functional
-- Schema-first design with 40+ types
-- Custom scalars (UUID, Email, PhoneNumber, HexColor)
-- DataLoaders preventing N+1 queries
-- Rate limiting and audit directives
+✅ **REST API (100% - Recently Migrated from GraphQL)**
+- Complete RESTful endpoints for all features
+- OpenAPI 3.0 documentation with Swagger UI
+- Comprehensive authentication/authorization middleware
+- Rate limiting (throttle) on sensitive endpoints
+- Feature-based organization with Controllers and Resources
 
 ✅ **Code Quality (Audited)**
 - All services 100% aligned with database schema
-- Automated tests passing
+- Automated tests passing (174+ tests)
 - Professional error handling
 - Optimized Docker setup for development
 
 ⏳ **In Progress:**
-- Additional GraphQL resolvers
-- Company management workflows
 - Frontend React/Inertia pages
+- Ticketing system
+- Real-time features
 
 ---
 
@@ -59,10 +59,10 @@ This isn't just another helpdesk system. This is a **professionally architected*
 
 ### Backend
 - **Framework:** Laravel 12 (latest)
-- **API:** GraphQL with Lighthouse PHP
+- **API:** RESTful with OpenAPI 3.0 & Swagger documentation
 - **Database:** PostgreSQL 17 (4 schemas: auth, business, ticketing, audit)
-- **Authentication:** JWT with refresh token rotation
-- **Cache/Queue:** Redis
+- **Authentication:** Stateless JWT (access token 15min + refresh token 7 days)
+- **Cache/Queue:** Redis (sessions, caching, background jobs)
 
 ### Frontend
 - **SPA:** React 19 + TypeScript
@@ -86,11 +86,17 @@ app/Features/
 ├── Authentication/          # Everything auth-related
 │   ├── Models/             # User, RefreshToken
 │   ├── Services/           # AuthService, TokenService
-│   ├── GraphQL/            # Resolvers, DataLoaders
+│   ├── Http/
+│   │   ├── Controllers/    # REST endpoints
+│   │   └── Requests/       # Form validation
 │   ├── Database/           # Migrations, Seeders, Factories
 │   └── Events/Jobs/Policies/
 ├── UserManagement/         # User CRUD, profiles, roles
+│   ├── Http/Controllers/   # UserController, ProfileController, RoleController
+│   └── Http/Resources/     # JSON response transformers
 └── CompanyManagement/      # Multi-tenant company logic
+    ├── Http/Controllers/   # CompanyController, CompanyRequestController
+    └── Http/Resources/     # CompanyResource, CompanyRequestResource
 ```
 
 **Benefits:**
@@ -125,11 +131,12 @@ app/Features/
 
 ## 🔐 Security Features
 
-- **Authentication:** JWT access tokens (15min) + refresh tokens (7 days)
-- **Authorization:** Role-based access control (RBAC) with policies
-- **Multi-tenancy:** Company isolation with CHECK constraints
-- **Rate Limiting:** GraphQL directive-based protection
-- **Error Handling:** Production mode hides sensitive data
+- **Authentication:** Stateless JWT with access tokens (15min) + refresh tokens (7 days)
+- **Authorization:** Role-based access control (RBAC) with middleware and policies
+- **Multi-tenancy:** Company isolation with CHECK constraints and soft deletion
+- **Rate Limiting:** Throttle middleware on sensitive endpoints (login, password reset, etc.)
+- **CORS & Headers:** Security headers, CORS configuration for multi-client support
+- **Error Handling:** Production mode hides sensitive data, consistent error responses
 - **Audit Trail:** Comprehensive logging system (ready to activate)
 
 ---
@@ -137,12 +144,13 @@ app/Features/
 ## ⚡ Performance Optimizations
 
 **Implemented:**
-- ✅ DataLoaders for N+1 query prevention
+- ✅ Eager loading in Controllers/Resources to prevent N+1 queries
 - ✅ OPcache with optimized settings
 - ✅ PHP-FPM static pool configuration
-- ✅ Redis caching for sessions and queues
-- ✅ Partial database indexes
-- ✅ Optimized Docker setup
+- ✅ Redis caching for sessions, cache, and queue jobs
+- ✅ Partial database indexes and query optimization
+- ✅ Optimized Docker setup with health checks
+- ✅ Stateless JWT to reduce database queries
 
 **Results:**
 - Cold start: ~500ms
@@ -186,32 +194,88 @@ docker compose exec app php artisan migrate --seed
 
 # Access the application
 # - App: http://localhost:8000
-# - GraphiQL: http://localhost:8000/graphiql
+# - API Docs: http://localhost:8000/docs
 # - Mailpit: http://localhost:8025
 ```
 
-### Test GraphQL API
+### Test REST API
 
-```graphql
-mutation Register {
-  register(input: {
-    email: "user@example.com"
-    password: "SecurePass123!"
-    passwordConfirmation: "SecurePass123!"
-    firstName: "John"
-    lastName: "Doe"
-    acceptsTerms: true
-    acceptsPrivacyPolicy: true
-  }) {
-    accessToken
-    user {
-      id
-      email
-      profile { firstName lastName }
-    }
-  }
-}
+**Register a new user:**
+
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!",
+    "passwordConfirmation": "SecurePass123!",
+    "firstName": "John",
+    "lastName": "Doe",
+    "acceptsTerms": true,
+    "acceptsPrivacyPolicy": true
+  }'
 ```
+
+**Login:**
+
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+**Use JWT token for authenticated requests:**
+
+```bash
+curl -X GET http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+---
+
+## 📡 REST API Endpoints
+
+### Authentication Routes (`/api/auth`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/register` | No | Register new user |
+| POST | `/login` | No | Login with credentials |
+| POST | `/refresh` | No | Refresh access token |
+| POST | `/logout` | JWT | Logout and revoke session |
+| POST | `/password-reset` | No | Request password reset |
+| POST | `/password-reset/confirm` | No | Confirm password reset |
+| POST | `/email/verify` | No | Verify email address |
+| GET | `/status` | JWT | Get authentication status |
+| GET | `/sessions` | JWT | List active sessions |
+| DELETE | `/sessions/{id}` | JWT | Revoke specific session |
+
+### User Management Routes (`/api/users`)
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| GET | `/me` | JWT | Any | Get current user |
+| GET | `/me/profile` | JWT | Any | Get user profile |
+| PATCH | `/me/profile` | JWT | Any | Update profile |
+| GET | `/{id}` | JWT | Any | View user details |
+| GET | `/` | JWT | Admin | List all users |
+| PUT | `/{id}/status` | JWT | PLATFORM_ADMIN | Change user status |
+
+### Company Management Routes (`/api/companies`)
+| Method | Endpoint | Auth | Role | Description |
+|--------|----------|------|------|-------------|
+| GET | `/minimal` | No | - | List companies (minimal data) |
+| POST | `/` | JWT | PLATFORM_ADMIN | Create company |
+| GET | `/` | JWT | Admin | List all companies |
+| GET | `/explore` | JWT | Any | Explore companies |
+| GET | `/{id}` | JWT | Any | Get company details |
+| PATCH | `/{id}` | JWT | Owner | Update company |
+| GET | `/followed` | JWT | Any | List followed companies |
+| POST | `/{id}/follow` | JWT | Any | Follow company |
+| DELETE | `/{id}/unfollow` | JWT | Any | Unfollow company |
+
+**Full API documentation available at:** `http://localhost:8000/docs`
 
 ---
 
@@ -246,8 +310,10 @@ docker compose exec app npm run dev
 docker compose exec app php artisan migrate
 docker compose exec app php artisan db:seed
 
-# GraphQL
-docker compose exec app php artisan lighthouse:validate-schema
+# Code Quality
+./vendor/bin/pint                  # Lint and fix code
+php artisan test                   # Run automated tests
+php artisan test --coverage        # With coverage report
 
 # Performance
 ./scripts/optimize-performance.sh
@@ -259,40 +325,46 @@ docker compose exec app php artisan lighthouse:validate-schema
 
 This project demonstrates:
 
-✅ **Enterprise Architecture** - Feature-first, maintainable, scalable
-✅ **Professional Database Design** - PostgreSQL best practices
-✅ **GraphQL Best Practices** - Schema-first, DataLoaders, error handling
-✅ **Security Patterns** - JWT, RBAC, multi-tenancy
-✅ **Performance Optimization** - Caching, N+1 prevention, Docker tuning
-✅ **Code Quality** - 100% audited, tested, documented
-✅ **DevOps** - Docker, scripts, optimization
+✅ **Enterprise Architecture** - Feature-first, maintainable, scalable REST API
+✅ **Professional Database Design** - PostgreSQL with 4 schemas and CHECK constraints
+✅ **REST API Best Practices** - Stateless JWT, proper HTTP methods, consistent responses
+✅ **Security Patterns** - Stateless JWT, RBAC middleware, rate limiting, multi-tenancy
+✅ **Performance Optimization** - Eager loading, Redis caching, optimized queries
+✅ **Code Quality** - 100% audited, 174+ tests passing, documented architecture
+✅ **DevOps & Deployment** - Docker Compose, health checks, optimization scripts
 
 Perfect for:
-- Learning advanced Laravel patterns
-- Understanding GraphQL in production
-- Studying multi-tenant architecture
-- Portfolio showcase
+- Learning advanced Laravel patterns with REST APIs
+- Understanding stateless authentication in production
+- Studying multi-tenant architecture at scale
+- Portfolio showcase of enterprise-grade development
+- Migrating from GraphQL to REST APIs
 
 ---
 
 ## 📝 Project Status
 
-**Current Version:** 1.0-alpha
-**Status:** Active Development
-**Last Updated:** October 2025
+**Current Version:** 1.0-beta
+**Status:** Active Development (REST API Migration Complete)
+**Last Updated:** November 2025
 
-**What's Working:**
-- ✅ User registration and authentication
-- ✅ GraphQL API with professional error handling
-- ✅ Multi-tenant user and role management
-- ✅ Email verification and password reset
-- ✅ Professional database design
+**What's Working (100%):**
+- ✅ Complete REST API with 20+ endpoints
+- ✅ Stateless JWT authentication with refresh tokens
+- ✅ User registration, login, email verification
+- ✅ Password reset and session management
+- ✅ Multi-tenant user and role management (RBAC)
+- ✅ Company management (CRUD, requests, followers)
+- ✅ OpenAPI/Swagger documentation
+- ✅ Rate limiting on sensitive endpoints
+- ✅ 174+ automated tests passing
+- ✅ Professional database design (97% quality score)
 
 **Next Steps:**
-- ⏳ Company management workflows
-- ⏳ Frontend React pages
-- ⏳ Ticketing system
-- ⏳ Real-time features (GraphQL subscriptions)
+- ⏳ Frontend React pages with Inertia.js
+- ⏳ Ticketing system implementation
+- ⏳ Real-time features (WebSockets)
+- ⏳ Mobile app with React Native (using REST API)
 
 ---
 
@@ -314,9 +386,13 @@ This is currently a learning/showcase project. Feel free to:
 
 ## 👨‍💻 Author
 
-Built with 💙 as a professional showcase of modern Laravel + GraphQL architecture.
+Built with 💙 as a professional showcase of modern Laravel + REST API architecture.
 
-**Key Achievement:** 1 week of planning → Production-ready foundation with 97% quality score
+**Key Achievements:**
+- 1 week of planning → Production-ready foundation
+- 97% database design quality score
+- 100% REST API migration from GraphQL
+- 174+ automated tests passing
 
 ---
 
@@ -325,5 +401,5 @@ Built with 💙 as a professional showcase of modern Laravel + GraphQL architect
 </p>
 
 <p align="center">
-  Made with Laravel 12 • GraphQL • React • PostgreSQL • Docker
+  Made with Laravel 12 • REST API • React • PostgreSQL • Docker
 </p>

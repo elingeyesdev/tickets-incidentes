@@ -46,17 +46,36 @@ class ProfileController
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'firstName', type: 'string', description: 'User first name'),
-                                new OA\Property(property: 'lastName', type: 'string', description: 'User last name'),
-                                new OA\Property(property: 'phoneNumber', type: 'string', nullable: true, description: 'Phone number (E.164 format)'),
-                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, description: 'Avatar image URL'),
-                                new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true, description: 'Birth date'),
-                                new OA\Property(property: 'bio', type: 'string', nullable: true, description: 'Biography'),
-                                new OA\Property(property: 'theme', type: 'string', nullable: true, description: 'UI theme preference'),
-                                new OA\Property(property: 'language', type: 'string', nullable: true, description: 'Language preference'),
-                                new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone'),
+                                new OA\Property(property: 'firstName', type: 'string', description: 'User first name', example: 'Juan'),
+                                new OA\Property(property: 'lastName', type: 'string', description: 'User last name', example: 'Pérez'),
+                                new OA\Property(property: 'displayName', type: 'string', description: 'Display name (firstName + lastName)', example: 'Juan Pérez'),
+                                new OA\Property(property: 'phoneNumber', type: 'string', nullable: true, description: 'Phone number', example: '+56912345678'),
+                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, description: 'Avatar image URL', example: 'https://example.com/avatars/user123.jpg'),
+                                new OA\Property(property: 'theme', type: 'string', description: 'UI theme preference', enum: ['light', 'dark'], example: 'light'),
+                                new OA\Property(property: 'language', type: 'string', description: 'Language preference', enum: ['es', 'en'], example: 'es'),
+                                new OA\Property(property: 'timezone', type: 'string', description: 'Timezone identifier', example: 'America/Santiago'),
+                                new OA\Property(property: 'pushWebNotifications', type: 'boolean', description: 'Push web notifications enabled', example: true),
+                                new OA\Property(property: 'notificationsTickets', type: 'boolean', description: 'Ticket notifications enabled', example: true),
+                                new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', description: 'Profile creation timestamp', example: '2025-01-15T10:30:00Z'),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp', example: '2025-11-01T14:25:30Z'),
                             ]
                         )
+                    ],
+                    example: [
+                        'data' => [
+                            'firstName' => 'Juan',
+                            'lastName' => 'Pérez',
+                            'displayName' => 'Juan Pérez',
+                            'phoneNumber' => '+56912345678',
+                            'avatarUrl' => 'https://example.com/avatars/user123.jpg',
+                            'theme' => 'light',
+                            'language' => 'es',
+                            'timezone' => 'America/Santiago',
+                            'pushWebNotifications' => true,
+                            'notificationsTickets' => true,
+                            'createdAt' => '2025-01-15T10:30:00Z',
+                            'updatedAt' => '2025-11-01T14:25:30Z',
+                        ]
                     ]
                 )
             ),
@@ -88,13 +107,48 @@ class ProfileController
             content: new OA\JsonContent(
                 type: 'object',
                 properties: [
-                    new OA\Property(property: 'firstName', type: 'string', maxLength: 255, nullable: true, description: 'User first name'),
-                    new OA\Property(property: 'lastName', type: 'string', maxLength: 255, nullable: true, description: 'User last name'),
-                    new OA\Property(property: 'phoneNumber', type: 'string', maxLength: 20, nullable: true, description: 'Phone number (E.164 format)'),
-                    new OA\Property(property: 'avatar', type: 'string', nullable: true, description: 'Avatar URL or file path'),
-                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone identifier'),
-                    new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true, description: 'Birth date'),
-                    new OA\Property(property: 'bio', type: 'string', maxLength: 1000, nullable: true, description: 'User biography'),
+                    new OA\Property(
+                        property: 'firstName',
+                        type: 'string',
+                        minLength: 2,
+                        maxLength: 100,
+                        nullable: true,
+                        description: 'User first name',
+                        example: 'María'
+                    ),
+                    new OA\Property(
+                        property: 'lastName',
+                        type: 'string',
+                        minLength: 2,
+                        maxLength: 100,
+                        nullable: true,
+                        description: 'User last name',
+                        example: 'González'
+                    ),
+                    new OA\Property(
+                        property: 'phoneNumber',
+                        type: 'string',
+                        minLength: 10,
+                        maxLength: 20,
+                        nullable: true,
+                        description: 'Phone number (digits, spaces, +, -, (, ) allowed)',
+                        example: '+56912345678'
+                    ),
+                    new OA\Property(
+                        property: 'avatarUrl',
+                        type: 'string',
+                        format: 'uri',
+                        maxLength: 2048,
+                        nullable: true,
+                        description: 'Avatar image URL',
+                        example: 'https://example.com/avatars/maria.jpg'
+                    ),
+                ],
+                example: [
+                    'firstName' => 'María',
+                    'lastName' => 'González',
+                    'phoneNumber' => '+56987654321',
+                    'avatarUrl' => 'https://example.com/avatars/maria.jpg'
                 ]
             )
         ),
@@ -109,16 +163,71 @@ class ProfileController
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID'),
-                                new OA\Property(property: 'profile', type: 'object', description: 'Updated profile data'),
-                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp'),
+                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID', example: '9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b'),
+                                new OA\Property(
+                                    property: 'profile',
+                                    type: 'object',
+                                    description: 'Updated profile data (ProfileResource with 12 fields)',
+                                    properties: [
+                                        new OA\Property(property: 'firstName', type: 'string', example: 'María'),
+                                        new OA\Property(property: 'lastName', type: 'string', example: 'González'),
+                                        new OA\Property(property: 'displayName', type: 'string', example: 'María González'),
+                                        new OA\Property(property: 'phoneNumber', type: 'string', nullable: true, example: '+56987654321'),
+                                        new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, example: 'https://example.com/avatars/maria.jpg'),
+                                        new OA\Property(property: 'theme', type: 'string', example: 'light'),
+                                        new OA\Property(property: 'language', type: 'string', example: 'es'),
+                                        new OA\Property(property: 'timezone', type: 'string', example: 'America/Santiago'),
+                                        new OA\Property(property: 'pushWebNotifications', type: 'boolean', example: true),
+                                        new OA\Property(property: 'notificationsTickets', type: 'boolean', example: true),
+                                        new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', example: '2025-01-15T10:30:00Z'),
+                                        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', example: '2025-11-01T15:45:20Z'),
+                                    ]
+                                ),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp', example: '2025-11-01T15:45:20Z'),
                             ]
                         )
+                    ],
+                    example: [
+                        'data' => [
+                            'userId' => '9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b',
+                            'profile' => [
+                                'firstName' => 'María',
+                                'lastName' => 'González',
+                                'displayName' => 'María González',
+                                'phoneNumber' => '+56987654321',
+                                'avatarUrl' => 'https://example.com/avatars/maria.jpg',
+                                'theme' => 'light',
+                                'language' => 'es',
+                                'timezone' => 'America/Santiago',
+                                'pushWebNotifications' => true,
+                                'notificationsTickets' => true,
+                                'createdAt' => '2025-01-15T10:30:00Z',
+                                'updatedAt' => '2025-11-01T15:45:20Z',
+                            ],
+                            'updatedAt' => '2025-11-01T15:45:20Z',
+                        ]
                     ]
                 )
             ),
             new OA\Response(response: 401, description: 'Unauthorized'),
-            new OA\Response(response: 422, description: 'Validation error'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: [
+                                'firstName' => ['First name must be at least 2 characters'],
+                                'phoneNumber' => ['Phone number format is invalid'],
+                            ]
+                        ),
+                    ]
+                )
+            ),
         ]
     )]
     public function update(UpdateProfileRequest $request): JsonResponse
@@ -166,33 +275,45 @@ class ProfileController
                         type: 'string',
                         enum: ['light', 'dark'],
                         nullable: true,
-                        description: 'UI theme preference'
+                        description: 'UI theme preference',
+                        example: 'dark'
                     ),
                     new OA\Property(
                         property: 'language',
                         type: 'string',
-                        enum: ['en', 'es', 'fr', 'de'],
+                        enum: ['es', 'en'],
                         nullable: true,
-                        description: 'Language preference (ISO 639-1)'
+                        description: 'Language preference (ISO 639-1)',
+                        example: 'en'
                     ),
                     new OA\Property(
-                        property: 'pushNotifications',
-                        type: 'boolean',
+                        property: 'timezone',
+                        type: 'string',
                         nullable: true,
-                        description: 'Enable push notifications'
+                        description: 'Timezone identifier (IANA timezone database)',
+                        example: 'America/New_York'
                     ),
                     new OA\Property(
-                        property: 'emailNotifications',
+                        property: 'pushWebNotifications',
                         type: 'boolean',
                         nullable: true,
-                        description: 'Enable email notifications'
+                        description: 'Enable push web notifications',
+                        example: false
                     ),
                     new OA\Property(
-                        property: 'weeklyDigest',
+                        property: 'notificationsTickets',
                         type: 'boolean',
                         nullable: true,
-                        description: 'Enable weekly digest emails'
+                        description: 'Enable ticket notifications',
+                        example: true
                     ),
+                ],
+                example: [
+                    'theme' => 'dark',
+                    'language' => 'en',
+                    'timezone' => 'America/New_York',
+                    'pushWebNotifications' => false,
+                    'notificationsTickets' => true,
                 ]
             )
         ),
@@ -207,16 +328,60 @@ class ProfileController
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID'),
-                                new OA\Property(property: 'preferences', type: 'object', description: 'Updated preferences data'),
-                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp'),
+                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID', example: '9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b'),
+                                new OA\Property(
+                                    property: 'preferences',
+                                    type: 'object',
+                                    description: 'Updated preferences data (PreferencesResource with 6 fields)',
+                                    properties: [
+                                        new OA\Property(property: 'theme', type: 'string', enum: ['light', 'dark'], example: 'dark'),
+                                        new OA\Property(property: 'language', type: 'string', enum: ['es', 'en'], example: 'en'),
+                                        new OA\Property(property: 'timezone', type: 'string', example: 'America/New_York'),
+                                        new OA\Property(property: 'pushWebNotifications', type: 'boolean', example: false),
+                                        new OA\Property(property: 'notificationsTickets', type: 'boolean', example: true),
+                                        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', example: '2025-11-01T16:20:15Z'),
+                                    ]
+                                ),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp', example: '2025-11-01T16:20:15Z'),
                             ]
                         )
+                    ],
+                    example: [
+                        'data' => [
+                            'userId' => '9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b',
+                            'preferences' => [
+                                'theme' => 'dark',
+                                'language' => 'en',
+                                'timezone' => 'America/New_York',
+                                'pushWebNotifications' => false,
+                                'notificationsTickets' => true,
+                                'updatedAt' => '2025-11-01T16:20:15Z',
+                            ],
+                            'updatedAt' => '2025-11-01T16:20:15Z',
+                        ]
                     ]
                 )
             ),
             new OA\Response(response: 401, description: 'Unauthorized'),
-            new OA\Response(response: 422, description: 'Validation error'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: [
+                                'theme' => ['Theme must be either "light" or "dark"'],
+                                'language' => ['Language must be either "es" or "en"'],
+                                'timezone' => ['Invalid timezone'],
+                            ]
+                        ),
+                    ]
+                )
+            ),
         ]
     )]
     public function updatePreferences(UpdatePreferencesRequest $request): JsonResponse

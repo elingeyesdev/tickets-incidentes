@@ -48,21 +48,21 @@ class CompanyController extends Controller
                 in: 'query',
                 description: 'Filter companies by name (case-insensitive search)',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'Acme')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
                 description: 'Number of items per page',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 50)
+                schema: new OA\Schema(type: 'integer', default: 50)
             ),
             new OA\Parameter(
                 name: 'page',
                 in: 'query',
                 description: 'Page number for pagination',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+                schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
             ),
         ],
         responses: [
@@ -157,7 +157,7 @@ class CompanyController extends Controller
                 in: 'query',
                 description: 'Search companies by name',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'Tech')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'industry_id',
@@ -171,42 +171,42 @@ class CompanyController extends Controller
                 in: 'query',
                 description: 'Filter by country',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'Chile')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'followed_by_me',
                 in: 'query',
                 description: 'Show only companies followed by the user',
                 required: false,
-                schema: new OA\Schema(type: 'boolean', example: false)
+                schema: new OA\Schema(type: 'boolean', default: false)
             ),
             new OA\Parameter(
                 name: 'sort_by',
                 in: 'query',
                 description: 'Field to sort results by',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'name')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'sort_direction',
                 in: 'query',
                 description: 'Sort direction',
                 required: false,
-                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'asc')
+                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
                 description: 'Number of items per page',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 20)
+                schema: new OA\Schema(type: 'integer', default: 20)
             ),
             new OA\Parameter(
                 name: 'page',
                 in: 'query',
                 description: 'Page number for pagination',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+                schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
             ),
         ],
         responses: [
@@ -368,14 +368,14 @@ class CompanyController extends Controller
                 in: 'query',
                 description: 'Search companies by name',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'Tech')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'status',
                 in: 'query',
                 description: 'Filter by company status',
                 required: false,
-                schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'inactive'], example: 'active')
+                schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'inactive'])
             ),
             new OA\Parameter(
                 name: 'industry_id',
@@ -389,28 +389,28 @@ class CompanyController extends Controller
                 in: 'query',
                 description: 'Field to sort results by',
                 required: false,
-                schema: new OA\Schema(type: 'string', example: 'created_at')
+                schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'sort_direction',
                 in: 'query',
                 description: 'Sort direction',
                 required: false,
-                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'desc')
+                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
                 description: 'Number of items per page',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 20)
+                schema: new OA\Schema(type: 'integer', default: 20)
             ),
             new OA\Parameter(
                 name: 'page',
                 in: 'query',
                 description: 'Page number for pagination',
                 required: false,
-                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
+                schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
             ),
         ],
         responses: [

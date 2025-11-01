@@ -67,11 +67,18 @@ class CompanyRequestController extends Controller
                 schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])
             ),
             new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                required: false,
+                description: 'Number of items per page',
+                schema: new OA\Schema(type: 'integer', default: 15)
+            ),
+            new OA\Parameter(
                 name: 'page',
                 in: 'query',
                 required: false,
                 description: 'Page number',
-                schema: new OA\Schema(type: 'integer', minimum: 1)
+                schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
             ),
         ],
         responses: [
@@ -87,31 +94,58 @@ class CompanyRequestController extends Controller
                             items: new OA\Items(
                                 type: 'object',
                                 properties: [
-                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                    new OA\Property(property: 'requestCode', type: 'string'),
-                                    new OA\Property(property: 'companyName', type: 'string'),
-                                    new OA\Property(property: 'legalName', type: 'string', nullable: true),
-                                    new OA\Property(property: 'adminEmail', type: 'string', format: 'email'),
-                                    new OA\Property(property: 'businessDescription', type: 'string', nullable: true),
-                                    new OA\Property(property: 'requestMessage', type: 'string', nullable: true),
-                                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true),
-                                    new OA\Property(property: 'industryId', type: 'string', format: 'uuid', nullable: true),
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                    new OA\Property(property: 'requestCode', type: 'string', example: 'REQ-20251101-001'),
+                                    new OA\Property(property: 'companyName', type: 'string', example: 'TechCorp Solutions'),
+                                    new OA\Property(property: 'legalName', type: 'string', nullable: true, example: 'TechCorp Solutions S.A.'),
+                                    new OA\Property(property: 'adminEmail', type: 'string', format: 'email', example: 'admin@techcorp.com'),
+                                    new OA\Property(property: 'businessDescription', type: 'string', nullable: true, example: 'We are a leading technology solutions company with over 10 years of experience providing enterprise software solutions to businesses worldwide.'),
+                                    new OA\Property(property: 'requestMessage', type: 'string', nullable: true, example: 'We need a professional helpdesk system for our customer support team of 50+ agents.'),
+                                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, example: 'https://techcorp.com'),
+                                    new OA\Property(property: 'industryId', type: 'string', format: 'uuid', nullable: true, example: '650e8400-e29b-41d4-a716-446655440001'),
                                     new OA\Property(
                                         property: 'industry',
                                         type: 'object',
                                         nullable: true,
                                         properties: [
-                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                            new OA\Property(property: 'code', type: 'string'),
-                                            new OA\Property(property: 'name', type: 'string'),
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '650e8400-e29b-41d4-a716-446655440001'),
+                                            new OA\Property(property: 'code', type: 'string', example: 'TECH'),
+                                            new OA\Property(property: 'name', type: 'string', example: 'Technology'),
                                         ]
                                     ),
-                                    new OA\Property(property: 'estimatedUsers', type: 'integer', nullable: true),
-                                    new OA\Property(property: 'status', type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED']),
-                                    new OA\Property(property: 'reviewedAt', type: 'string', format: 'date-time', nullable: true),
-                                    new OA\Property(property: 'rejectionReason', type: 'string', nullable: true),
-                                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
-                                    new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
+                                    new OA\Property(property: 'estimatedUsers', type: 'integer', nullable: true, example: 500),
+                                    new OA\Property(property: 'contactAddress', type: 'string', nullable: true, example: 'Main Avenue 123, Office 456'),
+                                    new OA\Property(property: 'contactCity', type: 'string', nullable: true, example: 'Santiago'),
+                                    new OA\Property(property: 'contactCountry', type: 'string', nullable: true, example: 'Chile'),
+                                    new OA\Property(property: 'contactPostalCode', type: 'string', nullable: true, example: '8340000'),
+                                    new OA\Property(property: 'taxId', type: 'string', nullable: true, example: '12.345.678-9'),
+                                    new OA\Property(property: 'status', type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'], example: 'APPROVED'),
+                                    new OA\Property(property: 'reviewedAt', type: 'string', format: 'date-time', nullable: true, example: '2025-11-01T14:30:00Z'),
+                                    new OA\Property(property: 'rejectionReason', type: 'string', nullable: true, example: null),
+                                    new OA\Property(
+                                        property: 'reviewer',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '750e8400-e29b-41d4-a716-446655440002'),
+                                            new OA\Property(property: 'user_code', type: 'string', example: 'USR-ADMIN-001'),
+                                            new OA\Property(property: 'email', type: 'string', format: 'email', example: 'platform.admin@helpdesk.com'),
+                                            new OA\Property(property: 'name', type: 'string', example: 'John Administrator'),
+                                        ]
+                                    ),
+                                    new OA\Property(
+                                        property: 'createdCompany',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '850e8400-e29b-41d4-a716-446655440003'),
+                                            new OA\Property(property: 'companyCode', type: 'string', example: 'COMP-TECH-001'),
+                                            new OA\Property(property: 'name', type: 'string', example: 'TechCorp Solutions'),
+                                            new OA\Property(property: 'logoUrl', type: 'string', nullable: true, example: 'https://storage.example.com/logos/techcorp.png'),
+                                        ]
+                                    ),
+                                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', example: '2025-11-01T10:00:00Z'),
+                                    new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', example: '2025-11-01T14:30:00Z'),
                                 ]
                             )
                         ),
@@ -305,12 +339,60 @@ class CompanyRequestController extends Controller
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                        new OA\Property(property: 'requestCode', type: 'string'),
-                        new OA\Property(property: 'companyName', type: 'string'),
-                        new OA\Property(property: 'adminEmail', type: 'string', format: 'email'),
-                        new OA\Property(property: 'status', type: 'string', enum: ['PENDING']),
-                        new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                        new OA\Property(property: 'requestCode', type: 'string', example: 'REQ-20251101-001'),
+                        new OA\Property(property: 'companyName', type: 'string', example: 'TechCorp Solutions'),
+                        new OA\Property(property: 'legalName', type: 'string', nullable: true, example: 'TechCorp Solutions S.A.'),
+                        new OA\Property(property: 'adminEmail', type: 'string', format: 'email', example: 'admin@techcorp.com'),
+                        new OA\Property(property: 'businessDescription', type: 'string', nullable: true, example: 'We are a leading technology solutions company...'),
+                        new OA\Property(property: 'requestMessage', type: 'string', nullable: true, example: 'We need a professional helpdesk system for our customer support'),
+                        new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, example: 'https://techcorp.com'),
+                        new OA\Property(property: 'industryId', type: 'string', format: 'uuid', nullable: true, example: '550e8400-e29b-41d4-a716-446655440000'),
+                        new OA\Property(
+                            property: 'industry',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'code', type: 'string', example: 'TECH'),
+                                new OA\Property(property: 'name', type: 'string', example: 'Technology'),
+                            ]
+                        ),
+                        new OA\Property(property: 'estimatedUsers', type: 'integer', nullable: true, example: 500),
+                        new OA\Property(property: 'contactAddress', type: 'string', nullable: true, example: 'Main Avenue 123'),
+                        new OA\Property(property: 'contactCity', type: 'string', nullable: true, example: 'Santiago'),
+                        new OA\Property(property: 'contactCountry', type: 'string', nullable: true, example: 'Chile'),
+                        new OA\Property(property: 'contactPostalCode', type: 'string', nullable: true, example: '8340000'),
+                        new OA\Property(property: 'taxId', type: 'string', nullable: true, example: '12.345.678-9'),
+                        new OA\Property(property: 'status', type: 'string', enum: ['PENDING'], example: 'PENDING'),
+                        new OA\Property(property: 'reviewedAt', type: 'string', format: 'date-time', nullable: true, example: null),
+                        new OA\Property(property: 'rejectionReason', type: 'string', nullable: true, example: null),
+                        new OA\Property(
+                            property: 'reviewer',
+                            type: 'object',
+                            nullable: true,
+                            example: null,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'user_code', type: 'string'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email'),
+                                new OA\Property(property: 'name', type: 'string'),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'createdCompany',
+                            type: 'object',
+                            nullable: true,
+                            example: null,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'companyCode', type: 'string'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'logoUrl', type: 'string', nullable: true),
+                            ]
+                        ),
+                        new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', example: '2025-11-01T12:00:00Z'),
+                        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', example: '2025-11-01T12:00:00Z'),
                     ]
                 )
             ),

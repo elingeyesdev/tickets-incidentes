@@ -58,7 +58,7 @@ class CompanyRequestAdminController extends Controller
                 description: 'Company request UUID',
                 in: 'path',
                 required: true,
-                schema: new OA\Schema(type: 'string', format: 'uuid')
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a')
             )
         ],
         requestBody: new OA\RequestBody(
@@ -79,25 +79,37 @@ class CompanyRequestAdminController extends Controller
                     type: 'object',
                     properties: [
                         new OA\Property(property: 'data', type: 'object', properties: [
-                            new OA\Property(property: 'success', type: 'boolean'),
-                            new OA\Property(property: 'message', type: 'string'),
+                            new OA\Property(property: 'success', type: 'boolean', example: true),
+                            new OA\Property(property: 'message', type: 'string', example: "Solicitud aprobada exitosamente. Se ha creado la empresa 'TechCorp Bolivia' y se envió un email con las credenciales de acceso a admin@techcorp.com.bo."),
                             new OA\Property(
                                 property: 'company',
                                 type: 'object',
                                 properties: [
-                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                    new OA\Property(property: 'companyCode', type: 'string'),
-                                    new OA\Property(property: 'name', type: 'string'),
-                                    new OA\Property(property: 'legalName', type: 'string', nullable: true),
-                                    new OA\Property(property: 'status', type: 'string'),
-                                    new OA\Property(property: 'adminId', type: 'string', format: 'uuid'),
-                                    new OA\Property(property: 'adminEmail', type: 'string', format: 'email'),
-                                    new OA\Property(property: 'adminName', type: 'string'),
-                                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time')
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a'),
+                                    new OA\Property(property: 'companyCode', type: 'string', example: 'COMP-20250001'),
+                                    new OA\Property(property: 'name', type: 'string', example: 'TechCorp Bolivia'),
+                                    new OA\Property(property: 'legalName', type: 'string', nullable: true, example: 'TechCorp Bolivia S.R.L.'),
+                                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Empresa líder en soluciones tecnológicas para el sector empresarial'),
+                                    new OA\Property(property: 'status', type: 'string', example: 'ACTIVE'),
+                                    new OA\Property(property: 'industryId', type: 'string', format: 'uuid', nullable: true, example: '7c6d5e4f-3a2b-1c0d-9e8f-7a6b5c4d3e2f'),
+                                    new OA\Property(
+                                        property: 'industry',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '7c6d5e4f-3a2b-1c0d-9e8f-7a6b5c4d3e2f'),
+                                            new OA\Property(property: 'code', type: 'string', example: 'TECH'),
+                                            new OA\Property(property: 'name', type: 'string', example: 'Tecnología')
+                                        ]
+                                    ),
+                                    new OA\Property(property: 'adminId', type: 'string', format: 'uuid', example: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d'),
+                                    new OA\Property(property: 'adminEmail', type: 'string', format: 'email', example: 'admin@techcorp.com.bo'),
+                                    new OA\Property(property: 'adminName', type: 'string', example: 'Juan Carlos Pérez'),
+                                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', example: '2025-11-01T10:30:00+00:00')
                                 ]
                             ),
-                            new OA\Property(property: 'newUserCreated', type: 'boolean'),
-                            new OA\Property(property: 'notificationSentTo', type: 'string', format: 'email')
+                            new OA\Property(property: 'newUserCreated', type: 'boolean', example: true),
+                            new OA\Property(property: 'notificationSentTo', type: 'string', format: 'email', example: 'admin@techcorp.com.bo')
                         ])
                     ]
                 )
@@ -169,7 +181,7 @@ class CompanyRequestAdminController extends Controller
                 description: 'Company request UUID',
                 in: 'path',
                 required: true,
-                schema: new OA\Schema(type: 'string', format: 'uuid')
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a')
             )
         ],
         requestBody: new OA\RequestBody(
@@ -179,7 +191,7 @@ class CompanyRequestAdminController extends Controller
                 type: 'object',
                 required: ['reason'],
                 properties: [
-                    new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason (required, minimum 3 characters)', minLength: 3),
+                    new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason (required, minimum 10 characters)', minLength: 10),
                     new OA\Property(property: 'notes', type: 'string', description: 'Additional notes', nullable: true)
                 ]
             )
@@ -192,11 +204,11 @@ class CompanyRequestAdminController extends Controller
                     type: 'object',
                     properties: [
                         new OA\Property(property: 'data', type: 'object', properties: [
-                            new OA\Property(property: 'success', type: 'boolean'),
-                            new OA\Property(property: 'message', type: 'string'),
-                            new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason'),
-                            new OA\Property(property: 'notification_sent_to', type: 'string', format: 'email'),
-                            new OA\Property(property: 'request_code', type: 'string')
+                            new OA\Property(property: 'success', type: 'boolean', example: true),
+                            new OA\Property(property: 'message', type: 'string', example: "La solicitud de empresa 'TechCorp Bolivia' ha sido rechazada. Se ha enviado un email a admin@techcorp.com.bo con la razón del rechazo."),
+                            new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason', example: 'La documentación proporcionada no cumple con los requisitos mínimos establecidos. Por favor, adjunte el NIT actualizado y el testimonio de constitución.'),
+                            new OA\Property(property: 'notificationSentTo', type: 'string', format: 'email', example: 'admin@techcorp.com.bo'),
+                            new OA\Property(property: 'requestCode', type: 'string', example: 'REQ-20250001')
                         ])
                     ]
                 )

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Authentication;
+namespace Authentication;
 
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\UserManagement\Models\User;

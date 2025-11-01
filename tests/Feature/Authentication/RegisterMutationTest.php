@@ -1,9 +1,8 @@
 <?php
 
-namespace Tests\Feature\Authentication;
+namespace Authentication;
 
 use App\Features\UserManagement\Models\User;
-use App\Shared\Enums\UserStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -310,7 +309,7 @@ class RegisterMutationTest extends TestCase
      * Test: Nombres se capitalizan correctamente
      */
     public function test_names_are_capitalized_correctly(): void
-    { 
+    {
         $payload = [
             'email' => 'test@example.com',
             'password' => 'SecurePass123!',

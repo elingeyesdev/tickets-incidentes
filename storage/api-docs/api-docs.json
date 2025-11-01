@@ -590,34 +590,44 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Lista mínima de empresas para selectores",
-                "description": "Retorna un listado paginado de empresas activas con información mínima (id, código, nombre, logo). Endpoint público sin autenticación.",
+                "summary": "List minimal companies for selectors",
+                "description": "Returns a paginated list of active companies with minimal information (id, code, name, logo). Public endpoint without authentication required.",
                 "operationId": "list_companies_minimal",
                 "parameters": [
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Filtrar empresas por nombre (búsqueda case-insensitive)",
+                        "description": "Filter companies by name (case-insensitive search)",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "Acme"
+                            "type": "string"
                         }
                     },
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Número de items por página",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "example": 50
+                            "default": 50
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Listado de empresas minimalistas con paginación",
+                        "description": "Minimal company list with pagination",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -704,78 +714,95 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Explorar empresas con filtros",
-                "description": "Retorna listado paginado de empresas con información extendida para exploración. Incluye indicadores de seguimiento del usuario autenticado. Requiere autenticación JWT.",
+                "summary": "Explore companies with filters",
+                "description": "Returns paginated list of companies with extended information for exploration. Includes follow indicators specific to authenticated user. Requires JWT authentication.",
                 "operationId": "explore_companies",
                 "parameters": [
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Buscar empresas por nombre",
+                        "description": "Search companies by name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "industry_id",
+                        "in": "query",
+                        "description": "Filter by industry UUID",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "Tech"
+                            "format": "uuid"
                         }
                     },
                     {
                         "name": "country",
                         "in": "query",
-                        "description": "Filtrar por país",
+                        "description": "Filter by country",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "Chile"
+                            "type": "string"
                         }
                     },
                     {
                         "name": "followed_by_me",
                         "in": "query",
-                        "description": "Mostrar solo empresas seguidas por el usuario",
+                        "description": "Show only companies followed by the user",
                         "required": false,
                         "schema": {
                             "type": "boolean",
-                            "example": false
+                            "default": false
                         }
                     },
                     {
                         "name": "sort_by",
                         "in": "query",
-                        "description": "Campo para ordenar resultados",
+                        "description": "Field to sort results by",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "name"
+                            "type": "string"
                         }
                     },
                     {
                         "name": "sort_direction",
                         "in": "query",
-                        "description": "Dirección del ordenamiento",
+                        "description": "Sort direction",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
                                 "asc",
                                 "desc"
-                            ],
-                            "example": "asc"
+                            ]
                         }
                     },
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Número de items por página",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "example": 20
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Listado de empresas con información extendida",
+                        "description": "Company list with extended information",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -804,6 +831,27 @@
                                                     },
                                                     "contact_country": {
                                                         "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "industry_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "nullable": true
+                                                    },
+                                                    "industry": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid"
+                                                            },
+                                                            "code": {
+                                                                "type": "string"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object",
                                                         "nullable": true
                                                     },
                                                     "followers_count": {
@@ -861,7 +909,7 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado (token JWT inválido o ausente)",
+                        "description": "Unauthenticated (invalid or missing JWT token)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -889,24 +937,23 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Listar todas las empresas (admin)",
-                "description": "Retorna listado completo de empresas con toda la información y campos calculados. Requiere rol HELPDESK_ADMIN o COMPANY_ADMIN. Los COMPANY_ADMIN solo ven su propia empresa.",
+                "summary": "List all companies (admin)",
+                "description": "Returns complete company list with all information and calculated fields. Requires HELPDESK_ADMIN or COMPANY_ADMIN role. COMPANY_ADMIN users can only see their own company.",
                 "operationId": "list_companies",
                 "parameters": [
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Buscar empresas por nombre",
+                        "description": "Search companies by name",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "Tech"
+                            "type": "string"
                         }
                     },
                     {
                         "name": "status",
                         "in": "query",
-                        "description": "Filtrar por estado de la empresa",
+                        "description": "Filter by company status",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -914,48 +961,66 @@
                                 "active",
                                 "suspended",
                                 "inactive"
-                            ],
-                            "example": "active"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "industry_id",
+                        "in": "query",
+                        "description": "Filter by industry UUID",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
                         }
                     },
                     {
                         "name": "sort_by",
                         "in": "query",
-                        "description": "Campo para ordenar resultados",
+                        "description": "Field to sort results by",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "created_at"
+                            "type": "string"
                         }
                     },
                     {
                         "name": "sort_direction",
                         "in": "query",
-                        "description": "Dirección del ordenamiento",
+                        "description": "Sort direction",
                         "required": false,
                         "schema": {
                             "type": "string",
                             "enum": [
                                 "asc",
                                 "desc"
-                            ],
-                            "example": "desc"
+                            ]
                         }
                     },
                     {
                         "name": "per_page",
                         "in": "query",
-                        "description": "Número de items por página",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "example": 20
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Listado completo de empresas con información administrativa",
+                        "description": "Complete company list with administrative information",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -981,6 +1046,31 @@
                                                             "suspended",
                                                             "inactive"
                                                         ]
+                                                    },
+                                                    "industry_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "nullable": true
+                                                    },
+                                                    "industry": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid"
+                                                            },
+                                                            "code": {
+                                                                "type": "string"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
                                                     },
                                                     "admin": {
                                                         "type": "object"
@@ -1047,7 +1137,7 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado (token JWT inválido o ausente)",
+                        "description": "Unauthenticated (invalid or missing JWT token)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1063,7 +1153,7 @@
                         }
                     },
                     "403": {
-                        "description": "Sin permisos (requiere rol de administrador)",
+                        "description": "Forbidden (requires administrator role)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1089,11 +1179,11 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Crear nueva empresa",
-                "description": "Crea una nueva empresa directamente sin proceso de solicitud. Solo disponible para usuarios con rol PLATFORM_ADMIN. Asigna automáticamente el rol COMPANY_ADMIN al usuario designado como administrador.",
+                "summary": "Create new company",
+                "description": "Creates a new company directly without request process. Only available for users with PLATFORM_ADMIN role. Automatically assigns COMPANY_ADMIN role to the designated administrator user.",
                 "operationId": "create_company",
                 "requestBody": {
-                    "description": "Datos de la nueva empresa",
+                    "description": "New company data",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1106,86 +1196,107 @@
                                 ],
                                 "properties": {
                                     "name": {
-                                        "description": "Nombre comercial de la empresa",
+                                        "description": "Company trade name",
                                         "type": "string",
+                                        "maxLength": 255,
+                                        "minLength": 2,
                                         "example": "Acme Corporation"
                                     },
                                     "legal_name": {
-                                        "description": "Razón social legal",
+                                        "description": "Legal company name",
                                         "type": "string",
+                                        "maxLength": 255,
+                                        "minLength": 2,
                                         "example": "Acme Corp S.A."
                                     },
                                     "support_email": {
-                                        "description": "Email de soporte",
+                                        "description": "Support email address",
                                         "type": "string",
                                         "format": "email",
+                                        "maxLength": 255,
                                         "example": "support@acme.com"
                                     },
                                     "phone": {
-                                        "description": "Teléfono de contacto",
+                                        "description": "Contact phone number",
                                         "type": "string",
+                                        "maxLength": 20,
                                         "example": "+56912345678",
                                         "nullable": true
                                     },
                                     "website": {
-                                        "description": "Sitio web",
+                                        "description": "Company website",
                                         "type": "string",
+                                        "format": "uri",
+                                        "maxLength": 255,
                                         "example": "https://acme.com",
                                         "nullable": true
                                     },
                                     "admin_user_id": {
-                                        "description": "ID del usuario que será administrador de la empresa",
+                                        "description": "User ID who will be the company administrator (required)",
                                         "type": "string",
                                         "format": "uuid"
                                     },
                                     "contact_address": {
-                                        "description": "Dirección física",
+                                        "description": "Physical address",
                                         "type": "string",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "contact_city": {
-                                        "description": "Ciudad",
+                                        "description": "City",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_state": {
-                                        "description": "Estado/Región",
+                                        "description": "State/Region",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_country": {
-                                        "description": "País",
+                                        "description": "Country",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_postal_code": {
-                                        "description": "Código postal",
+                                        "description": "Postal code",
                                         "type": "string",
+                                        "maxLength": 20,
                                         "nullable": true
                                     },
                                     "tax_id": {
-                                        "description": "RUT/NIT/Tax ID",
+                                        "description": "Tax ID (RUT/NIT)",
                                         "type": "string",
+                                        "maxLength": 50,
                                         "nullable": true
                                     },
                                     "legal_representative": {
-                                        "description": "Representante legal",
+                                        "description": "Legal representative name",
                                         "type": "string",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "business_hours": {
-                                        "description": "Horario de atención (JSONB)",
+                                        "description": "Business hours (JSONB)",
                                         "type": "object",
+                                        "example": {
+                                            "monday": {
+                                                "open": "09:00",
+                                                "close": "18:00"
+                                            }
+                                        },
                                         "nullable": true
                                     },
                                     "timezone": {
-                                        "description": "Zona horaria",
+                                        "description": "Timezone (e.g., America/Santiago)",
                                         "type": "string",
                                         "example": "America/Santiago",
                                         "nullable": true
                                     },
                                     "settings": {
-                                        "description": "Configuraciones adicionales (JSONB)",
+                                        "description": "Additional settings (JSONB)",
                                         "type": "object",
                                         "nullable": true
                                     }
@@ -1197,7 +1308,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Empresa creada exitosamente",
+                        "description": "Company created successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1230,7 +1341,7 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado",
+                        "description": "Unauthenticated",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1246,7 +1357,7 @@
                         }
                     },
                     "403": {
-                        "description": "Sin permisos (requiere rol PLATFORM_ADMIN)",
+                        "description": "Forbidden (requires PLATFORM_ADMIN role)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1262,7 +1373,7 @@
                         }
                     },
                     "422": {
-                        "description": "Error de validación",
+                        "description": "Validation error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1299,14 +1410,14 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Ver detalle completo de una empresa",
-                "description": "Retorna toda la información de una empresa específica incluyendo campos calculados, admin info y estado de seguimiento del usuario. Requiere autenticación y permisos de acceso.",
+                "summary": "View complete company details",
+                "description": "Returns all information about a specific company including calculated fields, admin info, and user follow status. Requires authentication and access permissions.",
                 "operationId": "show_company",
                 "parameters": [
                     {
                         "name": "company",
                         "in": "path",
-                        "description": "ID o UUID de la empresa",
+                        "description": "Company ID or UUID",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -1317,7 +1428,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Detalle completo de la empresa",
+                        "description": "Complete company details",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1360,6 +1471,31 @@
                                             "type": "string",
                                             "nullable": true
                                         },
+                                        "industry_id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "nullable": true
+                                        },
+                                        "industry": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "code": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
                                         "admin": {
                                             "type": "object"
                                         },
@@ -1390,7 +1526,7 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado (token JWT inválido o ausente)",
+                        "description": "Unauthenticated (invalid or missing JWT token)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1406,7 +1542,7 @@
                         }
                     },
                     "403": {
-                        "description": "Sin permisos para ver esta empresa",
+                        "description": "Forbidden (no permission to view this company)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1422,7 +1558,7 @@
                         }
                     },
                     "404": {
-                        "description": "Empresa no encontrada",
+                        "description": "Company not found",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1448,14 +1584,14 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Actualizar empresa",
-                "description": "Actualiza la información de una empresa existente. Requiere ser PLATFORM_ADMIN o COMPANY_ADMIN propietario de la empresa. Todos los campos son opcionales.",
+                "summary": "Update company",
+                "description": "Updates information of an existing company. Requires being PLATFORM_ADMIN or COMPANY_ADMIN owner of the company. All fields are optional.",
                 "operationId": "update_company",
                 "parameters": [
                     {
                         "name": "company",
                         "in": "path",
-                        "description": "ID o UUID de la empresa a actualizar",
+                        "description": "Company ID or UUID to update",
                         "required": true,
                         "schema": {
                             "type": "string",
@@ -1465,107 +1601,128 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Datos a actualizar (todos los campos son opcionales)",
+                    "description": "Data to update (all fields are optional)",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
                                     "name": {
-                                        "description": "Nombre comercial",
+                                        "description": "Trade name (2-255 characters)",
                                         "type": "string",
+                                        "maxLength": 255,
+                                        "minLength": 2,
                                         "nullable": true
                                     },
                                     "legal_name": {
-                                        "description": "Razón social",
+                                        "description": "Legal name (2-255 characters)",
                                         "type": "string",
+                                        "maxLength": 255,
+                                        "minLength": 2,
                                         "nullable": true
                                     },
                                     "support_email": {
-                                        "description": "Email de soporte",
+                                        "description": "Support email (max 255 characters)",
                                         "type": "string",
                                         "format": "email",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "phone": {
-                                        "description": "Teléfono",
+                                        "description": "Phone number (max 20 characters)",
                                         "type": "string",
+                                        "maxLength": 20,
                                         "nullable": true
                                     },
                                     "website": {
-                                        "description": "Sitio web",
+                                        "description": "Website URL (max 255 characters)",
                                         "type": "string",
+                                        "format": "uri",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "contact_address": {
-                                        "description": "Dirección",
+                                        "description": "Address (max 255 characters)",
                                         "type": "string",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "contact_city": {
-                                        "description": "Ciudad",
+                                        "description": "City (max 100 characters)",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_state": {
-                                        "description": "Estado/Región",
+                                        "description": "State/Region (max 100 characters)",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_country": {
-                                        "description": "País",
+                                        "description": "Country (max 100 characters)",
                                         "type": "string",
+                                        "maxLength": 100,
                                         "nullable": true
                                     },
                                     "contact_postal_code": {
-                                        "description": "Código postal",
+                                        "description": "Postal code (max 20 characters)",
                                         "type": "string",
+                                        "maxLength": 20,
                                         "nullable": true
                                     },
                                     "tax_id": {
-                                        "description": "RUT/NIT/Tax ID",
+                                        "description": "Tax ID (RUT/NIT, max 50 characters)",
                                         "type": "string",
+                                        "maxLength": 50,
                                         "nullable": true
                                     },
                                     "legal_representative": {
-                                        "description": "Representante legal",
+                                        "description": "Legal representative (max 255 characters)",
                                         "type": "string",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "business_hours": {
-                                        "description": "Horario de atención",
+                                        "description": "Business hours (JSONB)",
                                         "type": "object",
                                         "nullable": true
                                     },
                                     "timezone": {
-                                        "description": "Zona horaria",
+                                        "description": "Timezone (e.g., America/Santiago)",
                                         "type": "string",
                                         "nullable": true
                                     },
                                     "logo_url": {
-                                        "description": "URL del logo",
+                                        "description": "Logo URL",
                                         "type": "string",
+                                        "format": "uri",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "favicon_url": {
-                                        "description": "URL del favicon",
+                                        "description": "Favicon URL",
                                         "type": "string",
+                                        "format": "uri",
+                                        "maxLength": 255,
                                         "nullable": true
                                     },
                                     "primary_color": {
-                                        "description": "Color primario (hex)",
+                                        "description": "Primary color in hexadecimal format",
                                         "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}$",
                                         "example": "#FF5733",
                                         "nullable": true
                                     },
                                     "secondary_color": {
-                                        "description": "Color secundario (hex)",
+                                        "description": "Secondary color in hexadecimal format",
                                         "type": "string",
+                                        "pattern": "^#[0-9A-Fa-f]{6}$",
                                         "example": "#33FF57",
                                         "nullable": true
                                     },
                                     "settings": {
-                                        "description": "Configuraciones adicionales",
+                                        "description": "Additional settings (JSONB)",
                                         "type": "object",
                                         "nullable": true
                                     }
@@ -1577,7 +1734,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Empresa actualizada exitosamente",
+                        "description": "Company updated successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1637,7 +1794,7 @@
                         }
                     },
                     "403": {
-                        "description": "Sin permisos para actualizar esta empresa",
+                        "description": "Forbidden (no permission to update this company)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1653,7 +1810,7 @@
                         }
                     },
                     "404": {
-                        "description": "Empresa no encontrada",
+                        "description": "Company not found",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1669,7 +1826,7 @@
                         }
                     },
                     "422": {
-                        "description": "Error de validación",
+                        "description": "Validation error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1706,7 +1863,7 @@
                 "tags": [
                     "Company Followers"
                 ],
-                "summary": "List companies followed by user",
+                "summary": "List companies followed by authenticated user",
                 "description": "Returns all companies that the authenticated user is following, ordered by most recent follow first. Includes company details and user-specific metrics like ticket count.",
                 "operationId": "list_followed_companies",
                 "parameters": [
@@ -1753,36 +1910,33 @@
                                                                 "type": "string",
                                                                 "format": "uuid"
                                                             },
-                                                            "company_code": {
+                                                            "companyCode": {
                                                                 "type": "string"
                                                             },
                                                             "name": {
                                                                 "type": "string"
                                                             },
-                                                            "logo_url": {
+                                                            "logoUrl": {
                                                                 "type": "string",
                                                                 "format": "uri",
                                                                 "nullable": true
-                                                            },
-                                                            "status": {
-                                                                "type": "string"
                                                             }
                                                         },
                                                         "type": "object"
                                                     },
-                                                    "followed_at": {
+                                                    "followedAt": {
                                                         "type": "string",
                                                         "format": "date-time"
                                                     },
-                                                    "my_tickets_count": {
+                                                    "myTicketsCount": {
                                                         "type": "integer"
                                                     },
-                                                    "last_ticket_created_at": {
+                                                    "lastTicketCreatedAt": {
                                                         "type": "string",
                                                         "format": "date-time",
                                                         "nullable": true
                                                     },
-                                                    "has_unread_announcements": {
+                                                    "hasUnreadAnnouncements": {
                                                         "type": "boolean"
                                                     }
                                                 },
@@ -1903,13 +2057,13 @@
                                                     "type": "string",
                                                     "format": "uuid"
                                                 },
-                                                "company_code": {
+                                                "companyCode": {
                                                     "type": "string"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
-                                                "logo_url": {
+                                                "logoUrl": {
                                                     "type": "string",
                                                     "format": "uri",
                                                     "nullable": true
@@ -1917,15 +2071,9 @@
                                             },
                                             "type": "object"
                                         },
-                                        "followed_at": {
+                                        "followedAt": {
                                             "type": "string",
                                             "format": "date-time"
-                                        },
-                                        "isFollowing": {
-                                            "type": "boolean"
-                                        },
-                                        "followersCount": {
-                                            "type": "integer"
                                         }
                                     },
                                     "type": "object"
@@ -1951,13 +2099,13 @@
                                                     "type": "string",
                                                     "format": "uuid"
                                                 },
-                                                "company_code": {
+                                                "companyCode": {
                                                     "type": "string"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
-                                                "logo_url": {
+                                                "logoUrl": {
                                                     "type": "string",
                                                     "format": "uri",
                                                     "nullable": true
@@ -1965,15 +2113,9 @@
                                             },
                                             "type": "object"
                                         },
-                                        "followed_at": {
+                                        "followedAt": {
                                             "type": "string",
                                             "format": "date-time"
-                                        },
-                                        "isFollowing": {
-                                            "type": "boolean"
-                                        },
-                                        "followersCount": {
-                                            "type": "integer"
                                         }
                                     },
                                     "type": "object"
@@ -2033,12 +2175,6 @@
                                         },
                                         "message": {
                                             "type": "string"
-                                        },
-                                        "isFollowing": {
-                                            "type": "boolean"
-                                        },
-                                        "followersCount": {
-                                            "type": "integer"
                                         }
                                     },
                                     "type": "object"
@@ -2063,34 +2199,111 @@
                 ]
             }
         },
+        "/api/company-industries": {
+            "get": {
+                "tags": [
+                    "Company Industries"
+                ],
+                "summary": "Listar todas las industrias disponibles",
+                "description": "Obtiene el catálogo completo de industrias para selección en formularios. Endpoint público sin autenticación requerida. Opcionalmente incluye conteos de empresas activas por industria.",
+                "operationId": "list_company_industries",
+                "parameters": [
+                    {
+                        "name": "with_counts",
+                        "in": "query",
+                        "description": "Incluir conteo de empresas activas por industria (default: false)",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de industrias obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                    },
+                                                    "code": {
+                                                        "description": "Código único de la industria",
+                                                        "type": "string",
+                                                        "example": "technology"
+                                                    },
+                                                    "name": {
+                                                        "description": "Nombre de la industria",
+                                                        "type": "string",
+                                                        "example": "Tecnología"
+                                                    },
+                                                    "description": {
+                                                        "description": "Descripción de la industria",
+                                                        "type": "string",
+                                                        "example": "Empresas de tecnología y software",
+                                                        "nullable": true
+                                                    },
+                                                    "createdAt": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-10-31T12:00:00Z"
+                                                    },
+                                                    "activeCompaniesCount": {
+                                                        "description": "Conteo de empresas activas (solo si with_counts=true)",
+                                                        "type": "integer",
+                                                        "example": 45
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/company-requests/{companyRequest}/approve": {
             "post": {
                 "tags": [
                     "Company Requests - Admin"
                 ],
-                "summary": "Aprobar solicitud de empresa",
-                "description": "Aprueba una solicitud de empresa. Automáticamente: crea la empresa, crea usuario admin, asigna rol COMPANY_ADMIN, genera contraseña temporal (válida 7 días), envía email con credenciales",
+                "summary": "Approve company request",
+                "description": "Approves a company request. Automatically: creates company, creates admin user, assigns COMPANY_ADMIN role, generates temporary password (valid 7 days), sends email with credentials",
                 "operationId": "approve_company_request",
                 "parameters": [
                     {
                         "name": "companyRequest",
                         "in": "path",
-                        "description": "UUID de la solicitud de empresa",
+                        "description": "Company request UUID",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "example": "9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a"
                         }
                     }
                 ],
                 "requestBody": {
+                    "description": "Additional approval data (optional)",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
                                     "notes": {
-                                        "description": "Observaciones adicionales",
+                                        "description": "Additional notes",
                                         "type": "string",
                                         "nullable": true
                                     }
@@ -2102,54 +2315,108 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Solicitud aprobada exitosamente",
+                        "description": "Request approved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        },
-                                        "status": {
-                                            "type": "string",
-                                            "example": "APPROVED"
-                                        },
-                                        "company": {
+                                        "data": {
                                             "properties": {
-                                                "id": {
+                                                "success": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "message": {
                                                     "type": "string",
-                                                    "format": "uuid"
+                                                    "example": "Solicitud aprobada exitosamente. Se ha creado la empresa 'TechCorp Bolivia' y se envió un email con las credenciales de acceso a admin@techcorp.com.bo."
                                                 },
-                                                "name": {
-                                                    "type": "string"
+                                                "company": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a"
+                                                        },
+                                                        "companyCode": {
+                                                            "type": "string",
+                                                            "example": "COMP-20250001"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "TechCorp Bolivia"
+                                                        },
+                                                        "legalName": {
+                                                            "type": "string",
+                                                            "example": "TechCorp Bolivia S.R.L.",
+                                                            "nullable": true
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "example": "Empresa líder en soluciones tecnológicas para el sector empresarial",
+                                                            "nullable": true
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "ACTIVE"
+                                                        },
+                                                        "industryId": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "7c6d5e4f-3a2b-1c0d-9e8f-7a6b5c4d3e2f",
+                                                            "nullable": true
+                                                        },
+                                                        "industry": {
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "string",
+                                                                    "format": "uuid",
+                                                                    "example": "7c6d5e4f-3a2b-1c0d-9e8f-7a6b5c4d3e2f"
+                                                                },
+                                                                "code": {
+                                                                    "type": "string",
+                                                                    "example": "TECH"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Tecnología"
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "adminId": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+                                                        },
+                                                        "adminEmail": {
+                                                            "type": "string",
+                                                            "format": "email",
+                                                            "example": "admin@techcorp.com.bo"
+                                                        },
+                                                        "adminName": {
+                                                            "type": "string",
+                                                            "example": "Juan Carlos Pérez"
+                                                        },
+                                                        "createdAt": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-11-01T10:30:00+00:00"
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 },
-                                                "companyCode": {
-                                                    "type": "string"
+                                                "newUserCreated": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "notificationSentTo": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "admin@techcorp.com.bo"
                                                 }
                                             },
                                             "type": "object"
-                                        },
-                                        "adminUser": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "string",
-                                                    "format": "uuid"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "format": "email"
-                                                },
-                                                "temporaryPassword": {
-                                                    "description": "Contraseña temporal (solo si es usuario nuevo)",
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "approvedAt": {
-                                            "type": "string",
-                                            "format": "date-time"
                                         }
                                     },
                                     "type": "object"
@@ -2158,93 +2425,19 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Sin permisos - requiere rol PLATFORM_ADMIN",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "This action is unauthorized"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Forbidden - requires PLATFORM_ADMIN role"
                     },
                     "404": {
-                        "description": "Solicitud no encontrada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Company request not found"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Request not found"
                     },
                     "409": {
-                        "description": "Solicitud ya procesada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Company request already processed"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Request already processed"
                     },
                     "422": {
-                        "description": "Error de validación",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid"
-                                        },
-                                        "errors": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Validation error"
                     }
                 },
                 "security": [
@@ -2259,22 +2452,24 @@
                 "tags": [
                     "Company Requests - Admin"
                 ],
-                "summary": "Rechazar solicitud de empresa",
-                "description": "Rechaza una solicitud de empresa. Automáticamente: marca como REJECTED, envía email al solicitante con motivo del rechazo",
+                "summary": "Reject company request",
+                "description": "Rejects a company request. Automatically: marks as REJECTED, sends email to requester with rejection reason",
                 "operationId": "reject_company_request",
                 "parameters": [
                     {
                         "name": "companyRequest",
                         "in": "path",
-                        "description": "UUID de la solicitud de empresa",
+                        "description": "Company request UUID",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "example": "9d8e4f1a-2b3c-4d5e-6f7a-8b9c0d1e2f3a"
                         }
                     }
                 ],
                 "requestBody": {
+                    "description": "Rejection reason",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -2284,11 +2479,12 @@
                                 ],
                                 "properties": {
                                     "reason": {
-                                        "description": "Motivo del rechazo (requerido)",
-                                        "type": "string"
+                                        "description": "Rejection reason (required, minimum 10 characters)",
+                                        "type": "string",
+                                        "minLength": 10
                                     },
                                     "notes": {
-                                        "description": "Observaciones adicionales",
+                                        "description": "Additional notes",
                                         "type": "string",
                                         "nullable": true
                                     }
@@ -2300,26 +2496,37 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Solicitud rechazada exitosamente",
+                        "description": "Request rejected successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        },
-                                        "status": {
-                                            "type": "string",
-                                            "example": "REJECTED"
-                                        },
-                                        "rejectedAt": {
-                                            "type": "string",
-                                            "format": "date-time"
-                                        },
-                                        "reason": {
-                                            "description": "Motivo del rechazo",
-                                            "type": "string"
+                                        "data": {
+                                            "properties": {
+                                                "success": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "La solicitud de empresa 'TechCorp Bolivia' ha sido rechazada. Se ha enviado un email a admin@techcorp.com.bo con la razón del rechazo."
+                                                },
+                                                "reason": {
+                                                    "description": "Rejection reason",
+                                                    "type": "string",
+                                                    "example": "La documentación proporcionada no cumple con los requisitos mínimos establecidos. Por favor, adjunte el NIT actualizado y el testimonio de constitución."
+                                                },
+                                                "notificationSentTo": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "admin@techcorp.com.bo"
+                                                },
+                                                "requestCode": {
+                                                    "type": "string",
+                                                    "example": "REQ-20250001"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -2328,93 +2535,19 @@
                         }
                     },
                     "401": {
-                        "description": "No autenticado",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Sin permisos - requiere rol PLATFORM_ADMIN",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "This action is unauthorized"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Forbidden - requires PLATFORM_ADMIN role"
                     },
                     "404": {
-                        "description": "Solicitud no encontrada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Company request not found"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Request not found"
                     },
                     "409": {
-                        "description": "Solicitud ya procesada",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Company request already processed"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Request already processed"
                     },
                     "422": {
-                        "description": "Error de validación",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid"
-                                        },
-                                        "errors": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Validation error - reason is required"
                     }
                 },
                 "security": [
@@ -2429,14 +2562,14 @@
                 "tags": [
                     "Company Requests"
                 ],
-                "summary": "Listar solicitudes de empresas",
-                "description": "Retorna lista paginada de solicitudes de empresas. Requiere rol PLATFORM_ADMIN. Incluye eager loading de reviewer y createdCompany.",
+                "summary": "List company requests",
+                "description": "Returns paginated list of company requests. Requires PLATFORM_ADMIN role. Includes eager loading of reviewer and createdCompany.",
                 "operationId": "list_company_requests",
                 "parameters": [
                     {
                         "name": "status",
                         "in": "query",
-                        "description": "Filtrar por estado de la solicitud",
+                        "description": "Filter by request status",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -2450,7 +2583,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Buscar por nombre de empresa",
+                        "description": "Search by company name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2459,7 +2592,7 @@
                     {
                         "name": "sort",
                         "in": "query",
-                        "description": "Campo para ordenar",
+                        "description": "Field to sort by",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2468,7 +2601,7 @@
                     {
                         "name": "order",
                         "in": "query",
-                        "description": "Dirección de ordenamiento",
+                        "description": "Sort direction",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -2479,19 +2612,30 @@
                         }
                     },
                     {
-                        "name": "page",
+                        "name": "per_page",
                         "in": "query",
-                        "description": "Número de página",
+                        "description": "Number of items per page",
                         "required": false,
                         "schema": {
                             "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
                             "minimum": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lista de solicitudes de empresas",
+                        "description": "List of company requests",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2502,21 +2646,97 @@
                                                 "properties": {
                                                     "id": {
                                                         "type": "string",
-                                                        "format": "uuid"
+                                                        "format": "uuid",
+                                                        "example": "550e8400-e29b-41d4-a716-446655440000"
                                                     },
                                                     "requestCode": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "REQ-20251101-001"
                                                     },
                                                     "companyName": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "TechCorp Solutions"
                                                     },
                                                     "legalName": {
                                                         "type": "string",
+                                                        "example": "TechCorp Solutions S.A.",
                                                         "nullable": true
                                                     },
                                                     "adminEmail": {
                                                         "type": "string",
-                                                        "format": "email"
+                                                        "format": "email",
+                                                        "example": "admin@techcorp.com"
+                                                    },
+                                                    "businessDescription": {
+                                                        "type": "string",
+                                                        "example": "We are a leading technology solutions company with over 10 years of experience providing enterprise software solutions to businesses worldwide.",
+                                                        "nullable": true
+                                                    },
+                                                    "requestMessage": {
+                                                        "type": "string",
+                                                        "example": "We need a professional helpdesk system for our customer support team of 50+ agents.",
+                                                        "nullable": true
+                                                    },
+                                                    "website": {
+                                                        "type": "string",
+                                                        "format": "uri",
+                                                        "example": "https://techcorp.com",
+                                                        "nullable": true
+                                                    },
+                                                    "industryId": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "650e8400-e29b-41d4-a716-446655440001",
+                                                        "nullable": true
+                                                    },
+                                                    "industry": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "650e8400-e29b-41d4-a716-446655440001"
+                                                            },
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "TECH"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Technology"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "estimatedUsers": {
+                                                        "type": "integer",
+                                                        "example": 500,
+                                                        "nullable": true
+                                                    },
+                                                    "contactAddress": {
+                                                        "type": "string",
+                                                        "example": "Main Avenue 123, Office 456",
+                                                        "nullable": true
+                                                    },
+                                                    "contactCity": {
+                                                        "type": "string",
+                                                        "example": "Santiago",
+                                                        "nullable": true
+                                                    },
+                                                    "contactCountry": {
+                                                        "type": "string",
+                                                        "example": "Chile",
+                                                        "nullable": true
+                                                    },
+                                                    "contactPostalCode": {
+                                                        "type": "string",
+                                                        "example": "8340000",
+                                                        "nullable": true
+                                                    },
+                                                    "taxId": {
+                                                        "type": "string",
+                                                        "example": "12.345.678-9",
+                                                        "nullable": true
                                                     },
                                                     "status": {
                                                         "type": "string",
@@ -2524,11 +2744,77 @@
                                                             "PENDING",
                                                             "APPROVED",
                                                             "REJECTED"
-                                                        ]
+                                                        ],
+                                                        "example": "APPROVED"
+                                                    },
+                                                    "reviewedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-11-01T14:30:00Z",
+                                                        "nullable": true
+                                                    },
+                                                    "rejectionReason": {
+                                                        "type": "string",
+                                                        "example": null,
+                                                        "nullable": true
+                                                    },
+                                                    "reviewer": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "750e8400-e29b-41d4-a716-446655440002"
+                                                            },
+                                                            "user_code": {
+                                                                "type": "string",
+                                                                "example": "USR-ADMIN-001"
+                                                            },
+                                                            "email": {
+                                                                "type": "string",
+                                                                "format": "email",
+                                                                "example": "platform.admin@helpdesk.com"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "John Administrator"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "createdCompany": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "850e8400-e29b-41d4-a716-446655440003"
+                                                            },
+                                                            "companyCode": {
+                                                                "type": "string",
+                                                                "example": "COMP-TECH-001"
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "TechCorp Solutions"
+                                                            },
+                                                            "logoUrl": {
+                                                                "type": "string",
+                                                                "example": "https://storage.example.com/logos/techcorp.png",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
                                                     },
                                                     "createdAt": {
                                                         "type": "string",
-                                                        "format": "date-time"
+                                                        "format": "date-time",
+                                                        "example": "2025-11-01T10:00:00Z"
+                                                    },
+                                                    "updatedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-11-01T14:30:00Z"
                                                     }
                                                 },
                                                 "type": "object"
@@ -2579,10 +2865,10 @@
                         }
                     },
                     "401": {
-                        "description": "Sin autenticación"
+                        "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Sin permisos - requiere rol PLATFORM_ADMIN"
+                        "description": "Forbidden - requires PLATFORM_ADMIN role"
                     }
                 },
                 "security": [
@@ -2595,11 +2881,11 @@
                 "tags": [
                     "Company Requests"
                 ],
-                "summary": "Crear solicitud de empresa",
-                "description": "Endpoint público para crear solicitud de nueva empresa. Rate limit: 3 solicitudes por hora. Validación automática de email duplicado en solicitudes pendientes.",
+                "summary": "Create company request",
+                "description": "Public endpoint to create new company request. Rate limit: 3 requests per hour. Automatic validation of duplicate email in pending requests.",
                 "operationId": "create_company_request",
                 "requestBody": {
-                    "description": "Datos de la solicitud de empresa",
+                    "description": "Company request data",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -2607,82 +2893,101 @@
                                 "required": [
                                     "company_name",
                                     "admin_email",
-                                    "business_description",
-                                    "industry_type"
+                                    "company_description",
+                                    "industry_id"
                                 ],
                                 "properties": {
                                     "company_name": {
-                                        "description": "Nombre de la empresa",
-                                        "type": "string",
-                                        "maxLength": 200,
-                                        "minLength": 2
-                                    },
-                                    "legal_name": {
-                                        "description": "Nombre legal de la empresa",
+                                        "description": "Company name (2-200 characters)",
                                         "type": "string",
                                         "maxLength": 200,
                                         "minLength": 2,
+                                        "example": "TechCorp Solutions"
+                                    },
+                                    "legal_name": {
+                                        "description": "Legal company name (2-200 characters)",
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "minLength": 2,
+                                        "example": "TechCorp Solutions S.A.",
                                         "nullable": true
                                     },
                                     "admin_email": {
-                                        "description": "Email del administrador",
+                                        "description": "Administrator email (max 255 characters)",
                                         "type": "string",
                                         "format": "email",
-                                        "maxLength": 255
+                                        "maxLength": 255,
+                                        "example": "admin@techcorp.com"
                                     },
-                                    "business_description": {
-                                        "description": "Descripción del negocio",
+                                    "company_description": {
+                                        "description": "Company description (50-1000 characters)",
                                         "type": "string",
-                                        "maxLength": 2000,
-                                        "minLength": 50
+                                        "maxLength": 1000,
+                                        "minLength": 50,
+                                        "example": "We are a leading technology solutions company with over 10 years of experience..."
                                     },
                                     "website": {
-                                        "description": "Sitio web de la empresa",
+                                        "description": "Company website (max 255 characters)",
                                         "type": "string",
                                         "format": "uri",
                                         "maxLength": 255,
+                                        "example": "https://techcorp.com",
                                         "nullable": true
                                     },
-                                    "industry_type": {
-                                        "description": "Tipo de industria",
+                                    "industry_id": {
+                                        "description": "Industry UUID (reference to company_industries)",
                                         "type": "string",
-                                        "maxLength": 100
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                    },
+                                    "request_message": {
+                                        "description": "Request message (10-500 characters)",
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "minLength": 10,
+                                        "example": "We need a professional helpdesk system for our customer support"
                                     },
                                     "estimated_users": {
-                                        "description": "Número estimado de usuarios",
+                                        "description": "Estimated number of users (1-10000)",
                                         "type": "integer",
                                         "maximum": 10000,
                                         "minimum": 1,
+                                        "example": 500,
                                         "nullable": true
                                     },
                                     "contact_address": {
-                                        "description": "Dirección de contacto",
+                                        "description": "Contact address (max 255 characters)",
                                         "type": "string",
                                         "maxLength": 255,
+                                        "example": "Main Avenue 123",
                                         "nullable": true
                                     },
                                     "contact_city": {
-                                        "description": "Ciudad",
+                                        "description": "City (max 100 characters)",
                                         "type": "string",
                                         "maxLength": 100,
+                                        "example": "Santiago",
                                         "nullable": true
                                     },
                                     "contact_country": {
-                                        "description": "País",
+                                        "description": "Country (max 100 characters)",
                                         "type": "string",
                                         "maxLength": 100,
+                                        "example": "Chile",
                                         "nullable": true
                                     },
                                     "contact_postal_code": {
-                                        "description": "Código postal",
+                                        "description": "Postal code (max 20 characters)",
                                         "type": "string",
                                         "maxLength": 20,
+                                        "example": "8340000",
                                         "nullable": true
                                     },
                                     "tax_id": {
-                                        "description": "Identificador fiscal",
+                                        "description": "Tax ID - RUT/NIT (max 50 characters)",
                                         "type": "string",
                                         "maxLength": 50,
+                                        "example": "12.345.678-9",
                                         "nullable": true
                                     }
                                 },
@@ -2693,34 +2998,174 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Solicitud de empresa creada exitosamente",
+                        "description": "Company request created successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
                                             "type": "string",
-                                            "format": "uuid"
+                                            "format": "uuid",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000"
                                         },
                                         "requestCode": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "REQ-20251101-001"
                                         },
                                         "companyName": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "TechCorp Solutions"
+                                        },
+                                        "legalName": {
+                                            "type": "string",
+                                            "example": "TechCorp Solutions S.A.",
+                                            "nullable": true
                                         },
                                         "adminEmail": {
                                             "type": "string",
-                                            "format": "email"
+                                            "format": "email",
+                                            "example": "admin@techcorp.com"
+                                        },
+                                        "businessDescription": {
+                                            "type": "string",
+                                            "example": "We are a leading technology solutions company...",
+                                            "nullable": true
+                                        },
+                                        "requestMessage": {
+                                            "type": "string",
+                                            "example": "We need a professional helpdesk system for our customer support",
+                                            "nullable": true
+                                        },
+                                        "website": {
+                                            "type": "string",
+                                            "format": "uri",
+                                            "example": "https://techcorp.com",
+                                            "nullable": true
+                                        },
+                                        "industryId": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "example": "550e8400-e29b-41d4-a716-446655440000",
+                                            "nullable": true
+                                        },
+                                        "industry": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "example": "TECH"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Technology"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
+                                        "estimatedUsers": {
+                                            "type": "integer",
+                                            "example": 500,
+                                            "nullable": true
+                                        },
+                                        "contactAddress": {
+                                            "type": "string",
+                                            "example": "Main Avenue 123",
+                                            "nullable": true
+                                        },
+                                        "contactCity": {
+                                            "type": "string",
+                                            "example": "Santiago",
+                                            "nullable": true
+                                        },
+                                        "contactCountry": {
+                                            "type": "string",
+                                            "example": "Chile",
+                                            "nullable": true
+                                        },
+                                        "contactPostalCode": {
+                                            "type": "string",
+                                            "example": "8340000",
+                                            "nullable": true
+                                        },
+                                        "taxId": {
+                                            "type": "string",
+                                            "example": "12.345.678-9",
+                                            "nullable": true
                                         },
                                         "status": {
                                             "type": "string",
                                             "enum": [
                                                 "PENDING"
-                                            ]
+                                            ],
+                                            "example": "PENDING"
+                                        },
+                                        "reviewedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "rejectionReason": {
+                                            "type": "string",
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "reviewer": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "user_code": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "createdCompany": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "companyCode": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "logoUrl": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object",
+                                            "example": null,
+                                            "nullable": true
                                         },
                                         "createdAt": {
                                             "type": "string",
-                                            "format": "date-time"
+                                            "format": "date-time",
+                                            "example": "2025-11-01T12:00:00Z"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T12:00:00Z"
                                         }
                                     },
                                     "type": "object"
@@ -2729,10 +3174,10 @@
                         }
                     },
                     "422": {
-                        "description": "Error de validación - datos inválidos o email duplicado"
+                        "description": "Validation error - invalid data or duplicate email"
                     },
                     "429": {
-                        "description": "Rate limit excedido - máximo 3 solicitudes por hora"
+                        "description": "Rate limit exceeded - maximum 3 requests per hour"
                     }
                 }
             }
@@ -2756,53 +3201,97 @@
                                             "properties": {
                                                 "firstName": {
                                                     "description": "User first name",
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "example": "Juan"
                                                 },
                                                 "lastName": {
                                                     "description": "User last name",
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "example": "Pérez"
+                                                },
+                                                "displayName": {
+                                                    "description": "Display name (firstName + lastName)",
+                                                    "type": "string",
+                                                    "example": "Juan Pérez"
                                                 },
                                                 "phoneNumber": {
-                                                    "description": "Phone number (E.164 format)",
+                                                    "description": "Phone number",
                                                     "type": "string",
+                                                    "example": "+56912345678",
                                                     "nullable": true
                                                 },
                                                 "avatarUrl": {
                                                     "description": "Avatar image URL",
                                                     "type": "string",
-                                                    "nullable": true
-                                                },
-                                                "birthDate": {
-                                                    "description": "Birth date",
-                                                    "type": "string",
-                                                    "format": "date",
-                                                    "nullable": true
-                                                },
-                                                "bio": {
-                                                    "description": "Biography",
-                                                    "type": "string",
+                                                    "example": "https://example.com/avatars/user123.jpg",
                                                     "nullable": true
                                                 },
                                                 "theme": {
                                                     "description": "UI theme preference",
                                                     "type": "string",
-                                                    "nullable": true
+                                                    "enum": [
+                                                        "light",
+                                                        "dark"
+                                                    ],
+                                                    "example": "light"
                                                 },
                                                 "language": {
                                                     "description": "Language preference",
                                                     "type": "string",
-                                                    "nullable": true
+                                                    "enum": [
+                                                        "es",
+                                                        "en"
+                                                    ],
+                                                    "example": "es"
                                                 },
                                                 "timezone": {
-                                                    "description": "Timezone",
+                                                    "description": "Timezone identifier",
                                                     "type": "string",
-                                                    "nullable": true
+                                                    "example": "America/Santiago"
+                                                },
+                                                "pushWebNotifications": {
+                                                    "description": "Push web notifications enabled",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "notificationsTickets": {
+                                                    "description": "Ticket notifications enabled",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "createdAt": {
+                                                    "description": "Profile creation timestamp",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-01-15T10:30:00Z"
+                                                },
+                                                "updatedAt": {
+                                                    "description": "Last update timestamp",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-01T14:25:30Z"
                                                 }
                                             },
                                             "type": "object"
                                         }
                                     },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "data": {
+                                        "firstName": "Juan",
+                                        "lastName": "Pérez",
+                                        "displayName": "Juan Pérez",
+                                        "phoneNumber": "+56912345678",
+                                        "avatarUrl": "https://example.com/avatars/user123.jpg",
+                                        "theme": "light",
+                                        "language": "es",
+                                        "timezone": "America/Santiago",
+                                        "pushWebNotifications": true,
+                                        "notificationsTickets": true,
+                                        "createdAt": "2025-01-15T10:30:00Z",
+                                        "updatedAt": "2025-11-01T14:25:30Z"
+                                    }
                                 }
                             }
                         }
@@ -2834,45 +3323,43 @@
                                     "firstName": {
                                         "description": "User first name",
                                         "type": "string",
-                                        "maxLength": 255,
+                                        "maxLength": 100,
+                                        "minLength": 2,
+                                        "example": "María",
                                         "nullable": true
                                     },
                                     "lastName": {
                                         "description": "User last name",
                                         "type": "string",
-                                        "maxLength": 255,
+                                        "maxLength": 100,
+                                        "minLength": 2,
+                                        "example": "González",
                                         "nullable": true
                                     },
                                     "phoneNumber": {
-                                        "description": "Phone number (E.164 format)",
+                                        "description": "Phone number (digits, spaces, +, -, (, ) allowed)",
                                         "type": "string",
                                         "maxLength": 20,
+                                        "minLength": 10,
+                                        "example": "+56912345678",
                                         "nullable": true
                                     },
-                                    "avatar": {
-                                        "description": "Avatar URL or file path",
+                                    "avatarUrl": {
+                                        "description": "Avatar image URL",
                                         "type": "string",
-                                        "nullable": true
-                                    },
-                                    "timezone": {
-                                        "description": "Timezone identifier",
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "birthDate": {
-                                        "description": "Birth date",
-                                        "type": "string",
-                                        "format": "date",
-                                        "nullable": true
-                                    },
-                                    "bio": {
-                                        "description": "User biography",
-                                        "type": "string",
-                                        "maxLength": 1000,
+                                        "format": "uri",
+                                        "maxLength": 2048,
+                                        "example": "https://example.com/avatars/maria.jpg",
                                         "nullable": true
                                     }
                                 },
                                 "type": "object"
+                            },
+                            "example": {
+                                "firstName": "María",
+                                "lastName": "González",
+                                "phoneNumber": "+56987654321",
+                                "avatarUrl": "https://example.com/avatars/maria.jpg"
                             }
                         }
                     }
@@ -2889,22 +3376,98 @@
                                                 "userId": {
                                                     "description": "User ID",
                                                     "type": "string",
-                                                    "format": "uuid"
+                                                    "format": "uuid",
+                                                    "example": "9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b"
                                                 },
                                                 "profile": {
-                                                    "description": "Updated profile data",
+                                                    "description": "Updated profile data (ProfileResource with 12 fields)",
+                                                    "properties": {
+                                                        "firstName": {
+                                                            "type": "string",
+                                                            "example": "María"
+                                                        },
+                                                        "lastName": {
+                                                            "type": "string",
+                                                            "example": "González"
+                                                        },
+                                                        "displayName": {
+                                                            "type": "string",
+                                                            "example": "María González"
+                                                        },
+                                                        "phoneNumber": {
+                                                            "type": "string",
+                                                            "example": "+56987654321",
+                                                            "nullable": true
+                                                        },
+                                                        "avatarUrl": {
+                                                            "type": "string",
+                                                            "example": "https://example.com/avatars/maria.jpg",
+                                                            "nullable": true
+                                                        },
+                                                        "theme": {
+                                                            "type": "string",
+                                                            "example": "light"
+                                                        },
+                                                        "language": {
+                                                            "type": "string",
+                                                            "example": "es"
+                                                        },
+                                                        "timezone": {
+                                                            "type": "string",
+                                                            "example": "America/Santiago"
+                                                        },
+                                                        "pushWebNotifications": {
+                                                            "type": "boolean",
+                                                            "example": true
+                                                        },
+                                                        "notificationsTickets": {
+                                                            "type": "boolean",
+                                                            "example": true
+                                                        },
+                                                        "createdAt": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-01-15T10:30:00Z"
+                                                        },
+                                                        "updatedAt": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-11-01T15:45:20Z"
+                                                        }
+                                                    },
                                                     "type": "object"
                                                 },
                                                 "updatedAt": {
                                                     "description": "Last update timestamp",
                                                     "type": "string",
-                                                    "format": "date-time"
+                                                    "format": "date-time",
+                                                    "example": "2025-11-01T15:45:20Z"
                                                 }
                                             },
                                             "type": "object"
                                         }
                                     },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "data": {
+                                        "userId": "9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b",
+                                        "profile": {
+                                            "firstName": "María",
+                                            "lastName": "González",
+                                            "displayName": "María González",
+                                            "phoneNumber": "+56987654321",
+                                            "avatarUrl": "https://example.com/avatars/maria.jpg",
+                                            "theme": "light",
+                                            "language": "es",
+                                            "timezone": "America/Santiago",
+                                            "pushWebNotifications": true,
+                                            "notificationsTickets": true,
+                                            "createdAt": "2025-01-15T10:30:00Z",
+                                            "updatedAt": "2025-11-01T15:45:20Z"
+                                        },
+                                        "updatedAt": "2025-11-01T15:45:20Z"
+                                    }
                                 }
                             }
                         }
@@ -2913,7 +3476,31 @@
                         "description": "Unauthorized"
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "firstName": [
+                                                    "First name must be at least 2 characters"
+                                                ],
+                                                "phoneNumber": [
+                                                    "Phone number format is invalid"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -2945,36 +3532,46 @@
                                             "light",
                                             "dark"
                                         ],
+                                        "example": "dark",
                                         "nullable": true
                                     },
                                     "language": {
                                         "description": "Language preference (ISO 639-1)",
                                         "type": "string",
                                         "enum": [
-                                            "en",
                                             "es",
-                                            "fr",
-                                            "de"
+                                            "en"
                                         ],
+                                        "example": "en",
                                         "nullable": true
                                     },
-                                    "pushNotifications": {
-                                        "description": "Enable push notifications",
-                                        "type": "boolean",
+                                    "timezone": {
+                                        "description": "Timezone identifier (IANA timezone database)",
+                                        "type": "string",
+                                        "example": "America/New_York",
                                         "nullable": true
                                     },
-                                    "emailNotifications": {
-                                        "description": "Enable email notifications",
+                                    "pushWebNotifications": {
+                                        "description": "Enable push web notifications",
                                         "type": "boolean",
+                                        "example": false,
                                         "nullable": true
                                     },
-                                    "weeklyDigest": {
-                                        "description": "Enable weekly digest emails",
+                                    "notificationsTickets": {
+                                        "description": "Enable ticket notifications",
                                         "type": "boolean",
+                                        "example": true,
                                         "nullable": true
                                     }
                                 },
                                 "type": "object"
+                            },
+                            "example": {
+                                "theme": "dark",
+                                "language": "en",
+                                "timezone": "America/New_York",
+                                "pushWebNotifications": false,
+                                "notificationsTickets": true
                             }
                         }
                     }
@@ -2991,22 +3588,73 @@
                                                 "userId": {
                                                     "description": "User ID",
                                                     "type": "string",
-                                                    "format": "uuid"
+                                                    "format": "uuid",
+                                                    "example": "9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b"
                                                 },
                                                 "preferences": {
-                                                    "description": "Updated preferences data",
+                                                    "description": "Updated preferences data (PreferencesResource with 6 fields)",
+                                                    "properties": {
+                                                        "theme": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "light",
+                                                                "dark"
+                                                            ],
+                                                            "example": "dark"
+                                                        },
+                                                        "language": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "es",
+                                                                "en"
+                                                            ],
+                                                            "example": "en"
+                                                        },
+                                                        "timezone": {
+                                                            "type": "string",
+                                                            "example": "America/New_York"
+                                                        },
+                                                        "pushWebNotifications": {
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        },
+                                                        "notificationsTickets": {
+                                                            "type": "boolean",
+                                                            "example": true
+                                                        },
+                                                        "updatedAt": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-11-01T16:20:15Z"
+                                                        }
+                                                    },
                                                     "type": "object"
                                                 },
                                                 "updatedAt": {
                                                     "description": "Last update timestamp",
                                                     "type": "string",
-                                                    "format": "date-time"
+                                                    "format": "date-time",
+                                                    "example": "2025-11-01T16:20:15Z"
                                                 }
                                             },
                                             "type": "object"
                                         }
                                     },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "data": {
+                                        "userId": "9d4e8c91-5f2a-4b3e-8a1f-2c3d4e5f6a7b",
+                                        "preferences": {
+                                            "theme": "dark",
+                                            "language": "en",
+                                            "timezone": "America/New_York",
+                                            "pushWebNotifications": false,
+                                            "notificationsTickets": true,
+                                            "updatedAt": "2025-11-01T16:20:15Z"
+                                        },
+                                        "updatedAt": "2025-11-01T16:20:15Z"
+                                    }
                                 }
                             }
                         }
@@ -3015,7 +3663,34 @@
                         "description": "Unauthorized"
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "theme": [
+                                                    "Theme must be either \"light\" or \"dark\""
+                                                ],
+                                                "language": [
+                                                    "Language must be either \"es\" or \"en\""
+                                                ],
+                                                "timezone": [
+                                                    "Invalid timezone"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -3291,7 +3966,7 @@
                     "Users"
                 ],
                 "summary": "Get authenticated user information",
-                "description": "Returns complete user info with profile, roles, companies, and statistics",
+                "description": "Returns complete user info with profile, roleContexts, and statistics",
                 "operationId": "get_current_user",
                 "responses": {
                     "200": {
@@ -3316,25 +3991,63 @@
                                                 "status": {
                                                     "type": "string",
                                                     "enum": [
-                                                        "active",
-                                                        "suspended",
-                                                        "deleted"
-                                                    ]
+                                                        "ACTIVE",
+                                                        "SUSPENDED",
+                                                        "DELETED"
+                                                    ],
+                                                    "example": "ACTIVE"
                                                 },
                                                 "emailVerified": {
-                                                    "type": "boolean"
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "authProvider": {
+                                                    "type": "string",
+                                                    "example": "google",
+                                                    "nullable": true
                                                 },
                                                 "profile": {
+                                                    "description": "ProfileResource with 12 fields",
                                                     "type": "object"
                                                 },
-                                                "roles": {
+                                                "roleContexts": {
+                                                    "description": "Array of role contexts",
                                                     "type": "array",
                                                     "items": {
                                                         "type": "object"
                                                     }
                                                 },
-                                                "statistics": {
-                                                    "type": "object"
+                                                "ticketsCount": {
+                                                    "type": "integer",
+                                                    "example": 42
+                                                },
+                                                "resolvedTicketsCount": {
+                                                    "type": "integer",
+                                                    "example": 38
+                                                },
+                                                "averageRating": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 4.5,
+                                                    "nullable": true
+                                                },
+                                                "lastLoginAt": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "lastActivityAt": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "nullable": true
+                                                },
+                                                "createdAt": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updatedAt": {
+                                                    "type": "string",
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "type": "object"
@@ -3500,6 +4213,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
+                                            "description": "Array of UserResource objects (15 fields each)",
                                             "type": "array",
                                             "items": {
                                                 "type": "object"
@@ -3508,16 +4222,41 @@
                                         "meta": {
                                             "properties": {
                                                 "total": {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "example": 156
                                                 },
                                                 "per_page": {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "example": 15
                                                 },
                                                 "current_page": {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "example": 1
                                                 },
                                                 "last_page": {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "example": 11
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -3548,7 +4287,7 @@
                     "Users"
                 ],
                 "summary": "Get specific user by ID",
-                "description": "Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only",
+                "description": "Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only, any user can view themselves",
                 "operationId": "show_user",
                 "parameters": [
                     {
@@ -3570,6 +4309,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
+                                            "description": "UserResource with 15 fields",
                                             "type": "object"
                                         }
                                     },
@@ -3790,6 +4530,10 @@
         {
             "name": "Company Followers",
             "description": "Company Followers"
+        },
+        {
+            "name": "Company Industries",
+            "description": "Company Industries"
         },
         {
             "name": "Company Requests - Admin",

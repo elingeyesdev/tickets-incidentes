@@ -9,7 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Propósito: Response de rechazo de solicitud de empresa
  * Entrada: Array con datos de rechazo (no un modelo Eloquent)
- * Campos: success, message, reason, notification_sent_to, request_code
+ * Campos: success, message, reason, notificationSentTo, requestCode
  * Uso: Transformar el resultado del Service después de rechazar una solicitud
  */
 class CompanyRejectionResource extends JsonResource
@@ -27,8 +27,8 @@ class CompanyRejectionResource extends JsonResource
                 'success' => $this->resource['success'] ?? true,
                 'message' => $this->resource['message'] ?? 'Solicitud rechazada exitosamente',
                 'reason' => $this->resource['reason'] ?? null,
-                'notification_sent_to' => $this->resource['notification_sent_to'] ?? null,
-                'request_code' => $this->resource['request_code'] ?? null,
+                'notificationSentTo' => $this->resource['notification_sent_to'] ?? null,
+                'requestCode' => $this->resource['request_code'] ?? null,
             ],
         ];
     }

@@ -44,7 +44,7 @@ class UserController extends Controller
     #[OA\Get(
         path: '/api/users/me',
         summary: 'Get authenticated user information',
-        description: 'Returns complete user info with profile, roles, companies, and statistics',
+        description: 'Returns complete user info with profile, roleContexts, and statistics',
         security: [['bearerAuth' => []]],
         tags: ['Users'],
         operationId: 'get_current_user',
@@ -62,11 +62,18 @@ class UserController extends Controller
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid'),
                                 new OA\Property(property: 'userCode', type: 'string'),
                                 new OA\Property(property: 'email', type: 'string', format: 'email'),
-                                new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended', 'deleted']),
-                                new OA\Property(property: 'emailVerified', type: 'boolean'),
-                                new OA\Property(property: 'profile', type: 'object'),
-                                new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'object')),
-                                new OA\Property(property: 'statistics', type: 'object'),
+                                new OA\Property(property: 'status', type: 'string', enum: ['ACTIVE', 'SUSPENDED', 'DELETED'], example: 'ACTIVE'),
+                                new OA\Property(property: 'emailVerified', type: 'boolean', example: true),
+                                new OA\Property(property: 'authProvider', type: 'string', nullable: true, example: 'google'),
+                                new OA\Property(property: 'profile', type: 'object', description: 'ProfileResource with 12 fields'),
+                                new OA\Property(property: 'roleContexts', type: 'array', items: new OA\Items(type: 'object'), description: 'Array of role contexts'),
+                                new OA\Property(property: 'ticketsCount', type: 'integer', example: 42),
+                                new OA\Property(property: 'resolvedTicketsCount', type: 'integer', example: 38),
+                                new OA\Property(property: 'averageRating', type: 'number', format: 'float', nullable: true, example: 4.5),
+                                new OA\Property(property: 'lastLoginAt', type: 'string', format: 'date-time', nullable: true),
+                                new OA\Property(property: 'lastActivityAt', type: 'string', format: 'date-time', nullable: true),
+                                new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
                             ]
                         )
                     ]
@@ -145,15 +152,25 @@ class UserController extends Controller
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object'), description: 'Array of UserResource objects (15 fields each)'),
                         new OA\Property(
                             property: 'meta',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'total', type: 'integer'),
-                                new OA\Property(property: 'per_page', type: 'integer'),
-                                new OA\Property(property: 'current_page', type: 'integer'),
-                                new OA\Property(property: 'last_page', type: 'integer'),
+                                new OA\Property(property: 'total', type: 'integer', example: 156),
+                                new OA\Property(property: 'per_page', type: 'integer', example: 15),
+                                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                new OA\Property(property: 'last_page', type: 'integer', example: 11),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', nullable: true),
+                                new OA\Property(property: 'last', type: 'string', nullable: true),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true),
+                                new OA\Property(property: 'next', type: 'string', nullable: true),
                             ]
                         )
                     ]
@@ -232,7 +249,7 @@ class UserController extends Controller
     #[OA\Get(
         path: '/api/users/{id}',
         summary: 'Get specific user by ID',
-        description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only',
+        description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only, any user can view themselves',
         security: [['bearerAuth' => []]],
         tags: ['Users'],
         operationId: 'show_user',
@@ -246,7 +263,7 @@ class UserController extends Controller
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', type: 'object', description: 'UserResource with 15 fields'),
                     ]
                 )
             ),

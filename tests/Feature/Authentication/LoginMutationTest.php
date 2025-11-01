@@ -1,9 +1,8 @@
 <?php
 
-namespace Tests\Feature\Authentication;
+namespace Authentication;
 
 use App\Features\UserManagement\Models\User;
-use App\Features\UserManagement\Models\UserProfile;
 use App\Shared\Enums\UserStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
