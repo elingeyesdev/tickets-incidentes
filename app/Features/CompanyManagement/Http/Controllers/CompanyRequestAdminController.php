@@ -48,104 +48,66 @@ class CompanyRequestAdminController extends Controller
     #[OA\Post(
         path: '/api/company-requests/{companyRequest}/approve',
         operationId: 'approve_company_request',
-        summary: 'Aprobar solicitud de empresa',
-        description: 'Aprueba una solicitud de empresa. Automáticamente: crea la empresa, crea usuario admin, asigna rol COMPANY_ADMIN, genera contraseña temporal (válida 7 días), envía email con credenciales',
+        summary: 'Approve company request',
+        description: 'Approves a company request. Automatically: creates company, creates admin user, assigns COMPANY_ADMIN role, generates temporary password (valid 7 days), sends email with credentials',
         security: [['bearerAuth' => []]],
-        tags: ['Company Requests - Admin']
-    )]
-    #[OA\Parameter(
-        name: 'companyRequest',
-        description: 'UUID de la solicitud de empresa',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string', format: 'uuid')
-    )]
-    #[OA\RequestBody(
-        required: false,
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'notes', type: 'string', description: 'Observaciones adicionales', nullable: true)
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Solicitud aprobada exitosamente',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                new OA\Property(property: 'status', type: 'string', example: 'APPROVED'),
-                new OA\Property(
-                    property: 'company',
+        tags: ['Company Requests - Admin'],
+        parameters: [
+            new OA\Parameter(
+                name: 'companyRequest',
+                description: 'Company request UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            description: 'Additional approval data (optional)',
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'notes', type: 'string', description: 'Additional notes', nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Request approved successfully',
+                content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                        new OA\Property(property: 'name', type: 'string'),
-                        new OA\Property(property: 'companyCode', type: 'string')
+                        new OA\Property(property: 'data', type: 'object', properties: [
+                            new OA\Property(property: 'success', type: 'boolean'),
+                            new OA\Property(property: 'message', type: 'string'),
+                            new OA\Property(
+                                property: 'company',
+                                type: 'object',
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                    new OA\Property(property: 'companyCode', type: 'string'),
+                                    new OA\Property(property: 'name', type: 'string'),
+                                    new OA\Property(property: 'legalName', type: 'string', nullable: true),
+                                    new OA\Property(property: 'status', type: 'string'),
+                                    new OA\Property(property: 'adminId', type: 'string', format: 'uuid'),
+                                    new OA\Property(property: 'adminEmail', type: 'string', format: 'email'),
+                                    new OA\Property(property: 'adminName', type: 'string'),
+                                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time')
+                                ]
+                            ),
+                            new OA\Property(property: 'newUserCreated', type: 'boolean'),
+                            new OA\Property(property: 'notificationSentTo', type: 'string', format: 'email')
+                        ])
                     ]
-                ),
-                new OA\Property(
-                    property: 'adminUser',
-                    type: 'object',
-                    properties: [
-                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                        new OA\Property(property: 'email', type: 'string', format: 'email'),
-                        new OA\Property(property: 'temporaryPassword', type: 'string', description: 'Contraseña temporal (solo si es usuario nuevo)')
-                    ]
-                ),
-                new OA\Property(property: 'approvedAt', type: 'string', format: 'date-time')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 401,
-        description: 'No autenticado',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 403,
-        description: 'Sin permisos - requiere rol PLATFORM_ADMIN',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'This action is unauthorized')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 404,
-        description: 'Solicitud no encontrada',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Company request not found')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 409,
-        description: 'Solicitud ya procesada',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Company request already processed')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 422,
-        description: 'Error de validación',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid'),
-                new OA\Property(
-                    property: 'errors',
-                    type: 'object',
-                    additionalProperties: new OA\AdditionalProperties(type: 'array', items: new OA\Items(type: 'string'))
                 )
-            ]
-        )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden - requires PLATFORM_ADMIN role'),
+            new OA\Response(response: 404, description: 'Request not found'),
+            new OA\Response(response: 409, description: 'Request already processed'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
     )]
     public function approve(
         CompanyRequest $companyRequest,
@@ -174,7 +136,7 @@ class CompanyRequestAdminController extends Controller
             'notification_sent_to' => $adminUser->email,
         ];
 
-        return new CompanyApprovalResource($data);
+        return (new CompanyApprovalResource($data))->response();
     }
 
     /**
@@ -197,89 +159,54 @@ class CompanyRequestAdminController extends Controller
     #[OA\Post(
         path: '/api/company-requests/{companyRequest}/reject',
         operationId: 'reject_company_request',
-        summary: 'Rechazar solicitud de empresa',
-        description: 'Rechaza una solicitud de empresa. Automáticamente: marca como REJECTED, envía email al solicitante con motivo del rechazo',
+        summary: 'Reject company request',
+        description: 'Rejects a company request. Automatically: marks as REJECTED, sends email to requester with rejection reason',
         security: [['bearerAuth' => []]],
-        tags: ['Company Requests - Admin']
-    )]
-    #[OA\Parameter(
-        name: 'companyRequest',
-        description: 'UUID de la solicitud de empresa',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string', format: 'uuid')
-    )]
-    #[OA\RequestBody(
-        required: true,
-        content: new OA\JsonContent(
-            required: ['reason'],
-            properties: [
-                new OA\Property(property: 'reason', type: 'string', description: 'Motivo del rechazo (requerido)'),
-                new OA\Property(property: 'notes', type: 'string', description: 'Observaciones adicionales', nullable: true)
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Solicitud rechazada exitosamente',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                new OA\Property(property: 'status', type: 'string', example: 'REJECTED'),
-                new OA\Property(property: 'rejectedAt', type: 'string', format: 'date-time'),
-                new OA\Property(property: 'reason', type: 'string', description: 'Motivo del rechazo')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 401,
-        description: 'No autenticado',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 403,
-        description: 'Sin permisos - requiere rol PLATFORM_ADMIN',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'This action is unauthorized')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 404,
-        description: 'Solicitud no encontrada',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Company request not found')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 409,
-        description: 'Solicitud ya procesada',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'Company request already processed')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 422,
-        description: 'Error de validación',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid'),
-                new OA\Property(
-                    property: 'errors',
+        tags: ['Company Requests - Admin'],
+        parameters: [
+            new OA\Parameter(
+                name: 'companyRequest',
+                description: 'Company request UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Rejection reason',
+            content: new OA\JsonContent(
+                type: 'object',
+                required: ['reason'],
+                properties: [
+                    new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason (required, minimum 3 characters)', minLength: 3),
+                    new OA\Property(property: 'notes', type: 'string', description: 'Additional notes', nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Request rejected successfully',
+                content: new OA\JsonContent(
                     type: 'object',
-                    additionalProperties: new OA\AdditionalProperties(type: 'array', items: new OA\Items(type: 'string'))
+                    properties: [
+                        new OA\Property(property: 'data', type: 'object', properties: [
+                            new OA\Property(property: 'success', type: 'boolean'),
+                            new OA\Property(property: 'message', type: 'string'),
+                            new OA\Property(property: 'reason', type: 'string', description: 'Rejection reason'),
+                            new OA\Property(property: 'notification_sent_to', type: 'string', format: 'email'),
+                            new OA\Property(property: 'request_code', type: 'string')
+                        ])
+                    ]
                 )
-            ]
-        )
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden - requires PLATFORM_ADMIN role'),
+            new OA\Response(response: 404, description: 'Request not found'),
+            new OA\Response(response: 409, description: 'Request already processed'),
+            new OA\Response(response: 422, description: 'Validation error - reason is required'),
+        ]
     )]
     public function reject(
         CompanyRequest $companyRequest,
@@ -306,6 +233,6 @@ class CompanyRequestAdminController extends Controller
             'request_code' => $requestCode,
         ];
 
-        return new CompanyRejectionResource($data);
+        return (new CompanyRejectionResource($data))->response();
     }
 }

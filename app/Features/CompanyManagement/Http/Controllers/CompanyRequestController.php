@@ -31,15 +31,15 @@ class CompanyRequestController extends Controller
     #[OA\Get(
         path: '/api/company-requests',
         operationId: 'list_company_requests',
-        summary: 'Listar solicitudes de empresas',
-        description: 'Retorna lista paginada de solicitudes de empresas. Requiere rol PLATFORM_ADMIN. Incluye eager loading de reviewer y createdCompany.',
+        summary: 'List company requests',
+        description: 'Returns paginated list of company requests. Requires PLATFORM_ADMIN role. Includes eager loading of reviewer and createdCompany.',
         tags: ['Company Requests'],
         parameters: [
             new OA\Parameter(
                 name: 'status',
                 in: 'query',
                 required: false,
-                description: 'Filtrar por estado de la solicitud',
+                description: 'Filter by request status',
                 schema: new OA\Schema(
                     type: 'string',
                     enum: ['PENDING', 'APPROVED', 'REJECTED']
@@ -49,35 +49,35 @@ class CompanyRequestController extends Controller
                 name: 'search',
                 in: 'query',
                 required: false,
-                description: 'Buscar por nombre de empresa',
+                description: 'Search by company name',
                 schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'sort',
                 in: 'query',
                 required: false,
-                description: 'Campo para ordenar',
+                description: 'Field to sort by',
                 schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'order',
                 in: 'query',
                 required: false,
-                description: 'Dirección de ordenamiento',
+                description: 'Sort direction',
                 schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])
             ),
             new OA\Parameter(
                 name: 'page',
                 in: 'query',
                 required: false,
-                description: 'Número de página',
+                description: 'Page number',
                 schema: new OA\Schema(type: 'integer', minimum: 1)
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Lista de solicitudes de empresas',
+                description: 'List of company requests',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -120,8 +120,8 @@ class CompanyRequestController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: 'Sin autenticación'),
-            new OA\Response(response: 403, description: 'Sin permisos - requiere rol PLATFORM_ADMIN'),
+            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(response: 403, description: 'Forbidden - requires PLATFORM_ADMIN role'),
         ],
         security: [['bearerAuth' => []]]
     )]
@@ -161,12 +161,12 @@ class CompanyRequestController extends Controller
     #[OA\Post(
         path: '/api/company-requests',
         operationId: 'create_company_request',
-        summary: 'Crear solicitud de empresa',
-        description: 'Endpoint público para crear solicitud de nueva empresa. Rate limit: 3 solicitudes por hora. Validación automática de email duplicado en solicitudes pendientes.',
+        summary: 'Create company request',
+        description: 'Public endpoint to create new company request. Rate limit: 3 requests per hour. Automatic validation of duplicate email in pending requests.',
         tags: ['Company Requests'],
         requestBody: new OA\RequestBody(
             required: true,
-            description: 'Datos de la solicitud de empresa',
+            description: 'Company request data',
             content: new OA\JsonContent(
                 type: 'object',
                 required: ['company_name', 'admin_email', 'business_description', 'industry_type'],
@@ -174,88 +174,100 @@ class CompanyRequestController extends Controller
                     new OA\Property(
                         property: 'company_name',
                         type: 'string',
-                        description: 'Nombre de la empresa',
+                        description: 'Company name (2-200 characters)',
                         minLength: 2,
-                        maxLength: 200
+                        maxLength: 200,
+                        example: 'TechCorp Solutions'
                     ),
                     new OA\Property(
                         property: 'legal_name',
                         type: 'string',
-                        description: 'Nombre legal de la empresa',
+                        description: 'Legal company name (2-200 characters)',
                         nullable: true,
                         minLength: 2,
-                        maxLength: 200
+                        maxLength: 200,
+                        example: 'TechCorp Solutions S.A.'
                     ),
                     new OA\Property(
                         property: 'admin_email',
                         type: 'string',
                         format: 'email',
-                        description: 'Email del administrador',
-                        maxLength: 255
+                        description: 'Administrator email (max 255 characters)',
+                        maxLength: 255,
+                        example: 'admin@techcorp.com'
                     ),
                     new OA\Property(
                         property: 'business_description',
                         type: 'string',
-                        description: 'Descripción del negocio',
+                        description: 'Business description (50-2000 characters)',
                         minLength: 50,
-                        maxLength: 2000
+                        maxLength: 2000,
+                        example: 'We are a leading technology solutions company with over 10 years of experience...'
                     ),
                     new OA\Property(
                         property: 'website',
                         type: 'string',
                         format: 'uri',
-                        description: 'Sitio web de la empresa',
+                        description: 'Company website (max 255 characters)',
                         nullable: true,
-                        maxLength: 255
+                        maxLength: 255,
+                        example: 'https://techcorp.com'
                     ),
                     new OA\Property(
                         property: 'industry_type',
                         type: 'string',
-                        description: 'Tipo de industria',
-                        maxLength: 100
+                        description: 'Industry type (max 100 characters)',
+                        maxLength: 100,
+                        example: 'Technology / Software'
                     ),
                     new OA\Property(
                         property: 'estimated_users',
                         type: 'integer',
-                        description: 'Número estimado de usuarios',
+                        description: 'Estimated number of users (1-10000)',
                         nullable: true,
                         minimum: 1,
-                        maximum: 10000
+                        maximum: 10000,
+                        example: 500
                     ),
                     new OA\Property(
                         property: 'contact_address',
                         type: 'string',
-                        description: 'Dirección de contacto',
+                        description: 'Contact address (max 255 characters)',
                         nullable: true,
-                        maxLength: 255
+                        maxLength: 255,
+                        example: 'Main Avenue 123'
                     ),
                     new OA\Property(
                         property: 'contact_city',
                         type: 'string',
-                        description: 'Ciudad',
+                        description: 'City (max 100 characters)',
                         nullable: true,
-                        maxLength: 100
+                        maxLength: 100,
+                        example: 'Santiago'
                     ),
                     new OA\Property(
                         property: 'contact_country',
                         type: 'string',
-                        description: 'País',
+                        description: 'Country (max 100 characters)',
                         nullable: true,
-                        maxLength: 100
+                        maxLength: 100,
+                        example: 'Chile'
                     ),
                     new OA\Property(
                         property: 'contact_postal_code',
                         type: 'string',
-                        description: 'Código postal',
+                        description: 'Postal code (max 20 characters)',
                         nullable: true,
-                        maxLength: 20
+                        maxLength: 20,
+                        example: '8340000'
                     ),
                     new OA\Property(
                         property: 'tax_id',
                         type: 'string',
-                        description: 'Identificador fiscal',
+                        description: 'Tax ID - RUT/NIT (max 50 characters)',
                         nullable: true,
-                        maxLength: 50
+                        maxLength: 50,
+                        example: '12.345.678-9'
                     ),
                 ]
             )
@@ -263,7 +275,7 @@ class CompanyRequestController extends Controller
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Solicitud de empresa creada exitosamente',
+                description: 'Company request created successfully',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -276,8 +288,8 @@ class CompanyRequestController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 422, description: 'Error de validación - datos inválidos o email duplicado'),
-            new OA\Response(response: 429, description: 'Rate limit excedido - máximo 3 solicitudes por hora'),
+            new OA\Response(response: 422, description: 'Validation error - invalid data or duplicate email'),
+            new OA\Response(response: 429, description: 'Rate limit exceeded - maximum 3 requests per hour'),
         ]
     )]
     public function store(StoreCompanyRequestRequest $request, CompanyRequestService $requestService): JsonResponse

@@ -23,15 +23,14 @@ class RoleController extends Controller
 
     /**
      * Get all available roles
-     *
-     * @return JsonResponse
      */
     #[OA\Get(
         path: '/api/roles',
+        operationId: 'list_roles',
         summary: 'Get all available roles',
         description: 'Returns list of all available roles in the system. Only PLATFORM_ADMIN or COMPANY_ADMIN can view roles',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Roles'],
+        tags: ['Roles'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -49,6 +48,7 @@ class RoleController extends Controller
                                     new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN']),
                                     new OA\Property(property: 'name', type: 'string'),
                                     new OA\Property(property: 'description', type: 'string'),
+                                    new OA\Property(property: 'requiresCompany', type: 'boolean'),
                                 ]
                             )
                         )
@@ -78,29 +78,27 @@ class RoleController extends Controller
     }
 
     /**
-     * Assign a role to a user
-     *
-     * @param AssignRoleRequest $request
-     * @param string $userId
-     * @return JsonResponse
+     * Assign a role to a user. Throttled: 100 requests/hour per authenticated user.
      */
     #[OA\Post(
         path: '/api/users/{userId}/roles',
+        operationId: 'assign_role_to_user',
         summary: 'Assign a role to a user',
-        description: 'Assign a role to a user with optional company context. Only PLATFORM_ADMIN or COMPANY_ADMIN can assign roles. Returns 200 if role was reactivated, 201 if newly assigned',
+        description: 'Assign a role to a user with optional company context. Only PLATFORM_ADMIN or COMPANY_ADMIN can assign roles. Returns 200 if role was reactivated, 201 if newly assigned. Throttled: 100 requests/hour per authenticated user. Reactivates revoked roles if applicable.',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Roles'],
+        tags: ['Roles'],
         parameters: [
             new OA\Parameter(name: 'userId', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
+            description: 'Role assignment data',
             content: new OA\JsonContent(
                 type: 'object',
                 required: ['roleCode'],
                 properties: [
-                    new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN']),
-                    new OA\Property(property: 'companyId', type: 'string', format: 'uuid', nullable: true, description: 'Required for COMPANY_ADMIN and AGENT roles'),
+                    new OA\Property(property: 'roleCode', type: 'string', enum: ['PLATFORM_ADMIN', 'COMPANY_ADMIN', 'AGENT', 'USER'], description: 'Role code to assign'),
+                    new OA\Property(property: 'companyId', type: 'string', format: 'uuid', nullable: true, description: 'Required if roleCode is COMPANY_ADMIN or AGENT'),
                 ]
             )
         ),
@@ -129,9 +127,10 @@ class RoleController extends Controller
                     ]
                 )
             ),
+            new OA\Response(response: 400, description: 'Validation failed'),
             new OA\Response(response: 401, description: 'Unauthorized'),
             new OA\Response(response: 403, description: 'Insufficient permissions'),
-            new OA\Response(response: 404, description: 'User or role not found'),
+            new OA\Response(response: 404, description: 'User not found'),
             new OA\Response(response: 422, description: 'Validation error'),
         ]
     )]
@@ -173,22 +172,28 @@ class RoleController extends Controller
     }
 
     /**
-     * Remove a role from a user
-     *
-     * @param Request $request
-     * @param string $roleId
-     * @return JsonResponse
+     * Remove a role from a user (soft delete)
      */
     #[OA\Delete(
         path: '/api/users/roles/{roleId}',
+        operationId: 'remove_role_from_user',
         summary: 'Remove a role from a user',
         description: 'Deactivate a role assignment (soft delete). Only PLATFORM_ADMIN or COMPANY_ADMIN can remove roles. COMPANY_ADMIN can only remove roles from their own company',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Roles'],
+        tags: ['Roles'],
         parameters: [
             new OA\Parameter(name: 'roleId', in: 'path', required: true, description: 'UserRole UUID (not Role UUID)', schema: new OA\Schema(type: 'string', format: 'uuid')),
-            new OA\Parameter(name: 'reason', in: 'query', description: 'Optional reason for removal', schema: new OA\Schema(type: 'string')),
         ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            description: 'Optional revocation details',
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'reason', type: 'string', description: 'Reason for removal (max 500 chars)', nullable: true),
+                ]
+            )
+        ),
         responses: [
             new OA\Response(
                 response: 200,
@@ -203,7 +208,8 @@ class RoleController extends Controller
             ),
             new OA\Response(response: 401, description: 'Unauthorized'),
             new OA\Response(response: 403, description: 'Insufficient permissions'),
-            new OA\Response(response: 404, description: 'Role not found'),
+            new OA\Response(response: 404, description: 'Role assignment not found'),
+            new OA\Response(response: 422, description: 'Validation error'),
         ]
     )]
     public function remove(Request $request, string $roleId): JsonResponse

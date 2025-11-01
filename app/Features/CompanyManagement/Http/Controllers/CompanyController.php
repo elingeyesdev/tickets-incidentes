@@ -39,29 +39,36 @@ class CompanyController extends Controller
     #[OA\Get(
         path: '/api/companies/minimal',
         operationId: 'list_companies_minimal',
-        summary: 'Lista mínima de empresas para selectores',
-        description: 'Retorna un listado paginado de empresas activas con información mínima (id, código, nombre, logo). Endpoint público sin autenticación.',
+        summary: 'List minimal companies for selectors',
+        description: 'Returns a paginated list of active companies with minimal information (id, code, name, logo). Public endpoint without authentication required.',
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'search',
                 in: 'query',
-                description: 'Filtrar empresas por nombre (búsqueda case-insensitive)',
+                description: 'Filter companies by name (case-insensitive search)',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'Acme')
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
-                description: 'Número de items por página',
+                description: 'Number of items per page',
                 required: false,
                 schema: new OA\Schema(type: 'integer', example: 50)
+            ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Listado de empresas minimalistas con paginación',
+                description: 'Minimal company list with pagination',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -140,58 +147,65 @@ class CompanyController extends Controller
     #[OA\Get(
         path: '/api/companies/explore',
         operationId: 'explore_companies',
-        summary: 'Explorar empresas con filtros',
-        description: 'Retorna listado paginado de empresas con información extendida para exploración. Incluye indicadores de seguimiento del usuario autenticado. Requiere autenticación JWT.',
+        summary: 'Explore companies with filters',
+        description: 'Returns paginated list of companies with extended information for exploration. Includes follow indicators specific to authenticated user. Requires JWT authentication.',
         security: [['bearerAuth' => []]],
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'search',
                 in: 'query',
-                description: 'Buscar empresas por nombre',
+                description: 'Search companies by name',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'Tech')
             ),
             new OA\Parameter(
                 name: 'country',
                 in: 'query',
-                description: 'Filtrar por país',
+                description: 'Filter by country',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'Chile')
             ),
             new OA\Parameter(
                 name: 'followed_by_me',
                 in: 'query',
-                description: 'Mostrar solo empresas seguidas por el usuario',
+                description: 'Show only companies followed by the user',
                 required: false,
                 schema: new OA\Schema(type: 'boolean', example: false)
             ),
             new OA\Parameter(
                 name: 'sort_by',
                 in: 'query',
-                description: 'Campo para ordenar resultados',
+                description: 'Field to sort results by',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'name')
             ),
             new OA\Parameter(
                 name: 'sort_direction',
                 in: 'query',
-                description: 'Dirección del ordenamiento',
+                description: 'Sort direction',
                 required: false,
                 schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'asc')
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
-                description: 'Número de items por página',
+                description: 'Number of items per page',
                 required: false,
                 schema: new OA\Schema(type: 'integer', example: 20)
+            ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Listado de empresas con información extendida',
+                description: 'Company list with extended information',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -237,7 +251,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 401,
-                description: 'No autenticado (token JWT inválido o ausente)',
+                description: 'Unauthenticated (invalid or missing JWT token)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -326,51 +340,58 @@ class CompanyController extends Controller
     #[OA\Get(
         path: '/api/companies',
         operationId: 'list_companies',
-        summary: 'Listar todas las empresas (admin)',
-        description: 'Retorna listado completo de empresas con toda la información y campos calculados. Requiere rol HELPDESK_ADMIN o COMPANY_ADMIN. Los COMPANY_ADMIN solo ven su propia empresa.',
+        summary: 'List all companies (admin)',
+        description: 'Returns complete company list with all information and calculated fields. Requires HELPDESK_ADMIN or COMPANY_ADMIN role. COMPANY_ADMIN users can only see their own company.',
         security: [['bearerAuth' => []]],
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'search',
                 in: 'query',
-                description: 'Buscar empresas por nombre',
+                description: 'Search companies by name',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'Tech')
             ),
             new OA\Parameter(
                 name: 'status',
                 in: 'query',
-                description: 'Filtrar por estado de la empresa',
+                description: 'Filter by company status',
                 required: false,
                 schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'inactive'], example: 'active')
             ),
             new OA\Parameter(
                 name: 'sort_by',
                 in: 'query',
-                description: 'Campo para ordenar resultados',
+                description: 'Field to sort results by',
                 required: false,
                 schema: new OA\Schema(type: 'string', example: 'created_at')
             ),
             new OA\Parameter(
                 name: 'sort_direction',
                 in: 'query',
-                description: 'Dirección del ordenamiento',
+                description: 'Sort direction',
                 required: false,
                 schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], example: 'desc')
             ),
             new OA\Parameter(
                 name: 'per_page',
                 in: 'query',
-                description: 'Número de items por página',
+                description: 'Number of items per page',
                 required: false,
                 schema: new OA\Schema(type: 'integer', example: 20)
+            ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', example: 1, minimum: 1)
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Listado completo de empresas con información administrativa',
+                description: 'Complete company list with administrative information',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -417,7 +438,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 401,
-                description: 'No autenticado (token JWT inválido o ausente)',
+                description: 'Unauthenticated (invalid or missing JWT token)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -427,7 +448,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 403,
-                description: 'Sin permisos (requiere rol de administrador)',
+                description: 'Forbidden (requires administrator role)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -511,15 +532,15 @@ class CompanyController extends Controller
     #[OA\Get(
         path: '/api/companies/{company}',
         operationId: 'show_company',
-        summary: 'Ver detalle completo de una empresa',
-        description: 'Retorna toda la información de una empresa específica incluyendo campos calculados, admin info y estado de seguimiento del usuario. Requiere autenticación y permisos de acceso.',
+        summary: 'View complete company details',
+        description: 'Returns all information about a specific company including calculated fields, admin info, and user follow status. Requires authentication and access permissions.',
         security: [['bearerAuth' => []]],
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'company',
                 in: 'path',
-                description: 'ID o UUID de la empresa',
+                description: 'Company ID or UUID',
                 required: true,
                 schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
             ),
@@ -527,7 +548,7 @@ class CompanyController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Detalle completo de la empresa',
+                description: 'Complete company details',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -552,7 +573,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 401,
-                description: 'No autenticado (token JWT inválido o ausente)',
+                description: 'Unauthenticated (invalid or missing JWT token)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -562,7 +583,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 403,
-                description: 'Sin permisos para ver esta empresa',
+                description: 'Forbidden (no permission to view this company)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -572,7 +593,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 404,
-                description: 'Empresa no encontrada',
+                description: 'Company not found',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -622,39 +643,40 @@ class CompanyController extends Controller
     #[OA\Post(
         path: '/api/companies',
         operationId: 'create_company',
-        summary: 'Crear nueva empresa',
-        description: 'Crea una nueva empresa directamente sin proceso de solicitud. Solo disponible para usuarios con rol PLATFORM_ADMIN. Asigna automáticamente el rol COMPANY_ADMIN al usuario designado como administrador.',
+        summary: 'Create new company',
+        description: 'Creates a new company directly without request process. Only available for users with PLATFORM_ADMIN role. Automatically assigns COMPANY_ADMIN role to the designated administrator user.',
         security: [['bearerAuth' => []]],
         tags: ['Companies'],
         requestBody: new OA\RequestBody(
             required: true,
-            description: 'Datos de la nueva empresa',
+            description: 'New company data',
             content: new OA\JsonContent(
+                type: 'object',
                 required: ['name', 'legal_name', 'support_email', 'admin_user_id'],
                 properties: [
-                    new OA\Property(property: 'name', type: 'string', description: 'Nombre comercial de la empresa', example: 'Acme Corporation'),
-                    new OA\Property(property: 'legal_name', type: 'string', description: 'Razón social legal', example: 'Acme Corp S.A.'),
-                    new OA\Property(property: 'support_email', type: 'string', format: 'email', description: 'Email de soporte', example: 'support@acme.com'),
-                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Teléfono de contacto', example: '+56912345678'),
-                    new OA\Property(property: 'website', type: 'string', nullable: true, description: 'Sitio web', example: 'https://acme.com'),
-                    new OA\Property(property: 'admin_user_id', type: 'string', format: 'uuid', description: 'ID del usuario que será administrador de la empresa'),
-                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Dirección física'),
-                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'Ciudad'),
-                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'Estado/Región'),
-                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'País'),
-                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Código postal'),
-                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'RUT/NIT/Tax ID'),
-                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Representante legal'),
-                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Horario de atención (JSONB)'),
-                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Zona horaria', example: 'America/Santiago'),
-                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Configuraciones adicionales (JSONB)'),
+                    new OA\Property(property: 'name', type: 'string', description: 'Company trade name', minLength: 2, maxLength: 255, example: 'Acme Corporation'),
+                    new OA\Property(property: 'legal_name', type: 'string', description: 'Legal company name', minLength: 2, maxLength: 255, example: 'Acme Corp S.A.'),
+                    new OA\Property(property: 'support_email', type: 'string', format: 'email', description: 'Support email address', maxLength: 255, example: 'support@acme.com'),
+                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Contact phone number', maxLength: 20, example: '+56912345678'),
+                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, description: 'Company website', maxLength: 255, example: 'https://acme.com'),
+                    new OA\Property(property: 'admin_user_id', type: 'string', format: 'uuid', description: 'User ID who will be the company administrator (required)'),
+                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Physical address', maxLength: 255),
+                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'City', maxLength: 100),
+                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'State/Region', maxLength: 100),
+                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'Country', maxLength: 100),
+                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Postal code', maxLength: 20),
+                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'Tax ID (RUT/NIT)', maxLength: 50),
+                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Legal representative name', maxLength: 255),
+                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Business hours (JSONB)', example: ['monday' => ['open' => '09:00', 'close' => '18:00']]),
+                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone (e.g., America/Santiago)', example: 'America/Santiago'),
+                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Additional settings (JSONB)'),
                 ]
             )
         ),
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Empresa creada exitosamente',
+                description: 'Company created successfully',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -669,7 +691,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 401,
-                description: 'No autenticado',
+                description: 'Unauthenticated',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -679,7 +701,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 403,
-                description: 'Sin permisos (requiere rol PLATFORM_ADMIN)',
+                description: 'Forbidden (requires PLATFORM_ADMIN role)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -689,7 +711,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 422,
-                description: 'Error de validación',
+                description: 'Validation error',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -756,50 +778,51 @@ class CompanyController extends Controller
     #[OA\Patch(
         path: '/api/companies/{company}',
         operationId: 'update_company',
-        summary: 'Actualizar empresa',
-        description: 'Actualiza la información de una empresa existente. Requiere ser PLATFORM_ADMIN o COMPANY_ADMIN propietario de la empresa. Todos los campos son opcionales.',
+        summary: 'Update company',
+        description: 'Updates information of an existing company. Requires being PLATFORM_ADMIN or COMPANY_ADMIN owner of the company. All fields are optional.',
         security: [['bearerAuth' => []]],
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'company',
                 in: 'path',
-                description: 'ID o UUID de la empresa a actualizar',
+                description: 'Company ID or UUID to update',
                 required: true,
                 schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
             ),
         ],
         requestBody: new OA\RequestBody(
             required: true,
-            description: 'Datos a actualizar (todos los campos son opcionales)',
+            description: 'Data to update (all fields are optional)',
             content: new OA\JsonContent(
+                type: 'object',
                 properties: [
-                    new OA\Property(property: 'name', type: 'string', nullable: true, description: 'Nombre comercial'),
-                    new OA\Property(property: 'legal_name', type: 'string', nullable: true, description: 'Razón social'),
-                    new OA\Property(property: 'support_email', type: 'string', format: 'email', nullable: true, description: 'Email de soporte'),
-                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Teléfono'),
-                    new OA\Property(property: 'website', type: 'string', nullable: true, description: 'Sitio web'),
-                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Dirección'),
-                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'Ciudad'),
-                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'Estado/Región'),
-                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'País'),
-                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Código postal'),
-                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'RUT/NIT/Tax ID'),
-                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Representante legal'),
-                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Horario de atención'),
-                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Zona horaria'),
-                    new OA\Property(property: 'logo_url', type: 'string', nullable: true, description: 'URL del logo'),
-                    new OA\Property(property: 'favicon_url', type: 'string', nullable: true, description: 'URL del favicon'),
-                    new OA\Property(property: 'primary_color', type: 'string', nullable: true, description: 'Color primario (hex)', example: '#FF5733'),
-                    new OA\Property(property: 'secondary_color', type: 'string', nullable: true, description: 'Color secundario (hex)', example: '#33FF57'),
-                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Configuraciones adicionales'),
+                    new OA\Property(property: 'name', type: 'string', nullable: true, description: 'Trade name (2-255 characters)', minLength: 2, maxLength: 255),
+                    new OA\Property(property: 'legal_name', type: 'string', nullable: true, description: 'Legal name (2-255 characters)', minLength: 2, maxLength: 255),
+                    new OA\Property(property: 'support_email', type: 'string', format: 'email', nullable: true, description: 'Support email (max 255 characters)', maxLength: 255),
+                    new OA\Property(property: 'phone', type: 'string', nullable: true, description: 'Phone number (max 20 characters)', maxLength: 20),
+                    new OA\Property(property: 'website', type: 'string', format: 'uri', nullable: true, description: 'Website URL (max 255 characters)', maxLength: 255),
+                    new OA\Property(property: 'contact_address', type: 'string', nullable: true, description: 'Address (max 255 characters)', maxLength: 255),
+                    new OA\Property(property: 'contact_city', type: 'string', nullable: true, description: 'City (max 100 characters)', maxLength: 100),
+                    new OA\Property(property: 'contact_state', type: 'string', nullable: true, description: 'State/Region (max 100 characters)', maxLength: 100),
+                    new OA\Property(property: 'contact_country', type: 'string', nullable: true, description: 'Country (max 100 characters)', maxLength: 100),
+                    new OA\Property(property: 'contact_postal_code', type: 'string', nullable: true, description: 'Postal code (max 20 characters)', maxLength: 20),
+                    new OA\Property(property: 'tax_id', type: 'string', nullable: true, description: 'Tax ID (RUT/NIT, max 50 characters)', maxLength: 50),
+                    new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Legal representative (max 255 characters)', maxLength: 255),
+                    new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Business hours (JSONB)'),
+                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone (e.g., America/Santiago)'),
+                    new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true, description: 'Logo URL', maxLength: 255),
+                    new OA\Property(property: 'favicon_url', type: 'string', format: 'uri', nullable: true, description: 'Favicon URL', maxLength: 255),
+                    new OA\Property(property: 'primary_color', type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true, description: 'Primary color in hexadecimal format', example: '#FF5733'),
+                    new OA\Property(property: 'secondary_color', type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true, description: 'Secondary color in hexadecimal format', example: '#33FF57'),
+                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Additional settings (JSONB)'),
                 ]
             )
         ),
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Empresa actualizada exitosamente',
+                description: 'Company updated successfully',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -828,7 +851,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 403,
-                description: 'Sin permisos para actualizar esta empresa',
+                description: 'Forbidden (no permission to update this company)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -838,7 +861,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 404,
-                description: 'Empresa no encontrada',
+                description: 'Company not found',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
@@ -848,7 +871,7 @@ class CompanyController extends Controller
             ),
             new OA\Response(
                 response: 422,
-                description: 'Error de validación',
+                description: 'Validation error',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [

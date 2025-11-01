@@ -27,16 +27,14 @@ class ProfileController
 
     /**
      * Get authenticated user's profile.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     #[OA\Get(
         path: '/api/users/me/profile',
+        operationId: 'get_my_profile',
         summary: 'Get authenticated user profile',
-        description: 'Retrieve the profile information of the currently authenticated user',
+        description: 'Retrieve the complete profile information of the currently authenticated user',
+        tags: ['User Profile'],
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Profile'],
         responses: [
             new OA\Response(
                 response: 200,
@@ -48,12 +46,15 @@ class ProfileController
                             property: 'data',
                             type: 'object',
                             properties: [
-                                new OA\Property(property: 'firstName', type: 'string'),
-                                new OA\Property(property: 'lastName', type: 'string'),
-                                new OA\Property(property: 'phoneNumber', type: 'string', nullable: true),
-                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true),
-                                new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true),
-                                new OA\Property(property: 'bio', type: 'string', nullable: true),
+                                new OA\Property(property: 'firstName', type: 'string', description: 'User first name'),
+                                new OA\Property(property: 'lastName', type: 'string', description: 'User last name'),
+                                new OA\Property(property: 'phoneNumber', type: 'string', nullable: true, description: 'Phone number (E.164 format)'),
+                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, description: 'Avatar image URL'),
+                                new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true, description: 'Birth date'),
+                                new OA\Property(property: 'bio', type: 'string', nullable: true, description: 'Biography'),
+                                new OA\Property(property: 'theme', type: 'string', nullable: true, description: 'UI theme preference'),
+                                new OA\Property(property: 'language', type: 'string', nullable: true, description: 'Language preference'),
+                                new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone'),
                             ]
                         )
                     ]
@@ -72,28 +73,28 @@ class ProfileController
     }
 
     /**
-     * Update authenticated user's profile.
-     *
-     * @param UpdateProfileRequest $request
-     * @return JsonResponse
+     * Update authenticated user's profile. Throttled: 30 requests/hour.
      */
     #[OA\Patch(
         path: '/api/users/me/profile',
+        operationId: 'update_my_profile',
         summary: 'Update authenticated user profile',
-        description: 'Update profile information for the currently authenticated user',
+        description: 'Update profile information for the currently authenticated user. Throttled: 30 requests/hour. All fields are optional.',
+        tags: ['User Profile'],
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Profile'],
         requestBody: new OA\RequestBody(
-            required: true,
+            required: false,
+            description: 'Profile fields to update. All fields are optional.',
             content: new OA\JsonContent(
                 type: 'object',
                 properties: [
-                    new OA\Property(property: 'firstName', type: 'string', maxLength: 255, nullable: true),
-                    new OA\Property(property: 'lastName', type: 'string', maxLength: 255, nullable: true),
-                    new OA\Property(property: 'phoneNumber', type: 'string', maxLength: 20, nullable: true),
-                    new OA\Property(property: 'avatarUrl', type: 'string', format: 'url', maxLength: 500, nullable: true),
-                    new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true),
-                    new OA\Property(property: 'bio', type: 'string', maxLength: 1000, nullable: true),
+                    new OA\Property(property: 'firstName', type: 'string', maxLength: 255, nullable: true, description: 'User first name'),
+                    new OA\Property(property: 'lastName', type: 'string', maxLength: 255, nullable: true, description: 'User last name'),
+                    new OA\Property(property: 'phoneNumber', type: 'string', maxLength: 20, nullable: true, description: 'Phone number (E.164 format)'),
+                    new OA\Property(property: 'avatar', type: 'string', nullable: true, description: 'Avatar URL or file path'),
+                    new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone identifier'),
+                    new OA\Property(property: 'birthDate', type: 'string', format: 'date', nullable: true, description: 'Birth date'),
+                    new OA\Property(property: 'bio', type: 'string', maxLength: 1000, nullable: true, description: 'User biography'),
                 ]
             )
         ),
@@ -104,9 +105,15 @@ class ProfileController
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'userId', type: 'string', format: 'uuid'),
-                        new OA\Property(property: 'profile', type: 'object'),
-                        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID'),
+                                new OA\Property(property: 'profile', type: 'object', description: 'Updated profile data'),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp'),
+                            ]
+                        )
                     ]
                 )
             ),
@@ -139,34 +146,52 @@ class ProfileController
     }
 
     /**
-     * Update authenticated user's preferences.
-     *
-     * @param UpdatePreferencesRequest $request
-     * @return JsonResponse
+     * Update authenticated user's preferences. Throttled: 50 requests/hour.
      */
     #[OA\Patch(
         path: '/api/users/me/preferences',
+        operationId: 'update_my_preferences',
         summary: 'Update authenticated user preferences',
-        description: 'Update preferences for the currently authenticated user',
+        description: 'Update preferences for the currently authenticated user. Throttled: 50 requests/hour. All fields are optional.',
+        tags: ['User Profile'],
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Profile'],
         requestBody: new OA\RequestBody(
-            required: true,
+            required: false,
+            description: 'Preference fields to update. All fields are optional.',
             content: new OA\JsonContent(
                 type: 'object',
                 properties: [
-                    new OA\Property(property: 'language', type: 'string', enum: ['en', 'es', 'fr'], nullable: true),
-                    new OA\Property(property: 'timezone', type: 'string', maxLength: 50, nullable: true),
-                    new OA\Property(property: 'theme', type: 'string', enum: ['light', 'dark', 'auto'], nullable: true),
                     new OA\Property(
-                        property: 'notificationSettings',
-                        type: 'object',
+                        property: 'theme',
+                        type: 'string',
+                        enum: ['light', 'dark'],
                         nullable: true,
-                        properties: [
-                            new OA\Property(property: 'emailNotifications', type: 'boolean'),
-                            new OA\Property(property: 'pushNotifications', type: 'boolean'),
-                            new OA\Property(property: 'smsNotifications', type: 'boolean'),
-                        ]
+                        description: 'UI theme preference'
+                    ),
+                    new OA\Property(
+                        property: 'language',
+                        type: 'string',
+                        enum: ['en', 'es', 'fr', 'de'],
+                        nullable: true,
+                        description: 'Language preference (ISO 639-1)'
+                    ),
+                    new OA\Property(
+                        property: 'pushNotifications',
+                        type: 'boolean',
+                        nullable: true,
+                        description: 'Enable push notifications'
+                    ),
+                    new OA\Property(
+                        property: 'emailNotifications',
+                        type: 'boolean',
+                        nullable: true,
+                        description: 'Enable email notifications'
+                    ),
+                    new OA\Property(
+                        property: 'weeklyDigest',
+                        type: 'boolean',
+                        nullable: true,
+                        description: 'Enable weekly digest emails'
                     ),
                 ]
             )
@@ -178,9 +203,15 @@ class ProfileController
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'userId', type: 'string', format: 'uuid'),
-                        new OA\Property(property: 'preferences', type: 'object'),
-                        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'userId', type: 'string', format: 'uuid', description: 'User ID'),
+                                new OA\Property(property: 'preferences', type: 'object', description: 'Updated preferences data'),
+                                new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time', description: 'Last update timestamp'),
+                            ]
+                        )
                     ]
                 )
             ),

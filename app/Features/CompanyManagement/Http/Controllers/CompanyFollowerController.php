@@ -34,7 +34,7 @@ class CompanyFollowerController extends Controller
     #[OA\Get(
         path: '/api/companies/followed',
         operationId: 'list_followed_companies',
-        summary: 'List companies followed by user',
+        summary: 'List companies followed by authenticated user',
         description: 'Returns all companies that the authenticated user is following, ordered by most recent follow first. Includes company details and user-specific metrics like ticket count.',
         tags: ['Company Followers'],
         parameters: [
@@ -72,16 +72,15 @@ class CompanyFollowerController extends Controller
                                         type: 'object',
                                         properties: [
                                             new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                            new OA\Property(property: 'company_code', type: 'string'),
+                                            new OA\Property(property: 'companyCode', type: 'string'),
                                             new OA\Property(property: 'name', type: 'string'),
-                                            new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
-                                            new OA\Property(property: 'status', type: 'string'),
+                                            new OA\Property(property: 'logoUrl', type: 'string', format: 'uri', nullable: true),
                                         ]
                                     ),
-                                    new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
-                                    new OA\Property(property: 'my_tickets_count', type: 'integer'),
-                                    new OA\Property(property: 'last_ticket_created_at', type: 'string', format: 'date-time', nullable: true),
-                                    new OA\Property(property: 'has_unread_announcements', type: 'boolean'),
+                                    new OA\Property(property: 'followedAt', type: 'string', format: 'date-time'),
+                                    new OA\Property(property: 'myTicketsCount', type: 'integer'),
+                                    new OA\Property(property: 'lastTicketCreatedAt', type: 'string', format: 'date-time', nullable: true),
+                                    new OA\Property(property: 'hasUnreadAnnouncements', type: 'boolean'),
                                 ]
                             )
                         ),
@@ -188,14 +187,12 @@ class CompanyFollowerController extends Controller
                             type: 'object',
                             properties: [
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                new OA\Property(property: 'company_code', type: 'string'),
+                                new OA\Property(property: 'companyCode', type: 'string'),
                                 new OA\Property(property: 'name', type: 'string'),
-                                new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
+                                new OA\Property(property: 'logoUrl', type: 'string', format: 'uri', nullable: true),
                             ]
                         ),
-                        new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
-                        new OA\Property(property: 'isFollowing', type: 'boolean'),
-                        new OA\Property(property: 'followersCount', type: 'integer'),
+                        new OA\Property(property: 'followedAt', type: 'string', format: 'date-time'),
                     ]
                 )
             ),
@@ -212,14 +209,12 @@ class CompanyFollowerController extends Controller
                             type: 'object',
                             properties: [
                                 new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                new OA\Property(property: 'company_code', type: 'string'),
+                                new OA\Property(property: 'companyCode', type: 'string'),
                                 new OA\Property(property: 'name', type: 'string'),
-                                new OA\Property(property: 'logo_url', type: 'string', format: 'uri', nullable: true),
+                                new OA\Property(property: 'logoUrl', type: 'string', format: 'uri', nullable: true),
                             ]
                         ),
-                        new OA\Property(property: 'followed_at', type: 'string', format: 'date-time'),
-                        new OA\Property(property: 'isFollowing', type: 'boolean'),
-                        new OA\Property(property: 'followersCount', type: 'integer'),
+                        new OA\Property(property: 'followedAt', type: 'string', format: 'date-time'),
                     ]
                 )
             ),
@@ -243,7 +238,7 @@ class CompanyFollowerController extends Controller
             'followed_at' => $follower->followed_at,
         ];
 
-        return new CompanyFollowResource($data);
+        return (new CompanyFollowResource($data))->response();
     }
 
     /**
@@ -273,8 +268,6 @@ class CompanyFollowerController extends Controller
                     properties: [
                         new OA\Property(property: 'success', type: 'boolean'),
                         new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'isFollowing', type: 'boolean'),
-                        new OA\Property(property: 'followersCount', type: 'integer'),
                     ]
                 )
             ),
@@ -295,6 +288,6 @@ class CompanyFollowerController extends Controller
             'message' => "Dejaste de seguir a {$company->name}.",
         ];
 
-        return new CompanyFollowResource($data);
+        return (new CompanyFollowResource($data))->response();
     }
 }

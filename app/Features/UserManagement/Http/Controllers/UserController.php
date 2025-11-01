@@ -46,7 +46,8 @@ class UserController extends Controller
         summary: 'Get authenticated user information',
         description: 'Returns complete user info with profile, roles, companies, and statistics',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Users'],
+        tags: ['Users'],
+        operationId: 'get_current_user',
         responses: [
             new OA\Response(
                 response: 200,
@@ -121,7 +122,8 @@ class UserController extends Controller
         summary: 'List users with filters and pagination',
         description: 'Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN sees only users from their company',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Users'],
+        tags: ['Users'],
+        operationId: 'list_users',
         parameters: [
             new OA\Parameter(name: 'search', in: 'query', description: 'Search by email, user_code, or profile name', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'status', in: 'query', description: 'Filter by status', schema: new OA\Schema(type: 'string', enum: ['active', 'suspended', 'deleted'])),
@@ -232,7 +234,8 @@ class UserController extends Controller
         summary: 'Get specific user by ID',
         description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Users'],
+        tags: ['Users'],
+        operationId: 'show_user',
         parameters: [
             new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
@@ -335,7 +338,8 @@ class UserController extends Controller
         summary: 'Update user status',
         description: 'Suspend or activate a user. Only PLATFORM_ADMIN can perform this action',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Users'],
+        tags: ['Users'],
+        operationId: 'update_user_status',
         parameters: [
             new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
@@ -449,7 +453,8 @@ class UserController extends Controller
         summary: 'Delete user (soft delete)',
         description: 'Soft delete a user (sets status to deleted and deleted_at timestamp). Only PLATFORM_ADMIN can perform this action. User cannot delete themselves',
         security: [['bearerAuth' => []]],
-        tags: ['User Management - Users'],
+        tags: ['Users'],
+        operationId: 'delete_user',
         parameters: [
             new OA\Parameter(name: 'id', in: 'path', required: true, description: 'User UUID', schema: new OA\Schema(type: 'string', format: 'uuid')),
             new OA\Parameter(name: 'reason', in: 'query', description: 'Optional deletion reason', schema: new OA\Schema(type: 'string')),
