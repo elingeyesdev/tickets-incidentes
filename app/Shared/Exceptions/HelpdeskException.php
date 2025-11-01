@@ -3,15 +3,14 @@
 namespace App\Shared\Exceptions;
 
 use Exception;
-use GraphQL\Error\ClientAware;
 
 /**
  * Excepción base del sistema Helpdesk
  *
  * Todas las excepciones custom deben heredar de esta clase.
- * Implementa ClientAware para ser segura en GraphQL.
+ * Proporciona métodos estándar para errores seguros del cliente (REST API).
  */
-abstract class HelpdeskException extends Exception implements ClientAware
+abstract class HelpdeskException extends Exception
 {
     /**
      * Categoría del error para logging/metrics
@@ -69,7 +68,7 @@ abstract class HelpdeskException extends Exception implements ClientAware
     }
 
     /**
-     * Convierte la excepción a array para respuesta GraphQL
+     * Convierte la excepción a array para respuesta REST API
      */
     public function toArray(): array
     {

@@ -1,18 +1,19 @@
 <?php declare(strict_types=1);
 
-namespace App\Shared\GraphQL\Errors;
+namespace App\Shared\Errors;
 
 use GraphQL\Error\ClientAware;
 use GraphQL\Error\Error;
 
 /**
- * GraphQL Error with Extensions Support
+ * Error with Extensions Support
  *
- * Custom GraphQL Error class that properly preserves extensions (error codes and metadata).
+ * Custom Error class that properly preserves extensions (error codes and metadata).
+ * Used by REST API services to provide structured error responses.
  *
  * Problem:
  * - GraphQL\Error\Error constructor doesn't preserve extensions array parameter
- * - Tests need to access $errors[0]['extensions']['code']
+ * - Responses need to access $errors[0]['extensions']['code']
  *
  * Solution:
  * - Implement ClientAware interface to return extensions
@@ -20,13 +21,13 @@ use GraphQL\Error\Error;
  *
  * Usage:
  * ```php
- * throw new GraphQLErrorWithExtensions(
+ * throw new ErrorWithExtensions(
  *     'Company not found',
  *     ['code' => 'COMPANY_NOT_FOUND', 'companyId' => $id]
  * );
  * ```
  */
-class GraphQLErrorWithExtensions extends Error implements ClientAware
+class ErrorWithExtensions extends Error implements ClientAware
 {
     private array $customExtensions = [];
 
@@ -63,7 +64,7 @@ class GraphQLErrorWithExtensions extends Error implements ClientAware
     }
 
     /**
-     * Return extensions for GraphQL response
+     * Return extensions for response
      */
     public function getExtensions(): array
     {

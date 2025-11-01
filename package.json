@@ -5,18 +5,12 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "codegen": "graphql-codegen --config codegen.ts",
-        "codegen:watch": "graphql-codegen --config codegen.ts --watch",
         "test": "cd resources/js && vitest",
         "test:watch": "cd resources/js && vitest --watch",
         "test:ui": "cd resources/js && vitest --ui",
         "test:coverage": "cd resources/js && vitest --coverage"
     },
     "devDependencies": {
-        "@graphql-codegen/cli": "^6.0.1",
-        "@graphql-codegen/typescript": "^5.0.2",
-        "@graphql-codegen/typescript-operations": "^5.0.2",
-        "@graphql-codegen/typescript-react-apollo": "^4.3.3",
         "@tailwindcss/vite": "^4.0.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
@@ -37,12 +31,9 @@
         "vitest": "^4.0.2"
     },
     "dependencies": {
-        "@apollo/client": "^4.0.7",
-        "@graphql-codegen/client-preset": "^5.1.0",
         "@inertiajs/react": "^2.2.3",
         "@xstate/react": "^6.0.0",
         "clsx": "^2.1.1",
-        "graphql": "^16.11.0",
         "lucide-react": "^0.545.0",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",

@@ -20,22 +20,12 @@ $frameworkFiles = [
     '/vendor/laravel/framework/src/Illuminate/Http/Response.php',
 ];
 
-// Preload GraphQL/Lighthouse files
-$lighthouseFiles = [
-    '/vendor/nuwave/lighthouse/src/GraphQL.php',
-    '/vendor/nuwave/lighthouse/src/Schema/Source/SchemaSourceProvider.php',
-    '/vendor/webonyx/graphql-php/src/GraphQL/GraphQL.php',
-];
-
 // Preload core application files
 $appFiles = [
     '/bootstrap/app.php',
-    '/app/Core/GraphQL/Queries/PingQuery.php',
-    '/app/Core/GraphQL/Queries/VersionQuery.php',
-    '/app/Core/GraphQL/Queries/HealthQuery.php',
 ];
 
-$allFiles = array_merge($frameworkFiles, $lighthouseFiles, $appFiles);
+$allFiles = array_merge($frameworkFiles, $appFiles);
 
 foreach ($allFiles as $file) {
     $fullPath = $projectRoot . $file;

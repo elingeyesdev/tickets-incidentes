@@ -15,7 +15,7 @@ use App\Shared\Exceptions\NotFoundException;
 use App\Shared\Exceptions\ConflictException;
 use App\Shared\Exceptions\RateLimitExceededException;
 use App\Shared\Errors\ErrorCodeRegistry;
-use App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions;
+use App\Shared\Errors\ErrorWithExtensions;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -66,9 +66,9 @@ class ApiExceptionHandler
         } catch (LaravelAuthorizationException $e) {
             // Excepciones de autorización nativas de Laravel (->can() middleware)
             return $this->handleLaravelAuthorizationException($e);
-        } catch (GraphQLErrorWithExtensions $e) {
-            // Excepciones de GraphQL (usadas temporalmente en Services)
-            return $this->handleGraphQLException($e);
+        } catch (ErrorWithExtensions $e) {
+            // Excepciones con extensiones (usadas en Services para errores estructurados)
+            return $this->handleErrorWithExtensions($e);
         } catch (HelpdeskException $e) {
             // Excepciones custom de Helpdesk
             return $this->handleHelpdeskException($e);
@@ -136,11 +136,11 @@ class ApiExceptionHandler
     }
 
     /**
-     * Manejar excepción de GraphQL (usada temporalmente en Services)
+     * Manejar excepción con extensiones (usada en Services para errores estructurados)
      *
-     * Convierte GraphQLErrorWithExtensions a respuesta REST
+     * Convierte ErrorWithExtensions a respuesta REST
      */
-    public function handleGraphQLException(GraphQLErrorWithExtensions $e): \Illuminate\Http\JsonResponse
+    public function handleErrorWithExtensions(ErrorWithExtensions $e): \Illuminate\Http\JsonResponse
     {
         $extensions = $e->getExtensions();
         $code = $extensions['code'] ?? 'UNKNOWN_ERROR';

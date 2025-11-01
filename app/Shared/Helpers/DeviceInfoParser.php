@@ -40,18 +40,6 @@ class DeviceInfoParser
     }
 
     /**
-     * Extrae información del dispositivo desde GraphQL context
-     *
-     * @param mixed $context Contexto de GraphQL (Lighthouse)
-     * @return array{ip_address: string, user_agent: string|null, device_name: string}
-     */
-    public static function fromGraphQLContext($context): array
-    {
-        $request = $context->request();
-        return self::fromRequest($request);
-    }
-
-    /**
      * Parsea el User-Agent a un nombre de dispositivo amigable
      *
      * @param string|null $userAgent User-Agent del navegador

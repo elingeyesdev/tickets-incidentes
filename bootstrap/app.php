@@ -89,11 +89,11 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // Manejar GraphQLErrorWithExtensions para rutas API
-        $exceptions->renderable(function (\App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions $e, \Illuminate\Http\Request $request) {
+        // Manejar ErrorWithExtensions para rutas API
+        $exceptions->renderable(function (\App\Shared\Errors\ErrorWithExtensions $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
                 $handler = new ApiExceptionHandler();
-                return $handler->handleGraphQLException($e);
+                return $handler->handleErrorWithExtensions($e);
             }
         });
 

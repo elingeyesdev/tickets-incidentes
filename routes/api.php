@@ -26,12 +26,6 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 |
 */
 
-// Health check para el balanceador de cargas - GraphQL
-Route::get('healthgraphql', function () {
-    return response('OK', 200)
-        ->header('Content-Type', 'text/plain');
-});
-
 // Health check para REST API
 Route::get('health', [HealthController::class, 'check'])->name('api.health');
 

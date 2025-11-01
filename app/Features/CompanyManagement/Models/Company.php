@@ -143,14 +143,14 @@ class Company extends Model
      * @param  string|null  $field
      * @return \Illuminate\Database\Eloquent\Model|null
      *
-     * @throws \App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions
+     * @throws \App\Shared\Errors\ErrorWithExtensions
      */
     public function resolveRouteBinding($value, $field = null)
     {
         $company = $this->where($field ?? 'id', $value)->first();
 
         if (!$company) {
-            throw \App\Shared\GraphQL\Errors\GraphQLErrorWithExtensions::notFound(
+            throw \App\Shared\Errors\ErrorWithExtensions::notFound(
                 'Company not found',
                 'COMPANY_NOT_FOUND',
                 ['companyId' => $value]
