@@ -3,6 +3,7 @@
 namespace App\Features\CompanyManagement\Database\Factories;
 
 use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,7 +29,8 @@ class CompanyRequestFactory extends Factory
             'company_description' => $this->faker->realText(250),
             'request_message' => $this->faker->sentence(15),
             'website' => $this->faker->url(),
-            'industry_type' => $this->faker->randomElement(['Technology', 'Finance', 'Healthcare', 'Education', 'Retail']),
+            'industry_id' => fn() => CompanyIndustry::inRandomOrder()->first()?->id
+                ?? CompanyIndustry::factory()->create()->id,
             'estimated_users' => $this->faker->numberBetween(10, 500),
             'contact_address' => $this->faker->streetAddress(),
             'contact_city' => $this->faker->city(),

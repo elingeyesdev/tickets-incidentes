@@ -10,6 +10,7 @@ use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ use Tests\TestCase;
 class CompanyRequestAdminControllerRejectTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsCompanyIndustries;
 
     /** @test */
     public function platform_admin_can_reject_request()

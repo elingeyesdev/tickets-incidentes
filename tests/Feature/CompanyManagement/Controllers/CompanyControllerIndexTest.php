@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyFollower;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
 class CompanyControllerIndexTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsCompanyIndustries;
 
     /** @test */
     public function context_minimal_returns_only_4_fields()
@@ -62,7 +64,9 @@ class CompanyControllerIndexTest extends TestCase
     /** @test */
     public function context_explore_returns_11_fields_plus_is_followed_by_me()
     {
-        // Arrange
+        // Arrange - Seed industries first
+        $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
+
         $user = User::factory()->withRole('USER')->create();
         $company1 = Company::factory()->create();
         $company2 = Company::factory()->create();
@@ -86,8 +90,12 @@ class CompanyControllerIndexTest extends TestCase
                         'companyCode',
                         'name',
                         'logoUrl',
-                        'description',
-                        'industry',
+                        'description',  // V8.0
+                        'industry' => [ // V8.0 - nested object
+                            'id',
+                            'code',
+                            'name',
+                        ],
                         'city',
                         'country',
                         'primaryColor',

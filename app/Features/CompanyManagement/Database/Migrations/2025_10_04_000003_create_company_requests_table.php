@@ -25,7 +25,7 @@ return new class extends Migration
                 company_description TEXT NOT NULL,
                 request_message TEXT NOT NULL,
                 website VARCHAR(200),
-                industry_type VARCHAR(100) NOT NULL,
+                industry_id UUID NOT NULL REFERENCES business.company_industries(id),
                 estimated_users INT,
                 contact_address TEXT,
                 contact_city VARCHAR(100),

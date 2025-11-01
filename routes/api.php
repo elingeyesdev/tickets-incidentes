@@ -14,6 +14,7 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyFollowerController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -122,6 +123,9 @@ Route::middleware('jwt.require')->group(function () {
 
 // ========== Public Routes (No Authentication Required) ==========
 Route::get('/companies/minimal', [CompanyController::class, 'minimal'])->name('companies.minimal');
+
+// Company Industries (Public - for form selectors)
+Route::get('/company-industries', [CompanyIndustryController::class, 'index'])->name('company-industries.index');
 
 Route::post('/company-requests', [CompanyRequestController::class, 'store'])
     ->middleware('throttle:3,60')  // 3 requests per hour

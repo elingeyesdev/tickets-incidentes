@@ -5,6 +5,7 @@ namespace Tests\Feature\CompanyManagement\Controllers;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class CompanyControllerCreateTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsCompanyIndustries;
 
     /** @test */
     public function platform_admin_can_create_company_directly()

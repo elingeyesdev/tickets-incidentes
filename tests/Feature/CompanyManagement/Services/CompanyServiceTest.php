@@ -6,6 +6,7 @@ use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Services\CompanyService;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
 class CompanyServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsCompanyIndustries;
 
     private CompanyService $service;
 
@@ -37,11 +39,15 @@ class CompanyServiceTest extends TestCase
     /** @test */
     public function create_creates_company_with_unique_company_code()
     {
-        // Arrange
+        // Arrange - Seed industries first
+        $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
+
         $adminUser = User::factory()->create();
         $data = [
             'name' => 'Test Company',
             'legal_name' => 'Test Company SRL',
+            'description' => 'This is a comprehensive description of the test company and its services',
+            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -55,10 +61,16 @@ class CompanyServiceTest extends TestCase
         $this->assertMatchesRegularExpression('/^CMP-\d{4}-\d{5}$/', $company->company_code);
         $this->assertEquals('active', $company->status);
 
+        // Verify V8.0 fields
+        $this->assertEquals('This is a comprehensive description of the test company and its services', $company->description);
+        $this->assertNotNull($company->industry_id);
+        $this->assertInstanceOf(\App\Features\CompanyManagement\Models\CompanyIndustry::class, $company->industry);
+
         $this->assertDatabaseHas('business.companies', [
             'id' => $company->id,
             'name' => 'Test Company',
             'admin_user_id' => $adminUser->id,
+            'description' => 'This is a comprehensive description of the test company and its services',
         ]);
     }
 

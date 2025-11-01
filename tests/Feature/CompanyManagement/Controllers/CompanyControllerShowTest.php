@@ -180,7 +180,9 @@ class CompanyControllerShowTest extends TestCase
     /** @test */
     public function returns_all_fields_of_company_type()
     {
-        // Arrange
+        // Arrange - Seed industries first
+        $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
+
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
 
@@ -199,6 +201,14 @@ class CompanyControllerShowTest extends TestCase
                     'companyCode',
                     'name',
                     'legalName',
+                    'description',  // NEW V8.0
+                    'industryId',   // NEW V8.0
+                    'industry' => [ // NEW V8.0
+                        'id',
+                        'code',
+                        'name',
+                        'description',
+                    ],
                     'supportEmail',
                     'phone',
                     'website',

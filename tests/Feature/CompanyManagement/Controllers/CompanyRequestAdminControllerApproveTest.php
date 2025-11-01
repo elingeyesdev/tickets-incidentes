@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
 
 /**
@@ -38,11 +39,14 @@ use Tests\TestCase;
 class CompanyRequestAdminControllerApproveTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsCompanyIndustries;
 
     /** @test */
     public function platform_admin_can_approve_request()
     {
-        // Arrange
+        // Arrange - Seed industries first
+        $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
+
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
@@ -90,13 +94,16 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
     /** @test */
     public function creates_company_correctly()
     {
-        // Arrange
+        // Arrange - Seed industries first
+        $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
+
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
         $request = CompanyRequest::factory()->create([
             'status' => 'pending',
             'company_name' => 'New Company',
+            'company_description' => 'This is a company description that will be transferred to the Company model',
         ]);
 
         // Act
@@ -107,12 +114,18 @@ class CompanyRequestAdminControllerApproveTest extends TestCase
         // Assert
         $companyId = $response->json('data.company.id');
 
-
         $this->assertDatabaseHas('business.companies', [
             'id' => $companyId,
             'name' => 'New Company',
             'status' => 'active',
+            'description' => 'This is a company description that will be transferred to the Company model',
         ]);
+
+        // Verify Company received description and industry from request
+        $company = \App\Features\CompanyManagement\Models\Company::find($companyId);
+        $this->assertNotNull($company->description);
+        $this->assertEquals('This is a company description that will be transferred to the Company model', $company->description);
+        $this->assertNotNull($company->industry_id);
     }
 
     /** @test */

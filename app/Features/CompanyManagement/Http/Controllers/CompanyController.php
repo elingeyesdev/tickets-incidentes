@@ -228,6 +228,17 @@ class CompanyController extends Controller
                                     new OA\Property(property: 'logo_url', type: 'string', nullable: true),
                                     new OA\Property(property: 'website', type: 'string', nullable: true),
                                     new OA\Property(property: 'contact_country', type: 'string', nullable: true),
+                                    new OA\Property(property: 'industry_id', type: 'string', format: 'uuid', nullable: true),
+                                    new OA\Property(
+                                        property: 'industry',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                            new OA\Property(property: 'code', type: 'string'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                        ]
+                                    ),
                                     new OA\Property(property: 'followers_count', type: 'integer'),
                                     new OA\Property(property: 'is_followed_by_me', type: 'boolean'),
                                 ]
@@ -280,7 +291,8 @@ class CompanyController extends Controller
             ->pluck('company_id')
             ->toArray();
 
-        $query = Company::query();
+        $query = Company::query()
+            ->with(['industry']);
 
         // Status filter (default: 'active' for explore context, but can be overridden)
         // Use case-insensitive ILIKE for status comparison
@@ -418,6 +430,18 @@ class CompanyController extends Controller
                                     new OA\Property(property: 'company_code', type: 'string'),
                                     new OA\Property(property: 'name', type: 'string'),
                                     new OA\Property(property: 'status', type: 'string', enum: ['active', 'suspended', 'inactive']),
+                                    new OA\Property(property: 'industry_id', type: 'string', format: 'uuid', nullable: true),
+                                    new OA\Property(
+                                        property: 'industry',
+                                        type: 'object',
+                                        nullable: true,
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                            new OA\Property(property: 'code', type: 'string'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                            new OA\Property(property: 'description', type: 'string', nullable: true),
+                                        ]
+                                    ),
                                     new OA\Property(property: 'admin', type: 'object'),
                                     new OA\Property(property: 'followers_count', type: 'integer'),
                                     new OA\Property(property: 'active_agents_count', type: 'integer'),
@@ -578,6 +602,18 @@ class CompanyController extends Controller
                         new OA\Property(property: 'phone', type: 'string', nullable: true),
                         new OA\Property(property: 'website', type: 'string', nullable: true),
                         new OA\Property(property: 'logo_url', type: 'string', nullable: true),
+                        new OA\Property(property: 'industry_id', type: 'string', format: 'uuid', nullable: true),
+                        new OA\Property(
+                            property: 'industry',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'code', type: 'string'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'description', type: 'string', nullable: true),
+                            ]
+                        ),
                         new OA\Property(property: 'admin', type: 'object'),
                         new OA\Property(property: 'followers_count', type: 'integer'),
                         new OA\Property(property: 'active_agents_count', type: 'integer'),
@@ -940,8 +976,8 @@ class CompanyController extends Controller
         // Llamar al Service (NO modificarlo, solo usarlo)
         $updated = $companyService->update($company, $data);
 
-        // Eager load relaciones (ONLY admin.profile and userRoles, avoid followers due to withTimestamps issue)
-        $updated->load(['admin.profile', 'userRoles.role']);
+        // Eager load relaciones (ONLY admin.profile, industry and userRoles, avoid followers due to withTimestamps issue)
+        $updated->load(['admin.profile', 'industry', 'userRoles.role']);
 
         // Calcular counts en memoria (evita problemas con loadCount y distinct)
         // followers_count - Query directa (sin cargar relación) igual que GraphQL resolver
