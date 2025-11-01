@@ -43,11 +43,36 @@ class SessionController
     #[OA\Get(
         path: '/api/auth/sessions',
         summary: 'List user sessions',
-        description: 'Get all active sessions for authenticated user',
+        description: 'Get all active sessions for authenticated user. Returns all non-revoked refresh tokens ordered by last usage.',
         tags: ['Sessions'],
         security: [['bearerAuth' => []]],
         responses: [
-            new OA\Response(response: 200, description: 'Sessions retrieved'),
+            new OA\Response(
+                response: 200,
+                description: 'Sessions retrieved successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'sessions',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'sessionId', type: 'string', format: 'uuid', description: 'Session identifier', example: '9d4e3c2a-8b7f-4e5d-9c8b-7a6f5e4d3c2b'),
+                                    new OA\Property(property: 'deviceName', type: 'string', nullable: true, description: 'Device name', example: 'Chrome on Windows'),
+                                    new OA\Property(property: 'ipAddress', type: 'string', nullable: true, description: 'IP address', example: '192.168.1.1'),
+                                    new OA\Property(property: 'userAgent', type: 'string', nullable: true, description: 'User agent string', example: 'Mozilla/5.0...'),
+                                    new OA\Property(property: 'lastUsedAt', type: 'string', format: 'date-time', description: 'Last usage timestamp (ISO 8601)', example: '2025-11-01T12:00:00+00:00'),
+                                    new OA\Property(property: 'expiresAt', type: 'string', format: 'date-time', description: 'Expiration timestamp (ISO 8601)', example: '2025-11-08T12:00:00+00:00'),
+                                    new OA\Property(property: 'isCurrent', type: 'boolean', description: 'Whether this is the current session', example: true),
+                                    new OA\Property(property: 'location', type: 'string', nullable: true, description: 'GeoIP location (not yet implemented)', example: null),
+                                ],
+                                type: 'object'
+                            )
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]
@@ -110,19 +135,29 @@ class SessionController
     #[OA\Post(
         path: '/api/auth/logout',
         summary: 'Logout user',
-        description: 'Logout from current session or all sessions',
+        description: 'Logout from current session or all sessions. Revokes tokens, blacklists access token, and clears the refresh_token cookie.',
         tags: ['Sessions'],
         security: [['bearerAuth' => []]],
         requestBody: new OA\RequestBody(
             required: false,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: 'everywhere', type: 'boolean', nullable: true, description: 'Logout from all sessions'),
+                    new OA\Property(property: 'everywhere', type: 'boolean', nullable: true, description: 'Logout from all sessions', example: false),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Logout successful'),
+            new OA\Response(
+                response: 200,
+                description: 'Logout successful. Cookie refresh_token is cleared.',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Logged out successfully'),
+                    ],
+                    type: 'object'
+                )
+            ),
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]
@@ -210,7 +245,7 @@ class SessionController
     #[OA\Delete(
         path: '/api/auth/sessions/{sessionId}',
         summary: 'Revoke a session',
-        description: 'Revoke a specific session from another device',
+        description: 'Revoke a specific session from another device. Blacklists associated access tokens and revokes the refresh token. Cannot revoke the current session.',
         tags: ['Sessions'],
         security: [['bearerAuth' => []]],
         parameters: [
@@ -218,15 +253,30 @@ class SessionController
                 name: 'sessionId',
                 in: 'path',
                 required: true,
-                schema: new OA\Schema(type: 'string', format: 'uuid')
+                description: 'UUID of the session to revoke',
+                schema: new OA\Schema(type: 'string', format: 'uuid'),
+                example: '9d4e3c2a-8b7f-4e5d-9c8b-7a6f5e4d3c2b'
             ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Session revoked'),
+            new OA\Response(
+                response: 200,
+                description: 'Session revoked successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Session revoked successfully'),
+                    ],
+                    type: 'object'
+                )
+            ),
             new OA\Response(response: 401, description: 'Unauthenticated'),
-            new OA\Response(response: 403, description: 'Not authorized'),
-            new OA\Response(response: 404, description: 'Session not found'),
-            new OA\Response(response: 409, description: 'Cannot revoke current session'),
+            new OA\Response(response: 403, description: 'Not authorized to revoke this session'),
+            new OA\Response(response: 404, description: 'Session not found or already revoked'),
+            new OA\Response(
+                response: 409,
+                description: 'Conflict: Cannot revoke the current session. Use logout endpoint instead.'
+            ),
         ]
     )]
     public function revoke(Request $request, string $sessionId): JsonResponse

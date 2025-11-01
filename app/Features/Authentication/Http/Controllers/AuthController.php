@@ -41,33 +41,172 @@ class AuthController
      * Automáticamente crea una sesión y retorna tokens.
      *
      * @authenticated false
-     * @response 200 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
+     * @response 201 {"accessToken": "...", "refreshToken": "...", "user": {...}, "sessionId": "...", ...}
      */
     #[OA\Post(
         path: '/api/auth/register',
         summary: 'Register a new user',
-        description: 'Create a new user account and return authentication tokens',
+        description: 'Creates a new user account with email and password authentication. Automatically generates JWT access token and refresh token. The refresh token is securely stored in an HttpOnly cookie for enhanced security. Upon successful registration, the user receives a verification email and can immediately start using the application.',
         tags: ['Authentication'],
         requestBody: new OA\RequestBody(
+            description: 'User registration data',
             required: true,
             content: new OA\JsonContent(
                 type: 'object',
                 required: ['email', 'password', 'passwordConfirmation', 'firstName', 'lastName', 'acceptsTerms', 'acceptsPrivacyPolicy'],
                 properties: [
-                    new OA\Property(property: 'email', type: 'string', format: 'email'),
-                    new OA\Property(property: 'password', type: 'string', format: 'password', minLength: 8),
-                    new OA\Property(property: 'passwordConfirmation', type: 'string', format: 'password'),
-                    new OA\Property(property: 'firstName', type: 'string', maxLength: 255),
-                    new OA\Property(property: 'lastName', type: 'string', maxLength: 255),
-                    new OA\Property(property: 'acceptsTerms', type: 'boolean'),
-                    new OA\Property(property: 'acceptsPrivacyPolicy', type: 'boolean'),
+                    new OA\Property(
+                        property: 'email',
+                        type: 'string',
+                        format: 'email',
+                        description: 'User email address (must be unique)',
+                        example: 'user@example.com'
+                    ),
+                    new OA\Property(
+                        property: 'password',
+                        type: 'string',
+                        format: 'password',
+                        minLength: 8,
+                        description: 'Password (minimum 8 characters, must contain letters, numbers, and symbols)',
+                        example: 'SecurePass123!'
+                    ),
+                    new OA\Property(
+                        property: 'passwordConfirmation',
+                        type: 'string',
+                        format: 'password',
+                        minLength: 8,
+                        description: 'Password confirmation (must match password field)',
+                        example: 'SecurePass123!'
+                    ),
+                    new OA\Property(
+                        property: 'firstName',
+                        type: 'string',
+                        minLength: 2,
+                        maxLength: 255,
+                        description: 'User first name',
+                        example: 'Juan'
+                    ),
+                    new OA\Property(
+                        property: 'lastName',
+                        type: 'string',
+                        minLength: 2,
+                        maxLength: 255,
+                        description: 'User last name',
+                        example: 'Pérez'
+                    ),
+                    new OA\Property(
+                        property: 'acceptsTerms',
+                        type: 'boolean',
+                        description: 'User must accept terms of service (must be true)',
+                        example: true
+                    ),
+                    new OA\Property(
+                        property: 'acceptsPrivacyPolicy',
+                        type: 'boolean',
+                        description: 'User must accept privacy policy (must be true)',
+                        example: true
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'User created successfully'),
-            new OA\Response(response: 422, description: 'Validation error'),
-            new OA\Response(response: 409, description: 'Email already exists'),
+            new OA\Response(
+                response: 201,
+                description: 'User created successfully. Returns authentication tokens and user data. Refresh token is set in HttpOnly cookie named "refresh_token".',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'accessToken', type: 'string', description: 'JWT access token for API authentication', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
+                        new OA\Property(property: 'refreshToken', type: 'string', description: 'Information message (actual token is in HttpOnly cookie)', example: 'Refresh token set in httpOnly cookie'),
+                        new OA\Property(property: 'tokenType', type: 'string', description: 'Token type', example: 'Bearer'),
+                        new OA\Property(property: 'expiresIn', type: 'integer', description: 'Access token expiration time in seconds', example: 2592000),
+                        new OA\Property(
+                            property: 'user',
+                            type: 'object',
+                            description: 'Authenticated user information',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'userCode', type: 'string', example: 'USR-20241101-001'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                                new OA\Property(property: 'emailVerified', type: 'boolean', example: false),
+                                new OA\Property(property: 'onboardingCompleted', type: 'boolean', example: false),
+                                new OA\Property(property: 'status', type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'], example: 'ACTIVE'),
+                                new OA\Property(property: 'displayName', type: 'string', example: 'Juan Pérez'),
+                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, example: null),
+                                new OA\Property(property: 'theme', type: 'string', enum: ['light', 'dark'], example: 'light'),
+                                new OA\Property(property: 'language', type: 'string', example: 'es'),
+                                new OA\Property(
+                                    property: 'roleContexts',
+                                    type: 'array',
+                                    description: 'User roles and their associated contexts',
+                                    items: new OA\Items(
+                                        type: 'object',
+                                        properties: [
+                                            new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'], example: 'USER'),
+                                            new OA\Property(property: 'roleName', type: 'string', example: 'Cliente'),
+                                            new OA\Property(property: 'dashboardPath', type: 'string', example: '/tickets'),
+                                            new OA\Property(
+                                                property: 'company',
+                                                type: 'object',
+                                                nullable: true,
+                                                properties: [
+                                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                                    new OA\Property(property: 'companyCode', type: 'string'),
+                                                    new OA\Property(property: 'name', type: 'string'),
+                                                ]
+                                            ),
+                                        ]
+                                    )
+                                ),
+                            ]
+                        ),
+                        new OA\Property(property: 'sessionId', type: 'string', format: 'uuid', description: 'Session identifier', example: '660e8400-e29b-41d4-a716-446655440011'),
+                        new OA\Property(property: 'loginTimestamp', type: 'string', format: 'date-time', description: 'ISO 8601 timestamp', example: '2024-11-01T10:30:00+00:00'),
+                    ]
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Set-Cookie',
+                        description: 'HttpOnly cookie containing refresh token (name: refresh_token, path: /, httpOnly: true, sameSite: lax, maxAge: 43200 minutes)',
+                        schema: new OA\Schema(type: 'string', example: 'refresh_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000')
+                    ),
+                ]
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error - Invalid input data',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The email field is required. (and 2 more errors)'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            description: 'Field-specific validation errors',
+                            example: [
+                                'email' => ['El email es requerido.'],
+                                'password' => ['La contraseña debe tener al menos 8 caracteres.'],
+                                'acceptsTerms' => ['Debes aceptar los términos de servicio.'],
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 409,
+                description: 'Conflict - Email already registered',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Este email ya está registrado.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['email' => ['Este email ya está registrado.']]
+                        ),
+                    ]
+                )
+            ),
         ]
     )]
     public function register(RegisterRequest $request): JsonResponse
@@ -114,25 +253,141 @@ class AuthController
     #[OA\Post(
         path: '/api/auth/login',
         summary: 'Login user',
-        description: 'Authenticate user with email and password',
+        description: 'Authenticates a user using email and password credentials. Generates a new JWT access token and refresh token for the session. The refresh token is securely stored in an HttpOnly cookie. Device information is automatically captured from the request headers for session tracking.',
         tags: ['Authentication'],
         requestBody: new OA\RequestBody(
+            description: 'Login credentials',
             required: true,
             content: new OA\JsonContent(
                 type: 'object',
                 required: ['email', 'password'],
                 properties: [
-                    new OA\Property(property: 'email', type: 'string', format: 'email'),
-                    new OA\Property(property: 'password', type: 'string', format: 'password'),
-                    new OA\Property(property: 'deviceName', type: 'string', nullable: true),
-                    new OA\Property(property: 'rememberMe', type: 'boolean', nullable: true),
+                    new OA\Property(
+                        property: 'email',
+                        type: 'string',
+                        format: 'email',
+                        description: 'User email address (case-insensitive)',
+                        example: 'lukqs05@gmail.com'
+                    ),
+                    new OA\Property(
+                        property: 'password',
+                        type: 'string',
+                        format: 'password',
+                        minLength: 8,
+                        description: 'User password',
+                        example: 'mklmklmkl'
+                    ),
+                    new OA\Property(
+                        property: 'deviceName',
+                        type: 'string',
+                        nullable: true,
+                        maxLength: 255,
+                        description: 'Optional custom device name (auto-detected if not provided)',
+                        example: 'fifon 15'
+                    ),
+                    new OA\Property(
+                        property: 'rememberMe',
+                        type: 'boolean',
+                        nullable: true,
+                        description: 'Keep session active for longer (currently not implemented)',
+                        example: true
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Login successful'),
-            new OA\Response(response: 422, description: 'Validation error'),
-            new OA\Response(response: 401, description: 'Invalid credentials'),
+            new OA\Response(
+                response: 200,
+                description: 'Login successful. Returns authentication tokens and user data. Refresh token is set in HttpOnly cookie named "refresh_token".',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'accessToken', type: 'string', description: 'JWT access token for API authentication', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
+                        new OA\Property(property: 'refreshToken', type: 'string', description: 'Information message (actual token is in HttpOnly cookie)', example: 'Refresh token set in httpOnly cookie'),
+                        new OA\Property(property: 'tokenType', type: 'string', description: 'Token type', example: 'Bearer'),
+                        new OA\Property(property: 'expiresIn', type: 'integer', description: 'Access token expiration time in seconds', example: 2592000),
+                        new OA\Property(
+                            property: 'user',
+                            type: 'object',
+                            description: 'Authenticated user information',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'userCode', type: 'string', example: 'USR-20241101-001'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                                new OA\Property(property: 'emailVerified', type: 'boolean', example: true),
+                                new OA\Property(property: 'onboardingCompleted', type: 'boolean', example: true),
+                                new OA\Property(property: 'status', type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'], example: 'ACTIVE'),
+                                new OA\Property(property: 'displayName', type: 'string', example: 'Juan Pérez'),
+                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, example: 'https://example.com/avatars/user.jpg'),
+                                new OA\Property(property: 'theme', type: 'string', enum: ['light', 'dark'], example: 'light'),
+                                new OA\Property(property: 'language', type: 'string', example: 'es'),
+                                new OA\Property(
+                                    property: 'roleContexts',
+                                    type: 'array',
+                                    description: 'User roles and their associated contexts',
+                                    items: new OA\Items(
+                                        type: 'object',
+                                        properties: [
+                                            new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'], example: 'COMPANY_ADMIN'),
+                                            new OA\Property(property: 'roleName', type: 'string', example: 'Administrador de Empresa'),
+                                            new OA\Property(property: 'dashboardPath', type: 'string', example: '/empresa/dashboard'),
+                                            new OA\Property(
+                                                property: 'company',
+                                                type: 'object',
+                                                nullable: true,
+                                                properties: [
+                                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '770e8400-e29b-41d4-a716-446655440088'),
+                                                    new OA\Property(property: 'companyCode', type: 'string', example: 'CMP-20241101-001'),
+                                                    new OA\Property(property: 'name', type: 'string', example: 'Acme Corp'),
+                                                ]
+                                            ),
+                                        ]
+                                    )
+                                ),
+                            ]
+                        ),
+                        new OA\Property(property: 'sessionId', type: 'string', format: 'uuid', description: 'Session identifier', example: '660e8400-e29b-41d4-a716-446655440011'),
+                        new OA\Property(property: 'loginTimestamp', type: 'string', format: 'date-time', description: 'ISO 8601 timestamp', example: '2024-11-01T10:30:00+00:00'),
+                    ]
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Set-Cookie',
+                        description: 'HttpOnly cookie containing refresh token (name: refresh_token, path: /, httpOnly: true, sameSite: lax, maxAge: 43200 minutes)',
+                        schema: new OA\Schema(type: 'string', example: 'refresh_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000')
+                    ),
+                ]
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error - Invalid input data',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The email field is required.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            description: 'Field-specific validation errors',
+                            example: [
+                                'email' => ['El email es requerido.'],
+                                'password' => ['La contraseña es requerida.'],
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthorized - Invalid credentials or user account is suspended/inactive',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Invalid credentials'),
+                        new OA\Property(property: 'error', type: 'string', example: 'INVALID_CREDENTIALS'),
+                    ]
+                )
+            ),
         ]
     )]
     public function login(LoginRequest $request): JsonResponse
@@ -179,27 +434,68 @@ class AuthController
      * Si el usuario no existe, lo crea automáticamente.
      *
      * @authenticated false
-     * @response 200 {"accessToken": "...", "refreshToken": "...", "user": {...}, ...}
+     * @response 501 {"success": false, "message": "Google login not yet implemented"}
      */
     #[OA\Post(
         path: '/api/auth/login/google',
-        summary: 'Login with Google',
-        description: 'Authenticate user using Google ID token',
+        summary: 'Login with Google OAuth (NOT IMPLEMENTED)',
+        description: 'Authenticate user using Google ID token. If the user does not exist, it will be automatically created. NOTE: This endpoint is currently NOT IMPLEMENTED and will return HTTP 501 (Not Implemented). It is planned for a future release.',
         tags: ['Authentication'],
         requestBody: new OA\RequestBody(
+            description: 'Google authentication token',
             required: true,
             content: new OA\JsonContent(
                 type: 'object',
                 required: ['googleToken'],
                 properties: [
-                    new OA\Property(property: 'googleToken', type: 'string', description: 'Google ID token'),
+                    new OA\Property(
+                        property: 'googleToken',
+                        type: 'string',
+                        description: 'Google ID token obtained from Google OAuth flow',
+                        example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjZmNzI1NDEwMWY1NmU0M2...'
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Login successful'),
-            new OA\Response(response: 422, description: 'Validation error'),
-            new OA\Response(response: 401, description: 'Invalid token'),
+            new OA\Response(
+                response: 501,
+                description: 'Not Implemented - This feature is not yet available',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Google login not yet implemented'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error - Invalid input data (when implemented)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The googleToken field is required.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            description: 'Field-specific validation errors',
+                            example: ['googleToken' => ['The googleToken field is required.']]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthorized - Invalid or expired Google token (when implemented)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Invalid Google token'),
+                        new OA\Property(property: 'error', type: 'string', example: 'INVALID_GOOGLE_TOKEN'),
+                    ]
+                )
+            ),
         ]
     )]
     public function loginWithGoogle(GoogleLoginRequest $request): JsonResponse
@@ -266,12 +562,95 @@ class AuthController
     #[OA\Get(
         path: '/api/auth/status',
         summary: 'Get authentication status',
-        description: 'Get current authenticated user status and session information',
+        description: 'Retrieves the current authentication status for the authenticated user. Returns complete user information, active session details, and JWT token metadata. Requires a valid Bearer token in the Authorization header. This endpoint is useful for checking if a user session is still valid and retrieving updated user data.',
         tags: ['Authentication'],
         security: [['bearerAuth' => []]],
         responses: [
-            new OA\Response(response: 200, description: 'Authentication status retrieved'),
-            new OA\Response(response: 401, description: 'Unauthenticated'),
+            new OA\Response(
+                response: 200,
+                description: 'Authentication status retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'isAuthenticated', type: 'boolean', description: 'Always true for successful responses', example: true),
+                        new OA\Property(
+                            property: 'user',
+                            type: 'object',
+                            description: 'Current authenticated user information',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'userCode', type: 'string', example: 'USR-20241101-001'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                                new OA\Property(property: 'emailVerified', type: 'boolean', example: true),
+                                new OA\Property(property: 'onboardingCompleted', type: 'boolean', example: true),
+                                new OA\Property(property: 'status', type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'], example: 'ACTIVE'),
+                                new OA\Property(property: 'displayName', type: 'string', example: 'Juan Pérez'),
+                                new OA\Property(property: 'avatarUrl', type: 'string', nullable: true, example: 'https://example.com/avatars/user.jpg'),
+                                new OA\Property(property: 'theme', type: 'string', enum: ['light', 'dark'], example: 'light'),
+                                new OA\Property(property: 'language', type: 'string', example: 'es'),
+                                new OA\Property(
+                                    property: 'roleContexts',
+                                    type: 'array',
+                                    description: 'User roles and their associated contexts',
+                                    items: new OA\Items(
+                                        type: 'object',
+                                        properties: [
+                                            new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'], example: 'USER'),
+                                            new OA\Property(property: 'roleName', type: 'string', example: 'Cliente'),
+                                            new OA\Property(property: 'dashboardPath', type: 'string', example: '/tickets'),
+                                            new OA\Property(
+                                                property: 'company',
+                                                type: 'object',
+                                                nullable: true,
+                                                properties: [
+                                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '770e8400-e29b-41d4-a716-446655440088'),
+                                                    new OA\Property(property: 'companyCode', type: 'string', example: 'CMP-20241101-001'),
+                                                    new OA\Property(property: 'name', type: 'string', example: 'Acme Corp'),
+                                                ]
+                                            ),
+                                        ]
+                                    )
+                                ),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'currentSession',
+                            type: 'object',
+                            nullable: true,
+                            description: 'Current active session information (null if session not found)',
+                            properties: [
+                                new OA\Property(property: 'sessionId', type: 'string', format: 'uuid', example: '660e8400-e29b-41d4-a716-446655440011'),
+                                new OA\Property(property: 'deviceName', type: 'string', example: 'Chrome on Windows'),
+                                new OA\Property(property: 'ipAddress', type: 'string', format: 'ipv4', example: '192.168.1.100'),
+                                new OA\Property(property: 'userAgent', type: 'string', example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...'),
+                                new OA\Property(property: 'lastUsedAt', type: 'string', format: 'date-time', nullable: true, example: '2024-11-01T10:25:00+00:00'),
+                                new OA\Property(property: 'expiresAt', type: 'string', format: 'date-time', nullable: true, example: '2024-12-01T10:30:00+00:00'),
+                                new OA\Property(property: 'isCurrent', type: 'boolean', example: true),
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'tokenInfo',
+                            type: 'object',
+                            description: 'JWT token metadata',
+                            properties: [
+                                new OA\Property(property: 'expiresIn', type: 'integer', description: 'Seconds until token expires', example: 2591000),
+                                new OA\Property(property: 'issuedAt', type: 'string', format: 'date-time', description: 'Token issue timestamp', example: '2024-11-01T10:30:00+00:00'),
+                                new OA\Property(property: 'tokenType', type: 'string', example: 'Bearer'),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthorized - Invalid, expired, or missing access token',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
         ]
     )]
     public function status(Request $request): JsonResponse

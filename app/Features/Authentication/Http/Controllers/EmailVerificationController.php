@@ -43,19 +43,36 @@ class EmailVerificationController
     #[OA\Post(
         path: '/api/auth/email/verify',
         summary: 'Verify email',
-        description: 'Verify user email with token. Always returns 200.',
+        description: 'Verify user email with token. Public endpoint (no authentication required). Always returns 200 status, check "success" field in response body to determine result.',
         tags: ['Email Verification'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ['token'],
                 properties: [
-                    new OA\Property(property: 'token', type: 'string'),
+                    new OA\Property(
+                        property: 'token',
+                        type: 'string',
+                        description: 'Email verification token (received via email)',
+                        example: 'abc123def456ghi789jkl012mno345pq'
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Verification result (check success field)'),
+            new OA\Response(
+                response: 200,
+                description: 'Verification result (always returns 200, check success field)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.'),
+                        new OA\Property(property: 'canResend', type: 'boolean', example: false),
+                        new OA\Property(property: 'resendAvailableAt', type: 'string', nullable: true, example: null),
+                    ]
+                )
+            ),
         ]
     )]
     public function verify(EmailVerifyRequest $request): JsonResponse
@@ -108,12 +125,25 @@ class EmailVerificationController
     #[OA\Post(
         path: '/api/auth/email/verify/resend',
         summary: 'Resend verification email',
-        description: 'Resend verification email to authenticated user (rate limited: 3 per 5 minutes)',
+        description: 'Resend verification email to authenticated user. Rate limited: 3 attempts every 5 minutes. Always returns success message for security (even if already verified).',
+        security: [['bearerAuth' => []]],
         tags: ['Email Verification'],
         responses: [
-            new OA\Response(response: 200, description: 'Email resent'),
+            new OA\Response(
+                response: 200,
+                description: 'Email resent successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Email de verificación enviado correctamente. Revisa tu bandeja de entrada.'),
+                        new OA\Property(property: 'canResend', type: 'boolean', example: false),
+                        new OA\Property(property: 'resendAvailableAt', type: 'string', format: 'date-time', example: '2025-11-01T15:30:00+00:00'),
+                    ]
+                )
+            ),
             new OA\Response(response: 401, description: 'Unauthenticated'),
-            new OA\Response(response: 429, description: 'Rate limit exceeded'),
+            new OA\Response(response: 429, description: 'Rate limit exceeded (3 attempts per 5 minutes)'),
         ]
     )]
     public function resend(Request $request): JsonResponse
@@ -180,10 +210,25 @@ class EmailVerificationController
     #[OA\Get(
         path: '/api/auth/email/status',
         summary: 'Get email verification status',
-        description: 'Get email verification status for authenticated user',
+        description: 'Get email verification status for authenticated user. Returns verification state, timestamps, and resend availability.',
+        security: [['bearerAuth' => []]],
         tags: ['Email Verification'],
         responses: [
-            new OA\Response(response: 200, description: 'Status retrieved'),
+            new OA\Response(
+                response: 200,
+                description: 'Status retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'is_verified', type: 'boolean', example: false),
+                        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                        new OA\Property(property: 'verified_at', type: 'string', format: 'date-time', nullable: true, example: '2025-11-01T10:30:00+00:00'),
+                        new OA\Property(property: 'can_resend', type: 'boolean', example: true),
+                        new OA\Property(property: 'resend_available_at', type: 'string', format: 'date-time', nullable: true, example: '2025-11-01T15:30:00+00:00'),
+                        new OA\Property(property: 'attempts_remaining', type: 'integer', example: 3),
+                    ]
+                )
+            ),
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]

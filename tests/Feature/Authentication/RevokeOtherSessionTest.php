@@ -1,6 +1,6 @@
 <?php
 
-namespace Authentication;
+namespace Tests\Feature\Authentication;
 
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\UserManagement\Models\User;
@@ -19,7 +19,7 @@ use Tests\TestCase;
  * - Protección con @jwt directive
  * - Múltiples escenarios de edge cases
  */
-class RevokeOtherSessionMutationTest extends TestCase
+class RevokeOtherSessionTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -220,20 +220,12 @@ class RevokeOtherSessionMutationTest extends TestCase
         $this->withJWT($session1['accessToken'])
             ->deleteJson("/api/auth/sessions/{$session2Id}");
 
-        // Act - Intentar usar session2 para consultar datos
-        $query = '
-            query {
-                authStatus {
-                    isAuthenticated
-                }
-            }
-        ';
-
+        // Act - Intentar usar session2 para consultar datos (REST endpoint)
         $response = $this->withJWT($session2['accessToken'])
-            ->postJson('/graphql', ['query' => $query]);
+            ->getJson('/api/auth/status');
 
         // Assert - Debe fallar porque el token está invalidado
-        $response->assertJson(['errors' => [['message' => 'Unauthenticated.']]]);
+        $response->assertStatus(401);
     }
 
 

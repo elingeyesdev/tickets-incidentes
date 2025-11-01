@@ -44,7 +44,7 @@ class PasswordResetController
     #[OA\Post(
         path: '/api/auth/password-reset',
         summary: 'Request password reset',
-        description: 'Request a password reset. Always returns success for security.',
+        description: 'Request a password reset email. Public endpoint (no authentication required). ALWAYS returns 200 success for security - does not reveal if email exists in system.',
         tags: ['Password Reset'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -52,13 +52,29 @@ class PasswordResetController
                 type: 'object',
                 required: ['email'],
                 properties: [
-                    new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    new OA\Property(
+                        property: 'email',
+                        type: 'string',
+                        format: 'email',
+                        description: 'Email address to send password reset link',
+                        example: 'user@example.com'
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Reset requested (always success)'),
-            new OA\Response(response: 422, description: 'Validation error'),
+            new OA\Response(
+                response: 200,
+                description: 'Reset requested successfully (always returns 200, even if email does not exist)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Si el email existe en nuestro sistema, recibirás un enlace para resetear tu contraseña.'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: 'Validation error (invalid email format)'),
         ]
     )]
     public function store(PasswordResetRequest $request): JsonResponse
@@ -97,7 +113,7 @@ class PasswordResetController
     #[OA\Post(
         path: '/api/auth/password-reset/confirm',
         summary: 'Confirm password reset',
-        description: 'Confirm password reset with new password and token/code',
+        description: 'Confirm password reset with new password and token/code. Public endpoint (no authentication required). Automatically logs in user and returns session tokens after successful reset.',
         tags: ['Password Reset'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -105,18 +121,66 @@ class PasswordResetController
                 type: 'object',
                 required: ['password', 'passwordConfirmation'],
                 properties: [
-                    new OA\Property(property: 'token', type: 'string', nullable: true, description: 'Reset token (32 chars)'),
-                    new OA\Property(property: 'code', type: 'string', nullable: true, description: 'Reset code (6 digits)'),
-                    new OA\Property(property: 'password', type: 'string', format: 'password', minLength: 8),
-                    new OA\Property(property: 'passwordConfirmation', type: 'string', format: 'password'),
+                    new OA\Property(
+                        property: 'token',
+                        type: 'string',
+                        nullable: true,
+                        description: 'Reset token (32 chars) - received via email. Use token OR code, not both.',
+                        example: 'abc123def456ghi789jkl012mno345pq'
+                    ),
+                    new OA\Property(
+                        property: 'code',
+                        type: 'string',
+                        nullable: true,
+                        description: 'Reset code (6 digits) - alternative to token. Use token OR code, not both.',
+                        example: '123456'
+                    ),
+                    new OA\Property(
+                        property: 'password',
+                        type: 'string',
+                        format: 'password',
+                        minLength: 8,
+                        description: 'New password (minimum 8 characters)',
+                        example: 'NewSecurePass123!'
+                    ),
+                    new OA\Property(
+                        property: 'passwordConfirmation',
+                        type: 'string',
+                        format: 'password',
+                        description: 'Password confirmation (must match password)',
+                        example: 'NewSecurePass123!'
+                    ),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Password reset successfully'),
-            new OA\Response(response: 422, description: 'Validation error'),
-            new OA\Response(response: 404, description: 'Invalid token/code'),
-            new OA\Response(response: 401, description: 'Token expired'),
+            new OA\Response(
+                response: 200,
+                description: 'Password reset successfully - user automatically logged in',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'accessToken', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
+                        new OA\Property(property: 'refreshToken', type: 'string', example: 'def502004b4c8a1b3f7e...'),
+                        new OA\Property(property: 'tokenType', type: 'string', example: 'Bearer'),
+                        new OA\Property(property: 'expiresIn', type: 'integer', example: 3600),
+                        new OA\Property(
+                            property: 'user',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                                new OA\Property(property: 'userCode', type: 'string', example: 'USER001'),
+                            ]
+                        ),
+                        new OA\Property(property: 'sessionId', type: 'string', format: 'uuid', example: '650e8400-e29b-41d4-a716-446655440001'),
+                        new OA\Property(property: 'loginTimestamp', type: 'string', format: 'date-time', example: '2025-11-01T15:30:00+00:00'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: 'Validation error (invalid format, passwords do not match, etc.)'),
+            new OA\Response(response: 404, description: 'Invalid token/code - not found in database'),
+            new OA\Response(response: 401, description: 'Token expired or already used'),
         ]
     )]
     public function confirm(PasswordResetConfirmRequest $request): JsonResponse
@@ -199,20 +263,34 @@ class PasswordResetController
     #[OA\Get(
         path: '/api/auth/password-reset/status',
         summary: 'Get password reset status',
-        description: 'Validate password reset token and return its status',
+        description: 'Validate password reset token and return its status. Public endpoint (no authentication required). Use this before showing the password reset form to verify the token is valid.',
         tags: ['Password Reset'],
         parameters: [
             new OA\Parameter(
                 name: 'token',
                 in: 'query',
                 required: true,
-                schema: new OA\Schema(type: 'string', description: 'Reset token')
+                description: 'Password reset token (32 chars) received via email',
+                schema: new OA\Schema(type: 'string', example: 'abc123def456ghi789jkl012mno345pq')
             ),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Token status retrieved'),
-            new OA\Response(response: 404, description: 'Token not found'),
-            new OA\Response(response: 410, description: 'Token expired'),
+            new OA\Response(
+                response: 200,
+                description: 'Token status retrieved successfully (always returns 200, check is_valid field)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'is_valid', type: 'boolean', example: true, description: 'Whether the token is valid and not expired'),
+                        new OA\Property(property: 'can_reset', type: 'boolean', example: true, description: 'Whether password can be reset (same as is_valid)'),
+                        new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true, example: 'user@example.com', description: 'Email associated with token (null if invalid)'),
+                        new OA\Property(property: 'expires_at', type: 'string', format: 'date-time', nullable: true, example: '2025-11-01T16:30:00+00:00', description: 'Token expiration timestamp'),
+                        new OA\Property(property: 'attempts_remaining', type: 'integer', example: 3, description: 'Number of remaining reset attempts'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'Token not found in database'),
+            new OA\Response(response: 410, description: 'Token expired (gone)'),
         ]
     )]
     public function status(Request $request): JsonResponse

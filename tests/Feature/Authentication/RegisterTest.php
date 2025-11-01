@@ -1,6 +1,6 @@
 <?php
 
-namespace Authentication;
+namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,7 +12,7 @@ use Tests\TestCase;
  * Tests para la mutation de registro de usuarios.
  * Cubre casos exitosos, validaciones, y rate limiting.
  */
-class RegisterMutationTest extends TestCase
+class RegisterTest extends TestCase
 {
     use RefreshDatabase;
 

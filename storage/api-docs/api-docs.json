@@ -22,9 +22,10 @@
                     "Authentication"
                 ],
                 "summary": "Register a new user",
-                "description": "Create a new user account and return authentication tokens",
+                "description": "Creates a new user account with email and password authentication. Automatically generates JWT access token and refresh token. The refresh token is securely stored in an HttpOnly cookie for enhanced security. Upon successful registration, the user receives a verification email and can immediately start using the application.",
                 "operationId": "021e877864f2b053f14af19f4fce5dd7",
                 "requestBody": {
+                    "description": "User registration data",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -40,31 +41,48 @@
                                 ],
                                 "properties": {
                                     "email": {
+                                        "description": "User email address (must be unique)",
                                         "type": "string",
-                                        "format": "email"
+                                        "format": "email",
+                                        "example": "user@example.com"
                                     },
                                     "password": {
+                                        "description": "Password (minimum 8 characters, must contain letters, numbers, and symbols)",
                                         "type": "string",
                                         "format": "password",
-                                        "minLength": 8
+                                        "minLength": 8,
+                                        "example": "SecurePass123!"
                                     },
                                     "passwordConfirmation": {
+                                        "description": "Password confirmation (must match password field)",
                                         "type": "string",
-                                        "format": "password"
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "SecurePass123!"
                                     },
                                     "firstName": {
+                                        "description": "User first name",
                                         "type": "string",
-                                        "maxLength": 255
+                                        "maxLength": 255,
+                                        "minLength": 2,
+                                        "example": "Juan"
                                     },
                                     "lastName": {
+                                        "description": "User last name",
                                         "type": "string",
-                                        "maxLength": 255
+                                        "maxLength": 255,
+                                        "minLength": 2,
+                                        "example": "Pérez"
                                     },
                                     "acceptsTerms": {
-                                        "type": "boolean"
+                                        "description": "User must accept terms of service (must be true)",
+                                        "type": "boolean",
+                                        "example": true
                                     },
                                     "acceptsPrivacyPolicy": {
-                                        "type": "boolean"
+                                        "description": "User must accept privacy policy (must be true)",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -73,14 +91,214 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "User created successfully"
+                    "201": {
+                        "description": "User created successfully. Returns authentication tokens and user data. Refresh token is set in HttpOnly cookie named \"refresh_token\".",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "HttpOnly cookie containing refresh token (name: refresh_token, path: /, httpOnly: true, sameSite: lax, maxAge: 43200 minutes)",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "accessToken": {
+                                            "description": "JWT access token for API authentication",
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                        },
+                                        "refreshToken": {
+                                            "description": "Information message (actual token is in HttpOnly cookie)",
+                                            "type": "string",
+                                            "example": "Refresh token set in httpOnly cookie"
+                                        },
+                                        "tokenType": {
+                                            "description": "Token type",
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "description": "Access token expiration time in seconds",
+                                            "type": "integer",
+                                            "example": 2592000
+                                        },
+                                        "user": {
+                                            "description": "Authenticated user information",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "userCode": {
+                                                    "type": "string",
+                                                    "example": "USR-20241101-001"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "user@example.com"
+                                                },
+                                                "emailVerified": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "onboardingCompleted": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ACTIVE",
+                                                        "INACTIVE",
+                                                        "SUSPENDED"
+                                                    ],
+                                                    "example": "ACTIVE"
+                                                },
+                                                "displayName": {
+                                                    "type": "string",
+                                                    "example": "Juan Pérez"
+                                                },
+                                                "avatarUrl": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "theme": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "light",
+                                                        "dark"
+                                                    ],
+                                                    "example": "light"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "es"
+                                                },
+                                                "roleContexts": {
+                                                    "description": "User roles and their associated contexts",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "roleCode": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "USER",
+                                                                    "AGENT",
+                                                                    "COMPANY_ADMIN",
+                                                                    "PLATFORM_ADMIN"
+                                                                ],
+                                                                "example": "USER"
+                                                            },
+                                                            "roleName": {
+                                                                "type": "string",
+                                                                "example": "Cliente"
+                                                            },
+                                                            "dashboardPath": {
+                                                                "type": "string",
+                                                                "example": "/tickets"
+                                                            },
+                                                            "company": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "string",
+                                                                        "format": "uuid"
+                                                                    },
+                                                                    "companyCode": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "type": "object",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "sessionId": {
+                                            "description": "Session identifier",
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "example": "660e8400-e29b-41d4-a716-446655440011"
+                                        },
+                                        "loginTimestamp": {
+                                            "description": "ISO 8601 timestamp",
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2024-11-01T10:30:00+00:00"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error - Invalid input data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The email field is required. (and 2 more errors)"
+                                        },
+                                        "errors": {
+                                            "description": "Field-specific validation errors",
+                                            "type": "object",
+                                            "example": {
+                                                "email": [
+                                                    "El email es requerido."
+                                                ],
+                                                "password": [
+                                                    "La contraseña debe tener al menos 8 caracteres."
+                                                ],
+                                                "acceptsTerms": [
+                                                    "Debes aceptar los términos de servicio."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "409": {
-                        "description": "Email already exists"
+                        "description": "Conflict - Email already registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Este email ya está registrado."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "email": [
+                                                    "Este email ya está registrado."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -91,9 +309,10 @@
                     "Authentication"
                 ],
                 "summary": "Login user",
-                "description": "Authenticate user with email and password",
+                "description": "Authenticates a user using email and password credentials. Generates a new JWT access token and refresh token for the session. The refresh token is securely stored in an HttpOnly cookie. Device information is automatically captured from the request headers for session tracking.",
                 "operationId": "7571e1edb2e53d940f2029c7829e720d",
                 "requestBody": {
+                    "description": "Login credentials",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -104,19 +323,29 @@
                                 ],
                                 "properties": {
                                     "email": {
+                                        "description": "User email address (case-insensitive)",
                                         "type": "string",
-                                        "format": "email"
+                                        "format": "email",
+                                        "example": "lukqs05@gmail.com"
                                     },
                                     "password": {
+                                        "description": "User password",
                                         "type": "string",
-                                        "format": "password"
+                                        "format": "password",
+                                        "minLength": 8,
+                                        "example": "mklmklmkl"
                                     },
                                     "deviceName": {
+                                        "description": "Optional custom device name (auto-detected if not provided)",
                                         "type": "string",
+                                        "maxLength": 255,
+                                        "example": "fifon 15",
                                         "nullable": true
                                     },
                                     "rememberMe": {
+                                        "description": "Keep session active for longer (currently not implemented)",
                                         "type": "boolean",
+                                        "example": true,
                                         "nullable": true
                                     }
                                 },
@@ -127,13 +356,209 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Login successful"
+                        "description": "Login successful. Returns authentication tokens and user data. Refresh token is set in HttpOnly cookie named \"refresh_token\".",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "HttpOnly cookie containing refresh token (name: refresh_token, path: /, httpOnly: true, sameSite: lax, maxAge: 43200 minutes)",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "accessToken": {
+                                            "description": "JWT access token for API authentication",
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                        },
+                                        "refreshToken": {
+                                            "description": "Information message (actual token is in HttpOnly cookie)",
+                                            "type": "string",
+                                            "example": "Refresh token set in httpOnly cookie"
+                                        },
+                                        "tokenType": {
+                                            "description": "Token type",
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "description": "Access token expiration time in seconds",
+                                            "type": "integer",
+                                            "example": 2592000
+                                        },
+                                        "user": {
+                                            "description": "Authenticated user information",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "userCode": {
+                                                    "type": "string",
+                                                    "example": "USR-20241101-001"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "user@example.com"
+                                                },
+                                                "emailVerified": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "onboardingCompleted": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ACTIVE",
+                                                        "INACTIVE",
+                                                        "SUSPENDED"
+                                                    ],
+                                                    "example": "ACTIVE"
+                                                },
+                                                "displayName": {
+                                                    "type": "string",
+                                                    "example": "Juan Pérez"
+                                                },
+                                                "avatarUrl": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/avatars/user.jpg",
+                                                    "nullable": true
+                                                },
+                                                "theme": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "light",
+                                                        "dark"
+                                                    ],
+                                                    "example": "light"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "es"
+                                                },
+                                                "roleContexts": {
+                                                    "description": "User roles and their associated contexts",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "roleCode": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "USER",
+                                                                    "AGENT",
+                                                                    "COMPANY_ADMIN",
+                                                                    "PLATFORM_ADMIN"
+                                                                ],
+                                                                "example": "COMPANY_ADMIN"
+                                                            },
+                                                            "roleName": {
+                                                                "type": "string",
+                                                                "example": "Administrador de Empresa"
+                                                            },
+                                                            "dashboardPath": {
+                                                                "type": "string",
+                                                                "example": "/empresa/dashboard"
+                                                            },
+                                                            "company": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "string",
+                                                                        "format": "uuid",
+                                                                        "example": "770e8400-e29b-41d4-a716-446655440088"
+                                                                    },
+                                                                    "companyCode": {
+                                                                        "type": "string",
+                                                                        "example": "CMP-20241101-001"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Acme Corp"
+                                                                    }
+                                                                },
+                                                                "type": "object",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "sessionId": {
+                                            "description": "Session identifier",
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "example": "660e8400-e29b-41d4-a716-446655440011"
+                                        },
+                                        "loginTimestamp": {
+                                            "description": "ISO 8601 timestamp",
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2024-11-01T10:30:00+00:00"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error - Invalid input data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The email field is required."
+                                        },
+                                        "errors": {
+                                            "description": "Field-specific validation errors",
+                                            "type": "object",
+                                            "example": {
+                                                "email": [
+                                                    "El email es requerido."
+                                                ],
+                                                "password": [
+                                                    "La contraseña es requerida."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Invalid credentials"
+                        "description": "Unauthorized - Invalid credentials or user account is suspended/inactive",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid credentials"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "INVALID_CREDENTIALS"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -143,10 +568,11 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Login with Google",
-                "description": "Authenticate user using Google ID token",
+                "summary": "Login with Google OAuth (NOT IMPLEMENTED)",
+                "description": "Authenticate user using Google ID token. If the user does not exist, it will be automatically created. NOTE: This endpoint is currently NOT IMPLEMENTED and will return HTTP 501 (Not Implemented). It is planned for a future release.",
                 "operationId": "09fd714107f3ee9528c85d31498e16ab",
                 "requestBody": {
+                    "description": "Google authentication token",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -156,8 +582,9 @@
                                 ],
                                 "properties": {
                                     "googleToken": {
-                                        "description": "Google ID token",
-                                        "type": "string"
+                                        "description": "Google ID token obtained from Google OAuth flow",
+                                        "type": "string",
+                                        "example": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjZmNzI1NDEwMWY1NmU0M2..."
                                     }
                                 },
                                 "type": "object"
@@ -166,14 +593,70 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Login successful"
+                    "501": {
+                        "description": "Not Implemented - This feature is not yet available",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Google login not yet implemented"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error - Invalid input data (when implemented)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The googleToken field is required."
+                                        },
+                                        "errors": {
+                                            "description": "Field-specific validation errors",
+                                            "type": "object",
+                                            "example": {
+                                                "googleToken": [
+                                                    "The googleToken field is required."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Invalid token"
+                        "description": "Unauthorized - Invalid or expired Google token (when implemented)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid Google token"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "INVALID_GOOGLE_TOKEN"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -184,14 +667,207 @@
                     "Authentication"
                 ],
                 "summary": "Get authentication status",
-                "description": "Get current authenticated user status and session information",
+                "description": "Retrieves the current authentication status for the authenticated user. Returns complete user information, active session details, and JWT token metadata. Requires a valid Bearer token in the Authorization header. This endpoint is useful for checking if a user session is still valid and retrieving updated user data.",
                 "operationId": "8a24b7b2f49b7e0cb087a5b10704059b",
                 "responses": {
                     "200": {
-                        "description": "Authentication status retrieved"
+                        "description": "Authentication status retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "isAuthenticated": {
+                                            "description": "Always true for successful responses",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "user": {
+                                            "description": "Current authenticated user information",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "userCode": {
+                                                    "type": "string",
+                                                    "example": "USR-20241101-001"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "user@example.com"
+                                                },
+                                                "emailVerified": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "onboardingCompleted": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ACTIVE",
+                                                        "INACTIVE",
+                                                        "SUSPENDED"
+                                                    ],
+                                                    "example": "ACTIVE"
+                                                },
+                                                "displayName": {
+                                                    "type": "string",
+                                                    "example": "Juan Pérez"
+                                                },
+                                                "avatarUrl": {
+                                                    "type": "string",
+                                                    "example": "https://example.com/avatars/user.jpg",
+                                                    "nullable": true
+                                                },
+                                                "theme": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "light",
+                                                        "dark"
+                                                    ],
+                                                    "example": "light"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "es"
+                                                },
+                                                "roleContexts": {
+                                                    "description": "User roles and their associated contexts",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "roleCode": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "USER",
+                                                                    "AGENT",
+                                                                    "COMPANY_ADMIN",
+                                                                    "PLATFORM_ADMIN"
+                                                                ],
+                                                                "example": "USER"
+                                                            },
+                                                            "roleName": {
+                                                                "type": "string",
+                                                                "example": "Cliente"
+                                                            },
+                                                            "dashboardPath": {
+                                                                "type": "string",
+                                                                "example": "/tickets"
+                                                            },
+                                                            "company": {
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "string",
+                                                                        "format": "uuid",
+                                                                        "example": "770e8400-e29b-41d4-a716-446655440088"
+                                                                    },
+                                                                    "companyCode": {
+                                                                        "type": "string",
+                                                                        "example": "CMP-20241101-001"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Acme Corp"
+                                                                    }
+                                                                },
+                                                                "type": "object",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "currentSession": {
+                                            "description": "Current active session information (null if session not found)",
+                                            "properties": {
+                                                "sessionId": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "660e8400-e29b-41d4-a716-446655440011"
+                                                },
+                                                "deviceName": {
+                                                    "type": "string",
+                                                    "example": "Chrome on Windows"
+                                                },
+                                                "ipAddress": {
+                                                    "type": "string",
+                                                    "format": "ipv4",
+                                                    "example": "192.168.1.100"
+                                                },
+                                                "userAgent": {
+                                                    "type": "string",
+                                                    "example": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
+                                                },
+                                                "lastUsedAt": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-11-01T10:25:00+00:00",
+                                                    "nullable": true
+                                                },
+                                                "expiresAt": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-12-01T10:30:00+00:00",
+                                                    "nullable": true
+                                                },
+                                                "isCurrent": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
+                                        "tokenInfo": {
+                                            "description": "JWT token metadata",
+                                            "properties": {
+                                                "expiresIn": {
+                                                    "description": "Seconds until token expires",
+                                                    "type": "integer",
+                                                    "example": 2591000
+                                                },
+                                                "issuedAt": {
+                                                    "description": "Token issue timestamp",
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-11-01T10:30:00+00:00"
+                                                },
+                                                "tokenType": {
+                                                    "type": "string",
+                                                    "example": "Bearer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthenticated"
+                        "description": "Unauthorized - Invalid, expired, or missing access token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -207,7 +883,7 @@
                     "Email Verification"
                 ],
                 "summary": "Verify email",
-                "description": "Verify user email with token. Always returns 200.",
+                "description": "Verify user email with token. Public endpoint (no authentication required). Always returns 200 status, check \"success\" field in response body to determine result.",
                 "operationId": "077140d57b4d70ffd89a68e5a5899364",
                 "requestBody": {
                     "required": true,
@@ -219,7 +895,9 @@
                                 ],
                                 "properties": {
                                     "token": {
-                                        "type": "string"
+                                        "description": "Email verification token (received via email)",
+                                        "type": "string",
+                                        "example": "abc123def456ghi789jkl012mno345pq"
                                     }
                                 },
                                 "type": "object"
@@ -229,7 +907,33 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Verification result (check success field)"
+                        "description": "Verification result (always returns 200, check success field)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema."
+                                        },
+                                        "canResend": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "resendAvailableAt": {
+                                            "type": "string",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -240,19 +944,50 @@
                     "Email Verification"
                 ],
                 "summary": "Resend verification email",
-                "description": "Resend verification email to authenticated user (rate limited: 3 per 5 minutes)",
+                "description": "Resend verification email to authenticated user. Rate limited: 3 attempts every 5 minutes. Always returns success message for security (even if already verified).",
                 "operationId": "68696da7a70f3e6377685eab5496aa04",
                 "responses": {
                     "200": {
-                        "description": "Email resent"
+                        "description": "Email resent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email de verificación enviado correctamente. Revisa tu bandeja de entrada."
+                                        },
+                                        "canResend": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "resendAvailableAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T15:30:00+00:00"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
                     },
                     "429": {
-                        "description": "Rate limit exceeded"
+                        "description": "Rate limit exceeded (3 attempts per 5 minutes)"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/auth/email/status": {
@@ -261,16 +996,59 @@
                     "Email Verification"
                 ],
                 "summary": "Get email verification status",
-                "description": "Get email verification status for authenticated user",
+                "description": "Get email verification status for authenticated user. Returns verification state, timestamps, and resend availability.",
                 "operationId": "f9d76d9ffd5f5b4d7f72eee0ba75f695",
                 "responses": {
                     "200": {
-                        "description": "Status retrieved"
+                        "description": "Status retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "is_verified": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email",
+                                            "example": "user@example.com"
+                                        },
+                                        "verified_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T10:30:00+00:00",
+                                            "nullable": true
+                                        },
+                                        "can_resend": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "resend_available_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T15:30:00+00:00",
+                                            "nullable": true
+                                        },
+                                        "attempts_remaining": {
+                                            "type": "integer",
+                                            "example": 3
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/health": {
@@ -279,11 +1057,31 @@
                     "Health"
                 ],
                 "summary": "Health check",
-                "description": "Verifica el estado de la API",
+                "description": "Verify that the API is operational and responding correctly",
                 "operationId": "1c4061d7fcb253d4c29c0060f524b139",
                 "responses": {
                     "200": {
-                        "description": "API está funcionando"
+                        "description": "API is operational",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Health status of the API",
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "timestamp": {
+                                            "description": "ISO 8601 timestamp of the health check",
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T12:00:00+00:00"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -294,16 +1092,187 @@
                     "Onboarding"
                 ],
                 "summary": "Mark onboarding as completed",
-                "description": "Mark onboarding process as completed for authenticated user",
+                "description": "Marks the onboarding process as completed for the authenticated user. Sets the onboarding_completed_at timestamp. If onboarding is already completed, returns success without modifications. Email verification is NOT a prerequisite for completing onboarding.",
                 "operationId": "d7efab01fa98353947198030b8eb5e4d",
                 "responses": {
                     "200": {
-                        "description": "Onboarding marked as completed"
+                        "description": "Onboarding successfully marked as completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "user"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Onboarding completado exitosamente"
+                                        },
+                                        "user": {
+                                            "required": [
+                                                "id",
+                                                "userCode",
+                                                "email",
+                                                "emailVerified",
+                                                "onboardingCompleted",
+                                                "status",
+                                                "displayName"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "9d5e8e42-3f1c-4e8d-a8c4-5e3f1c4e8d9a"
+                                                },
+                                                "userCode": {
+                                                    "type": "string",
+                                                    "example": "USR-20251101-001"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "john.doe@example.com"
+                                                },
+                                                "emailVerified": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "onboardingCompleted": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ACTIVE",
+                                                        "INACTIVE",
+                                                        "SUSPENDED"
+                                                    ],
+                                                    "example": "ACTIVE"
+                                                },
+                                                "displayName": {
+                                                    "type": "string",
+                                                    "example": "John Doe"
+                                                },
+                                                "avatarUrl": {
+                                                    "type": "string",
+                                                    "format": "url",
+                                                    "example": "https://example.com/avatars/john-doe.jpg",
+                                                    "nullable": true
+                                                },
+                                                "theme": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "light",
+                                                        "dark"
+                                                    ],
+                                                    "example": "light"
+                                                },
+                                                "language": {
+                                                    "type": "string",
+                                                    "example": "es"
+                                                },
+                                                "roleContexts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "roleCode",
+                                                            "roleName",
+                                                            "dashboardPath",
+                                                            "company"
+                                                        ],
+                                                        "properties": {
+                                                            "roleCode": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "USER",
+                                                                    "AGENT",
+                                                                    "COMPANY_ADMIN",
+                                                                    "PLATFORM_ADMIN"
+                                                                ],
+                                                                "example": "USER"
+                                                            },
+                                                            "roleName": {
+                                                                "type": "string",
+                                                                "example": "Cliente"
+                                                            },
+                                                            "dashboardPath": {
+                                                                "type": "string",
+                                                                "example": "/tickets"
+                                                            },
+                                                            "company": {
+                                                                "required": [
+                                                                    "id",
+                                                                    "companyCode",
+                                                                    "name"
+                                                                ],
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "string",
+                                                                        "format": "uuid",
+                                                                        "example": "8d4e7e31-2f0b-3d7c-b9c3-4e2f0b3d7c8d"
+                                                                    },
+                                                                    "companyCode": {
+                                                                        "type": "string",
+                                                                        "example": "COMP-20251101-001"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Acme Corporation"
+                                                                    }
+                                                                },
+                                                                "type": "object",
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "example": [
+                                                        {
+                                                            "roleCode": "USER",
+                                                            "roleName": "Cliente",
+                                                            "dashboardPath": "/tickets",
+                                                            "company": null
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthenticated"
+                        "description": "User not authenticated - Missing or invalid bearer token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/auth/password-reset": {
@@ -312,7 +1281,7 @@
                     "Password Reset"
                 ],
                 "summary": "Request password reset",
-                "description": "Request a password reset. Always returns success for security.",
+                "description": "Request a password reset email. Public endpoint (no authentication required). ALWAYS returns 200 success for security - does not reveal if email exists in system.",
                 "operationId": "67699b55b6b45dc8a8f476a6a079595b",
                 "requestBody": {
                     "required": true,
@@ -324,8 +1293,10 @@
                                 ],
                                 "properties": {
                                     "email": {
+                                        "description": "Email address to send password reset link",
                                         "type": "string",
-                                        "format": "email"
+                                        "format": "email",
+                                        "example": "user@example.com"
                                     }
                                 },
                                 "type": "object"
@@ -335,10 +1306,27 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Reset requested (always success)"
+                        "description": "Reset requested successfully (always returns 200, even if email does not exist)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Si el email existe en nuestro sistema, recibirás un enlace para resetear tu contraseña."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error (invalid email format)"
                     }
                 }
             }
@@ -349,7 +1337,7 @@
                     "Password Reset"
                 ],
                 "summary": "Confirm password reset",
-                "description": "Confirm password reset with new password and token/code",
+                "description": "Confirm password reset with new password and token/code. Public endpoint (no authentication required). Automatically logs in user and returns session tokens after successful reset.",
                 "operationId": "4f87e9e00e2080d94b31eb313af97f9c",
                 "requestBody": {
                     "required": true,
@@ -362,23 +1350,29 @@
                                 ],
                                 "properties": {
                                     "token": {
-                                        "description": "Reset token (32 chars)",
+                                        "description": "Reset token (32 chars) - received via email. Use token OR code, not both.",
                                         "type": "string",
+                                        "example": "abc123def456ghi789jkl012mno345pq",
                                         "nullable": true
                                     },
                                     "code": {
-                                        "description": "Reset code (6 digits)",
+                                        "description": "Reset code (6 digits) - alternative to token. Use token OR code, not both.",
                                         "type": "string",
+                                        "example": "123456",
                                         "nullable": true
                                     },
                                     "password": {
+                                        "description": "New password (minimum 8 characters)",
                                         "type": "string",
                                         "format": "password",
-                                        "minLength": 8
+                                        "minLength": 8,
+                                        "example": "NewSecurePass123!"
                                     },
                                     "passwordConfirmation": {
+                                        "description": "Password confirmation (must match password)",
                                         "type": "string",
-                                        "format": "password"
+                                        "format": "password",
+                                        "example": "NewSecurePass123!"
                                     }
                                 },
                                 "type": "object"
@@ -388,16 +1382,70 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Password reset successfully"
+                        "description": "Password reset successfully - user automatically logged in",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "accessToken": {
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                        },
+                                        "refreshToken": {
+                                            "type": "string",
+                                            "example": "def502004b4c8a1b3f7e..."
+                                        },
+                                        "tokenType": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "example": "user@example.com"
+                                                },
+                                                "userCode": {
+                                                    "type": "string",
+                                                    "example": "USER001"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "sessionId": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "example": "650e8400-e29b-41d4-a716-446655440001"
+                                        },
+                                        "loginTimestamp": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T15:30:00+00:00"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error (invalid format, passwords do not match, etc.)"
                     },
                     "404": {
-                        "description": "Invalid token/code"
+                        "description": "Invalid token/code - not found in database"
                     },
                     "401": {
-                        "description": "Token expired"
+                        "description": "Token expired or already used"
                     }
                 }
             }
@@ -408,28 +1456,67 @@
                     "Password Reset"
                 ],
                 "summary": "Get password reset status",
-                "description": "Validate password reset token and return its status",
+                "description": "Validate password reset token and return its status. Public endpoint (no authentication required). Use this before showing the password reset form to verify the token is valid.",
                 "operationId": "ff2ace448696392eb45ebde2e5e43915",
                 "parameters": [
                     {
                         "name": "token",
                         "in": "query",
+                        "description": "Password reset token (32 chars) received via email",
                         "required": true,
                         "schema": {
-                            "description": "Reset token",
-                            "type": "string"
+                            "type": "string",
+                            "example": "abc123def456ghi789jkl012mno345pq"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Token status retrieved"
+                        "description": "Token status retrieved successfully (always returns 200, check is_valid field)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "is_valid": {
+                                            "description": "Whether the token is valid and not expired",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "can_reset": {
+                                            "description": "Whether password can be reset (same as is_valid)",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "email": {
+                                            "description": "Email associated with token (null if invalid)",
+                                            "type": "string",
+                                            "format": "email",
+                                            "example": "user@example.com",
+                                            "nullable": true
+                                        },
+                                        "expires_at": {
+                                            "description": "Token expiration timestamp",
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-01T16:30:00+00:00",
+                                            "nullable": true
+                                        },
+                                        "attempts_remaining": {
+                                            "description": "Number of remaining reset attempts",
+                                            "type": "integer",
+                                            "example": 3
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
-                        "description": "Token not found"
+                        "description": "Token not found in database"
                     },
                     "410": {
-                        "description": "Token expired"
+                        "description": "Token expired (gone)"
                     }
                 }
             }
@@ -440,28 +1527,31 @@
                     "Authentication"
                 ],
                 "summary": "Refresh access token",
-                "description": "Get a new access token using refresh token from cookie or header. For Swagger testing, use header X-Refresh-Token with the refresh token value.",
+                "description": "Generates a new JWT access token and refresh token using a valid refresh token. The refresh token is read from an HttpOnly cookie (recommended for security), or alternatively from the X-Refresh-Token header (for testing in Swagger) or request body. This endpoint implements token rotation: the old refresh token is invalidated and a new one is generated. The new refresh token is automatically set in an HttpOnly cookie.",
                 "operationId": "3c243abb35865fca479a53debfe9abae",
                 "parameters": [
                     {
                         "name": "X-Refresh-Token",
                         "in": "header",
-                        "description": "Refresh token (for testing in Swagger). If not provided, uses refresh_token from HttpOnly cookie.",
+                        "description": "Refresh token for testing in Swagger UI. In production, the refresh token should be sent via HttpOnly cookie (automatically handled by browsers). This header takes priority over cookie and body.",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
                         }
                     }
                 ],
                 "requestBody": {
+                    "description": "Alternative method to send refresh token (not recommended for production)",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
                                     "refreshToken": {
-                                        "description": "Refresh token (alternative method, not recommended)",
-                                        "type": "string"
+                                        "description": "Refresh token (use only if cookie and header are not available)",
+                                        "type": "string",
+                                        "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
                                     }
                                 },
                                 "type": "object"
@@ -471,10 +1561,71 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Token refreshed successfully. New refresh token in Set-Cookie header."
+                        "description": "Token refreshed successfully. New access token returned in response body. New refresh token set in HttpOnly cookie.",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "HttpOnly cookie containing new refresh token (name: refresh_token, path: /, httpOnly: true, sameSite: strict, secure: true in production, maxAge: 43200 minutes / 30 days)",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refresh_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "accessToken": {
+                                            "description": "New JWT access token for API authentication",
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                        },
+                                        "tokenType": {
+                                            "description": "Token type",
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "description": "Access token expiration time in seconds",
+                                            "type": "integer",
+                                            "example": 2592000
+                                        },
+                                        "message": {
+                                            "description": "Success message explaining that refresh token is in cookie",
+                                            "type": "string",
+                                            "example": "Token refreshed successfully. New refresh token set in HttpOnly cookie."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Invalid or missing refresh token"
+                        "description": "Unauthorized - Invalid, expired, or missing refresh token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "description": "Human-readable error message",
+                                            "type": "string",
+                                            "example": "Invalid or expired refresh token. Please login again."
+                                        },
+                                        "error": {
+                                            "description": "Error code for programmatic handling",
+                                            "type": "string",
+                                            "enum": [
+                                                "REFRESH_TOKEN_REQUIRED",
+                                                "INVALID_REFRESH_TOKEN"
+                                            ],
+                                            "example": "INVALID_REFRESH_TOKEN"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -485,11 +1636,75 @@
                     "Sessions"
                 ],
                 "summary": "List user sessions",
-                "description": "Get all active sessions for authenticated user",
+                "description": "Get all active sessions for authenticated user. Returns all non-revoked refresh tokens ordered by last usage.",
                 "operationId": "9c723308a97b1e896f71b03ef5541c5a",
                 "responses": {
                     "200": {
-                        "description": "Sessions retrieved"
+                        "description": "Sessions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "sessions": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "sessionId": {
+                                                        "description": "Session identifier",
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "9d4e3c2a-8b7f-4e5d-9c8b-7a6f5e4d3c2b"
+                                                    },
+                                                    "deviceName": {
+                                                        "description": "Device name",
+                                                        "type": "string",
+                                                        "example": "Chrome on Windows",
+                                                        "nullable": true
+                                                    },
+                                                    "ipAddress": {
+                                                        "description": "IP address",
+                                                        "type": "string",
+                                                        "example": "192.168.1.1",
+                                                        "nullable": true
+                                                    },
+                                                    "userAgent": {
+                                                        "description": "User agent string",
+                                                        "type": "string",
+                                                        "example": "Mozilla/5.0...",
+                                                        "nullable": true
+                                                    },
+                                                    "lastUsedAt": {
+                                                        "description": "Last usage timestamp (ISO 8601)",
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-11-01T12:00:00+00:00"
+                                                    },
+                                                    "expiresAt": {
+                                                        "description": "Expiration timestamp (ISO 8601)",
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-11-08T12:00:00+00:00"
+                                                    },
+                                                    "isCurrent": {
+                                                        "description": "Whether this is the current session",
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "location": {
+                                                        "description": "GeoIP location (not yet implemented)",
+                                                        "type": "string",
+                                                        "example": null,
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -508,7 +1723,7 @@
                     "Sessions"
                 ],
                 "summary": "Logout user",
-                "description": "Logout from current session or all sessions",
+                "description": "Logout from current session or all sessions. Revokes tokens, blacklists access token, and clears the refresh_token cookie.",
                 "operationId": "b471d4a100ddd7d6def4d28f7f51b1e1",
                 "requestBody": {
                     "required": false,
@@ -519,6 +1734,7 @@
                                     "everywhere": {
                                         "description": "Logout from all sessions",
                                         "type": "boolean",
+                                        "example": false,
                                         "nullable": true
                                     }
                                 },
@@ -529,7 +1745,24 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Logout successful"
+                        "description": "Logout successful. Cookie refresh_token is cleared.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -548,34 +1781,53 @@
                     "Sessions"
                 ],
                 "summary": "Revoke a session",
-                "description": "Revoke a specific session from another device",
+                "description": "Revoke a specific session from another device. Blacklists associated access tokens and revokes the refresh token. Cannot revoke the current session.",
                 "operationId": "f80106f8794ae1d6b079027b9d102edb",
                 "parameters": [
                     {
                         "name": "sessionId",
                         "in": "path",
+                        "description": "UUID of the session to revoke",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "uuid"
-                        }
+                        },
+                        "example": "9d4e3c2a-8b7f-4e5d-9c8b-7a6f5e4d3c2b"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Session revoked"
+                        "description": "Session revoked successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Session revoked successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
                     },
                     "403": {
-                        "description": "Not authorized"
+                        "description": "Not authorized to revoke this session"
                     },
                     "404": {
-                        "description": "Session not found"
+                        "description": "Session not found or already revoked"
                     },
                     "409": {
-                        "description": "Cannot revoke current session"
+                        "description": "Conflict: Cannot revoke the current session. Use logout endpoint instead."
                     }
                 },
                 "security": [
@@ -3719,27 +4971,42 @@
                                             "type": "array",
                                             "items": {
                                                 "properties": {
-                                                    "id": {
-                                                        "type": "string",
-                                                        "format": "uuid"
-                                                    },
-                                                    "roleCode": {
+                                                    "code": {
+                                                        "description": "Role code",
                                                         "type": "string",
                                                         "enum": [
                                                             "USER",
                                                             "AGENT",
                                                             "COMPANY_ADMIN",
                                                             "PLATFORM_ADMIN"
-                                                        ]
+                                                        ],
+                                                        "example": "COMPANY_ADMIN"
                                                     },
                                                     "name": {
-                                                        "type": "string"
+                                                        "description": "Role display name",
+                                                        "type": "string",
+                                                        "example": "Company Administrator"
                                                     },
                                                     "description": {
-                                                        "type": "string"
+                                                        "description": "Role description",
+                                                        "type": "string",
+                                                        "example": "Manages company settings and users",
+                                                        "nullable": true
                                                     },
                                                     "requiresCompany": {
-                                                        "type": "boolean"
+                                                        "description": "Whether this role requires a company context",
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "defaultDashboard": {
+                                                        "description": "Default dashboard route for this role",
+                                                        "type": "string",
+                                                        "example": "/empresa/dashboard"
+                                                    },
+                                                    "isSystemRole": {
+                                                        "description": "Whether this is a system-protected role",
+                                                        "type": "boolean",
+                                                        "example": true
                                                     }
                                                 },
                                                 "type": "object"
@@ -3799,16 +5066,18 @@
                                         "description": "Role code to assign",
                                         "type": "string",
                                         "enum": [
-                                            "PLATFORM_ADMIN",
-                                            "COMPANY_ADMIN",
+                                            "USER",
                                             "AGENT",
-                                            "USER"
-                                        ]
+                                            "COMPANY_ADMIN",
+                                            "PLATFORM_ADMIN"
+                                        ],
+                                        "example": "AGENT"
                                     },
                                     "companyId": {
-                                        "description": "Required if roleCode is COMPANY_ADMIN or AGENT",
+                                        "description": "Company UUID. REQUIRED if roleCode is AGENT or COMPANY_ADMIN. MUST be null if roleCode is USER or PLATFORM_ADMIN.",
                                         "type": "string",
                                         "format": "uuid",
+                                        "example": "8c3d5e1f-2a4b-5c6d-7e8f-9a0b1c2d3e4f",
                                         "nullable": true
                                     }
                                 },
@@ -3825,12 +5094,77 @@
                                 "schema": {
                                     "properties": {
                                         "success": {
-                                            "type": "boolean"
+                                            "type": "boolean",
+                                            "example": true
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Rol asignado exitosamente"
                                         },
                                         "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "7b5a4c3d-9e8f-1a2b-3c4d-5e6f7a8b9c0d"
+                                                },
+                                                "roleCode": {
+                                                    "type": "string",
+                                                    "example": "AGENT"
+                                                },
+                                                "roleName": {
+                                                    "type": "string",
+                                                    "example": "Agent"
+                                                },
+                                                "company": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "8c3d5e1f-2a4b-5c6d-7e8f-9a0b1c2d3e4f"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Acme Corporation"
+                                                        },
+                                                        "logoUrl": {
+                                                            "type": "string",
+                                                            "example": "https://example.com/logos/acme.png",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "isActive": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "assignedAt": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-01T14:30:00Z"
+                                                },
+                                                "assignedBy": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid",
+                                                            "example": "6a4b3c2d-8e7f-9a0b-1c2d-3e4f5a6b7c8d"
+                                                        },
+                                                        "userCode": {
+                                                            "type": "string",
+                                                            "example": "USR-20250001"
+                                                        },
+                                                        "email": {
+                                                            "type": "string",
+                                                            "example": "admin@example.com"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },
@@ -3846,12 +5180,41 @@
                                 "schema": {
                                     "properties": {
                                         "success": {
-                                            "type": "boolean"
+                                            "type": "boolean",
+                                            "example": true
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Rol reactivado exitosamente"
                                         },
                                         "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "roleCode": {
+                                                    "type": "string"
+                                                },
+                                                "roleName": {
+                                                    "type": "string"
+                                                },
+                                                "company": {
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "isActive": {
+                                                    "type": "boolean"
+                                                },
+                                                "assignedAt": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "assignedBy": {
+                                                    "type": "object",
+                                                    "nullable": true
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },
@@ -3895,32 +5258,26 @@
                     {
                         "name": "roleId",
                         "in": "path",
-                        "description": "UserRole UUID (not Role UUID)",
+                        "description": "UserRole UUID (not Role UUID) - the ID of the role assignment to remove",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "uuid"
-                        }
+                        },
+                        "example": "7b5a4c3d-9e8f-1a2b-3c4d-5e6f7a8b9c0d"
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "description": "Optional reason for removal (max 500 characters)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500
+                        },
+                        "example": "User changed departments"
                     }
                 ],
-                "requestBody": {
-                    "description": "Optional revocation details",
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "reason": {
-                                        "description": "Reason for removal (max 500 chars)",
-                                        "type": "string",
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
                 "responses": {
                     "200": {
                         "description": "Role removed successfully",

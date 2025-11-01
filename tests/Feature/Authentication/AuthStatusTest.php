@@ -17,7 +17,7 @@ use Tests\TestCase;
  * - Manejo de tokens inválidos/expirados
  * - Protección con @jwt directive
  */
-class AuthStatusQueryTest extends TestCase
+class AuthStatusTest extends TestCase
 {
     use RefreshDatabase;
 

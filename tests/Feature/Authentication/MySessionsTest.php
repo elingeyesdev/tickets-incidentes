@@ -18,7 +18,7 @@ use Tests\TestCase;
  * - Protección con @jwt directive
  * - Manejo de múltiples dispositivos
  */
-class MySessionsQueryTest extends TestCase
+class MySessionsTest extends TestCase
 {
     use RefreshDatabase;
 

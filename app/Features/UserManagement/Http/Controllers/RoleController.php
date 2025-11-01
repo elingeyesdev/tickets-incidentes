@@ -44,11 +44,12 @@ class RoleController extends Controller
                             items: new OA\Items(
                                 type: 'object',
                                 properties: [
-                                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                                    new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN']),
-                                    new OA\Property(property: 'name', type: 'string'),
-                                    new OA\Property(property: 'description', type: 'string'),
-                                    new OA\Property(property: 'requiresCompany', type: 'boolean'),
+                                    new OA\Property(property: 'code', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'], description: 'Role code', example: 'COMPANY_ADMIN'),
+                                    new OA\Property(property: 'name', type: 'string', description: 'Role display name', example: 'Company Administrator'),
+                                    new OA\Property(property: 'description', type: 'string', nullable: true, description: 'Role description', example: 'Manages company settings and users'),
+                                    new OA\Property(property: 'requiresCompany', type: 'boolean', description: 'Whether this role requires a company context', example: true),
+                                    new OA\Property(property: 'defaultDashboard', type: 'string', description: 'Default dashboard route for this role', example: '/empresa/dashboard'),
+                                    new OA\Property(property: 'isSystemRole', type: 'boolean', description: 'Whether this is a system-protected role', example: true),
                                 ]
                             )
                         )
@@ -97,8 +98,8 @@ class RoleController extends Controller
                 type: 'object',
                 required: ['roleCode'],
                 properties: [
-                    new OA\Property(property: 'roleCode', type: 'string', enum: ['PLATFORM_ADMIN', 'COMPANY_ADMIN', 'AGENT', 'USER'], description: 'Role code to assign'),
-                    new OA\Property(property: 'companyId', type: 'string', format: 'uuid', nullable: true, description: 'Required if roleCode is COMPANY_ADMIN or AGENT'),
+                    new OA\Property(property: 'roleCode', type: 'string', enum: ['USER', 'AGENT', 'COMPANY_ADMIN', 'PLATFORM_ADMIN'], description: 'Role code to assign', example: 'AGENT'),
+                    new OA\Property(property: 'companyId', type: 'string', format: 'uuid', nullable: true, description: 'Company UUID. REQUIRED if roleCode is AGENT or COMPANY_ADMIN. MUST be null if roleCode is USER or PLATFORM_ADMIN.', example: '8c3d5e1f-2a4b-5c6d-7e8f-9a0b1c2d3e4f'),
                 ]
             )
         ),
@@ -109,9 +110,29 @@ class RoleController extends Controller
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'success', type: 'boolean'),
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Rol asignado exitosamente'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '7b5a4c3d-9e8f-1a2b-3c4d-5e6f7a8b9c0d'),
+                                new OA\Property(property: 'roleCode', type: 'string', example: 'AGENT'),
+                                new OA\Property(property: 'roleName', type: 'string', example: 'Agent'),
+                                new OA\Property(property: 'company', type: 'object', nullable: true, properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '8c3d5e1f-2a4b-5c6d-7e8f-9a0b1c2d3e4f'),
+                                    new OA\Property(property: 'name', type: 'string', example: 'Acme Corporation'),
+                                    new OA\Property(property: 'logoUrl', type: 'string', nullable: true, example: 'https://example.com/logos/acme.png'),
+                                ]),
+                                new OA\Property(property: 'isActive', type: 'boolean', example: true),
+                                new OA\Property(property: 'assignedAt', type: 'string', format: 'date-time', example: '2025-11-01T14:30:00Z'),
+                                new OA\Property(property: 'assignedBy', type: 'object', nullable: true, properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '6a4b3c2d-8e7f-9a0b-1c2d-3e4f5a6b7c8d'),
+                                    new OA\Property(property: 'userCode', type: 'string', example: 'USR-20250001'),
+                                    new OA\Property(property: 'email', type: 'string', example: 'admin@example.com'),
+                                ]),
+                            ]
+                        ),
                     ]
                 )
             ),
@@ -121,9 +142,21 @@ class RoleController extends Controller
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'success', type: 'boolean'),
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Rol reactivado exitosamente'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'roleCode', type: 'string'),
+                                new OA\Property(property: 'roleName', type: 'string'),
+                                new OA\Property(property: 'company', type: 'object', nullable: true),
+                                new OA\Property(property: 'isActive', type: 'boolean'),
+                                new OA\Property(property: 'assignedAt', type: 'string', format: 'date-time'),
+                                new OA\Property(property: 'assignedBy', type: 'object', nullable: true),
+                            ]
+                        ),
                     ]
                 )
             ),
@@ -182,18 +215,9 @@ class RoleController extends Controller
         security: [['bearerAuth' => []]],
         tags: ['Roles'],
         parameters: [
-            new OA\Parameter(name: 'roleId', in: 'path', required: true, description: 'UserRole UUID (not Role UUID)', schema: new OA\Schema(type: 'string', format: 'uuid')),
+            new OA\Parameter(name: 'roleId', in: 'path', required: true, description: 'UserRole UUID (not Role UUID) - the ID of the role assignment to remove', schema: new OA\Schema(type: 'string', format: 'uuid'), example: '7b5a4c3d-9e8f-1a2b-3c4d-5e6f7a8b9c0d'),
+            new OA\Parameter(name: 'reason', in: 'query', required: false, description: 'Optional reason for removal (max 500 characters)', schema: new OA\Schema(type: 'string', maxLength: 500), example: 'User changed departments'),
         ],
-        requestBody: new OA\RequestBody(
-            required: false,
-            description: 'Optional revocation details',
-            content: new OA\JsonContent(
-                type: 'object',
-                properties: [
-                    new OA\Property(property: 'reason', type: 'string', description: 'Reason for removal (max 500 chars)', nullable: true),
-                ]
-            )
-        ),
         responses: [
             new OA\Response(
                 response: 200,

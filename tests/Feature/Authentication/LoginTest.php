@@ -1,6 +1,6 @@
 <?php
 
-namespace Authentication;
+namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
 use App\Shared\Enums\UserStatus;
@@ -19,7 +19,7 @@ use Tests\TestCase;
  * - Valida diferentes estados de usuario
  * - Previene login con credenciales inválidas
  */
-class LoginMutationTest extends TestCase
+class LoginTest extends TestCase
 {
     use RefreshDatabase;
 
