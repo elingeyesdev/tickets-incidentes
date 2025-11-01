@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Features\CompanyManagement\Database\Seeders\CompanyIndustrySeeder;
 use App\Features\UserManagement\Database\Seeders\RolesSeeder;
 use App\Features\UserManagement\Database\Seeders\DefaultUserSeeder;
 use Illuminate\Database\Seeder;
@@ -33,6 +34,10 @@ class DatabaseSeeder extends Seeder
         // Seed roles ALWAYS (required for FK constraints in user_roles table)
         // This ensures auth.roles has the 4 system roles: USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN
         $this->call(RolesSeeder::class);
+
+        // Seed company industries (required for CompanyManagement feature tests)
+        // This ensures business.company_industries has all industry options
+        $this->call(CompanyIndustrySeeder::class);
 
         // Seed default platform admin user (for development/testing)
         $this->call(DefaultUserSeeder::class);

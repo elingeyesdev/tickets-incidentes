@@ -180,7 +180,7 @@ class CompanyService
     public function getActive(int $limit = 50, ?array $filters = null): \Illuminate\Database\Eloquent\Collection
     {
         $query = Company::active()
-            ->with(['adminUser.profile', 'industry', 'followers']);
+            ->with(['admin.profile', 'industry', 'followers']);
 
         // Aplicar filtro de industria si se proporciona
         if (isset($filters['industry_id'])) {
@@ -198,7 +198,7 @@ class CompanyService
     public function index(array $filters = [], int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
         $query = Company::query()
-            ->with(['adminUser.profile', 'industry', 'followers']);
+            ->with(['admin.profile', 'industry', 'followers']);
 
         // Filtro por industria
         if (isset($filters['industry_id'])) {

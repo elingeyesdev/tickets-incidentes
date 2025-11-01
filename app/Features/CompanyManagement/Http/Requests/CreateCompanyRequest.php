@@ -3,6 +3,7 @@
 namespace App\Features\CompanyManagement\Http\Requests;
 
 use App\Features\CompanyManagement\Models\Company;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Http\FormRequest;
@@ -40,7 +41,11 @@ class CreateCompanyRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:200'],
             'legal_name' => ['nullable', 'string', 'min:2', 'max:200'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'industry_id' => ['required', 'uuid', 'exists:business.company_industries,id'],
+            'industry_id' => [
+                'required',
+                'uuid',
+                Rule::exists(CompanyIndustry::class, 'id'),
+            ],
             'admin_user_id' => [
                 'required',
                 'uuid',

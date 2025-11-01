@@ -162,7 +162,7 @@ class CompanyIndustryControllerTest extends TestCase
         // Verificar estructura de Technology industry
         $this->assertNotNull($technology);
         $this->assertEquals('technology', $technology['code']);
-        $this->assertEquals('Technology', $technology['name']);
+        $this->assertEquals('Tecnología', $technology['name']);
         $this->assertNotEmpty($technology['description']);
         $this->assertNotEmpty($technology['createdAt']);
         $this->assertArrayHasKey('id', $technology);

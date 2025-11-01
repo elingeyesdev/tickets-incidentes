@@ -33,7 +33,7 @@ class CompanyRequestResource extends JsonResource
             'companyName' => $this->company_name,
             'legalName' => $this->legal_name ?? null,
             'adminEmail' => $this->admin_email,
-            'companyDescription' => $this->company_description ?? null,
+            'businessDescription' => $this->company_description ?? null,
             'requestMessage' => $this->request_message ?? null,
             'website' => $this->website ?? null,
             'industryId' => $this->industry_id ?? null,

@@ -96,12 +96,13 @@ class CompanyIndustrySeeder extends Seeder
         ];
 
         foreach ($industries as $industry) {
-            DB::table('business.company_industries')->insert([
-                'code' => $industry['code'],
-                'name' => $industry['name'],
-                'description' => $industry['description'],
-                'created_at' => now(),
-            ]);
+            \App\Features\CompanyManagement\Models\CompanyIndustry::updateOrCreate(
+                ['code' => $industry['code']],
+                [
+                    'name' => $industry['name'],
+                    'description' => $industry['description'],
+                ]
+            );
         }
 
         $this->command->info('✅ Successfully seeded ' . count($industries) . ' company industries');

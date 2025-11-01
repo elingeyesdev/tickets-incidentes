@@ -1,17 +1,22 @@
 ================================================================================
--- SISTEMA HELPDESK - MODELADO PERFECCIONADO V7.0
+-- SISTEMA HELPDESK - MODELADO PERFECCIONADO V8.0
 -- ================================================================================
--- Fecha: 27 de Septiembre de 2025
+-- Fecha: 31 de Octubre de 2025
 -- Motor: PostgreSQL 17+
--- DescripciÃ³n: VersiÃ³n perfeccionada incorporando todas las mejoras sugeridas
--- MEJORAS APLICADAS:
--- 1. Nuevo esquema 'audit' para separaciÃ³n de logs
--- 2. Campo display_name ahora es calculado (no aletmacenado)
+-- Descripción: Versión perfeccionada incorporando todas las mejoras sugeridas
+-- MEJORAS APLICADAS EN V7.0:
+-- 1. Nuevo esquema 'audit' para separación de logs
+-- 2. Campo display_name ahora es calculado (no almacenado)
 -- 3. business_hours ahora usa JSONB
--- 4. Ãndices adicionales para performance y seguridad
--- 5. Trigger automÃ¡tico para asignaciÃ³n de owner_agent_id
--- 6. DocumentaciÃ³n mejorada con reglas de negocio
+-- 4. Índices adicionales para performance y seguridad
+-- 5. Trigger automático para asignación de owner_agent_id
+-- 6. Documentación mejorada con reglas de negocio
 -- 7. Mejoras en integridad referencial
+-- MEJORAS APLICADAS EN V8.0:
+-- 8. Separación de company_description y request_message en company_requests
+-- 9. Agregado campo description en companies para información pública
+-- 10. Nueva tabla company_industries como catálogo de industrias
+-- 11. Relación industry_id en companies para normalización de datos
 -- ================================================================================
 
 -- Extensiones necesarias
@@ -25,7 +30,7 @@ CREATE SCHEMA IF NOT EXISTS ticketing;
 CREATE SCHEMA IF NOT EXISTS audit;
 
 -- ================================================================================
--- SECCIÃ“N DE TIPOS ENUMERADOS (ENUMS)
+-- SECCIÓN DE TIPOS ENUMERADOS (ENUMS)
 -- ================================================================================
 
 CREATE TYPE auth.user_status AS ENUM ('active', 'suspended', 'deleted');
@@ -36,16 +41,16 @@ CREATE TYPE ticketing.author_type AS ENUM ('user', 'agent');
 CREATE TYPE audit.action_type AS ENUM ('create', 'update', 'delete', 'login', 'logout');
 
 -- ================================================================================
--- ESQUEMA: auth - GestiÃ³n de Usuarios, Roles y AutenticaciÃ³n
+-- ESQUEMA: auth - Gestión de Usuarios, Roles y Autenticación
 -- ================================================================================
 
--- TABLA 1: USERS (DATOS CRÃTICOS DE AUTENTICACIÃ“N)
+-- TABLA 1: USERS (DATOS CRÍTICOS DE AUTENTICACIÓN)
 CREATE TABLE auth.users (
     -- Identificadores
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_code VARCHAR(20) UNIQUE NOT NULL, -- USR-2025-00001
 
-    -- InformaciÃ³n de autenticaciÃ³n (CRÃTICA)
+    -- Información de autenticación (CRÍTICA)
     email CITEXT UNIQUE NOT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
     email_verified_at TIMESTAMPTZ,
@@ -53,24 +58,24 @@ CREATE TABLE auth.users (
     auth_provider VARCHAR(20) DEFAULT 'local', -- local, google, microsoft
     external_auth_id VARCHAR(255), -- Google ID, Microsoft ID, etc.
 
-    -- Seguridad (CRÃTICA)
+    -- Seguridad (CRÍTICA)
     password_reset_token VARCHAR(255),
     password_reset_expires TIMESTAMPTZ,
     has_temporary_password BOOLEAN DEFAULT FALSE,
     temporary_password_expires_at TIMESTAMPTZ,
 
-    -- Estado del sistema (CRÃTICO)
+    -- Estado del sistema (CRÍTICO)
     status auth.user_status DEFAULT 'active' NOT NULL,
     onboarding_completed_at TIMESTAMPTZ, -- NULL si no ha completado el onboarding
     last_login_at TIMESTAMPTZ,
     last_login_ip INET,
 
-    -- TÃ©rminos y condiciones
+    -- Términos y condiciones
     terms_accepted BOOLEAN DEFAULT FALSE,
     terms_accepted_at TIMESTAMPTZ,
     terms_version VARCHAR(10),
 
-    -- AuditorÃ­a (CRÃTICA)
+    -- Auditoría (CRÍTICA)
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ -- Para Soft delete
@@ -78,10 +83,10 @@ CREATE TABLE auth.users (
 
 -- TABLA 2: USER_PROFILES (DATOS PERSONALES Y PREFERENCIAS)
 CREATE TABLE auth.user_profiles (
-    -- RelaciÃ³n 1:1 con users
+    -- Relación 1:1 con users
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
-    -- InformaciÃ³n personal
+    -- Información personal
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     -- display_name se calcula en queries, no se almacena
@@ -93,11 +98,11 @@ CREATE TABLE auth.user_profiles (
     language VARCHAR(10) DEFAULT 'es', -- es, en
     timezone VARCHAR(50) DEFAULT 'UTC',
 
-    -- ConfiguraciÃ³n de notificaciones
+    -- Configuración de notificaciones
     push_web_notifications BOOLEAN DEFAULT TRUE,
     notifications_tickets BOOLEAN DEFAULT TRUE,
 
-    -- AuditorÃ­a
+    -- Auditoría
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -117,7 +122,7 @@ SELECT
 FROM auth.users u
 LEFT JOIN auth.user_profiles p ON u.id = p.user_id;
 
--- TABLA 3: ROLES (CATÃLOGO FIJO DEL SISTEMA)
+-- TABLA 3: ROLES (CATÁLOGO FIJO DEL SISTEMA)
 CREATE TABLE auth.roles (
     --Identificadores
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -130,28 +135,28 @@ CREATE TABLE auth.roles (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- INSERCIÃ“N DE ROLES FIJOS
+-- INSERCIÓN DE ROLES FIJOS
 INSERT INTO auth.roles (role_code, role_name, description, is_system) VALUES
 ('platform_admin', 'Administrador de Plataforma', 'Acceso total al sistema', true),
-('company_admin', 'Administrador de Empresa', 'Gestiona una empresa especÃ­fica', true),
+('company_admin', 'Administrador de Empresa', 'Gestiona una empresa específica', true),
 ('agent', 'Agente de Soporte', 'Atiende tickets de soporte de una empresa', true),
 ('user', 'Cliente', 'Usuario que crea tickets', true);
 
--- TABLA 4: USER_ROLES (ASIGNACIÃ“N DE ROLES A USUARIOS)
+-- TABLA 4: USER_ROLES (ASIGNACIÓN DE ROLES A USUARIOS)
 CREATE TABLE auth.user_roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     role_code VARCHAR(50) NOT NULL REFERENCES auth.roles(role_code),
 
     -- Contexto de empresa (solo para company_admin y agent)
-    company_id UUID, -- Se valida con FK despuÃ©s de crear business.companies
+    company_id UUID, -- Se valida con FK después de crear business.companies
 
     is_active BOOLEAN DEFAULT TRUE,
 
     assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     assigned_by UUID REFERENCES auth.users(id),
     revoked_at TIMESTAMPTZ,
-    revocation_reason TEXT, -- RazÃ³n de la revocaciÃ³n para auditorÃ­a
+    revocation_reason TEXT, -- Razón de la revocación para auditoría
 
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
@@ -162,7 +167,7 @@ CREATE TABLE auth.user_roles (
     )
 );
 
--- TABLA 5: REFRESH_TOKENS (GESTIÃ“N DE SESIONES DE USUARIO)
+-- TABLA 5: REFRESH_TOKENS (GESTIÓN DE SESIONES DE USUARIO)
 CREATE TABLE auth.refresh_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -170,7 +175,7 @@ CREATE TABLE auth.refresh_tokens (
     -- Token seguro (hasheado, nunca en texto plano)
     token_hash VARCHAR(255) UNIQUE NOT NULL,
 
-    -- InformaciÃ³n del dispositivo
+    -- Información del dispositivo
     device_name VARCHAR(100), -- "Chrome on Windows", "iPhone Safari"
     ip_address INET,
     user_agent TEXT,
@@ -190,19 +195,48 @@ CREATE TABLE auth.refresh_tokens (
 );
 
 -- ================================================================================
--- ESQUEMA: business - GestiÃ³n de Empresas, Solicitudes y Contenido
+-- ESQUEMA: business - Gestión de Empresas, Solicitudes y Contenido
 -- ================================================================================
 
--- TABLA 6: COMPANY_REQUESTS (PROCESO DE ONBOARDING)
+-- TABLA 6: COMPANY_INDUSTRIES (CATÁLOGO DE INDUSTRIAS)
+CREATE TABLE business.company_industries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- INSERCIÓN DE INDUSTRIAS ESTÁNDAR
+INSERT INTO business.company_industries (code, name, description) VALUES
+('technology', 'Tecnología', 'Desarrollo de software, IT, SaaS'),
+('healthcare', 'Salud', 'Hospitales, clínicas, servicios médicos'),
+('education', 'Educación', 'Escuelas, universidades, capacitación'),
+('finance', 'Finanzas', 'Bancos, seguros, inversiones'),
+('retail', 'Comercio', 'Tiendas, e-commerce, minoristas'),
+('manufacturing', 'Manufactura', 'Producción, fabricación industrial'),
+('real_estate', 'Bienes Raíces', 'Inmobiliarias, construcción'),
+('hospitality', 'Hospitalidad', 'Hoteles, restaurantes, turismo'),
+('transportation', 'Transporte', 'Logística, delivery, movilidad'),
+('professional_services', 'Servicios Profesionales', 'Consultoría, legal, contabilidad'),
+('media', 'Medios', 'Publicidad, marketing, comunicaciones'),
+('energy', 'Energía', 'Electricidad, petróleo, renovables'),
+('agriculture', 'Agricultura', 'Cultivos, ganadería, agroindustria'),
+('government', 'Gobierno', 'Entidades públicas, municipios'),
+('non_profit', 'ONGs', 'Organizaciones sin fines de lucro'),
+('other', 'Otros', 'Industrias no clasificadas');
+
+-- TABLA 7: COMPANY_REQUESTS (PROCESO DE ONBOARDING)
 CREATE TABLE business.company_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     request_code VARCHAR(20) UNIQUE NOT NULL, -- REQ-2025-00001
 
-    -- Datos del formulario pÃºblico
+    -- Datos del formulario público
     company_name VARCHAR(200) NOT NULL,
     legal_name VARCHAR(250),
     admin_email CITEXT NOT NULL,
-    business_description TEXT NOT NULL,
+    company_description TEXT NOT NULL,        -- Descripción pública de la empresa
+    request_message TEXT NOT NULL,            -- Justificación privada de la solicitud
     website VARCHAR(200),
     industry_type VARCHAR(100) NOT NULL,
     estimated_users INT,
@@ -210,12 +244,12 @@ CREATE TABLE business.company_requests (
     contact_city VARCHAR(100),
     contact_country VARCHAR(100),
     contact_postal_code VARCHAR(20),
-    tax_id VARCHAR(50), -- RUT, NIT, Tax ID (considerar encriptaciÃ³n en aplicaciÃ³n)
+    tax_id VARCHAR(50), -- RUT, NIT, Tax ID (considerar encriptación en aplicación)
 
     status business.request_status DEFAULT 'pending' NOT NULL,
 
-    -- Proceso de revisiÃ³n
-    reviewed_by UUID REFERENCES auth.users(id), -- Admin plataforma que revisÃ³
+    -- Proceso de revisión
+    reviewed_by UUID REFERENCES auth.users(id), -- Admin plataforma que revisó
     reviewed_at TIMESTAMPTZ,
     rejection_reason TEXT,
 
@@ -226,30 +260,34 @@ CREATE TABLE business.company_requests (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 7: COMPANIES (ENTIDADES OPERATIVAS)
+-- TABLA 8: COMPANIES (ENTIDADES OPERATIVAS)
 CREATE TABLE business.companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_code VARCHAR(20) UNIQUE NOT NULL, -- CMP-2025-00001
 
-    -- InformaciÃ³n bÃ¡sica y de contacto
+    -- Información básica y de contacto
     name VARCHAR(200) NOT NULL,                 -- Nombre comercial
-    legal_name VARCHAR(250),                    -- RazÃ³n social
-    support_email CITEXT,                       -- Email pÃºblico de soporte
+    legal_name VARCHAR(250),                    -- Razón social
+    description TEXT,                           -- Descripción pública de la empresa
+    support_email CITEXT,                       -- Email público de soporte
     phone VARCHAR(20),
     website VARCHAR(200),
 
-    -- DirecciÃ³n
+    -- Dirección
     contact_address TEXT,
     contact_city VARCHAR(100),
     contact_state VARCHAR(100),
     contact_country VARCHAR(100),
     contact_postal_code VARCHAR(20),
 
-    -- InformaciÃ³n legal y fiscal
-    tax_id VARCHAR(50),                         -- RUT/NIT (considerar encriptaciÃ³n)
+    -- Información legal y fiscal
+    tax_id VARCHAR(50),                         -- RUT/NIT (considerar encriptación)
     legal_representative VARCHAR(200),          -- Representante legal
 
-    -- ConfiguraciÃ³n operativa (JSONB para flexibilidad)
+    -- Categorización
+    industry_id UUID REFERENCES business.company_industries(id),
+
+    -- Configuración operativa (JSONB para flexibilidad)
     business_hours JSONB DEFAULT '{"monday": {"open": "09:00", "close": "18:00"}, "tuesday": {"open": "09:00", "close": "18:00"}, "wednesday": {"open": "09:00", "close": "18:00"}, "thursday": {"open": "09:00", "close": "18:00"}, "friday": {"open": "09:00", "close": "18:00"}}'::JSONB,
     timezone VARCHAR(50) DEFAULT 'America/La_Paz',
 
@@ -259,7 +297,7 @@ CREATE TABLE business.companies (
     primary_color VARCHAR(7) DEFAULT '#007bff',
     secondary_color VARCHAR(7) DEFAULT '#6c757d',
 
-    -- ConfiguraciÃ³n adicional flexible
+    -- Configuración adicional flexible
     settings JSONB DEFAULT '{}'::JSONB,
 
     -- Estado
@@ -269,7 +307,7 @@ CREATE TABLE business.companies (
     created_from_request_id UUID REFERENCES business.company_requests(id),
     admin_user_id UUID NOT NULL REFERENCES auth.users(id),
 
-    -- AuditorÃ­a
+    -- Auditoría
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -281,7 +319,7 @@ ALTER TABLE auth.user_roles
     REFERENCES business.companies(id)
     ON DELETE CASCADE;
 
--- TABLA 8: USER_COMPANY_FOLLOWERS
+-- TABLA 9: USER_COMPANY_FOLLOWERS
 CREATE TABLE business.user_company_followers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -292,7 +330,7 @@ CREATE TABLE business.user_company_followers (
     CONSTRAINT uq_user_company_follow UNIQUE (user_id, company_id)
 );
 
--- TABLA 9: COMPANY_MACROS (RESPUESTAS PREDEFINIDAS)
+-- TABLA 10: COMPANY_MACROS (RESPUESTAS PREDEFINIDAS)
 CREATE TABLE business.company_macros (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
@@ -303,7 +341,7 @@ CREATE TABLE business.company_macros (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 10: COMPANY_ANNOUNCEMENTS (ANUNCIOS DE LA EMPRESA)
+-- TABLA 11: COMPANY_ANNOUNCEMENTS (ANUNCIOS DE LA EMPRESA)
 CREATE TABLE business.company_announcements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
@@ -319,7 +357,7 @@ CREATE TABLE business.company_announcements (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 11: HELP_CENTER_ARTICLES (BASE DE CONOCIMIENTO)
+-- TABLA 12: HELP_CENTER_ARTICLES (BASE DE CONOCIMIENTO)
 CREATE TABLE business.help_center_articles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
@@ -338,15 +376,15 @@ CREATE TABLE business.help_center_articles (
 );
 
 -- ================================================================================
--- ESQUEMA: ticketing - El CorazÃ³n del Sistema de Soporte
+-- ESQUEMA: ticketing - El Corazón del Sistema de Soporte
 -- ================================================================================
 
--- NOTA DE AUDITORÃA (26 de Octubre de 2025): Las siguientes tablas (12 a 17) estÃ¡n
--- diseÃ±adas en este documento, pero sus archivos de migraciÃ³n aÃºn no han sido
+-- NOTA DE AUDITORÍA (26 de Octubre de 2025): Las siguientes tablas (13 a 18) están
+-- diseñadas en este documento, pero sus archivos de migración aún no han sido
 -- creados en el proyecto. Es necesario crear las migraciones correspondientes
--- en la feature de Ticketing para alinear el cÃ³digo con el diseÃ±o.
+-- en la feature de Ticketing para alinear el código con el diseño.
 
--- TABLA 12: CATEGORIES (DE TICKETS, PERSONALIZADAS POR EMPRESA)
+-- TABLA 13: CATEGORIES (DE TICKETS, PERSONALIZADAS POR EMPRESA)
 CREATE TABLE ticketing.categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
@@ -358,12 +396,12 @@ CREATE TABLE ticketing.categories (
     CONSTRAINT uq_company_category_name UNIQUE (company_id, name)
 );
 
--- TABLA 13: TICKETS
+-- TABLA 14: TICKETS
 -- Reglas de negocio:
--- - Status 'open': Ticket reciÃ©n creado, sin respuesta de agente
+-- - Status 'open': Ticket recién creado, sin respuesta de agente
 -- - Status 'pending': Ticket con al menos una respuesta de agente
 -- - Status 'resolved': Ticket marcado como solucionado por el agente
--- - Status 'closed': Ticket cerrado definitivamente (manual o automÃ¡tico tras 7 dÃ­as resolved)
+-- - Status 'closed': Ticket cerrado definitivamente (manual o automático tras 7 días resolved)
 CREATE TABLE ticketing.tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_code VARCHAR(20) UNIQUE NOT NULL, -- TKT-2025-00001
@@ -379,9 +417,9 @@ CREATE TABLE ticketing.tickets (
 
     -- Ciclo de Vida y Propiedad
     status ticketing.ticket_status NOT NULL DEFAULT 'open',
-    owner_agent_id UUID REFERENCES auth.users(id), -- Se asigna automÃ¡ticamente con trigger
+    owner_agent_id UUID REFERENCES auth.users(id), -- Se asigna automáticamente con trigger
 
-    -- AuditorÃ­a de ciclo de vida
+    -- Auditoría de ciclo de vida
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     first_response_at TIMESTAMPTZ,
@@ -389,7 +427,7 @@ CREATE TABLE ticketing.tickets (
     closed_at TIMESTAMPTZ
 );
 
--- TABLA 14: TICKET_RESPONSES (CONVERSACIÃ“N PÃšBLICA)
+-- TABLA 15: TICKET_RESPONSES (CONVERSACIÓN PÚBLICA)
 CREATE TABLE ticketing.ticket_responses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID NOT NULL REFERENCES ticketing.tickets(id) ON DELETE CASCADE,
@@ -403,7 +441,7 @@ CREATE TABLE ticketing.ticket_responses (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 15: TICKET_INTERNAL_NOTES (COLABORACIÃ“N DE AGENTES)
+-- TABLA 16: TICKET_INTERNAL_NOTES (COLABORACIÓN DE AGENTES)
 CREATE TABLE ticketing.ticket_internal_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID NOT NULL REFERENCES ticketing.tickets(id) ON DELETE CASCADE,
@@ -415,7 +453,7 @@ CREATE TABLE ticketing.ticket_internal_notes (
     updated_at TIMESTAMPTZ
 );
 
--- TABLA 16: TICKET_ATTACHMENTS (ARCHIVOS ADJUNTOS)
+-- TABLA 17: TICKET_ATTACHMENTS (ARCHIVOS ADJUNTOS)
 CREATE TABLE ticketing.ticket_attachments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID NOT NULL REFERENCES ticketing.tickets(id) ON DELETE CASCADE,
@@ -431,14 +469,14 @@ CREATE TABLE ticketing.ticket_attachments (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 17: TICKET_RATINGS (CALIFICACIONES DE TICKETS)
--- Mejorado: Se guarda el agent_id histÃ³rico para mÃ©tricas
+-- TABLA 18: TICKET_RATINGS (CALIFICACIONES DE TICKETS)
+-- Mejorado: Se guarda el agent_id histórico para métricas
 CREATE TABLE ticketing.ticket_ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID NOT NULL UNIQUE REFERENCES ticketing.tickets(id) ON DELETE CASCADE,
     customer_id UUID NOT NULL REFERENCES auth.users(id),
 
-    -- Guardamos el agente al momento de la calificaciÃ³n (histÃ³rico)
+    -- Guardamos el agente al momento de la calificación (histórico)
     rated_agent_id UUID NOT NULL REFERENCES auth.users(id),
 
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
@@ -448,23 +486,23 @@ CREATE TABLE ticketing.ticket_ratings (
 );
 
 -- ================================================================================
--- ESQUEMA: audit - Logs y AuditorÃ­a del Sistema
+-- ESQUEMA: audit - Logs y Auditoría del Sistema
 -- ================================================================================
 
--- NOTA DE AUDITORÃA (26 de Octubre de 2025): La tabla `audit_logs` estÃ¡ diseÃ±ada
--- en este documento, pero su archivo de migraciÃ³n aÃºn no ha sido creado.
--- Es necesario crear la migraciÃ³n correspondiente para alinear el cÃ³digo con el diseÃ±o.
+-- NOTA DE AUDITORÍA (26 de Octubre de 2025): La tabla `audit_logs` está diseñada
+-- en este documento, pero su archivo de migración aún no ha sido creado.
+-- Es necesario crear la migración correspondiente para alinear el código con el diseño.
 
--- TABLA 18: AUDIT_LOGS (REGISTRO DE ACTIVIDADES)
+-- TABLA 19: AUDIT_LOGS (REGISTRO DE ACTIVIDADES)
 CREATE TABLE audit.audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    -- QuiÃ©n y cuÃ¡ndo
+    -- Quién y cuándo
     user_id UUID REFERENCES auth.users(id),
     action audit.action_type NOT NULL,
     performed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    -- QuÃ© se modificÃ³
+    -- Qué se modificó
     table_name VARCHAR(100),
     record_id UUID,
 
@@ -476,15 +514,15 @@ CREATE TABLE audit.audit_logs (
     ip_address INET,
     user_agent TEXT,
 
-    -- BÃºsqueda eficiente
+    -- Búsqueda eficiente
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ================================================================================
--- SECCIÃ“N DE ÃNDICES OPTIMIZADOS
+-- SECCIÓN DE ÍNDICES OPTIMIZADOS
 -- ================================================================================
 
--- Ãndices en el esquema 'auth'
+-- Índices en el esquema 'auth'
 CREATE INDEX idx_users_status ON auth.users(status) WHERE status = 'active';
 CREATE INDEX idx_users_email_password ON auth.users(email, password_hash) WHERE status = 'active'; -- Seguridad
 CREATE INDEX idx_user_roles_user_id ON auth.user_roles(user_id);
@@ -492,16 +530,18 @@ CREATE INDEX idx_user_roles_company_id ON auth.user_roles(company_id);
 CREATE INDEX idx_refresh_tokens_user_id ON auth.refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_expires ON auth.refresh_tokens(expires_at) WHERE is_revoked = FALSE;
 
--- Ãndices en el esquema 'business'
+-- Índices en el esquema 'business'
+CREATE INDEX idx_company_industries_code ON business.company_industries(code);
 CREATE INDEX idx_company_requests_status ON business.company_requests(status);
 CREATE INDEX idx_companies_admin_user_id ON business.companies(admin_user_id);
 CREATE INDEX idx_companies_status ON business.companies(status);
+CREATE INDEX idx_companies_industry_id ON business.companies(industry_id);
 CREATE INDEX idx_user_company_followers_user_id ON business.user_company_followers(user_id);
 CREATE INDEX idx_user_company_followers_company_id ON business.user_company_followers(company_id);
 CREATE INDEX idx_company_announcements_company_id ON business.company_announcements(company_id, status);
 CREATE INDEX idx_help_center_articles_company_id ON business.help_center_articles(company_id, status);
 
--- Ãndices en el esquema 'ticketing' (CRÃTICOS)
+-- Índices en el esquema 'ticketing' (CRÍTICOS)
 CREATE INDEX idx_tickets_company_id_status ON ticketing.tickets(company_id, status);
 CREATE INDEX idx_tickets_created_by_user_id ON ticketing.tickets(created_by_user_id);
 CREATE INDEX idx_tickets_owner_agent_id ON ticketing.tickets(owner_agent_id) WHERE owner_agent_id IS NOT NULL;
@@ -512,18 +552,18 @@ CREATE INDEX idx_ticket_responses_created_at ON ticketing.ticket_responses(creat
 CREATE INDEX idx_ticket_responses_author_agent ON ticketing.ticket_responses(author_id) WHERE author_type = 'agent';
 CREATE INDEX idx_ticket_internal_notes_ticket_id ON ticketing.ticket_internal_notes(ticket_id);
 CREATE INDEX idx_ticket_attachments_ticket_id ON ticketing.ticket_attachments(ticket_id);
-CREATE INDEX idx_ticket_ratings_agent_id ON ticketing.ticket_ratings(rated_agent_id); -- Para mÃ©tricas
+CREATE INDEX idx_ticket_ratings_agent_id ON ticketing.ticket_ratings(rated_agent_id); -- Para métricas
 
--- Ãndices en el esquema 'audit'
+-- Índices en el esquema 'audit'
 CREATE INDEX idx_audit_logs_user_id ON audit.audit_logs(user_id);
 CREATE INDEX idx_audit_logs_table_record ON audit.audit_logs(table_name, record_id);
 CREATE INDEX idx_audit_logs_created_at ON audit.audit_logs(created_at DESC);
 
 -- ================================================================================
--- SECCIÃ“N DE FUNCIONES Y TRIGGERS MEJORADOS
+-- SECCIÓN DE FUNCIONES Y TRIGGERS MEJORADOS
 -- ================================================================================
 
--- FUNCIÃ“N 1: Actualizar automÃ¡ticamente la columna 'updated_at'
+-- FUNCIÓN 1: Actualizar automáticamente la columna 'updated_at'
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -532,7 +572,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- FUNCIÃ“N 2: Asignar automÃ¡ticamente owner_agent_id al primer agente que responde
+-- FUNCIÓN 2: Asignar automáticamente owner_agent_id al primer agente que responde
 CREATE OR REPLACE FUNCTION ticketing.assign_ticket_owner_function()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -557,7 +597,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- FUNCIÃ“N 3: Registrar automÃ¡ticamente en audit log
+-- FUNCIÓN 3: Registrar automáticamente en audit log
 CREATE OR REPLACE FUNCTION audit.log_changes()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -633,22 +673,22 @@ CREATE TRIGGER trigger_update_internal_notes_updated_at
 BEFORE UPDATE ON ticketing.ticket_internal_notes
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- Trigger para asignaciÃ³n automÃ¡tica de owner_agent_id
+-- Trigger para asignación automática de owner_agent_id
 CREATE TRIGGER trigger_assign_ticket_owner
 AFTER INSERT ON ticketing.ticket_responses
 FOR EACH ROW
 EXECUTE FUNCTION ticketing.assign_ticket_owner_function();
 
--- Triggers de auditorÃ­a (opcional, activar segÃºn necesidad)
+-- Triggers de auditoría (opcional, activar según necesidad)
 -- CREATE TRIGGER audit_tickets_changes
 -- AFTER INSERT OR UPDATE OR DELETE ON ticketing.tickets
 -- FOR EACH ROW EXECUTE FUNCTION audit.log_changes();
 
 -- ================================================================================
--- VISTAS ÃšTILES PARA REPORTING
+-- VISTAS ÚTILES PARA REPORTING
 -- ================================================================================
 
--- Vista de tickets con informaciÃ³n completa
+-- Vista de tickets con información completa
 CREATE VIEW ticketing.v_tickets_detail AS
 SELECT
     t.*,
@@ -666,7 +706,7 @@ LEFT JOIN auth.users a ON t.owner_agent_id = a.id
 LEFT JOIN auth.user_profiles ap ON a.id = ap.user_id
 LEFT JOIN ticketing.categories cat ON t.category_id = cat.id;
 
--- Vista de mÃ©tricas de agentes
+-- Vista de métricas de agentes
 CREATE VIEW ticketing.v_agent_metrics AS
 SELECT
     t.owner_agent_id as agent_id,
@@ -682,15 +722,19 @@ GROUP BY t.owner_agent_id;
 
 -- ================================================================================
 -- COMENTARIOS ADICIONALES DE REGLAS DE NEGOCIO
--- ================================================================================
+-- ======================================================================@==========
 
-COMMENT ON TABLE ticketing.tickets IS 'Tickets de soporte. Estados: open->pending(primera respuesta)->resolved->closed(7 dÃ­as auto o manual)';
-COMMENT ON COLUMN ticketing.tickets.owner_agent_id IS 'Se asigna automÃ¡ticamente al primer agente que responde';
+COMMENT ON TABLE business.company_industries IS 'Catálogo de industrias del sistema. Valores controlados para clasificación de empresas.';
+COMMENT ON COLUMN business.company_requests.company_description IS 'Descripción pública de la empresa que se mostrará en su perfil. Migra a companies.description al aprobar.';
+COMMENT ON COLUMN business.company_requests.request_message IS 'Justificación privada de por qué se necesita el servicio. Solo visible para platform admins en revisión.';
+COMMENT ON COLUMN business.companies.description IS 'Descripción pública visible en el perfil de la empresa. Se hereda de company_requests.company_description.';
+COMMENT ON COLUMN business.companies.industry_id IS 'Industria a la que pertenece la empresa. Relación con catálogo company_industries.';
+COMMENT ON TABLE ticketing.tickets IS 'Tickets de soporte. Estados: open->pending(primera respuesta)->resolved->closed(7 días auto o manual)';
+COMMENT ON COLUMN ticketing.tickets.owner_agent_id IS 'Se asigna automáticamente al primer agente que responde';
 COMMENT ON COLUMN ticketing.tickets.first_response_at IS 'Timestamp de la primera respuesta de un agente';
-COMMENT ON COLUMN business.companies.business_hours IS 'JSON con horarios por dÃ­a: {"monday": {"open": "09:00", "close": "18:00"}, ...}';
-COMMENT ON TABLE ticketing.ticket_ratings.rated_agent_id IS 'Guardamos el agente histÃ³rico, independiente de cambios futuros en el ticket';
+COMMENT ON COLUMN business.companies.business_hours IS 'JSON con horarios por día: {"monday": {"open": "09:00", "close": "18:00"}, ...}';
+COMMENT ON COLUMN ticketing.ticket_ratings.rated_agent_id IS 'Guardamos el agente histórico, independiente de cambios futuros en el ticket';
 
 -- ================================================================================
--- FIN DEL MODELADO PERFECCIONADO V7.0
+-- FIN DEL MODELADO PERFECCIONADO V8.0
 -- ================================================================================
-

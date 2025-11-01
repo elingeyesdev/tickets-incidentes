@@ -70,26 +70,6 @@ class CompanyIndustry extends Model
     }
 
     /**
-     * Obtener conteo de empresas activas en esta industria.
-     *
-     * @return int
-     */
-    public function getActiveCompaniesCountAttribute(): int
-    {
-        return $this->companies()->where('status', 'active')->count();
-    }
-
-    /**
-     * Obtener conteo total de empresas en esta industria.
-     *
-     * @return int
-     */
-    public function getTotalCompaniesCountAttribute(): int
-    {
-        return $this->companies()->count();
-    }
-
-    /**
      * Scope: Ordenar por nombre alfabéticamente.
      */
     public function scopeAlphabetical($query)

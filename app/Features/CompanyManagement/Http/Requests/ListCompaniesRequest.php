@@ -2,7 +2,9 @@
 
 namespace App\Features\CompanyManagement\Http\Requests;
 
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * List Companies Request
@@ -58,7 +60,12 @@ class ListCompaniesRequest extends FormRequest
             // Filtros
             'status' => ['nullable', 'string', 'in:active,suspended,inactive'],
             'industry' => ['nullable', 'string', 'max:100'],
-            'industry_id' => ['sometimes', 'nullable', 'uuid', 'exists:business.company_industries,id'],
+            'industry_id' => [
+                'sometimes',
+                'nullable',
+                'uuid',
+                Rule::exists(CompanyIndustry::class, 'id'),
+            ],
             'country' => ['nullable', 'string', 'max:100'],
             'has_active_tickets' => ['nullable', 'boolean'],
             'followed_by_me' => ['nullable', 'boolean'],

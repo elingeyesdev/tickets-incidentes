@@ -115,7 +115,7 @@ class Company extends Model
             'business.user_company_followers',
             'company_id',
             'user_id'
-        )->withTimestamps('followed_at');
+        )->withTimestamps('followed_at', 'followed_at');
     }
 
     /**

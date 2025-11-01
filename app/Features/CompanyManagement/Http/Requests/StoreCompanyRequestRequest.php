@@ -3,7 +3,9 @@
 namespace App\Features\CompanyManagement\Http\Requests;
 
 use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Store Company Request Request
@@ -34,7 +36,11 @@ class StoreCompanyRequestRequest extends FormRequest
             'company_description' => ['required', 'string', 'min:50', 'max:1000'],
             'request_message' => ['required', 'string', 'min:10', 'max:500'],
             'website' => ['nullable', 'url', 'max:255'],
-            'industry_id' => ['required', 'uuid', 'exists:business.company_industries,id'],
+            'industry_id' => [
+                'required',
+                'uuid',
+                Rule::exists(CompanyIndustry::class, 'id'),
+            ],
             'estimated_users' => ['nullable', 'integer', 'min:1', 'max:10000'],
 
             // Información de contacto

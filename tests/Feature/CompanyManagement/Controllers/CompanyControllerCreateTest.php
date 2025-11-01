@@ -33,10 +33,12 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $admin = User::factory()->withProfile()->withRole('PLATFORM_ADMIN')->create();
         $adminUser = User::factory()->withProfile()->create(['email' => 'companyadmin@example.com']);
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Enterprise Solutions Corp',
             'legal_name' => 'Enterprise Solutions Corporation SRL',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
             'support_email' => 'support@enterprise-solutions.com',
             'phone' => '+59133445566',
@@ -73,10 +75,12 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Complete Company',
             'legal_name' => 'Complete Company SRL',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
             'support_email' => 'support@complete.com',
             'phone' => '+59133445566',
@@ -121,9 +125,11 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
         ];
 
@@ -150,9 +156,11 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $admin = User::factory()->withProfile()->withRole('PLATFORM_ADMIN')->create();
         $adminUser = User::factory()->withProfile()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'New Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
         ];
 
@@ -178,10 +186,12 @@ class CompanyControllerCreateTest extends TestCase
     {
         // Arrange
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
         $fakeUserId = '550e8400-e29b-41d4-a716-446655440999';
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $fakeUserId,
         ];
 
@@ -202,9 +212,11 @@ class CompanyControllerCreateTest extends TestCase
         $existingCompany = Company::factory()->create();
         $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $existingCompany->id)->create();
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
         ];
 
@@ -223,9 +235,11 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $user = User::factory()->withRole('USER')->create();
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
         ];
 
@@ -245,17 +259,20 @@ class CompanyControllerCreateTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $adminUser1 = User::factory()->create();
         $adminUser2 = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         // Act - Crear dos empresas
         $response1 = $this->authenticateWithJWT($admin)
             ->postJson('/api/companies', [
                 'name' => 'Company 1',
+                'industry_id' => $industry->id,
                 'admin_user_id' => $adminUser1->id,
             ]);
 
         $response2 = $this->authenticateWithJWT($admin)
             ->postJson('/api/companies', [
                 'name' => 'Company 2',
+                'industry_id' => $industry->id,
                 'admin_user_id' => $adminUser2->id,
             ]);
 
@@ -277,9 +294,11 @@ class CompanyControllerCreateTest extends TestCase
         // Arrange
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
             'contact_info' => [
                 'address' => 'Test Address',
@@ -330,9 +349,11 @@ class CompanyControllerCreateTest extends TestCase
     {
         // Arrange
         $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
 
         $inputData = [
             'name' => 'Test Company',
+            'industry_id' => $industry->id,
             'admin_user_id' => $adminUser->id,
         ];
 

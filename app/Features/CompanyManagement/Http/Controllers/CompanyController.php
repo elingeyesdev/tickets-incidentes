@@ -794,6 +794,8 @@ class CompanyController extends Controller
         $data = [
             'name' => $request->name,
             'legal_name' => $request->legal_name,
+            'description' => $request->description,
+            'industry_id' => $request->industry_id,
             'support_email' => $request->support_email,
             'phone' => $request->phone,
             'website' => $request->website,
@@ -821,7 +823,7 @@ class CompanyController extends Controller
         );
 
         // Cargar relaciones para el Resource
-        $company->load(['admin.profile']);
+        $company->load(['admin.profile', 'industry']);
 
         return (new CompanyResource($company))
             ->response()

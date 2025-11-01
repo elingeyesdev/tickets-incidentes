@@ -32,8 +32,11 @@ class CompanyExploreResource extends JsonResource
             'name' => $this->name,
             'logoUrl' => $this->logo_url,
             'description' => Str::limit($this->description ?? '', 120),
-            'industry' => $this->industry?->name ?? null,
-            'industryCode' => $this->industry?->code ?? null,
+            'industry' => [
+                'id' => $this->industry?->id,
+                'code' => $this->industry?->code,
+                'name' => $this->industry?->name,
+            ],
             'city' => $this->contact_city ?? null,
             'country' => $this->contact_country ?? null,
             'primaryColor' => $this->primary_color ?? null,

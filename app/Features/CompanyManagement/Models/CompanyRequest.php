@@ -37,7 +37,7 @@ class CompanyRequest extends Model
         'company_description',
         'request_message',
         'website',
-        'industry_type',
+        'industry_id',
         'estimated_users',
         'contact_address',
         'contact_city',
@@ -60,6 +60,14 @@ class CompanyRequest extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Obtener la industria de esta solicitud.
+     */
+    public function industry(): BelongsTo
+    {
+        return $this->belongsTo(CompanyIndustry::class, 'industry_id');
+    }
 
     /**
      * Obtener el usuario admin que revisó esta solicitud.

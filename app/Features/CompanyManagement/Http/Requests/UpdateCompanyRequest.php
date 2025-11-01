@@ -2,9 +2,11 @@
 
 namespace App\Features\CompanyManagement\Http\Requests;
 
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use App\Shared\Helpers\JWTHelper;
 use App\Shared\Exceptions\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Update Company Request
@@ -56,7 +58,11 @@ class UpdateCompanyRequest extends FormRequest
             'name' => ['sometimes', 'string', 'min:2', 'max:200'],
             'legal_name' => ['sometimes', 'nullable', 'string', 'min:2', 'max:200'],
             'description' => ['sometimes', 'nullable', 'string', 'max:1000'],
-            'industry_id' => ['sometimes', 'uuid', 'exists:business.company_industries,id'],
+            'industry_id' => [
+                'sometimes',
+                'uuid',
+                Rule::exists(CompanyIndustry::class, 'id'),
+            ],
             'support_email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'website' => ['sometimes', 'nullable', 'url', 'max:255'],
