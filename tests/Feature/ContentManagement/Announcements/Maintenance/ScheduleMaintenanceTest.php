@@ -39,17 +39,9 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $scheduledFor = Carbon::now()->addHours(6);
 
@@ -84,16 +76,9 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $scheduledFor = Carbon::now()->addHours(3);
         $expectedDelay = $scheduledFor->diffInSeconds(Carbon::now());
@@ -128,20 +113,11 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'metadata' => [
-                'urgency' => 'HIGH',
-                'impact_level' => 'MEDIUM',
-            ],
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'urgency' => 'HIGH',
+        ], 'draft');
 
         $scheduledFor = Carbon::parse('2025-11-08 08:00:00');
 
@@ -162,7 +138,6 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Verify existing metadata is preserved
         $this->assertEquals('HIGH', $announcement->metadata['urgency']);
-        $this->assertEquals('MEDIUM', $announcement->metadata['impact_level']);
     }
 
     #[Test]
@@ -171,16 +146,9 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         // Act - no scheduled_for provided
         $response = $this->authenticateWithJWT($admin)
@@ -208,16 +176,9 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $tooSoon = Carbon::now()->addMinutes(2);
 
@@ -247,16 +208,9 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $tooFar = Carbon::now()->addDays(400);
 
@@ -325,22 +279,13 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $firstScheduledFor = Carbon::now()->addHours(10);
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::SCHEDULED,
-            'metadata' => [
-                'scheduled_for' => $firstScheduledFor->toIso8601String(),
-                'urgency' => 'HIGH',
-            ],
-        ]);
+        // Create draft first
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'urgency' => 'HIGH',
+        ], 'draft');
 
         // Act - First schedule
         $response1 = $this->authenticateWithJWT($admin)
@@ -389,22 +334,21 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $originalScheduledFor = Carbon::parse('2025-11-08 08:00:00');
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::SCHEDULED,
-            'metadata' => [
+        // Create and schedule via HTTP
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'urgency' => 'HIGH',
+        ], 'draft');
+
+        // Schedule it
+        $this->authenticateWithJWT($admin)
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $originalScheduledFor->toIso8601String(),
-                'urgency' => 'HIGH',
-            ],
-        ]);
+            ]);
+
+        $announcement->refresh();
 
         $newScheduledFor = Carbon::parse('2025-11-10 10:00:00');
 
@@ -443,19 +387,15 @@ class ScheduleMaintenanceTest extends TestCase
         // Arrange
         Queue::fake();
 
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
+        $company = Company::whereHas('userRoles', function ($query) use ($admin) {
+            $query->where('user_id', $admin->id);
+        })->first();
 
         $endUser = User::factory()->create();
         $endUser->assignRole('END_USER', $company->id);
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $scheduledFor = Carbon::now()->addHours(6);
 

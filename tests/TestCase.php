@@ -118,6 +118,87 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Create a company admin user with a company
+     *
+     * Useful for testing endpoints that require COMPANY_ADMIN role.
+     * Returns a user with COMPANY_ADMIN role for their company.
+     *
+     * @return User The company admin user
+     */
+    protected function createCompanyAdmin(): User
+    {
+        $user = User::factory()->create();
+        $company = \App\Features\CompanyManagement\Models\Company::factory()->create(['admin_user_id' => $user->id]);
+        $user->assignRole('COMPANY_ADMIN', $company->id);
+
+        return $user;
+    }
+
+    /**
+     * Create a maintenance announcement via HTTP POST endpoint
+     *
+     * Uses HTTP POST to create announcements, which ensures proper transaction
+     * handling with RefreshDatabase trait. This is the correct approach for
+     * testing because:
+     * 1. It tests the actual HTTP flow (like production)
+     * 2. It avoids RefreshDatabase transaction isolation issues
+     * 3. All subsequent route model binding works correctly
+     *
+     * @param User $user The authenticated user creating the announcement
+     * @param array $overrides Override default payload values
+     * @param string $action 'draft', 'publish', or 'schedule'
+     * @return \App\Features\ContentManagement\Models\Announcement The created announcement
+     */
+    protected function createMaintenanceAnnouncementViaHttp(
+        User $user,
+        array $overrides = [],
+        string $action = 'draft'
+    ): \App\Features\ContentManagement\Models\Announcement {
+        // Build payload with defaults
+        $payload = array_merge([
+            'title' => 'Test Maintenance',
+            'content' => 'Test content',
+            'urgency' => 'MEDIUM',
+            'scheduled_start' => now()->addDays(1)->toIso8601String(),
+            'scheduled_end' => now()->addDays(1)->addHours(2)->toIso8601String(),
+            'is_emergency' => false,
+            'affected_services' => [],
+        ], $overrides);
+
+        // Add action if not draft
+        if ($action !== 'draft') {
+            $payload['action'] = $action;
+        }
+
+        // Make HTTP POST request
+        $response = $this->authenticateWithJWT($user)
+            ->postJson('/api/announcements/maintenance', $payload);
+
+        // Assert the request was successful
+        if (!in_array($response->status(), [201])) {
+            throw new \Exception(
+                "Failed to create announcement via HTTP. Status: {$response->status()}\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Extract the ID from response
+        $announcementId = $response->json('data.id');
+
+        if (!$announcementId) {
+            throw new \Exception(
+                "No announcement ID in response.\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Fetch the created announcement from database
+        $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        return $announcement;
+    }
+
+    /**
      * Execute all queued jobs manually (for testing)
      *
      * When using Queue::fake(), jobs are intercepted but not executed.
@@ -128,25 +209,25 @@ abstract class TestCase extends BaseTestCase
     {
         // Get the queue manager
         $queueManager = app('queue');
-        
+
         // Check if QueueFake is being used
         if (!$queueManager instanceof \Illuminate\Support\Testing\Fakes\QueueFake) {
             // Queue::fake() is not active, so there's nothing to execute
             return;
         }
-        
+
         // Use reflection to access protected properties since QueueFake doesn't expose them
         $reflection = new \ReflectionClass($queueManager);
         $pushedJobsProperty = $reflection->getProperty('jobs');
         $pushedJobsProperty->setAccessible(true);
         $pushedJobs = $pushedJobsProperty->getValue($queueManager);
-        
+
         // Execute each job
         foreach ($pushedJobs as $queueName => $jobsList) {
             foreach ($jobsList as $jobData) {
                 if (isset($jobData['job'])) {
                     $job = $jobData['job'];
-                    
+
                     // Execute the job's handle method
                     if (method_exists($job, 'handle')) {
                         try {

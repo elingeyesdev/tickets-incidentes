@@ -342,18 +342,6 @@ class MarkMaintenanceStartTest extends TestCase
     // ==================== Helper Methods ====================
 
     /**
-     * Create a company admin user with assigned role.
-     */
-    private function createCompanyAdmin(): User
-    {
-        $user = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $user->id]);
-        $user->assignRole('COMPANY_ADMIN', $company->id);
-
-        return $user;
-    }
-
-    /**
      * Get the company associated with a user.
      */
     private function getCompanyForUser(User $user): Company

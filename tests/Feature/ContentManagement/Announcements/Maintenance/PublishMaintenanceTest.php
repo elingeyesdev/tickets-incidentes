@@ -32,17 +32,9 @@ class PublishMaintenanceTest extends TestCase
     public function company_admin_can_publish_maintenance_from_draft(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         // Act
         $response = $this->authenticateWithJWT($admin)
@@ -71,23 +63,21 @@ class PublishMaintenanceTest extends TestCase
     public function company_admin_can_publish_maintenance_from_scheduled(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $scheduledFor = Carbon::now()->addDay();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::SCHEDULED,
-            'metadata' => [
+        // Create via HTTP with schedule action
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'urgency' => 'HIGH',
+        ], 'draft');
+
+        // Manually schedule it via API
+        $this->authenticateWithJWT($admin)
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
-                'urgency' => 'HIGH',
-            ],
-            'published_at' => null,
-        ]);
+            ]);
+
+        $announcement->refresh();
 
         // Act
         $response = $this->authenticateWithJWT($admin)
@@ -181,17 +171,9 @@ class PublishMaintenanceTest extends TestCase
     public function publish_sets_published_at_timestamp(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $beforePublish = Carbon::now()->subSecond();
 
@@ -216,20 +198,10 @@ class PublishMaintenanceTest extends TestCase
     public function company_admin_from_different_company_cannot_publish(): void
     {
         // Arrange
-        $adminA = User::factory()->create();
-        $companyA = Company::factory()->create(['admin_user_id' => $adminA->id]);
-        $adminA->assignRole('COMPANY_ADMIN', $companyA->id);
+        $adminA = $this->createCompanyAdmin();
+        $adminB = $this->createCompanyAdmin();
 
-        $adminB = User::factory()->create();
-        $companyB = Company::factory()->create(['admin_user_id' => $adminB->id]);
-        $adminB->assignRole('COMPANY_ADMIN', $companyB->id);
-
-        $announcementA = Announcement::factory()->create([
-            'company_id' => $companyA->id,
-            'author_id' => $adminA->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcementA = $this->createMaintenanceAnnouncementViaHttp($adminA, [], 'draft');
 
         // Act - adminB tries to publish adminA's announcement
         $response = $this->authenticateWithJWT($adminB)
@@ -251,19 +223,15 @@ class PublishMaintenanceTest extends TestCase
     public function end_user_cannot_publish_maintenance(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
+        $company = Company::whereHas('userRoles', function ($query) use ($admin) {
+            $query->where('user_id', $admin->id);
+        })->first();
 
         $endUser = User::factory()->create();
         $endUser->assignRole('END_USER', $company->id);
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
@@ -286,17 +254,9 @@ class PublishMaintenanceTest extends TestCase
     {
         // Arrange
         $platformAdmin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $companyAdmin = $this->createCompanyAdmin();
 
-        $companyAdmin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $companyAdmin->id]);
-        $companyAdmin->assignRole('COMPANY_ADMIN', $company->id);
-
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $companyAdmin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-        ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($companyAdmin, [], 'draft');
 
         // Act - PLATFORM_ADMIN is read-only for company content
         $response = $this->authenticateWithJWT($platformAdmin)

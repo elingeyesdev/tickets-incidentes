@@ -34,25 +34,16 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function company_admin_can_update_maintenance_in_draft_status(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'status' => PublicationStatus::DRAFT,
-                'title' => 'Original Title',
-                'metadata' => [
-                    'urgency' => 'LOW',
-                    'scheduled_start' => now()->addDays(2)->toIso8601String(),
-                    'scheduled_end' => now()->addDays(2)->addHours(4)->toIso8601String(),
-                    'is_emergency' => false,
-                    'affected_services' => ['dashboard'],
-                ],
-            ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'title' => 'Original Title',
+            'urgency' => 'LOW',
+            'scheduled_start' => now()->addDays(2)->toIso8601String(),
+            'scheduled_end' => now()->addDays(2)->addHours(4)->toIso8601String(),
+            'is_emergency' => false,
+            'affected_services' => ['dashboard'],
+        ], 'draft');
 
         $updateData = [
             'title' => 'Updated Maintenance Title',
@@ -90,18 +81,19 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function company_admin_can_update_maintenance_in_scheduled_status(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->scheduled()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'title' => 'Scheduled Maintenance',
+        // Create draft and then schedule it
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'title' => 'Scheduled Maintenance',
+        ], 'draft');
+
+        $this->authenticateWithJWT($admin)
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
+                'scheduled_for' => now()->addDay()->toIso8601String(),
             ]);
+
+        $announcement->refresh();
 
         $updateData = [
             'title' => 'Updated Scheduled Maintenance',
@@ -200,17 +192,9 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function validates_updated_scheduled_end_is_after_scheduled_start(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'status' => PublicationStatus::DRAFT,
-            ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $invalidUpdateData = [
             'scheduled_start' => now()->addDays(5)->toIso8601String(),
@@ -233,22 +217,11 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function company_admin_from_different_company_cannot_update(): void
     {
         // Arrange
-        $adminA = User::factory()->create();
-        $companyA = Company::factory()->create(['admin_user_id' => $adminA->id]);
-        $adminA->assignRole('COMPANY_ADMIN', $companyA->id);
-
-        $adminB = User::factory()->create();
-        $companyB = Company::factory()->create(['admin_user_id' => $adminB->id]);
-        $adminB->assignRole('COMPANY_ADMIN', $companyB->id);
+        $adminA = $this->createCompanyAdmin();
+        $adminB = $this->createCompanyAdmin();
 
         // Announcement belongs to company A
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $companyA->id,
-                'author_id' => $adminA->id,
-                'status' => PublicationStatus::DRAFT,
-            ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($adminA, [], 'draft');
 
         $updateData = [
             'title' => 'Unauthorized Update Attempt',
@@ -273,28 +246,19 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function partial_update_preserves_unchanged_fields(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $originalMetadata = [
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'title' => 'Original Title',
+            'content' => 'Original Content',
             'urgency' => 'MEDIUM',
             'scheduled_start' => now()->addDays(2)->toIso8601String(),
             'scheduled_end' => now()->addDays(2)->addHours(4)->toIso8601String(),
             'is_emergency' => false,
             'affected_services' => ['dashboard', 'reports'],
-        ];
+        ], 'draft');
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'status' => PublicationStatus::DRAFT,
-                'title' => 'Original Title',
-                'content' => 'Original Content',
-                'metadata' => $originalMetadata,
-            ]);
+        $originalMetadata = $announcement->metadata;
 
         // Update only title (partial update)
         $updateData = [
@@ -324,20 +288,10 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function update_does_not_change_type_or_company_id(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $otherCompany = Company::factory()->create();
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'status' => PublicationStatus::DRAFT,
-                'type' => AnnouncementType::MAINTENANCE,
-            ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
         $originalCompanyId = $announcement->company_id;
         $originalType = $announcement->type;
@@ -371,28 +325,24 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     public function updating_scheduled_maintenance_does_not_reschedule_job(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $scheduledFor = now()->addDays(3);
 
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->scheduled()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $admin->id,
-                'status' => PublicationStatus::SCHEDULED,
-                'metadata' => [
-                    'urgency' => 'MEDIUM',
-                    'scheduled_start' => now()->addDays(2)->toIso8601String(),
-                    'scheduled_end' => now()->addDays(2)->addHours(4)->toIso8601String(),
-                    'is_emergency' => false,
-                    'affected_services' => ['api'],
-                    'scheduled_for' => $scheduledFor->toIso8601String(),
-                ],
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
+            'urgency' => 'MEDIUM',
+            'scheduled_start' => now()->addDays(2)->toIso8601String(),
+            'scheduled_end' => now()->addDays(2)->addHours(4)->toIso8601String(),
+            'is_emergency' => false,
+            'affected_services' => ['api'],
+        ], 'draft');
+
+        // Schedule it
+        $this->authenticateWithJWT($admin)
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
+                'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
+
+        $announcement->refresh();
 
         $originalScheduledFor = $announcement->metadata['scheduled_for'];
 
@@ -425,17 +375,9 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
     {
         // Arrange
         $platformAdmin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $companyAdmin = $this->createCompanyAdmin();
 
-        $companyAdmin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $companyAdmin->id]);
-
-        $announcement = Announcement::factory()
-            ->maintenance()
-            ->create([
-                'company_id' => $company->id,
-                'author_id' => $companyAdmin->id,
-                'status' => PublicationStatus::DRAFT,
-            ]);
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($companyAdmin, [], 'draft');
 
         $updateData = [
             'title' => 'Platform Admin Trying to Update',

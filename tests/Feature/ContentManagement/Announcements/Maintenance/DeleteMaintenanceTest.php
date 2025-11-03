@@ -34,18 +34,11 @@ class DeleteMaintenanceTest extends TestCase
     public function company_admin_can_delete_draft_maintenance(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
             'title' => 'Draft Maintenance Announcement',
-        ]);
+        ], 'draft');
 
         // Act
         $response = $this->authenticateWithJWT($admin)
@@ -197,18 +190,11 @@ class DeleteMaintenanceTest extends TestCase
     public function deleted_maintenance_cannot_be_retrieved(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
+        $admin = $this->createCompanyAdmin();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
             'title' => 'Draft to be Deleted',
-        ]);
+        ], 'draft');
 
         $announcementId = $announcement->id;
 
@@ -235,20 +221,12 @@ class DeleteMaintenanceTest extends TestCase
     public function end_user_cannot_delete_maintenance(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $endUser = User::factory()->withRole('USER')->create();
 
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $admin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
-            'published_at' => null,
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
             'title' => 'Draft Maintenance Announcement',
-        ]);
+        ], 'draft');
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
@@ -271,21 +249,12 @@ class DeleteMaintenanceTest extends TestCase
     public function company_admin_from_different_company_cannot_delete(): void
     {
         // Arrange
-        $adminA = User::factory()->create();
-        $companyA = Company::factory()->create(['admin_user_id' => $adminA->id]);
-        $adminA->assignRole('COMPANY_ADMIN', $companyA->id);
+        $adminA = $this->createCompanyAdmin();
+        $adminB = $this->createCompanyAdmin();
 
-        $adminB = User::factory()->create();
-        $companyB = Company::factory()->create(['admin_user_id' => $adminB->id]);
-        $adminB->assignRole('COMPANY_ADMIN', $companyB->id);
-
-        $announcementA = Announcement::factory()->create([
-            'company_id' => $companyA->id,
-            'author_id' => $adminA->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
+        $announcementA = $this->createMaintenanceAnnouncementViaHttp($adminA, [
             'title' => 'Company A Draft',
-        ]);
+        ], 'draft');
 
         // Act - adminB tries to delete adminA's announcement
         $response = $this->authenticateWithJWT($adminB)
@@ -309,18 +278,11 @@ class DeleteMaintenanceTest extends TestCase
     {
         // Arrange
         $platformAdmin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $companyAdmin = $this->createCompanyAdmin();
 
-        $companyAdmin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $companyAdmin->id]);
-        $companyAdmin->assignRole('COMPANY_ADMIN', $company->id);
-
-        $announcement = Announcement::factory()->create([
-            'company_id' => $company->id,
-            'author_id' => $companyAdmin->id,
-            'type' => AnnouncementType::MAINTENANCE,
-            'status' => PublicationStatus::DRAFT,
+        $announcement = $this->createMaintenanceAnnouncementViaHttp($companyAdmin, [
             'title' => 'Company Draft',
-        ]);
+        ], 'draft');
 
         // Act - PLATFORM_ADMIN tries to delete company announcement
         $response = $this->authenticateWithJWT($platformAdmin)
@@ -343,10 +305,7 @@ class DeleteMaintenanceTest extends TestCase
     public function deleting_nonexistent_announcement_returns_404(): void
     {
         // Arrange
-        $admin = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $admin->id]);
-        $admin->assignRole('COMPANY_ADMIN', $company->id);
-
+        $admin = $this->createCompanyAdmin();
         $nonExistentId = 99999;
 
         // Act
