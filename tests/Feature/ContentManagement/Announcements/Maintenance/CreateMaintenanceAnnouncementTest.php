@@ -554,18 +554,6 @@ class CreateMaintenanceAnnouncementTest extends TestCase
     // ==================== Métodos de Ayuda ====================
 
     /**
-     * Crea un usuario administrador de empresa con el rol asignado.
-     */
-    private function createCompanyAdmin(): User
-    {
-        $user = User::factory()->create();
-        $company = Company::factory()->create(['admin_user_id' => $user->id]);
-        $user->assignRole('COMPANY_ADMIN', $company->id);
-
-        return $user;
-    }
-
-    /**
      * Crea un usuario final (rol USER).
      */
     private function createEndUser(): User
