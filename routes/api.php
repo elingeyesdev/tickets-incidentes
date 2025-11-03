@@ -214,40 +214,40 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
         ->name('announcements.maintenance.store');
 
     // Mark maintenance as started
-    Route::post('/maintenance/{id}/start', [MaintenanceAnnouncementController::class, 'markStart'])
+    Route::post('/maintenance/{announcement}/start', [MaintenanceAnnouncementController::class, 'markStart'])
         ->name('announcements.maintenance.start');
 
     // Mark maintenance as completed
-    Route::post('/maintenance/{id}/complete', [MaintenanceAnnouncementController::class, 'markComplete'])
+    Route::post('/maintenance/{announcement}/complete', [MaintenanceAnnouncementController::class, 'markComplete'])
         ->name('announcements.maintenance.complete');
 
     // ========== GENERAL ANNOUNCEMENT ACTIONS ==========
 
     // Update announcement (partial updates for DRAFT or SCHEDULED only)
-    Route::put('/{id}', [AnnouncementController::class, 'update'])
+    Route::put('/{announcement}', [AnnouncementController::class, 'update'])
         ->name('announcements.update');
 
     // Delete announcement (soft delete)
-    Route::delete('/{id}', [AnnouncementController::class, 'destroy'])
+    Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])
         ->name('announcements.destroy');
 
     // Publish announcement immediately
-    Route::post('/{id}/publish', [AnnouncementActionController::class, 'publish'])
+    Route::post('/{announcement}/publish', [AnnouncementActionController::class, 'publish'])
         ->name('announcements.publish');
 
     // Schedule announcement for future publication
-    Route::post('/{id}/schedule', [AnnouncementActionController::class, 'schedule'])
+    Route::post('/{announcement}/schedule', [AnnouncementActionController::class, 'schedule'])
         ->name('announcements.schedule');
 
     // Unschedule announcement (back to DRAFT)
-    Route::post('/{id}/unschedule', [AnnouncementActionController::class, 'unschedule'])
+    Route::post('/{announcement}/unschedule', [AnnouncementActionController::class, 'unschedule'])
         ->name('announcements.unschedule');
 
     // Archive announcement
-    Route::post('/{id}/archive', [AnnouncementActionController::class, 'archive'])
+    Route::post('/{announcement}/archive', [AnnouncementActionController::class, 'archive'])
         ->name('announcements.archive');
 
     // Restore archived announcement
-    Route::post('/{id}/restore', [AnnouncementActionController::class, 'restore'])
+    Route::post('/{announcement}/restore', [AnnouncementActionController::class, 'restore'])
         ->name('announcements.restore');
 });

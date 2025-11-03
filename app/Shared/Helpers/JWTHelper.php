@@ -157,9 +157,23 @@ class JWTHelper
     {
         $roles = self::getRoles();
 
+        \Log::debug('JWTHelper::getCompanyIdFromJWT', [
+            'roleCode' => $roleCode,
+            'roles' => $roles,
+            'roles_json' => json_encode($roles),
+        ]);
+
         $role = collect($roles)->firstWhere('code', $roleCode);
 
-        return $role['company_id'] ?? null;
+        $companyId = $role['company_id'] ?? null;
+
+        \Log::debug('JWTHelper::getCompanyIdFromJWT result', [
+            'roleCode' => $roleCode,
+            'role' => $role,
+            'companyId' => $companyId,
+        ]);
+
+        return $companyId;
     }
 
     /**
