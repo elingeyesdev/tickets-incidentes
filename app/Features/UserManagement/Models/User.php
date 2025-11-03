@@ -297,6 +297,38 @@ class User extends Model implements Authenticatable
             ->toArray();
     }
 
+    /**
+     * Obtener TODOS los roles del usuario con company_id para el JWT.
+     *
+     * Retorna array de roles incluyendo company_id (null para PLATFORM_ADMIN y USER).
+     * Usado para incluir todos los roles en el token JWT.
+     *
+     * @return array Array de roles: [["code" => "COMPANY_ADMIN", "company_id" => "uuid"], ...]
+     */
+    public function getAllRolesForJWT(): array
+    {
+        $roles = $this->activeRoles()
+            ->get()
+            ->map(fn($userRole) => [
+                'code' => $userRole->role_code,
+                'company_id' => $userRole->company_id,
+            ])
+            ->values()
+            ->toArray();
+
+        // Si no tiene roles, retornar USER por defecto
+        if (empty($roles)) {
+            return [
+                [
+                    'code' => 'USER',
+                    'company_id' => null,
+                ],
+            ];
+        }
+
+        return $roles;
+    }
+
     // ==================== MÉTODOS DE ACTIVIDAD ====================
 
     /**

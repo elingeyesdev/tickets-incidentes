@@ -1,7 +1,7 @@
 ================================================================================
--- SISTEMA HELPDESK - MODELADO PERFECCIONADO V8.0
+-- SISTEMA HELPDESK - MODELADO PERFECCIONADO V9.0
 -- ================================================================================
--- Fecha: 31 de Octubre de 2025
+-- Fecha: 03 de Noviembre de 2025
 -- Motor: PostgreSQL 17+
 -- Descripción: Versión perfeccionada incorporando todas las mejoras sugeridas
 -- MEJORAS APLICADAS EN V7.0:
@@ -17,6 +17,14 @@
 -- 9. Agregado campo description en companies para información pública
 -- 10. Nueva tabla company_industries como catálogo de industrias
 -- 11. Relación industry_id en companies para normalización de datos
+-- MEJORAS APLICADAS EN V9.0 (Content Management Feature):
+-- 12. Nuevos enums: announcement_type, urgency_level, news_type, alert_type
+-- 13. Actualización de publication_status para incluir 'scheduled'
+-- 14. Nueva tabla article_categories (4 categorías globales del Help Center)
+-- 15. Tabla company_announcements mejorada: type enum, metadata JSONB, índices optimizados
+-- 16. Tabla help_center_articles mejorada: category_id, author_id nullable (SET NULL), excerpt, índices
+-- 17. Índices completamente optimizados para queries de Content Management
+-- 18. 100% alineación con feature de Content Management (TDD - CAPA 1 completa)
 -- ================================================================================
 
 -- Extensiones necesarias
@@ -35,7 +43,11 @@ CREATE SCHEMA IF NOT EXISTS audit;
 
 CREATE TYPE auth.user_status AS ENUM ('active', 'suspended', 'deleted');
 CREATE TYPE business.request_status AS ENUM ('pending', 'approved', 'rejected');
-CREATE TYPE business.publication_status AS ENUM ('draft', 'published', 'archived');
+CREATE TYPE business.publication_status AS ENUM ('DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED');
+CREATE TYPE business.announcement_type AS ENUM ('MAINTENANCE', 'INCIDENT', 'NEWS', 'ALERT');
+CREATE TYPE business.urgency_level AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+CREATE TYPE business.news_type AS ENUM ('feature_release', 'policy_update', 'general_update');
+CREATE TYPE business.alert_type AS ENUM ('security', 'system', 'service', 'compliance');
 CREATE TYPE ticketing.ticket_status AS ENUM ('open', 'pending', 'resolved', 'closed');
 CREATE TYPE ticketing.author_type AS ENUM ('user', 'agent');
 CREATE TYPE audit.action_type AS ENUM ('create', 'update', 'delete', 'login', 'logout');
@@ -341,32 +353,56 @@ CREATE TABLE business.company_macros (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 11: COMPANY_ANNOUNCEMENTS (ANUNCIOS DE LA EMPRESA)
+-- TABLA 11: ARTICLE_CATEGORIES (CATEGORÍAS GLOBALES DE ARTÍCULOS)
+-- Nota: 4 categorías globales, NO son específicas por empresa
+CREATE TABLE business.article_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,           -- ACCOUNT_PROFILE, SECURITY_PRIVACY, BILLING_PAYMENTS, TECHNICAL_SUPPORT
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Inserción de 4 categorías globales
+INSERT INTO business.article_categories (code, name, description) VALUES
+    ('ACCOUNT_PROFILE', 'Account & Profile', 'Gestión de cuenta y perfil de usuario'),
+    ('SECURITY_PRIVACY', 'Security & Privacy', 'Seguridad y privacidad de datos'),
+    ('BILLING_PAYMENTS', 'Billing & Payments', 'Facturación y pagos'),
+    ('TECHNICAL_SUPPORT', 'Technical Support', 'Soporte técnico y troubleshooting');
+
+-- TABLA 12: COMPANY_ANNOUNCEMENTS (ANUNCIOS DE LA EMPRESA)
+-- Versión mejorada V9.0: Incorpora Content Management feature
 CREATE TABLE business.company_announcements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
-    author_id UUID NOT NULL REFERENCES auth.users(id),
+    author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- SET NULL para auditoría
 
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
 
-    status business.publication_status NOT NULL DEFAULT 'draft',
+    type business.announcement_type NOT NULL,  -- MAINTENANCE, INCIDENT, NEWS, ALERT
+    status business.publication_status NOT NULL DEFAULT 'DRAFT',
+    metadata JSONB DEFAULT '{}'::JSONB,        -- Metadatos flexibles por tipo de anuncio
+
     published_at TIMESTAMPTZ,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 12: HELP_CENTER_ARTICLES (BASE DE CONOCIMIENTO)
+-- TABLA 13: HELP_CENTER_ARTICLES (BASE DE CONOCIMIENTO)
+-- Versión mejorada V9.0: Incorpora Content Management feature
 CREATE TABLE business.help_center_articles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
-    author_id UUID NOT NULL REFERENCES auth.users(id),
+    author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- Permite auditoría cuando autor se elimina
+    category_id UUID NOT NULL REFERENCES business.article_categories(id),
 
     title VARCHAR(255) NOT NULL,
+    excerpt VARCHAR(500),
     content TEXT NOT NULL,
 
-    status business.publication_status NOT NULL DEFAULT 'draft',
+    status business.publication_status NOT NULL DEFAULT 'DRAFT',
     published_at TIMESTAMPTZ,
 
     views_count INT DEFAULT 0,
@@ -538,8 +574,18 @@ CREATE INDEX idx_companies_status ON business.companies(status);
 CREATE INDEX idx_companies_industry_id ON business.companies(industry_id);
 CREATE INDEX idx_user_company_followers_user_id ON business.user_company_followers(user_id);
 CREATE INDEX idx_user_company_followers_company_id ON business.user_company_followers(company_id);
-CREATE INDEX idx_company_announcements_company_id ON business.company_announcements(company_id, status);
-CREATE INDEX idx_help_center_articles_company_id ON business.help_center_articles(company_id, status);
+
+-- Índices optimizados para Content Management (V9.0)
+CREATE INDEX idx_article_categories_code ON business.article_categories(code);
+CREATE INDEX idx_company_announcements_company_id ON business.company_announcements(company_id);
+CREATE INDEX idx_company_announcements_status ON business.company_announcements(status);
+CREATE INDEX idx_company_announcements_type ON business.company_announcements(type);
+CREATE INDEX idx_company_announcements_published_at ON business.company_announcements(published_at DESC);
+CREATE INDEX idx_help_center_articles_company_id ON business.help_center_articles(company_id);
+CREATE INDEX idx_help_center_articles_status ON business.help_center_articles(status);
+CREATE INDEX idx_help_center_articles_category_id ON business.help_center_articles(category_id);
+CREATE INDEX idx_help_center_articles_views_count ON business.help_center_articles(views_count DESC);
+CREATE INDEX idx_help_center_articles_published_at ON business.help_center_articles(published_at DESC);
 
 -- Índices en el esquema 'ticketing' (CRÍTICOS)
 CREATE INDEX idx_tickets_company_id_status ON ticketing.tickets(company_id, status);
@@ -729,6 +775,22 @@ COMMENT ON COLUMN business.company_requests.company_description IS 'Descripción
 COMMENT ON COLUMN business.company_requests.request_message IS 'Justificación privada de por qué se necesita el servicio. Solo visible para platform admins en revisión.';
 COMMENT ON COLUMN business.companies.description IS 'Descripción pública visible en el perfil de la empresa. Se hereda de company_requests.company_description.';
 COMMENT ON COLUMN business.companies.industry_id IS 'Industria a la que pertenece la empresa. Relación con catálogo company_industries.';
+
+-- Comentarios para Content Management Feature (V9.0)
+COMMENT ON TYPE business.announcement_type IS 'Tipos de anuncios: MAINTENANCE (mantenimientos), INCIDENT (incidentes), NEWS (noticias), ALERT (alertas de seguridad)';
+COMMENT ON TYPE business.urgency_level IS 'Niveles de urgencia: LOW, MEDIUM, HIGH, CRITICAL. Usados en incidents y alerts.';
+COMMENT ON TABLE business.article_categories IS 'Categorías globales del Help Center (4 fijas): ACCOUNT_PROFILE, SECURITY_PRIVACY, BILLING_PAYMENTS, TECHNICAL_SUPPORT';
+COMMENT ON COLUMN business.article_categories.code IS 'Código único de la categoría (ej: SECURITY_PRIVACY). Valores fijos, no editables.';
+COMMENT ON TABLE business.company_announcements IS 'Anuncios de empresa con soporte para scheduling (Redis Queue) y metadata flexible por tipo. Estados: DRAFT->SCHEDULED->PUBLISHED->ARCHIVED';
+COMMENT ON COLUMN business.company_announcements.type IS 'Tipo de anuncio (enum). Define estructura de metadata requerida.';
+COMMENT ON COLUMN business.company_announcements.metadata IS 'JSONB con datos específicos del tipo: urgency, scheduled_dates, resolution info, etc. Nunca NULL (default {})';
+COMMENT ON COLUMN business.company_announcements.author_id IS 'Puede ser NULL (SET NULL) para preservar anuncios cuando se elimina el autor para auditoría.';
+COMMENT ON TABLE business.help_center_articles IS 'Artículos de la base de conocimiento por empresa con tracking de vistas. author_id nullable para auditoría.';
+COMMENT ON COLUMN business.help_center_articles.category_id IS 'Referencia a una de las 4 categorías globales de help center.';
+COMMENT ON COLUMN business.help_center_articles.author_id IS 'Puede ser NULL (SET NULL) para preservar artículos cuando se elimina el autor para auditoría.';
+COMMENT ON COLUMN business.help_center_articles.excerpt IS 'Resumen breve del artículo (max 500 chars), visible en listados.';
+COMMENT ON COLUMN business.help_center_articles.views_count IS 'Contador de vistas totales del artículo. Incrementa cuando END_USER ve artículo PUBLISHED.';
+
 COMMENT ON TABLE ticketing.tickets IS 'Tickets de soporte. Estados: open->pending(primera respuesta)->resolved->closed(7 días auto o manual)';
 COMMENT ON COLUMN ticketing.tickets.owner_agent_id IS 'Se asigna automáticamente al primer agente que responde';
 COMMENT ON COLUMN ticketing.tickets.first_response_at IS 'Timestamp de la primera respuesta de un agente';
@@ -736,5 +798,6 @@ COMMENT ON COLUMN business.companies.business_hours IS 'JSON con horarios por d�
 COMMENT ON COLUMN ticketing.ticket_ratings.rated_agent_id IS 'Guardamos el agente histórico, independiente de cambios futuros en el ticket';
 
 -- ================================================================================
--- FIN DEL MODELADO PERFECCIONADO V8.0
+-- FIN DEL MODELADO PERFECCIONADO V9.0
+-- Completamente actualizado con Content Management Feature (TDD - CAPA 1)
 -- ================================================================================

@@ -1,0 +1,162 @@
+-- ============================================================================
+-- CONTENT MANAGEMENT - SCHEMA BD DEFINITIVO v1.0 (CORREGIDO)
+-- ============================================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================================
+-- ENUMS
+-- ============================================================================
+
+CREATE TYPE business.announcement_type AS ENUM (
+    'MAINTENANCE',
+    'INCIDENT',
+    'NEWS',
+    'ALERT'
+);
+
+CREATE TYPE business.publication_status AS ENUM (
+    'DRAFT',
+    'PUBLISHED',
+    'SCHEDULED',
+    'ARCHIVED'
+);
+
+-- ============================================================================
+-- TABLA: CATEGORÍAS DE ARTÍCULOS (GLOBAL)
+-- ============================================================================
+
+CREATE TABLE business.article_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Datos iniciales (4 categorías globales)
+INSERT INTO business.article_categories (code, name, description) VALUES
+    ('ACCOUNT_PROFILE', 'Account & Profile', 'Gestión de cuenta y perfil de usuario'),
+    ('SECURITY_PRIVACY', 'Security & Privacy', 'Seguridad y privacidad de datos'),
+    ('BILLING_PAYMENTS', 'Billing & Payments', 'Facturación y pagos'),
+    ('TECHNICAL_SUPPORT', 'Technical Support', 'Soporte técnico y troubleshooting');
+
+-- ============================================================================
+-- TABLA: ANUNCIOS DE EMPRESA
+-- ============================================================================
+
+CREATE TABLE business.company_announcements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
+    author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- SET NULL para auditoría
+
+    -- Contenido
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+
+    -- Clasificación
+    type business.announcement_type NOT NULL,
+
+    -- Metadatos flexibles por tipo
+    metadata JSONB NOT NULL DEFAULT '{}',
+
+    -- Estado de publicación
+    status business.publication_status NOT NULL DEFAULT 'DRAFT',
+    published_at TIMESTAMPTZ,
+
+    -- Auditoría
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+);
+
+-- ============================================================================
+-- TABLA: ARTÍCULOS DE CENTRO DE AYUDA
+-- ============================================================================
+
+CREATE TABLE business.help_center_articles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES business.companies(id) ON DELETE CASCADE,
+    author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    category_id UUID NOT NULL REFERENCES business.article_categories(id),
+
+    -- Contenido
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    excerpt VARCHAR(500),
+
+    -- Estado de publicación
+    status business.publication_status NOT NULL DEFAULT 'DRAFT',
+    published_at TIMESTAMPTZ,
+
+    -- Engagement
+    views_count INT DEFAULT 0,
+
+    -- Auditoría
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+
+);
+
+-- ============================================================================
+-- ÍNDICES (FUERA DE LAS TABLAS)
+-- ============================================================================
+
+-- Anuncios
+CREATE INDEX idx_announcements_company_id ON business.company_announcements(company_id);
+CREATE INDEX idx_announcements_type ON business.company_announcements(type);
+CREATE INDEX idx_announcements_status ON business.company_announcements(status);
+CREATE INDEX idx_announcements_published_at ON business.company_announcements(published_at DESC);
+
+-- Artículos
+CREATE INDEX idx_articles_company_id ON business.help_center_articles(company_id);
+CREATE INDEX idx_articles_category_id ON business.help_center_articles(category_id);
+CREATE INDEX idx_articles_status ON business.help_center_articles(status);
+CREATE INDEX idx_articles_published_at ON business.help_center_articles(published_at DESC);
+CREATE INDEX idx_articles_views ON business.help_center_articles(views_count DESC);
+
+1️⃣ MAINTENANCE (Mantenimiento programado o emergencia)
+{
+  "urgency": "HIGH",                        // "LOW", "MEDIUM", "HIGH"
+  "scheduled_start": "2025-10-30T10:00:00Z",
+  "scheduled_end": "2025-10-30T14:00:00Z",
+  "scheduled_for": "2025-10-30T09:55:00Z",  // solo si es programado
+  "actual_start": null,
+  "actual_end": null,
+  "is_emergency": false,
+  "affected_services": ["payments", "billing"]
+}
+
+
+2️⃣ INCIDENT (Incidente / fallo)
+{
+  "urgency": "CRITICAL",                     // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  "is_resolved": false,
+  "resolved_at": null,
+  "resolution_content": null,
+  "affected_services": ["payment", "billing"],
+  "started_at": "2025-10-30T18:45:00Z",
+  "ended_at": null,
+  "scheduled_for": null                        // opcional, normalmente null
+}
+
+
+
+4️⃣ NEWS (Comunicado / actualización general)
+{
+  "news_type": "general_update",             // tipo de noticia
+  "target_audience": ["users", "agents"],
+  "summary": "New security policies starting November",
+  "scheduled_for": "2025-10-31T08:00:00Z"     // solo si se programa publicación futura
+}
+
+ALERT/ USER ALERT
+{
+  "urgency": "CRITICAL",                     // "HIGH" o "CRITICAL"
+  "alert_type": "security",                  // opcional: "security", "system", "service"
+  "message": "Critical vulnerability detected, please update password",
+  "affected_services": ["login"],
+  "started_at": "2025-10-30T22:00:00Z",
+  "ended_at": null,
+  "scheduled_for": "2025-10-30T21:55:00Z"     // opcional si se programa alerta anticipada
+}

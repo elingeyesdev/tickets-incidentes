@@ -100,10 +100,6 @@ class CompanyControllerUpdateTest extends TestCase
         $response = $this->authenticateWithJWT($companyAdmin)
             ->patchJson("/api/companies/{$otherCompany->id}", $inputData);
 
-        // DEBUG: Ver respuesta
-        dump($response->json());
-        dump($response->status());
-
         // Assert
         $response->assertStatus(403)
             ->assertJsonFragment(['message' => 'This action is unauthorized']);
