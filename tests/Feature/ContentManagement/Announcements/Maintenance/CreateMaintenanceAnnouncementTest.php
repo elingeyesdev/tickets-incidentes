@@ -49,7 +49,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201)
@@ -88,7 +88,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201)
@@ -127,7 +127,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201)
@@ -178,7 +178,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
             // Act
             $response = $this->authenticateWithJWT($admin)
-                ->postJson('/api/v1/announcements/maintenance', $payload);
+                ->postJson('/api/announcements/maintenance', $payload);
 
             // Assert
             $response->assertStatus(422)
@@ -204,7 +204,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(422)
@@ -228,7 +228,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $invalidPayload);
+            ->postJson('/api/announcements/maintenance', $invalidPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('urgency');
@@ -244,7 +244,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $criticalPayload);
+            ->postJson('/api/announcements/maintenance', $criticalPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('urgency');
@@ -268,7 +268,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $stringPayload);
+            ->postJson('/api/announcements/maintenance', $stringPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('affected_services');
@@ -285,7 +285,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $tooManyPayload);
+            ->postJson('/api/announcements/maintenance', $tooManyPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('affected_services');
@@ -310,7 +310,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $pastPayload);
+            ->postJson('/api/announcements/maintenance', $pastPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('scheduled_for');
@@ -328,7 +328,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $tooSoonPayload);
+            ->postJson('/api/announcements/maintenance', $tooSoonPayload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('scheduled_for');
@@ -346,7 +346,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $validPayload);
+            ->postJson('/api/announcements/maintenance', $validPayload);
 
         $response->assertStatus(201);
     }
@@ -370,7 +370,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(422)
@@ -396,7 +396,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(422)
@@ -423,7 +423,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201)
@@ -442,10 +442,8 @@ class CreateMaintenanceAnnouncementTest extends TestCase
     {
         // Arrange
         $admin = $this->createCompanyAdmin();
-        $adminCompany = Company::whereHas('users', function ($query) use ($admin) {
-            $query->where('user_id', $admin->id)
-                ->where('role_code', 'COMPANY_ADMIN');
-        })->first();
+        // Get the company where this user is admin
+        $adminCompany = Company::where('admin_user_id', $admin->id)->first();
 
         $payload = [
             'title' => 'Company Maintenance',
@@ -458,7 +456,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -486,7 +484,7 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -514,11 +512,11 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(403)
-            ->assertJsonFragment(['message' => 'This action is unauthorized']);
+            ->assertJsonFragment(['message' => 'Insufficient permissions']);
 
         $this->assertDatabaseMissing('company_announcements', [
             'title' => 'Unauthorized Maintenance',
@@ -542,11 +540,11 @@ class CreateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->postJson('/api/v1/announcements/maintenance', $payload);
+            ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert
         $response->assertStatus(403)
-            ->assertJsonFragment(['message' => 'This action is unauthorized']);
+            ->assertJsonFragment(['message' => 'Insufficient permissions']);
 
         $this->assertDatabaseMissing('company_announcements', [
             'title' => 'Agent Maintenance',

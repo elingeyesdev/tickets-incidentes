@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for POST /api/v1/announcements/{id}/publish
+ * Test suite for POST /api/announcements/{id}/publish
  *
  * Verifies:
  * - State transitions: DRAFT → PUBLISHED, SCHEDULED → PUBLISHED
@@ -46,7 +46,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(200)
@@ -91,7 +91,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(200)
@@ -133,7 +133,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(400)
@@ -164,7 +164,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(400)
@@ -197,7 +197,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         $afterPublish = Carbon::now()->addSecond();
 
@@ -233,7 +233,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act - adminB tries to publish adminA's announcement
         $response = $this->authenticateWithJWT($adminB)
-            ->postJson("/api/v1/announcements/{$announcementA->id}/publish");
+            ->postJson("/api/announcements/{$announcementA->id}/publish");
 
         // Assert
         $response->assertStatus(403)
@@ -267,7 +267,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(403)
@@ -300,7 +300,7 @@ class PublishMaintenanceTest extends TestCase
 
         // Act - PLATFORM_ADMIN is read-only for company content
         $response = $this->authenticateWithJWT($platformAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/publish");
+            ->postJson("/api/announcements/{$announcement->id}/publish");
 
         // Assert
         $response->assertStatus(403)

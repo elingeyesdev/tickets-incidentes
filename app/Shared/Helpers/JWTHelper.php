@@ -117,7 +117,15 @@ class JWTHelper
             throw new AuthenticationException('JWT payload not found in request');
         }
 
-        return $payload['roles'] ?? [['code' => 'USER', 'company_id' => null]];
+        $roles = $payload['roles'] ?? [['code' => 'USER', 'company_id' => null]];
+
+        // Convert stdClass objects to arrays (JWT decodes objects as stdClass by default)
+        return array_map(function($role) {
+            if (is_object($role)) {
+                return (array) $role;
+            }
+            return $role;
+        }, $roles);
     }
 
     /**

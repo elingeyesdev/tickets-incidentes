@@ -32,7 +32,18 @@ class EnsureUserHasRole
         }
 
         // Check if user has any of the required roles
+        // HYBRID APPROACH: Check JWT first (for stateless auth), then DB (for backward compatibility)
         foreach ($roles as $role) {
+            // FIRST: Check JWT payload (stateless verification - for Content Management REST API)
+            try {
+                if (JWTHelper::hasRoleFromJWT($role)) {
+                    return $next($request);
+                }
+            } catch (\Exception $e) {
+                // JWT payload not available, fall through to DB check
+            }
+
+            // SECOND: Check database (for backward compatibility with other features)
             if ($user->hasRole($role)) {
                 return $next($request);
             }

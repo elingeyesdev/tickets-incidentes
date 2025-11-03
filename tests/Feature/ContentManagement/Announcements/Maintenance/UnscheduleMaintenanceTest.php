@@ -76,7 +76,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Unschedule the announcement
         $response = $this->actingAs($this->companyAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Response is successful
         $response->assertOk()
@@ -124,7 +124,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Unschedule the announcement
         $response = $this->actingAs($this->companyAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Response successful
         $response->assertOk();
@@ -172,7 +172,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Unschedule the announcement
         $response = $this->actingAs($this->companyAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Response successful
         $response->assertOk();
@@ -213,7 +213,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Try to unschedule a DRAFT announcement
         $response = $this->actingAs($this->companyAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Bad Request with appropriate message
         $response->assertStatus(400)
@@ -250,7 +250,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Try to unschedule a PUBLISHED announcement
         $response = $this->actingAs($this->companyAdmin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Bad Request with appropriate message
         $response->assertStatus(400)
@@ -289,7 +289,7 @@ final class UnscheduleMaintenanceTest extends TestCase
 
         // Act: Try to unschedule as END_USER
         $response = $this->actingAs($this->endUser)
-            ->postJson("/api/v1/announcements/{$announcement->id}/unschedule");
+            ->postJson("/api/announcements/{$announcement->id}/unschedule");
 
         // Assert: Forbidden
         $response->assertForbidden();

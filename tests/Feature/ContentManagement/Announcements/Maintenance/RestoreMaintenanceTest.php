@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for POST /api/v1/announcements/{id}/restore
+ * Test suite for POST /api/announcements/{id}/restore
  *
  * Verifies:
  * - State transitions: ARCHIVED → DRAFT
@@ -48,7 +48,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/restore");
+            ->postJson("/api/announcements/{$announcement->id}/restore");
 
         // Assert
         $response->assertStatus(200)
@@ -100,7 +100,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act & Assert - DRAFT
         $responseDraft = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$draftAnnouncement->id}/restore");
+            ->postJson("/api/announcements/{$draftAnnouncement->id}/restore");
 
         $responseDraft->assertStatus(400)
             ->assertJsonFragment([
@@ -113,7 +113,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act & Assert - PUBLISHED
         $responsePublished = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$publishedAnnouncement->id}/restore");
+            ->postJson("/api/announcements/{$publishedAnnouncement->id}/restore");
 
         $responsePublished->assertStatus(400)
             ->assertJsonFragment([
@@ -159,7 +159,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/restore");
+            ->postJson("/api/announcements/{$announcement->id}/restore");
 
         // Assert
         $response->assertStatus(200);
@@ -206,7 +206,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act - Restore
         $restoreResponse = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/restore");
+            ->postJson("/api/announcements/{$announcement->id}/restore");
 
         $restoreResponse->assertStatus(200);
 
@@ -215,7 +215,7 @@ class RestoreMaintenanceTest extends TestCase
         $updatedContent = 'Updated content after restoration';
 
         $updateResponse = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", [
+            ->putJson("/api/announcements/{$announcement->id}", [
                 'title' => $updatedTitle,
                 'content' => $updatedContent,
                 'metadata' => [
@@ -268,7 +268,7 @@ class RestoreMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson("/api/v1/announcements/{$announcement->id}/restore");
+            ->postJson("/api/announcements/{$announcement->id}/restore");
 
         // Assert
         $response->assertStatus(403)

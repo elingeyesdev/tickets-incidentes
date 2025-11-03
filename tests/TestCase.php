@@ -104,8 +104,14 @@ abstract class TestCase extends BaseTestCase
         $token = $tokenService->generateAccessToken($user, $sessionId);
 
         // Add Authorization header to all subsequent requests
-        // The JWTAuthenticationMiddleware will process this header automatically
-        // CRITICAL: Must return the result of withHeaders() for proper chaining
+        // The RequireJWTAuthentication middleware will automatically:
+        // 1. Extract the token from the Authorization header
+        // 2. Validate the token using TokenService
+        // 3. Decode and store the JWT payload in request()->attributes->set('jwt_payload', ...)
+        // 4. Set the authenticated user via auth()->setUser($user)
+        //
+        // Controllers can then access the JWT payload via:
+        // $payload = request()->attributes->get('jwt_payload');
         return $this->withHeaders([
             'Authorization' => "Bearer {$token}",
         ]);

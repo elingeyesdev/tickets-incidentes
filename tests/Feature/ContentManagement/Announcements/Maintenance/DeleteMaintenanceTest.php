@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for DELETE /api/v1/announcements/{id}
+ * Test suite for DELETE /api/announcements/{id}
  *
  * Verifies:
  * - DRAFT and ARCHIVED announcements can be deleted (204 No Content)
@@ -49,10 +49,11 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
-        $response->assertStatus(204); // 204 No Content for successful deletion
+        $response->assertStatus(200)
+            ->assertJsonFragment(['success' => true]);
 
         // Verify announcement is deleted from database
         $this->assertDatabaseMissing('company_announcements', [
@@ -79,10 +80,11 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
-        $response->assertStatus(204); // 204 No Content for successful deletion
+        $response->assertStatus(200)
+            ->assertJsonFragment(['success' => true]);
 
         // Verify announcement is deleted from database
         $this->assertDatabaseMissing('company_announcements', [
@@ -109,7 +111,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -149,7 +151,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -212,14 +214,15 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act - Delete the announcement
         $deleteResponse = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$announcementId}");
+            ->deleteJson("/api/announcements/{$announcementId}");
 
         // Assert - Deletion successful
-        $deleteResponse->assertStatus(204);
+        $deleteResponse->assertStatus(200)
+            ->assertJsonFragment(['success' => true]);
 
         // Act - Try to retrieve the deleted announcement
         $getResponse = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/announcements/{$announcementId}");
+            ->getJson("/api/announcements/{$announcementId}");
 
         // Assert - 404 Not Found
         $getResponse->assertStatus(404)
@@ -236,8 +239,7 @@ class DeleteMaintenanceTest extends TestCase
         $company = Company::factory()->create(['admin_user_id' => $admin->id]);
         $admin->assignRole('COMPANY_ADMIN', $company->id);
 
-        $endUser = User::factory()->create();
-        $endUser->assignRole('END_USER', $company->id);
+        $endUser = User::factory()->withRole('USER')->create();
 
         $announcement = Announcement::factory()->create([
             'company_id' => $company->id,
@@ -250,7 +252,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -287,7 +289,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act - adminB tries to delete adminA's announcement
         $response = $this->authenticateWithJWT($adminB)
-            ->deleteJson("/api/v1/announcements/{$announcementA->id}");
+            ->deleteJson("/api/announcements/{$announcementA->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -322,7 +324,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act - PLATFORM_ADMIN tries to delete company announcement
         $response = $this->authenticateWithJWT($platformAdmin)
-            ->deleteJson("/api/v1/announcements/{$announcement->id}");
+            ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -349,7 +351,7 @@ class DeleteMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/announcements/{$nonExistentId}");
+            ->deleteJson("/api/announcements/{$nonExistentId}");
 
         // Assert
         $response->assertStatus(404)

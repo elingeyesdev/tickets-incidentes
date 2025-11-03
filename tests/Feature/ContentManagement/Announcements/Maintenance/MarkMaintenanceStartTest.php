@@ -17,7 +17,7 @@ use Tests\TestCase;
 /**
  * Comprehensive Feature Tests for Marking Maintenance Start
  *
- * Tests POST /api/v1/announcements/maintenance/:id/start endpoint
+ * Tests POST /api/announcements/maintenance/:id/start endpoint
  *
  * Coverage:
  * - Company admin can mark maintenance start
@@ -57,7 +57,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Record the time after the request
         $afterRequest = Carbon::now();
@@ -121,7 +121,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Assert
         $response->assertStatus(200);
@@ -180,7 +180,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Assert
         $response->assertStatus(200);
@@ -236,7 +236,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Assert
         $response->assertStatus(200)
@@ -282,7 +282,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act - Try to mark start again
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Assert
         $response->assertStatus(400)
@@ -327,7 +327,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Act - End user tries to mark start
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/start");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/start");
 
         // Assert
         $response->assertStatus(403)

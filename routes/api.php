@@ -15,6 +15,9 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyFollowerController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
+use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
+use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -197,4 +200,54 @@ Route::middleware('jwt.require')->group(function () {
                 ], 404);
             });
     });
+});
+// ================================================================================
+// REST API ENDPOINTS - Content Management (Announcements)
+// ================================================================================
+
+Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements')->group(function () {
+
+    // ========== MAINTENANCE ANNOUNCEMENTS ==========
+
+    // Create maintenance announcement (draft, publish or schedule in one request)
+    Route::post('/maintenance', [MaintenanceAnnouncementController::class, 'store'])
+        ->name('announcements.maintenance.store');
+
+    // Mark maintenance as started
+    Route::post('/maintenance/{id}/start', [MaintenanceAnnouncementController::class, 'markStart'])
+        ->name('announcements.maintenance.start');
+
+    // Mark maintenance as completed
+    Route::post('/maintenance/{id}/complete', [MaintenanceAnnouncementController::class, 'markComplete'])
+        ->name('announcements.maintenance.complete');
+
+    // ========== GENERAL ANNOUNCEMENT ACTIONS ==========
+
+    // Update announcement (partial updates for DRAFT or SCHEDULED only)
+    Route::put('/{id}', [AnnouncementController::class, 'update'])
+        ->name('announcements.update');
+
+    // Delete announcement (soft delete)
+    Route::delete('/{id}', [AnnouncementController::class, 'destroy'])
+        ->name('announcements.destroy');
+
+    // Publish announcement immediately
+    Route::post('/{id}/publish', [AnnouncementActionController::class, 'publish'])
+        ->name('announcements.publish');
+
+    // Schedule announcement for future publication
+    Route::post('/{id}/schedule', [AnnouncementActionController::class, 'schedule'])
+        ->name('announcements.schedule');
+
+    // Unschedule announcement (back to DRAFT)
+    Route::post('/{id}/unschedule', [AnnouncementActionController::class, 'unschedule'])
+        ->name('announcements.unschedule');
+
+    // Archive announcement
+    Route::post('/{id}/archive', [AnnouncementActionController::class, 'archive'])
+        ->name('announcements.archive');
+
+    // Restore archived announcement
+    Route::post('/{id}/restore', [AnnouncementActionController::class, 'restore'])
+        ->name('announcements.restore');
 });

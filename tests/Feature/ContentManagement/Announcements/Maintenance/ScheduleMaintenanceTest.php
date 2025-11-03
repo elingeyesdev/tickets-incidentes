@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for POST /api/v1/announcements/{id}/schedule
+ * Test suite for POST /api/announcements/{id}/schedule
  *
  * Verifies:
  * - State transitions: DRAFT → SCHEDULED
@@ -55,7 +55,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -100,7 +100,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -147,7 +147,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -184,7 +184,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act - no scheduled_for provided
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 // Missing scheduled_for
             ]);
 
@@ -223,7 +223,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $tooSoon->toIso8601String(),
             ]);
 
@@ -262,7 +262,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $tooFar->toIso8601String(),
             ]);
 
@@ -302,7 +302,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -344,7 +344,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act - First schedule
         $response1 = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $firstScheduledFor->toIso8601String(),
             ]);
 
@@ -357,7 +357,7 @@ class ScheduleMaintenanceTest extends TestCase
         $expectedNewDelay = $newScheduledFor->diffInSeconds(Carbon::now());
 
         $response2 = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $newScheduledFor->toIso8601String(),
             ]);
 
@@ -410,7 +410,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $newScheduledFor->toIso8601String(),
             ]);
 
@@ -461,7 +461,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -501,7 +501,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 
@@ -540,7 +540,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/{$announcement->id}/schedule", [
+            ->postJson("/api/announcements/{$announcement->id}/schedule", [
                 'scheduled_for' => $scheduledFor->toIso8601String(),
             ]);
 

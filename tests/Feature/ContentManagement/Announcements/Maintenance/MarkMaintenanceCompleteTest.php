@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for POST /api/v1/announcements/maintenance/:id/complete
+ * Test suite for POST /api/announcements/maintenance/:id/complete
  *
  * Verifies:
  * - Company admin can mark maintenance complete
@@ -58,7 +58,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         $afterComplete = Carbon::now()->addSecond();
 
@@ -119,7 +119,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(200)
@@ -174,7 +174,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(200)
@@ -222,7 +222,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(400)
@@ -266,7 +266,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(400)
@@ -310,7 +310,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act - Try to mark complete again
         $response = $this->authenticateWithJWT($admin)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(400)
@@ -353,7 +353,7 @@ class MarkMaintenanceCompleteTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($endUser)
-            ->postJson("/api/v1/announcements/maintenance/{$announcement->id}/complete");
+            ->postJson("/api/announcements/maintenance/{$announcement->id}/complete");
 
         // Assert
         $response->assertStatus(403)

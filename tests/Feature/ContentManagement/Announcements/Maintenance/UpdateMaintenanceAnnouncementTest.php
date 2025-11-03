@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Test suite for PUT/PATCH /api/v1/announcements/{id} - Update Maintenance Announcements
+ * Test suite for PUT/PATCH /api/announcements/{id} - Update Maintenance Announcements
  *
  * Verifies:
  * - COMPANY_ADMIN can update DRAFT and SCHEDULED maintenance announcements
@@ -62,7 +62,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(200)
@@ -110,7 +110,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(200)
@@ -148,7 +148,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(403)
@@ -183,7 +183,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(403)
@@ -219,7 +219,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $invalidUpdateData);
+            ->putJson("/api/announcements/{$announcement->id}", $invalidUpdateData);
 
         // Assert
         $response->assertStatus(422)
@@ -256,7 +256,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act - Admin B tries to update Company A's announcement
         $response = $this->authenticateWithJWT($adminB)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(403)
@@ -303,7 +303,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(200);
@@ -351,7 +351,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $maliciousUpdateData);
+            ->putJson("/api/announcements/{$announcement->id}", $maliciousUpdateData);
 
         // Assert
         $response->assertStatus(200);
@@ -403,7 +403,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(200);
@@ -443,7 +443,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
 
         // Act - Platform admin tries to update (read-only role)
         $response = $this->authenticateWithJWT($platformAdmin)
-            ->putJson("/api/v1/announcements/{$announcement->id}", $updateData);
+            ->putJson("/api/announcements/{$announcement->id}", $updateData);
 
         // Assert
         $response->assertStatus(403)
