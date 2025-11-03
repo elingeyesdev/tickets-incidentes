@@ -10,9 +10,9 @@ use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Comprehensive Feature Tests for Marking Maintenance Start
@@ -29,7 +29,7 @@ use Tests\TestCase;
  */
 class MarkMaintenanceStartTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_mark_maintenance_start(): void

@@ -9,9 +9,9 @@ use App\Features\ContentManagement\Enums\AnnouncementType;
 use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for PUT/PATCH /api/announcements/{id} - Update Maintenance Announcements
@@ -28,7 +28,7 @@ use Tests\TestCase;
  */
 class UpdateMaintenanceAnnouncementTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_update_maintenance_in_draft_status(): void

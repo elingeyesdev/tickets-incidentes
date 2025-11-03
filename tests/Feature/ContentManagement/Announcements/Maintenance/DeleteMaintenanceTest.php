@@ -10,9 +10,9 @@ use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for DELETE /api/announcements/{id}
@@ -28,7 +28,7 @@ use Tests\TestCase;
  */
 class DeleteMaintenanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_delete_draft_maintenance(): void

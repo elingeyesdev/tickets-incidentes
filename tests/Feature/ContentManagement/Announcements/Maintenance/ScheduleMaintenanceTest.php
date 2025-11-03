@@ -11,10 +11,10 @@ use App\Features\ContentManagement\Jobs\PublishAnnouncementJob;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for POST /api/announcements/{id}/schedule
@@ -31,7 +31,7 @@ use Tests\TestCase;
  */
 class ScheduleMaintenanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_schedule_maintenance_from_draft(): void
