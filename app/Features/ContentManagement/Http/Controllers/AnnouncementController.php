@@ -130,17 +130,7 @@ class AnnouncementController extends Controller
         // Validate that announcement belongs to user's company (from JWT)
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-
-            \Log::warning('AnnouncementController::destroy DEBUG', [
-                'announcement_id' => $announcement->id,
-                'announcement_company_id' => $announcement->company_id,
-                'userCompanyId' => $userCompanyId,
-                'announcement_company_id_type' => gettype($announcement->company_id),
-                'userCompanyId_type' => gettype($userCompanyId),
-                'comparison' => $announcement->company_id !== $userCompanyId,
-            ]);
         } catch (\Exception $e) {
-            \Log::error('AnnouncementController::destroy error', ['error' => $e->getMessage()]);
             abort(401, 'Usuario no autenticado o JWT inválido');
         }
 
