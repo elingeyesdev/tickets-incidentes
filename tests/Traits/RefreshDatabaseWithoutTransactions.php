@@ -2,6 +2,7 @@
 
 namespace Tests\Traits;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -22,48 +23,58 @@ use Illuminate\Support\Facades\Artisan;
  * - No automatic rollback (database state persists until next test), but that's OK
  *
  * Usage:
- * Simply use this trait instead of RefreshDatabase in your test class:
+ * Simply use this trait in your test class instead of RefreshDatabase:
  * ```php
  * use RefreshDatabaseWithoutTransactions;
  * ```
  *
- * The setUp() and tearDown() hooks are automatically called.
+ * This trait overrides RefreshDatabase's transaction behavior.
  *
  * @package Tests\Traits
  */
 trait RefreshDatabaseWithoutTransactions
 {
+    use RefreshDatabase;
+
     /**
-     * Setup the test environment before each test
+     * Disable the transaction-based refresh
      *
-     * Automatically called by PHPUnit before each test method.
-     * Resets the database using migrate:fresh --seed.
+     * This overrides RefreshDatabase to NOT use transactions.
+     * Instead, we use migrate:fresh which clears and rebuilds the database
+     * without transaction wrapping.
+     *
+     * @return bool Always returns false (no transactions)
+     */
+    public function beginDatabaseTransaction()
+    {
+        // Don't start a database transaction
+        // This allows multiple HTTP requests in the same test to see each other's data
+        return false;
+    }
+
+    /**
+     * Override refresh to not use transactions
+     *
+     * Called by RefreshDatabase before each test
      *
      * @return void
      */
-    protected function setUp(): void
+    protected function refreshDatabase(): void
     {
-        parent::setUp();
-
-        // Run migrations fresh with seeding
-        // This will DROP all tables and recreate them
-        // Note: This is not wrapped in a transaction, so all HTTP requests
-        // in this test will see the same database state
+        // Run migrate:fresh to clear and rebuild database
+        // This is NOT wrapped in a transaction
         Artisan::call('migrate:fresh', ['--seed' => true, '--quiet' => true]);
     }
 
     /**
-     * Clean up after the test
+     * Disable transaction rollback
      *
-     * Automatically called by PHPUnit after each test method.
-     * Since we're not using transactions, the next test's setUp()
-     * will run migrate:fresh again, so cleanup is automatic.
+     * Since we're not using transactions, there's nothing to rollback
      *
      * @return void
      */
-    protected function tearDown(): void
+    protected function rollbackTransaction()
     {
-        // Database will be reset in the next test's setUp()
-        parent::tearDown();
+        // Nothing to rollback - we're using migrate:fresh, not transactions
     }
 }
