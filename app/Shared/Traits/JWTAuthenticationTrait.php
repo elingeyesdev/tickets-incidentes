@@ -158,7 +158,8 @@ trait JWTAuthenticationTrait
     protected function storeAuthenticatedUser(Request $request, User $user, object $payload): void
     {
         $request->attributes->set('jwt_user', $user);
-        $request->attributes->set('jwt_payload', (array) $payload);
+        // CRITICAL FIX: Convert payload recursively to handle nested stdClass objects
+        $request->attributes->set('jwt_payload', $this->convertToArray($payload));
         $request->attributes->set('jwt_user_id', $user->id);
 
         // CRITICAL: Also inject into request for compatibility
@@ -169,6 +170,31 @@ trait JWTAuthenticationTrait
 
         // CRITICAL: Also set in auth() helper for compatibility
         auth()->setUser($user);
+    }
+
+    /**
+     * Recursively convert stdClass objects to arrays
+     *
+     * Handles nested objects that appear when decoding JWT
+     *
+     * @param mixed $value Value to convert
+     * @return mixed Converted value (arrays, primitives, etc.)
+     */
+    private function convertToArray($value)
+    {
+        if (is_object($value)) {
+            // Convert object properties to array
+            $array = [];
+            foreach ((array) $value as $key => $val) {
+                $array[$key] = $this->convertToArray($val);
+            }
+            return $array;
+        } elseif (is_array($value)) {
+            // Recursively convert array elements
+            return array_map([$this, 'convertToArray'], $value);
+        }
+        // Return primitives as-is
+        return $value;
     }
 
     /**
