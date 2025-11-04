@@ -116,6 +116,19 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Clear JWT authentication headers
+     *
+     * This method removes the Authorization header that was added by authenticateWithJWT().
+     * Use this when you need to make unauthenticated requests after authenticated ones.
+     *
+     * @return $this
+     */
+    protected function clearJWTAuth(): self
+    {
+        return $this->withoutHeader('Authorization');
+    }
+
+    /**
      * Create a company admin user with a company
      *
      * Useful for testing endpoints that require COMPANY_ADMIN role.
@@ -199,6 +212,10 @@ abstract class TestCase extends BaseTestCase
         // Fetch the created announcement from database
         $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
 
+        // CRITICAL: Clear JWT auth headers to prevent pollution in subsequent requests
+        // This ensures that tests making unauthenticated requests work correctly
+        $this->clearJWTAuth();
+
         return $announcement;
     }
 
@@ -264,6 +281,10 @@ abstract class TestCase extends BaseTestCase
 
         // Fetch the created announcement from database
         $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        // CRITICAL: Clear JWT auth headers to prevent pollution in subsequent requests
+        // This ensures that tests making unauthenticated requests work correctly
+        $this->clearJWTAuth();
 
         return $announcement;
     }
@@ -335,6 +356,10 @@ abstract class TestCase extends BaseTestCase
 
         // Fetch the created announcement from database
         $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        // CRITICAL: Clear JWT auth headers to prevent pollution in subsequent requests
+        // This ensures that tests making unauthenticated requests work correctly
+        $this->clearJWTAuth();
 
         return $announcement;
     }
@@ -408,6 +433,10 @@ abstract class TestCase extends BaseTestCase
 
         // Fetch the created announcement from database
         $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        // CRITICAL: Clear JWT auth headers to prevent pollution in subsequent requests
+        // This ensures that tests making unauthenticated requests work correctly
+        $this->clearJWTAuth();
 
         return $announcement;
     }

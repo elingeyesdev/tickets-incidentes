@@ -208,6 +208,14 @@ Route::middleware('jwt.require')->group(function () {
 // REST API ENDPOINTS - Content Management (Announcements)
 // ================================================================================
 
+// ========== ANNOUNCEMENTS - Read Endpoints (All Authenticated Users) ==========
+Route::middleware('jwt.require')->group(function () {
+    // List announcements with role-based visibility (CAPA 3E)
+    Route::get('/announcements', [AnnouncementController::class, 'index'])
+        ->name('announcements.index');
+});
+
+// ========== ANNOUNCEMENTS - Management Endpoints (COMPANY_ADMIN Only) ==========
 Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements')->group(function () {
 
     // ========== MAINTENANCE ANNOUNCEMENTS ==========

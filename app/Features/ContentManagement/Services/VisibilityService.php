@@ -66,7 +66,7 @@ class VisibilityService
      * @param User $user
      * @return bool
      */
-    private function isPlatformAdmin(User $user): bool
+    public function isPlatformAdmin(User $user): bool
     {
         return DB::table('auth.user_roles')
             ->where('user_id', $user->id)

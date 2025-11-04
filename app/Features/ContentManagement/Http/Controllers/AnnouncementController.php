@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Features\ContentManagement\Http\Controllers;
 
 use App\Features\ContentManagement\Enums\AnnouncementType;
+use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Http\Requests\UpdateAlertRequest;
 use App\Features\ContentManagement\Http\Requests\UpdateAnnouncementRequest;
+use App\Features\ContentManagement\Http\Resources\AnnouncementListResource;
 use App\Features\ContentManagement\Http\Resources\AnnouncementResource;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\ContentManagement\Services\AnnouncementService;
+use App\Features\ContentManagement\Services\VisibilityService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
@@ -30,6 +34,111 @@ class AnnouncementController extends Controller
     public function __construct(
         private readonly AnnouncementService $announcementService
     ) {
+    }
+
+    /**
+     * List announcements with role-based visibility (CAPA 3E).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  VisibilityService  $visibilityService
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index(
+        Request $request,
+        VisibilityService $visibilityService
+    ): JsonResponse {
+        // 1. Validate input
+        $validated = $request->validate([
+            'status' => 'nullable|in:draft,scheduled,published,archived',
+            'type' => 'nullable|in:MAINTENANCE,INCIDENT,NEWS,ALERT',
+            'search' => 'nullable|string|max:100',
+            'sort' => 'nullable|string|in:-published_at,-created_at,title',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'published_after' => 'nullable|date',
+            'published_before' => 'nullable|date',
+            'company_id' => 'nullable|uuid',
+        ]);
+
+        // 2. Get authenticated user
+        $user = auth()->user();
+
+        // 3. Build base query
+        $query = Announcement::query();
+
+        // 4. Apply role-based visibility filters
+        if ($visibilityService->isPlatformAdmin($user)) {
+            // PLATFORM_ADMIN sees EVERYTHING
+            if (isset($validated['company_id'])) {
+                $query->where('company_id', $validated['company_id']);
+            }
+        } elseif ($user->hasRole('COMPANY_ADMIN')) {
+            // COMPANY_ADMIN sees only their company
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            if (!$companyId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized: Invalid company context',
+                ], 403);
+            }
+            $query->where('company_id', $companyId);
+        } else {
+            // AGENT and USER: only PUBLISHED from followed companies
+            $followedCompanyIds = \DB::table('business.user_company_followers')
+                ->where('user_id', $user->id)
+                ->pluck('company_id')
+                ->toArray();
+
+            $query->where('status', PublicationStatus::PUBLISHED->value)
+                ->whereIn('company_id', $followedCompanyIds);
+        }
+
+        // 5. Apply optional filters
+        if (isset($validated['status'])) {
+            $query->where('status', strtoupper($validated['status']));
+        }
+
+        if (isset($validated['type'])) {
+            $query->where('type', $validated['type']);
+        }
+
+        if (isset($validated['search'])) {
+            $search = $validated['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'ILIKE', "%{$search}%")
+                    ->orWhere('content', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if (isset($validated['published_after'])) {
+            $query->where('published_at', '>=', $validated['published_after']);
+        }
+
+        if (isset($validated['published_before'])) {
+            $query->where('published_at', '<=', $validated['published_before']);
+        }
+
+        // 6. Apply sorting (default: -published_at)
+        $sort = $validated['sort'] ?? '-published_at';
+        $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+        $column = ltrim($sort, '-');
+        $query->orderBy($column, $direction);
+
+        // 7. Paginate results (max 100 per page)
+        $perPage = min($validated['per_page'] ?? 20, 100);
+        $announcements = $query->paginate($perPage);
+
+        // 8. Return response
+        return response()->json([
+            'success' => true,
+            'data' => AnnouncementListResource::collection($announcements->items()),
+            'meta' => [
+                'current_page' => $announcements->currentPage(),
+                'per_page' => $announcements->perPage(),
+                'total' => $announcements->total(),
+                'last_page' => $announcements->lastPage(),
+            ],
+        ], 200);
     }
 
     /**
