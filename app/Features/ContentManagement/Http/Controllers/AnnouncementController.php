@@ -12,9 +12,7 @@ use App\Features\ContentManagement\Models\Announcement;
 use App\Features\ContentManagement\Services\AnnouncementService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Validator;
 
 /**
  * Announcement Controller
@@ -80,11 +78,11 @@ class AnnouncementController extends Controller
      *
      * Route: PUT /api/v1/announcements/{id}
      *
-     * @param Request $request The request with partial data
+     * @param UpdateAnnouncementRequest|UpdateAlertRequest $request The validated request with partial data
      * @param Announcement $announcement The announcement to update (route model binding)
      * @return JsonResponse Success response with updated announcement
      */
-    public function update(Request $request, Announcement $announcement): JsonResponse
+    public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse
     {
         // Validate that announcement belongs to user's company (from JWT)
         try {
@@ -101,54 +99,8 @@ class AnnouncementController extends Controller
             ], 403);
         }
 
-        // Use the appropriate validation rules based on announcement type
         try {
-            if ($announcement->type === AnnouncementType::ALERT) {
-                // Create a temporary request with the route parameter set
-                $tempRequest = UpdateAlertRequest::createFrom($request);
-                // We need to set the route parameter so the custom validation closures work
-                $tempRequest->setRouteResolver(function () use ($announcement) {
-                    return new \stdClass();
-                });
-                // Use Validator with custom callbacks
-                $validator = Validator::make(
-                    $request->all(),
-                    [
-                        'title' => ['sometimes', 'string', 'min:5', 'max:200'],
-                        'content' => ['sometimes', 'string', 'min:10'],
-                        'metadata' => ['sometimes', 'array'],
-                        'metadata.urgency' => ['sometimes', 'in:HIGH,CRITICAL'],
-                        'metadata.alert_type' => ['sometimes', 'in:security,system,service,compliance'],
-                        'metadata.message' => ['sometimes', 'string', 'min:10', 'max:500'],
-                        'metadata.action_required' => [
-                            'sometimes',
-                            'boolean',
-                            function ($attribute, $value, $fail) use ($announcement) {
-                                $currentActionRequired = $announcement->metadata['action_required'] ?? false;
-                                if ($currentActionRequired === true && $value === false) {
-                                    $fail('Cannot change action_required from true to false.');
-                                }
-                            },
-                        ],
-                        'metadata.action_description' => ['required_if:metadata.action_required,true', 'nullable', 'string', 'max:300'],
-                        'metadata.started_at' => ['sometimes', 'date_format:Y-m-d\TH:i:sP'],
-                        'metadata.ended_at' => ['sometimes', 'nullable', 'date_format:Y-m-d\TH:i:sP', 'after:metadata.started_at'],
-                        'metadata.affected_services' => ['sometimes', 'nullable', 'array'],
-                    ]
-                );
-
-                if ($validator->fails()) {
-                    return response()->json([
-                        'message' => 'Validation failed',
-                        'errors' => $validator->errors(),
-                    ], 422);
-                }
-
-                $validated = $validator->validated();
-            } else {
-                $formRequest = UpdateAnnouncementRequest::createFrom($request);
-                $validated = $formRequest->validated();
-            }
+            $validated = $request->validated();
 
             // Build update data array
             $data = [];
