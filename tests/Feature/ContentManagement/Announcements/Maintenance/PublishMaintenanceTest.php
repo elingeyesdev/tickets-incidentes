@@ -210,7 +210,7 @@ class PublishMaintenanceTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJsonFragment([
-                'message' => 'This action is unauthorized',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify status hasn't changed
@@ -229,7 +229,7 @@ class PublishMaintenanceTest extends TestCase
         })->first();
 
         $endUser = User::factory()->create();
-        $endUser->assignRole('END_USER', $company->id);
+        // User without any role in this company will have default USER role in JWT
 
         $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
@@ -265,7 +265,7 @@ class PublishMaintenanceTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJsonFragment([
-                'message' => 'Platform admins cannot publish company announcements',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify status hasn't changed

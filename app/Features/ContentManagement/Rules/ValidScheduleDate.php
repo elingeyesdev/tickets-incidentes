@@ -9,6 +9,8 @@ use Illuminate\Contracts\Validation\Rule;
 
 class ValidScheduleDate implements Rule
 {
+    private string $failureReason = 'unknown';
+
     public function passes($attribute, $value): bool
     {
         try {
@@ -19,22 +21,30 @@ class ValidScheduleDate implements Rule
 
             // Must be at least 5 minutes in the future (inclusive)
             if ($scheduledDate->lt($minDate)) {
+                $this->failureReason = 'too_soon';
                 return false;
             }
 
             // Must not be more than 1 year (365 days) in the future (inclusive)
             if ($scheduledDate->gt($maxDate)) {
+                $this->failureReason = 'too_late';
                 return false;
             }
 
             return true;
         } catch (\Exception $e) {
+            $this->failureReason = 'invalid_date';
             return false;
         }
     }
 
     public function message(): string
     {
-        return 'The scheduled date must be between 5 minutes and 1 year in the future.';
+        return match($this->failureReason) {
+            'too_soon' => 'The scheduled for field must be at least 5 minutes in the future.',
+            'too_late' => 'The scheduled for field must not be more than 1 year in the future.',
+            'invalid_date' => 'The scheduled for field must be a valid date.',
+            default => 'The scheduled date must be between 5 minutes and 1 year in the future.',
+        };
     }
 }

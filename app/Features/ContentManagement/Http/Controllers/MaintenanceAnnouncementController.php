@@ -125,21 +125,29 @@ class MaintenanceAnnouncementController extends Controller
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para marcar inicio en este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
         // Verify announcement type
         if ($announcement->type !== AnnouncementType::MAINTENANCE) {
-            abort(400, 'El anuncio no es de tipo mantenimiento');
+            return response()->json([
+                'message' => 'Announcement is not a maintenance type',
+            ], 400);
         }
 
         // Verify not already started
         if (isset($announcement->metadata['actual_start']) && $announcement->metadata['actual_start'] !== null) {
-            abort(400, 'Inicio ya registrado');
+            return response()->json([
+                'message' => 'Maintenance start already marked',
+            ], 400);
         }
 
         // Update metadata with actual start time
@@ -153,7 +161,7 @@ class MaintenanceAnnouncementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Inicio de mantenimiento registrado',
+            'message' => 'Maintenance start recorded',
             'data' => new AnnouncementResource($announcement),
         ], 200);
     }
@@ -176,26 +184,36 @@ class MaintenanceAnnouncementController extends Controller
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para marcar finalización en este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
         // Verify announcement type
         if ($announcement->type !== AnnouncementType::MAINTENANCE) {
-            abort(400, 'El anuncio no es de tipo mantenimiento');
+            return response()->json([
+                'message' => 'Announcement is not a maintenance type',
+            ], 400);
         }
 
         // Verify maintenance has been started
         if (!isset($announcement->metadata['actual_start']) || $announcement->metadata['actual_start'] === null) {
-            abort(400, 'Marca inicio primero');
+            return response()->json([
+                'message' => 'Mark start first',
+            ], 400);
         }
 
         // Verify not already completed
         if (isset($announcement->metadata['actual_end']) && $announcement->metadata['actual_end'] !== null) {
-            abort(400, 'Mantenimiento ya completado');
+            return response()->json([
+                'message' => 'Maintenance already completed',
+            ], 400);
         }
 
         // Validate end time is after start time
@@ -203,7 +221,9 @@ class MaintenanceAnnouncementController extends Controller
         $actualEnd = now();
 
         if ($actualEnd->lte($actualStart)) {
-            abort(422, 'La fecha de finalización debe ser posterior a la fecha de inicio');
+            return response()->json([
+                'message' => 'The end date must be after the start date.',
+            ], 400);
         }
 
         // Update metadata with actual end time
@@ -217,7 +237,7 @@ class MaintenanceAnnouncementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Mantenimiento completado',
+            'message' => 'Maintenance completed',
             'data' => new AnnouncementResource($announcement),
         ], 200);
     }

@@ -30,8 +30,6 @@ abstract class TestCase extends BaseTestCase
 
     /**
      * Setup the test environment.
-     *
-     * @return void
      */
     protected function setUp(): void
     {
@@ -52,9 +50,8 @@ abstract class TestCase extends BaseTestCase
      * This method simulates authentication by setting the user in Laravel's Auth,
      * which is compatible with the @jwt directive in testing environments.
      *
-     * @param User $user The user to authenticate
-     * @param string|null $guard The guard to use (default: null)
-     * @return self
+     * @param  User  $user  The user to authenticate
+     * @param  string|null  $guard  The guard to use (default: null)
      */
     protected function actingAsGraphQL(User $user, ?string $guard = null): self
     {
@@ -71,12 +68,13 @@ abstract class TestCase extends BaseTestCase
      * Useful for testing token-based authentication flows.
      * Returns the access token string that can be used in Authorization headers.
      *
-     * @param User $user The user to generate the token for
+     * @param  User  $user  The user to generate the token for
      * @return string The JWT access token
      */
     protected function generateAccessToken(User $user): string
     {
         $tokenService = app(TokenService::class);
+
         return $tokenService->generateAccessToken($user);
     }
 
@@ -91,7 +89,7 @@ abstract class TestCase extends BaseTestCase
      * automatically process this token and set the necessary request attributes that
      * the @jwt directive expects.
      *
-     * @param User $user The user to authenticate
+     * @param  User  $user  The user to authenticate
      * @return $this
      */
     protected function authenticateWithJWT(User $user): self
@@ -100,7 +98,7 @@ abstract class TestCase extends BaseTestCase
         $tokenService = app(TokenService::class);
 
         // Generate access token with test session ID
-        $sessionId = 'test_session_' . uniqid();
+        $sessionId = 'test_session_'.uniqid();
         $token = $tokenService->generateAccessToken($user, $sessionId);
 
         // Add Authorization header to all subsequent requests
@@ -144,15 +142,16 @@ abstract class TestCase extends BaseTestCase
      * 2. It avoids RefreshDatabase transaction isolation issues
      * 3. All subsequent route model binding works correctly
      *
-     * @param User $user The authenticated user creating the announcement
-     * @param array $overrides Override default payload values
-     * @param string $action 'draft', 'publish', or 'schedule'
+     * @param  User  $user  The authenticated user creating the announcement
+     * @param  array  $overrides  Override default payload values
+     * @param  string  $action  'draft', 'publish', or 'schedule'
      * @return \App\Features\ContentManagement\Models\Announcement The created announcement
      */
     protected function createMaintenanceAnnouncementViaHttp(
         User $user,
         array $overrides = [],
-        string $action = 'draft'
+        string $action = 'draft',
+        ?string $scheduledFor = null
     ): \App\Features\ContentManagement\Models\Announcement {
         // Build payload with defaults
         $payload = array_merge([
@@ -170,14 +169,19 @@ abstract class TestCase extends BaseTestCase
             $payload['action'] = $action;
         }
 
+        // Add scheduled_for if provided and action is schedule
+        if ($scheduledFor && $action === 'schedule') {
+            $payload['scheduled_for'] = $scheduledFor;
+        }
+
         // Make HTTP POST request
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/announcements/maintenance', $payload);
 
         // Assert the request was successful
-        if (!in_array($response->status(), [201])) {
+        if (! in_array($response->status(), [201])) {
             throw new \Exception(
-                "Failed to create announcement via HTTP. Status: {$response->status()}\n" .
+                "Failed to create announcement via HTTP. Status: {$response->status()}\n".
                 "Response: {$response->content()}"
             );
         }
@@ -185,9 +189,75 @@ abstract class TestCase extends BaseTestCase
         // Extract the ID from response
         $announcementId = $response->json('data.id');
 
-        if (!$announcementId) {
+        if (! $announcementId) {
             throw new \Exception(
-                "No announcement ID in response.\n" .
+                "No announcement ID in response.\n".
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Fetch the created announcement from database
+        $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        return $announcement;
+    }
+
+    /**
+     * Create an incident announcement via HTTP POST endpoint
+     *
+     * Uses HTTP POST to create announcements, ensuring proper transaction
+     * handling with RefreshDatabaseWithoutTransactions trait.
+     *
+     * @param  User  $user  The authenticated user creating the incident
+     * @param  array  $overrides  Override default payload values
+     * @param  string  $action  'draft', 'publish', or 'schedule'
+     * @param  string|null  $scheduledFor  ISO8601 datetime for scheduled publication
+     * @return \App\Features\ContentManagement\Models\Announcement The created incident announcement
+     */
+    protected function createIncidentAnnouncementViaHttp(
+        User $user,
+        array $overrides = [],
+        string $action = 'draft',
+        ?string $scheduledFor = null
+    ): \App\Features\ContentManagement\Models\Announcement {
+        // Build payload with defaults
+        $payload = array_merge([
+            'title' => 'Test Incident',
+            'content' => 'Test incident content',
+            'urgency' => 'MEDIUM',
+            'is_resolved' => false,
+            'started_at' => now()->subHours(1)->toIso8601String(),
+            'affected_services' => [],
+        ], $overrides);
+
+        // Add action if not draft
+        if ($action !== 'draft') {
+            $payload['action'] = $action;
+        }
+
+        // Add scheduled_for if provided and action is schedule
+        if ($scheduledFor && $action === 'schedule') {
+            $payload['scheduled_for'] = $scheduledFor;
+        }
+
+        // Make HTTP POST request
+        $response = $this->authenticateWithJWT($user)
+            ->postJson('/api/announcements/incidents', $payload);
+
+        // Assert the request was successful
+        if (! in_array($response->status(), [201])) {
+            throw new \Exception(
+                "Failed to create incident via HTTP. Status: {$response->status()}\n".
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Extract the ID from response
+        $announcementId = $response->json('data.id');
+
+        if (! $announcementId) {
+            throw new \Exception(
+                "No announcement ID in response.\n".
                 "Response: {$response->content()}"
             );
         }
@@ -211,7 +281,7 @@ abstract class TestCase extends BaseTestCase
         $queueManager = app('queue');
 
         // Check if QueueFake is being used
-        if (!$queueManager instanceof \Illuminate\Support\Testing\Fakes\QueueFake) {
+        if (! $queueManager instanceof \Illuminate\Support\Testing\Fakes\QueueFake) {
             // Queue::fake() is not active, so there's nothing to execute
             return;
         }
@@ -234,7 +304,7 @@ abstract class TestCase extends BaseTestCase
                             app()->call([$job, 'handle']);
                         } catch (\Exception $e) {
                             // Log but don't fail the test
-                            logger()->error('Queue job execution failed in test: ' . $e->getMessage());
+                            logger()->error('Queue job execution failed in test: '.$e->getMessage());
                         }
                     }
                 }

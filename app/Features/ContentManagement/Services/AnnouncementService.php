@@ -73,7 +73,11 @@ class AnnouncementService
     {
         // Only allow updates for DRAFT or SCHEDULED
         if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::SCHEDULED])) {
-            throw new RuntimeException('Cannot edit published announcement');
+            if ($announcement->status === PublicationStatus::ARCHIVED) {
+                throw new RuntimeException('Cannot edit archived announcement');
+            } else {
+                throw new RuntimeException('Cannot edit published announcement');
+            }
         }
 
         $announcement->update($data);
@@ -84,11 +88,27 @@ class AnnouncementService
     /**
      * Publish an announcement immediately
      *
+     * Only DRAFT or SCHEDULED announcements can be published.
+     *
      * @param Announcement $announcement The announcement to publish
      * @return Announcement The published announcement
+     * @throws RuntimeException If announcement cannot be published in current state
      */
     public function publish(Announcement $announcement): Announcement
     {
+        // Validate announcement is in a publishable state
+        if ($announcement->status === PublicationStatus::PUBLISHED) {
+            throw new RuntimeException('Announcement is already published');
+        }
+
+        if ($announcement->status === PublicationStatus::ARCHIVED) {
+            throw new RuntimeException('Cannot publish archived announcement');
+        }
+
+        if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::SCHEDULED])) {
+            throw new RuntimeException('Cannot publish announcement in current state');
+        }
+
         $announcement->update([
             'status' => PublicationStatus::PUBLISHED,
             'published_at' => now(),
@@ -100,13 +120,27 @@ class AnnouncementService
     /**
      * Schedule an announcement for future publication
      *
+     * Allows scheduling DRAFT announcements or rescheduling already SCHEDULED announcements.
+     *
      * @param Announcement $announcement The announcement to schedule
      * @param Carbon $scheduledFor When to publish (must be in the future)
      * @return Announcement The scheduled announcement
      * @throws InvalidArgumentException If scheduled date is in the past
+     * @throws RuntimeException If announcement cannot be scheduled in current state
      */
     public function schedule(Announcement $announcement, Carbon $scheduledFor): Announcement
     {
+        // Validate announcement is in a valid state for scheduling (DRAFT or SCHEDULED only)
+        if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::SCHEDULED])) {
+            if ($announcement->status === PublicationStatus::ARCHIVED) {
+                throw new RuntimeException('Cannot schedule archived announcement');
+            }
+            if ($announcement->status === PublicationStatus::PUBLISHED) {
+                throw new RuntimeException('Cannot schedule already published announcement');
+            }
+            throw new RuntimeException('Cannot schedule announcement in current state');
+        }
+
         // Validate future date
         if ($scheduledFor->isPast()) {
             throw new InvalidArgumentException('Scheduled date must be in the future');
@@ -185,6 +219,9 @@ class AnnouncementService
     {
         // Only allow deleting DRAFT or ARCHIVED
         if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::ARCHIVED])) {
+            if ($announcement->status === PublicationStatus::SCHEDULED) {
+                throw new RuntimeException('Cannot delete scheduled announcement');
+            }
             throw new RuntimeException('Cannot delete published announcement');
         }
 

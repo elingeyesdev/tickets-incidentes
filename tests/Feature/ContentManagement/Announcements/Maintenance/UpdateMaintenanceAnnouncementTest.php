@@ -234,7 +234,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'This action is unauthorized',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify no changes were made
@@ -390,7 +390,7 @@ class UpdateMaintenanceAnnouncementTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJson([
-                'message' => 'Platform administrators have read-only access to announcements',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify no changes were made

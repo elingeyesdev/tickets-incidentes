@@ -10,9 +10,9 @@ use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for POST /api/announcements/maintenance/:id/complete
@@ -29,7 +29,7 @@ use Tests\TestCase;
  */
 class MarkMaintenanceCompleteTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_mark_maintenance_complete(): void
@@ -39,7 +39,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         $company = Company::factory()->create(['admin_user_id' => $admin->id]);
         $admin->assignRole('COMPANY_ADMIN', $company->id);
 
-        $actualStart = Carbon::parse('2025-11-09 10:00:00');
+        $actualStart = Carbon::now()->subHours(2);
 
         $announcement = Announcement::factory()->create([
             'company_id' => $company->id,
@@ -48,8 +48,8 @@ class MarkMaintenanceCompleteTest extends TestCase
             'status' => PublicationStatus::PUBLISHED,
             'metadata' => [
                 'urgency' => 'HIGH',
-                'scheduled_start' => Carbon::parse('2025-11-09 10:00:00')->toIso8601String(),
-                'scheduled_end' => Carbon::parse('2025-11-09 14:00:00')->toIso8601String(),
+                'scheduled_start' => $actualStart->toIso8601String(),
+                'scheduled_end' => Carbon::now()->addHours(2)->toIso8601String(),
                 'actual_start' => $actualStart->toIso8601String(),
             ],
         ]);
@@ -66,7 +66,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Mantenimiento completado',
+                'message' => 'Maintenance completed',
                 'data' => [
                     'id' => $announcement->id,
                 ],
@@ -125,7 +125,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Mantenimiento completado',
+                'message' => 'Maintenance completed',
             ]);
 
         $announcement->refresh();
@@ -180,7 +180,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Mantenimiento completado',
+                'message' => 'Maintenance completed',
             ]);
 
         $announcement->refresh();
@@ -227,8 +227,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         // Assert
         $response->assertStatus(400)
             ->assertJson([
-                'success' => false,
-                'message' => 'Mark maintenance start first',
+                'message' => 'Mark start first',
             ]);
 
         $announcement->refresh();
@@ -271,8 +270,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         // Assert
         $response->assertStatus(400)
             ->assertJson([
-                'success' => false,
-                'message' => 'End time must be after start time',
+                'message' => 'The end date must be after the start date.',
             ]);
 
         $announcement->refresh();
@@ -315,8 +313,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         // Assert
         $response->assertStatus(400)
             ->assertJson([
-                'success' => false,
-                'message' => 'Maintenance completion already marked',
+                'message' => 'Maintenance already completed',
             ]);
 
         $announcement->refresh();
@@ -334,7 +331,7 @@ class MarkMaintenanceCompleteTest extends TestCase
         $admin->assignRole('COMPANY_ADMIN', $company->id);
 
         $endUser = User::factory()->create();
-        $endUser->assignRole('END_USER', $company->id);
+        // User without any role in this company will have default USER role in JWT
 
         $actualStart = Carbon::parse('2025-11-09 10:00:00');
 

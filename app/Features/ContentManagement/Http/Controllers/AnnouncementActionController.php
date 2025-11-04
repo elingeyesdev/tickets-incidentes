@@ -50,21 +50,31 @@ class AnnouncementActionController
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para publicar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
-        $announcement = $this->announcementService->publish($announcement);
-        $announcement->load(['company', 'author.profile']);
+        try {
+            $announcement = $this->announcementService->publish($announcement);
+            $announcement->load(['company', 'author.profile']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Anuncio publicado exitosamente',
-            'data' => new AnnouncementResource($announcement),
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Announcement published successfully',
+                'data' => new AnnouncementResource($announcement),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -85,27 +95,37 @@ class AnnouncementActionController
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para programar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
-        $validated = $request->validated();
-        $scheduledFor = Carbon::parse($validated['scheduled_for']);
+        try {
+            $validated = $request->validated();
+            $scheduledFor = Carbon::parse($validated['scheduled_for']);
 
-        $announcement = $this->announcementService->schedule($announcement, $scheduledFor);
-        $announcement->load(['company', 'author.profile']);
+            $announcement = $this->announcementService->schedule($announcement, $scheduledFor);
+            $announcement->load(['company', 'author.profile']);
 
-        // Format the date for the success message
-        $formattedDate = $scheduledFor->format('d/m/Y H:i');
+            // Format the date for the success message
+            $formattedDate = $scheduledFor->format('d/m/Y H:i');
 
-        return response()->json([
-            'success' => true,
-            'message' => "Anuncio programado para publicación el {$formattedDate}",
-            'data' => new AnnouncementResource($announcement),
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => "Announcement scheduled for publication on {$formattedDate}",
+                'data' => new AnnouncementResource($announcement),
+            ], 200);
+        } catch (\RuntimeException | \InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -125,41 +145,60 @@ class AnnouncementActionController
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para desprogramar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
+        }
+
+        // Verify announcement is not published
+        if ($announcement->status === PublicationStatus::PUBLISHED) {
+            return response()->json([
+                'message' => 'Cannot unschedule published announcement',
+            ], 400);
         }
 
         // Verify announcement is actually scheduled
         if ($announcement->status !== PublicationStatus::SCHEDULED) {
-            abort(400, 'El anuncio no está programado');
+            return response()->json([
+                'message' => 'Announcement is not scheduled',
+            ], 400);
         }
 
-        // Update status to DRAFT
-        $announcement->status = PublicationStatus::DRAFT;
+        try {
+            // Update status to DRAFT
+            $announcement->status = PublicationStatus::DRAFT;
 
-        // Remove scheduled_for from metadata
-        $metadata = $announcement->metadata ?? [];
-        unset($metadata['scheduled_for']);
-        $announcement->metadata = $metadata;
+            // Remove scheduled_for from metadata
+            $metadata = $announcement->metadata ?? [];
+            unset($metadata['scheduled_for']);
+            $announcement->metadata = $metadata;
 
-        // Save changes
-        $announcement->save();
+            // Save changes
+            $announcement->save();
 
-        // Cancel the scheduled job
-        $this->schedulingService->cancelJob($announcement->id);
+            // Cancel the scheduled job
+            $this->schedulingService->cancelJob($announcement->id);
 
-        // Refresh and load relationships for resource
-        $announcement = $announcement->fresh();
-        $announcement->load(['company', 'author.profile']);
+            // Refresh and load relationships for resource
+            $announcement = $announcement->fresh();
+            $announcement->load(['company', 'author.profile']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Anuncio desprogramado y regresado a borrador',
-            'data' => new AnnouncementResource($announcement),
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Announcement unscheduled and returned to draft',
+                'data' => new AnnouncementResource($announcement),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -179,21 +218,31 @@ class AnnouncementActionController
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para archivar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
-        $announcement = $this->announcementService->archive($announcement);
-        $announcement->load(['company', 'author.profile']);
+        try {
+            $announcement = $this->announcementService->archive($announcement);
+            $announcement->load(['company', 'author.profile']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Anuncio archivado exitosamente',
-            'data' => new AnnouncementResource($announcement),
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Announcement archived successfully',
+                'data' => new AnnouncementResource($announcement),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -213,20 +262,30 @@ class AnnouncementActionController
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para restaurar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
-        $announcement = $this->announcementService->restore($announcement);
-        $announcement->load(['company', 'author.profile']);
+        try {
+            $announcement = $this->announcementService->restore($announcement);
+            $announcement->load(['company', 'author.profile']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Anuncio restaurado a borrador',
-            'data' => new AnnouncementResource($announcement),
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Announcement restored to draft',
+                'data' => new AnnouncementResource($announcement),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 }

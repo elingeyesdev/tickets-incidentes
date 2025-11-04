@@ -31,6 +31,40 @@ class AnnouncementController extends Controller
     }
 
     /**
+     * Get a single announcement by ID.
+     *
+     * Route: GET /api/v1/announcements/{id}
+     *
+     * @param Announcement $announcement The announcement to retrieve (route model binding)
+     * @return JsonResponse Success response with announcement data
+     */
+    public function show(Announcement $announcement): JsonResponse
+    {
+        // Validate that announcement belongs to user's company (from JWT)
+        try {
+            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
+        }
+
+        if ($announcement->company_id !== $userCompanyId) {
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
+        }
+
+        // Load relationships for resource
+        $announcement->load(['company', 'author.profile']);
+
+        return response()->json([
+            'success' => true,
+            'data' => new AnnouncementResource($announcement),
+        ], 200);
+    }
+
+    /**
      * Update an existing announcement.
      *
      * Handles partial updates - only updates fields that are present in the request.
@@ -49,69 +83,92 @@ class AnnouncementController extends Controller
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para actualizar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
-        $validated = $request->validated();
+        try {
+            $validated = $request->validated();
 
-        // Build update data array
-        $data = [];
+            // Build update data array
+            $data = [];
 
-        // Direct field updates (if present)
-        if (isset($validated['title'])) {
-            $data['title'] = $validated['title'];
+            // Direct field updates (if present)
+            if (isset($validated['title'])) {
+                $data['title'] = $validated['title'];
+            }
+
+            if (isset($validated['content'])) {
+                $data['content'] = $validated['content'];
+            }
+
+            // Metadata field updates (merge with existing metadata)
+            $metadataUpdates = [];
+
+            if (isset($validated['urgency'])) {
+                $metadataUpdates['urgency'] = $validated['urgency'];
+            }
+
+            if (isset($validated['scheduled_start'])) {
+                $metadataUpdates['scheduled_start'] = $validated['scheduled_start'];
+            }
+
+            if (isset($validated['scheduled_end'])) {
+                $metadataUpdates['scheduled_end'] = $validated['scheduled_end'];
+            }
+
+            if (isset($validated['is_emergency'])) {
+                $metadataUpdates['is_emergency'] = $validated['is_emergency'];
+            }
+
+            if (isset($validated['affected_services'])) {
+                $metadataUpdates['affected_services'] = $validated['affected_services'];
+            }
+
+            if (isset($validated['resolution_content'])) {
+                $metadataUpdates['resolution_content'] = $validated['resolution_content'];
+            }
+
+            // Merge metadata updates with existing metadata
+            if (!empty($metadataUpdates)) {
+                // Ensure metadata is an array before merging
+                $existingMetadata = is_array($announcement->metadata) ? $announcement->metadata : [];
+                $data['metadata'] = array_merge(
+                    $existingMetadata,
+                    $metadataUpdates
+                );
+            }
+
+            // Delegate update to service
+            $updatedAnnouncement = $this->announcementService->update($announcement, $data);
+
+            // Load relationships for resource
+            $updatedAnnouncement->load(['company', 'author.profile']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Announcement updated successfully',
+                'data' => new AnnouncementResource($updatedAnnouncement),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            $message = $e->getMessage();
+            // Return 403 for permission-based errors, 400 for state errors
+            if (str_contains($message, 'Cannot edit')) {
+                return response()->json([
+                    'message' => $message,
+                ], 403);
+            }
+            return response()->json([
+                'message' => $message,
+            ], 400);
         }
-
-        if (isset($validated['content'])) {
-            $data['content'] = $validated['content'];
-        }
-
-        // Metadata field updates (merge with existing metadata)
-        $metadataUpdates = [];
-
-        if (isset($validated['urgency'])) {
-            $metadataUpdates['urgency'] = $validated['urgency'];
-        }
-
-        if (isset($validated['scheduled_start'])) {
-            $metadataUpdates['scheduled_start'] = $validated['scheduled_start'];
-        }
-
-        if (isset($validated['scheduled_end'])) {
-            $metadataUpdates['scheduled_end'] = $validated['scheduled_end'];
-        }
-
-        if (isset($validated['is_emergency'])) {
-            $metadataUpdates['is_emergency'] = $validated['is_emergency'];
-        }
-
-        if (isset($validated['affected_services'])) {
-            $metadataUpdates['affected_services'] = $validated['affected_services'];
-        }
-
-        // Merge metadata updates with existing metadata
-        if (!empty($metadataUpdates)) {
-            $data['metadata'] = array_merge(
-                $announcement->metadata ?? [],
-                $metadataUpdates
-            );
-        }
-
-        // Delegate update to service
-        $updatedAnnouncement = $this->announcementService->update($announcement, $data);
-
-        // Load relationships for resource
-        $updatedAnnouncement->load(['company', 'author.profile']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Anuncio actualizado exitosamente',
-            'data' => new AnnouncementResource($updatedAnnouncement),
-        ], 200);
     }
 
     /**
@@ -131,11 +188,15 @@ class AnnouncementController extends Controller
         try {
             $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
         } catch (\Exception $e) {
-            abort(401, 'Usuario no autenticado o JWT inválido');
+            return response()->json([
+                'message' => 'Unauthorized or invalid JWT',
+            ], 401);
         }
 
         if ($announcement->company_id !== $userCompanyId) {
-            abort(403, 'No autorizado para eliminar este anuncio');
+            return response()->json([
+                'message' => 'Insufficient permissions',
+            ], 403);
         }
 
         // Delegate deletion to service (validates deletability internally)
@@ -146,18 +207,24 @@ class AnnouncementController extends Controller
             $message = $e->getMessage();
 
             if (str_contains($message, 'published')) {
-                abort(403, 'Cannot delete published announcement. Archive it first.');
+                return response()->json([
+                    'message' => 'Cannot delete published announcement',
+                ], 400);
             }
             if (str_contains($message, 'scheduled')) {
-                abort(403, 'Cannot delete scheduled announcement. Unschedule it first.');
+                return response()->json([
+                    'message' => 'Cannot delete scheduled announcement',
+                ], 400);
             }
 
-            abort(403, $message);
+            return response()->json([
+                'message' => $message,
+            ], 400);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Anuncio eliminado permanentemente',
+            'message' => 'Announcement deleted successfully',
         ], 200);
     }
 }

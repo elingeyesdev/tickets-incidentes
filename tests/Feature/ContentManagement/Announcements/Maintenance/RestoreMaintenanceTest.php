@@ -10,9 +10,9 @@ use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for POST /api/announcements/{id}/restore
@@ -27,7 +27,7 @@ use Tests\TestCase;
  */
 class RestoreMaintenanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_restore_archived_maintenance(): void
@@ -218,9 +218,7 @@ class RestoreMaintenanceTest extends TestCase
             ->putJson("/api/announcements/{$announcement->id}", [
                 'title' => $updatedTitle,
                 'content' => $updatedContent,
-                'metadata' => [
-                    'urgency' => 'HIGH',
-                ],
+                'urgency' => 'HIGH',
             ]);
 
         // Assert - Update successful
@@ -256,7 +254,7 @@ class RestoreMaintenanceTest extends TestCase
         $admin->assignRole('COMPANY_ADMIN', $company->id);
 
         $endUser = User::factory()->create();
-        $endUser->assignRole('END_USER', $company->id);
+        // User without any role in this company will have default USER role in JWT
 
         $announcement = Announcement::factory()->create([
             'company_id' => $company->id,

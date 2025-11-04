@@ -75,23 +75,40 @@ class ValidScheduleDateTest extends TestCase
     }
 
     /**
-     * Prueba que el mensaje de error es descriptivo y explica la restricción.
+     * Prueba que el mensaje de error es descriptivo para fechas muy pronto.
      */
-    public function test_error_message_is_descriptive(): void
+    public function test_error_message_is_descriptive_for_too_soon(): void
     {
         // Arrange
         $rule = new ValidScheduleDate();
-        $pastDate = Carbon::now()->subMinutes(10)->format('Y-m-d H:i:s');
+        $tooSoonDate = Carbon::now()->addMinutes(2)->format('Y-m-d H:i:s');
 
-        // Act - activar fallo de validación
-        $rule->passes('scheduled_for', $pastDate);
+        // Act - activar fallo de validación por "too soon"
+        $rule->passes('scheduled_for', $tooSoonDate);
         $message = $rule->message();
 
         // Assert
         $this->assertIsString($message, 'El mensaje de error debería ser una cadena de texto');
         $this->assertStringContainsString('5 minutes', $message, 'El mensaje de error debería mencionar un mínimo de 5 minutos');
-        $this->assertStringContainsString('1 year', $message, 'El mensaje de error debería mencionar un máximo de 1 año');
         $this->assertStringContainsString('future', $message, 'El mensaje de error debería aclarar que debe ser en el futuro');
+    }
+
+    /**
+     * Prueba que el mensaje de error es descriptivo para fechas muy lejanas.
+     */
+    public function test_error_message_is_descriptive_for_too_late(): void
+    {
+        // Arrange
+        $rule = new ValidScheduleDate();
+        $tooLateDate = Carbon::now()->addDays(400)->format('Y-m-d H:i:s');
+
+        // Act - activar fallo de validación por "too late"
+        $rule->passes('scheduled_for', $tooLateDate);
+        $message = $rule->message();
+
+        // Assert
+        $this->assertIsString($message, 'El mensaje de error debería ser una cadena de texto');
+        $this->assertStringContainsString('1 year', $message, 'El mensaje de error debería mencionar un máximo de 1 año');
     }
 
     /**

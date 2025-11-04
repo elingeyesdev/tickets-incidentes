@@ -331,7 +331,7 @@ class MarkMaintenanceStartTest extends TestCase
 
         // Assert
         $response->assertStatus(403)
-            ->assertJsonFragment(['message' => 'This action is unauthorized']);
+            ->assertJsonFragment(['message' => 'Insufficient permissions']);
 
         $announcement->refresh();
 

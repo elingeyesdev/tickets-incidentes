@@ -18,6 +18,7 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
 use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\IncidentAnnouncementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,6 +224,10 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
 
     // ========== GENERAL ANNOUNCEMENT ACTIONS ==========
 
+    // Get single announcement
+    Route::get('/{announcement}', [AnnouncementController::class, 'show'])
+        ->name('announcements.show');
+
     // Update announcement (partial updates for DRAFT or SCHEDULED only)
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])
         ->name('announcements.update');
@@ -250,4 +255,14 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
     // Restore archived announcement
     Route::post('/{announcement}/restore', [AnnouncementActionController::class, 'restore'])
         ->name('announcements.restore');
+
+    // ========== INCIDENT ANNOUNCEMENTS ==========
+
+    // Create incident announcement (draft, publish or schedule in one request)
+    Route::post('/incidents', [IncidentAnnouncementController::class, 'store'])
+        ->name('announcements.incidents.store');
+
+    // Resolve incident
+    Route::post('/incidents/{announcement}/resolve', [IncidentAnnouncementController::class, 'resolve'])
+        ->name('announcements.incidents.resolve');
 });

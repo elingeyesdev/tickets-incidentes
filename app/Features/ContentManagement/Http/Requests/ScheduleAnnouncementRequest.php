@@ -41,8 +41,8 @@ class ScheduleAnnouncementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'scheduled_for.required' => 'La fecha de programación es requerida.',
-            'scheduled_for.date' => 'La fecha de programación debe ser una fecha válida.',
+            'scheduled_for.required' => 'The scheduled for field is required.',
+            'scheduled_for.date' => 'The scheduled for field must be a valid date.',
         ];
     }
 }

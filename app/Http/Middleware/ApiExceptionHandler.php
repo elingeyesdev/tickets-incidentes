@@ -76,8 +76,9 @@ class ApiExceptionHandler
             // Errores de base de datos
             return $this->handleDatabaseException($e);
         } catch (ModelNotFoundException $e) {
-            // Manejar ModelNotFoundException (ej. findOrFail)
-            return $this->handleModelNotFoundException($e);
+            // Re-throw ModelNotFoundException to be handled by bootstrap/app.php exception handler
+            // This allows the global handler to provide model-specific 404 responses
+            throw $e;
         } catch (Throwable $e) {
             // Cualquier otra excepción
             return $this->handleGenericException($e);
@@ -357,6 +358,9 @@ class ApiExceptionHandler
         } elseif ($model === 'App\\Features\\CompanyManagement\\Models\\CompanyRequest') {
             $errorCode = 'REQUEST_NOT_FOUND';
             $message = 'Request not found';
+        } elseif ($model === 'App\\Features\\ContentManagement\\Models\\Announcement') {
+            $errorCode = 'ANNOUNCEMENT_NOT_FOUND';
+            $message = 'Announcement not found';
         }
 
         $category = 'resource';

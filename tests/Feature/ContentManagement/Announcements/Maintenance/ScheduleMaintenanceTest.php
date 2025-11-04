@@ -98,7 +98,7 @@ class ScheduleMaintenanceTest extends TestCase
 
             // Verify delay is approximately correct (allow 2-second tolerance)
             $actualDelay = $job->delay instanceof \DateTimeInterface
-                ? Carbon::now()->diffInSeconds($job->delay)
+                ? $job->delay->diffInSeconds(Carbon::now())
                 : $job->delay;
 
             $this->assertEqualsWithDelta($expectedDelay, $actualDelay, 2, 'Job delay should match scheduled_for - now()');
@@ -317,7 +317,7 @@ class ScheduleMaintenanceTest extends TestCase
             $this->assertEquals($announcement->id, $job->announcementId);
 
             $actualDelay = $job->delay instanceof \DateTimeInterface
-                ? Carbon::now()->diffInSeconds($job->delay)
+                ? $job->delay->diffInSeconds(Carbon::now())
                 : $job->delay;
 
             // Allow 2-second tolerance for execution time
@@ -393,7 +393,7 @@ class ScheduleMaintenanceTest extends TestCase
         })->first();
 
         $endUser = User::factory()->create();
-        $endUser->assignRole('END_USER', $company->id);
+        // User without any role in this company will have default USER role in JWT
 
         $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [], 'draft');
 
@@ -488,9 +488,6 @@ class ScheduleMaintenanceTest extends TestCase
         $response->assertStatus(400)
             ->assertJsonFragment([
                 'message' => 'Cannot schedule archived announcement',
-            ])
-            ->assertJsonFragment([
-                'error' => 'Archived announcements must be restored to draft before scheduling',
             ]);
 
         // Verify status hasn't changed

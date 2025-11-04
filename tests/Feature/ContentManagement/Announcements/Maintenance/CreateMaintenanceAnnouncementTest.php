@@ -9,10 +9,10 @@ use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Jobs\PublishAnnouncementJob;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Pruebas de Característica (Feature Tests) para Crear Anuncios de Mantenimiento
@@ -28,7 +28,7 @@ use Tests\TestCase;
  */
 class CreateMaintenanceAnnouncementTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     #[Test]
     public function company_admin_can_create_maintenance_as_draft(): void

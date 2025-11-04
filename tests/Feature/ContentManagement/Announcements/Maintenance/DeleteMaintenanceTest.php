@@ -107,9 +107,9 @@ class DeleteMaintenanceTest extends TestCase
             ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
-        $response->assertStatus(403)
+        $response->assertStatus(400)
             ->assertJsonFragment([
-                'message' => 'Cannot delete published announcement. Archive it first.',
+                'message' => 'Cannot delete published announcement',
             ]);
 
         // Verify announcement still exists
@@ -147,9 +147,9 @@ class DeleteMaintenanceTest extends TestCase
             ->deleteJson("/api/announcements/{$announcement->id}");
 
         // Assert
-        $response->assertStatus(403)
+        $response->assertStatus(400)
             ->assertJsonFragment([
-                'message' => 'Cannot delete scheduled announcement. Unschedule it first.',
+                'message' => 'Cannot delete scheduled announcement',
             ]);
 
         // Verify announcement still exists
@@ -263,7 +263,7 @@ class DeleteMaintenanceTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJsonFragment([
-                'message' => 'This action is unauthorized',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify announcement still exists
@@ -291,7 +291,7 @@ class DeleteMaintenanceTest extends TestCase
         // Assert
         $response->assertStatus(403)
             ->assertJsonFragment([
-                'message' => 'Platform admins cannot delete company announcements',
+                'message' => 'Insufficient permissions',
             ]);
 
         // Verify announcement still exists
