@@ -374,7 +374,7 @@ class AnnouncementController extends Controller
         }
 
         // 3. AGENT/USER can only see PUBLISHED announcements from followed companies
-        if ($announcement->status !== PublicationStatus::PUBLISHED->value) {
+        if ($announcement->status !== PublicationStatus::PUBLISHED) {
             return response()->json([
                 'message' => 'Insufficient permissions',
             ], 403);
