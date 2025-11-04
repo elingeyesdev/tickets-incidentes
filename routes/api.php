@@ -19,6 +19,8 @@ use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
 use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\IncidentAnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\NewsAnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\AlertAnnouncementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -265,4 +267,16 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
     // Resolve incident
     Route::post('/incidents/{announcement}/resolve', [IncidentAnnouncementController::class, 'resolve'])
         ->name('announcements.incidents.resolve');
+
+    // ========== NEWS ANNOUNCEMENTS ==========
+
+    // Create news announcement (draft, publish or schedule in one request)
+    Route::post('/news', [NewsAnnouncementController::class, 'store'])
+        ->name('announcements.news.store');
+
+    // ========== ALERT ANNOUNCEMENTS ==========
+
+    // Create alert announcement (draft, publish or schedule in one request)
+    Route::post('/alerts', [AlertAnnouncementController::class, 'store'])
+        ->name('announcements.alerts.store');
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Features\ContentManagement\Services;
 
+use App\Features\ContentManagement\Enums\AnnouncementType;
 use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\ContentManagement\Jobs\PublishAnnouncementJob;
 use App\Features\ContentManagement\Models\Announcement;
@@ -63,6 +64,8 @@ class AnnouncementService
      * Update an existing announcement
      *
      * Only DRAFT or SCHEDULED announcements can be updated.
+     * Exception: ALERT announcements can have ended_at updated even when published
+     * (to mark completion of the alert).
      *
      * @param Announcement $announcement The announcement to update
      * @param array $data Update data
@@ -71,8 +74,17 @@ class AnnouncementService
      */
     public function update(Announcement $announcement, array $data): Announcement
     {
-        // Only allow updates for DRAFT or SCHEDULED
-        if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::SCHEDULED])) {
+        // Check if this is an ALERT trying to add/update ended_at only on a published announcement
+        $isAlertEndingOnly = $announcement->type === AnnouncementType::ALERT
+            && $announcement->status === PublicationStatus::PUBLISHED
+            && isset($data['metadata'])
+            && count($data) === 1
+            && count($data['metadata']) === 1
+            && isset($data['metadata']['ended_at']);
+
+        // Only allow updates for DRAFT or SCHEDULED (or alerts marking as ended)
+        if (!in_array($announcement->status, [PublicationStatus::DRAFT, PublicationStatus::SCHEDULED])
+            && !$isAlertEndingOnly) {
             if ($announcement->status === PublicationStatus::ARCHIVED) {
                 throw new RuntimeException('Cannot edit archived announcement');
             } else {

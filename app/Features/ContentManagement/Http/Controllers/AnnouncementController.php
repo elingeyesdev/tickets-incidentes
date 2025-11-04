@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Features\ContentManagement\Http\Controllers;
 
+use App\Features\ContentManagement\Enums\AnnouncementType;
+use App\Features\ContentManagement\Http\Requests\UpdateAlertRequest;
 use App\Features\ContentManagement\Http\Requests\UpdateAnnouncementRequest;
 use App\Features\ContentManagement\Http\Resources\AnnouncementResource;
 use App\Features\ContentManagement\Models\Announcement;
 use App\Features\ContentManagement\Services\AnnouncementService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Announcement Controller
@@ -68,16 +72,19 @@ class AnnouncementController extends Controller
      * Update an existing announcement.
      *
      * Handles partial updates - only updates fields that are present in the request.
-     * Metadata fields (urgency, scheduled_start, scheduled_end, is_emergency, affected_services)
-     * are merged with existing metadata to preserve other metadata values.
+     * Metadata fields are intelligently merged based on announcement type:
+     * - MAINTENANCE: urgency, scheduled_start, scheduled_end, is_emergency, affected_services
+     * - INCIDENT: resolution_content, affected_services
+     * - NEWS: news_type, target_audience, summary, call_to_action
+     * - ALERT: urgency (HIGH/CRITICAL only), alert_type, message, action_required, action_description, started_at, ended_at, affected_services
      *
      * Route: PUT /api/v1/announcements/{id}
      *
-     * @param UpdateAnnouncementRequest $request Validated request with partial data
+     * @param Request $request The request with partial data
      * @param Announcement $announcement The announcement to update (route model binding)
      * @return JsonResponse Success response with updated announcement
      */
-    public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse
+    public function update(Request $request, Announcement $announcement): JsonResponse
     {
         // Validate that announcement belongs to user's company (from JWT)
         try {
@@ -94,8 +101,54 @@ class AnnouncementController extends Controller
             ], 403);
         }
 
+        // Use the appropriate validation rules based on announcement type
         try {
-            $validated = $request->validated();
+            if ($announcement->type === AnnouncementType::ALERT) {
+                // Create a temporary request with the route parameter set
+                $tempRequest = UpdateAlertRequest::createFrom($request);
+                // We need to set the route parameter so the custom validation closures work
+                $tempRequest->setRouteResolver(function () use ($announcement) {
+                    return new \stdClass();
+                });
+                // Use Validator with custom callbacks
+                $validator = Validator::make(
+                    $request->all(),
+                    [
+                        'title' => ['sometimes', 'string', 'min:5', 'max:200'],
+                        'content' => ['sometimes', 'string', 'min:10'],
+                        'metadata' => ['sometimes', 'array'],
+                        'metadata.urgency' => ['sometimes', 'in:HIGH,CRITICAL'],
+                        'metadata.alert_type' => ['sometimes', 'in:security,system,service,compliance'],
+                        'metadata.message' => ['sometimes', 'string', 'min:10', 'max:500'],
+                        'metadata.action_required' => [
+                            'sometimes',
+                            'boolean',
+                            function ($attribute, $value, $fail) use ($announcement) {
+                                $currentActionRequired = $announcement->metadata['action_required'] ?? false;
+                                if ($currentActionRequired === true && $value === false) {
+                                    $fail('Cannot change action_required from true to false.');
+                                }
+                            },
+                        ],
+                        'metadata.action_description' => ['required_if:metadata.action_required,true', 'nullable', 'string', 'max:300'],
+                        'metadata.started_at' => ['sometimes', 'date_format:Y-m-d\TH:i:sP'],
+                        'metadata.ended_at' => ['sometimes', 'nullable', 'date_format:Y-m-d\TH:i:sP', 'after:metadata.started_at'],
+                        'metadata.affected_services' => ['sometimes', 'nullable', 'array'],
+                    ]
+                );
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                $validated = $validator->validated();
+            } else {
+                $formRequest = UpdateAnnouncementRequest::createFrom($request);
+                $validated = $formRequest->validated();
+            }
 
             // Build update data array
             $data = [];
@@ -109,9 +162,15 @@ class AnnouncementController extends Controller
                 $data['content'] = $validated['content'];
             }
 
+            // Handle 'body' field for NEWS announcements (stored as 'content')
+            if (isset($validated['body'])) {
+                $data['content'] = $validated['body'];
+            }
+
             // Metadata field updates (merge with existing metadata)
             $metadataUpdates = [];
 
+            // MAINTENANCE-specific metadata
             if (isset($validated['urgency'])) {
                 $metadataUpdates['urgency'] = $validated['urgency'];
             }
@@ -132,8 +191,71 @@ class AnnouncementController extends Controller
                 $metadataUpdates['affected_services'] = $validated['affected_services'];
             }
 
+            // INCIDENT-specific metadata
             if (isset($validated['resolution_content'])) {
                 $metadataUpdates['resolution_content'] = $validated['resolution_content'];
+            }
+
+            // NEWS-specific metadata (from UpdateNewsRequest via validated metadata)
+            if (isset($validated['metadata'])) {
+                $newsMetadata = $validated['metadata'];
+                $existingMetadata = is_array($announcement->metadata) ? $announcement->metadata : [];
+
+                // Intelligent merge for NEWS metadata
+                if (isset($newsMetadata['news_type'])) {
+                    $metadataUpdates['news_type'] = $newsMetadata['news_type'];
+                }
+
+                if (isset($newsMetadata['target_audience'])) {
+                    $metadataUpdates['target_audience'] = $newsMetadata['target_audience'];
+                }
+
+                if (isset($newsMetadata['summary'])) {
+                    $metadataUpdates['summary'] = $newsMetadata['summary'];
+                }
+
+                // Handle call_to_action: can be added, updated, or removed (null)
+                if (array_key_exists('call_to_action', $newsMetadata)) {
+                    $metadataUpdates['call_to_action'] = $newsMetadata['call_to_action'];
+                }
+            }
+
+            // ALERT-specific metadata (from UpdateAlertRequest via validated metadata)
+            if (isset($validated['metadata'])) {
+                $alertMetadata = $validated['metadata'];
+
+                // Intelligent merge for ALERT metadata
+                if (isset($alertMetadata['urgency'])) {
+                    $metadataUpdates['urgency'] = $alertMetadata['urgency'];
+                }
+
+                if (isset($alertMetadata['alert_type'])) {
+                    $metadataUpdates['alert_type'] = $alertMetadata['alert_type'];
+                }
+
+                if (isset($alertMetadata['message'])) {
+                    $metadataUpdates['message'] = $alertMetadata['message'];
+                }
+
+                if (isset($alertMetadata['action_required'])) {
+                    $metadataUpdates['action_required'] = $alertMetadata['action_required'];
+                }
+
+                if (isset($alertMetadata['action_description'])) {
+                    $metadataUpdates['action_description'] = $alertMetadata['action_description'];
+                }
+
+                if (isset($alertMetadata['started_at'])) {
+                    $metadataUpdates['started_at'] = $alertMetadata['started_at'];
+                }
+
+                if (isset($alertMetadata['ended_at'])) {
+                    $metadataUpdates['ended_at'] = $alertMetadata['ended_at'];
+                }
+
+                if (isset($alertMetadata['affected_services'])) {
+                    $metadataUpdates['affected_services'] = $alertMetadata['affected_services'];
+                }
             }
 
             // Merge metadata updates with existing metadata

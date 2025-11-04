@@ -269,6 +269,150 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Create a news announcement via HTTP POST endpoint
+     *
+     * Uses HTTP POST to create announcements, which ensures proper transaction
+     * handling with RefreshDatabaseWithoutTransactions trait. This is the correct
+     * approach for testing because:
+     * 1. It tests the actual HTTP flow (like production)
+     * 2. It avoids RefreshDatabase transaction isolation issues
+     * 3. All subsequent route model binding works correctly
+     *
+     * @param User $user The authenticated user creating the announcement
+     * @param array $overrides Override default payload values
+     * @param string $action 'draft', 'publish', or 'schedule'
+     * @param string|null $scheduledFor ISO8601 datetime for scheduled publication
+     * @return \App\Features\ContentManagement\Models\Announcement The created announcement
+     */
+    protected function createNewsAnnouncementViaHttp(
+        User $user,
+        array $overrides = [],
+        string $action = 'draft',
+        ?string $scheduledFor = null
+    ): \App\Features\ContentManagement\Models\Announcement {
+        // Build payload with defaults
+        $payload = array_merge([
+            'title' => 'Test News',
+            'body' => 'Test news content',
+            'metadata' => [
+                'news_type' => 'general_update',
+                'target_audience' => ['users'],
+                'summary' => 'Test news summary',
+            ],
+        ], $overrides);
+
+        // Add action if not draft
+        if ($action !== 'draft') {
+            $payload['action'] = $action;
+        }
+
+        // Add scheduled_for if provided and action is schedule
+        if ($scheduledFor && $action === 'schedule') {
+            $payload['scheduled_for'] = $scheduledFor;
+        }
+
+        // Make HTTP POST request
+        $response = $this->authenticateWithJWT($user)
+            ->postJson('/api/announcements/news', $payload);
+
+        // Assert the request was successful
+        if (!in_array($response->status(), [201])) {
+            throw new \Exception(
+                "Failed to create news via HTTP. Status: {$response->status()}\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Extract the ID from response
+        $announcementId = $response->json('data.id');
+
+        if (!$announcementId) {
+            throw new \Exception(
+                "No announcement ID in response.\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Fetch the created announcement from database
+        $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        return $announcement;
+    }
+
+    /**
+     * Create an alert announcement via HTTP POST endpoint
+     *
+     * Uses HTTP POST to create announcements, which ensures proper transaction
+     * handling with RefreshDatabaseWithoutTransactions trait. This is the correct
+     * approach for testing because:
+     * 1. It tests the actual HTTP flow (like production)
+     * 2. It avoids RefreshDatabase transaction isolation issues
+     * 3. All subsequent route model binding works correctly
+     *
+     * @param User $user The authenticated user creating the announcement
+     * @param array $overrides Override default payload values
+     * @param string $action 'draft', 'publish', or 'schedule'
+     * @param string|null $scheduledFor ISO8601 datetime for scheduled publication
+     * @return \App\Features\ContentManagement\Models\Announcement The created announcement
+     */
+    protected function createAlertAnnouncementViaHttp(
+        User $user,
+        array $overrides = [],
+        string $action = 'draft',
+        ?string $scheduledFor = null
+    ): \App\Features\ContentManagement\Models\Announcement {
+        // Build payload with defaults
+        $payload = array_merge([
+            'title' => 'Test Alert',
+            'content' => 'Test alert content',
+            'metadata' => [
+                'urgency' => 'HIGH',
+                'alert_type' => 'security',
+                'message' => 'Test alert message with minimum length',
+                'action_required' => false,
+                'started_at' => now()->addHour()->toIso8601String(),
+            ],
+        ], $overrides);
+
+        // Add action if not draft
+        if ($action !== 'draft') {
+            $payload['action'] = $action;
+        }
+
+        // Add scheduled_for if provided and action is schedule
+        if ($scheduledFor && $action === 'schedule') {
+            $payload['scheduled_for'] = $scheduledFor;
+        }
+
+        // Make HTTP POST request
+        $response = $this->authenticateWithJWT($user)
+            ->postJson('/api/announcements/alerts', $payload);
+
+        // Assert the request was successful
+        if (!in_array($response->status(), [201])) {
+            throw new \Exception(
+                "Failed to create alert via HTTP. Status: {$response->status()}\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Extract the ID from response
+        $announcementId = $response->json('data.id');
+
+        if (!$announcementId) {
+            throw new \Exception(
+                "No announcement ID in response.\n" .
+                "Response: {$response->content()}"
+            );
+        }
+
+        // Fetch the created announcement from database
+        $announcement = \App\Features\ContentManagement\Models\Announcement::findOrFail($announcementId);
+
+        return $announcement;
+    }
+
+    /**
      * Execute all queued jobs manually (for testing)
      *
      * When using Queue::fake(), jobs are intercepted but not executed.

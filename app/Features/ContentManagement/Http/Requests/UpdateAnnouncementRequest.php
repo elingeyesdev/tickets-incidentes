@@ -47,6 +47,11 @@ class UpdateAnnouncementRequest extends FormRequest
         return [
             'title' => ['sometimes', 'string', 'min:3', 'max:255'],
             'content' => ['sometimes', 'string', 'min:10', 'max:5000'],
+
+            // NEWS announcements use 'body' (aliased to 'content' in controller)
+            'body' => ['sometimes', 'string', 'min:10'],
+
+            // MAINTENANCE-specific fields
             'urgency' => ['sometimes', 'in:LOW,MEDIUM,HIGH,CRITICAL'],
             'scheduled_start' => ['sometimes', 'date', 'after:now'],
             'scheduled_end' => [
@@ -68,7 +73,7 @@ class UpdateAnnouncementRequest extends FormRequest
             ],
             'is_emergency' => ['sometimes', 'boolean'],
 
-            // Incident-specific validations
+            // INCIDENT-specific validations
             'started_at' => ['sometimes', 'date_format:Y-m-d\TH:i:sP'],
             'ended_at' => [
                 'sometimes',
@@ -104,6 +109,35 @@ class UpdateAnnouncementRequest extends FormRequest
             'resolution_content' => ['sometimes', 'nullable', 'string'],
             'affected_services' => ['sometimes', 'nullable', 'array', 'max:20'],
             'affected_services.*' => ['string', 'max:100'],
+
+            // NEWS-specific metadata (nested)
+            'metadata' => ['sometimes', 'array'],
+            'metadata.news_type' => ['sometimes', 'in:feature_release,policy_update,general_update'],
+            'metadata.target_audience' => [
+                'sometimes',
+                'array',
+                'min:1',
+                'max:5',
+                function ($attribute, $value, $fail) {
+                    // Ensure it's an array before iterating
+                    if (!is_array($value)) {
+                        return; // 'array' rule will handle this
+                    }
+
+                    $validAudiences = ['users', 'agents', 'admins'];
+                    foreach ($value as $audience) {
+                        if (!in_array($audience, $validAudiences)) {
+                            $fail('The target audience contains invalid values. Valid values are: users, agents, admins.');
+                            return;
+                        }
+                    }
+                },
+            ],
+            'metadata.target_audience.*' => ['in:users,agents,admins'],
+            'metadata.summary' => ['sometimes', 'string', 'min:10', 'max:500'],
+            'metadata.call_to_action' => ['nullable', 'array'],
+            'metadata.call_to_action.text' => ['required_with:metadata.call_to_action', 'string'],
+            'metadata.call_to_action.url' => ['required_with:metadata.call_to_action', 'url', 'starts_with:https'],
         ];
     }
 
@@ -118,6 +152,8 @@ class UpdateAnnouncementRequest extends FormRequest
 
             'content.min' => 'El contenido debe tener al menos 10 caracteres.',
             'content.max' => 'El contenido no puede superar 5000 caracteres.',
+
+            'body.min' => 'The body must be at least 10 characters.',
 
             'urgency.in' => 'El nivel de urgencia debe ser LOW, MEDIUM, HIGH o CRITICAL.',
 
@@ -138,6 +174,21 @@ class UpdateAnnouncementRequest extends FormRequest
             'affected_services.max' => 'No se pueden especificar más de 20 servicios afectados.',
             'affected_services.*.string' => 'Cada servicio afectado debe ser una cadena de texto.',
             'affected_services.*.max' => 'Cada servicio afectado no puede superar 100 caracteres.',
+
+            // NEWS-specific metadata
+            'metadata.array' => 'Metadata must be an object.',
+            'metadata.news_type.in' => 'The news type must be: feature_release, policy_update, or general_update.',
+            'metadata.target_audience.array' => 'The target audience must be an array.',
+            'metadata.target_audience.min' => 'At least one target audience must be specified.',
+            'metadata.target_audience.max' => 'No more than 5 target audiences can be specified.',
+            'metadata.target_audience.*.in' => 'Each target audience must be: users, agents, or admins.',
+            'metadata.summary.min' => 'The summary must be at least 10 characters.',
+            'metadata.summary.max' => 'The summary cannot exceed 500 characters.',
+            'metadata.call_to_action.array' => 'The call to action must be an object.',
+            'metadata.call_to_action.text.required_with' => 'Call to action text is required when providing a call to action.',
+            'metadata.call_to_action.url.required_with' => 'Call to action URL is required when providing a call to action.',
+            'metadata.call_to_action.url.url' => 'Call to action URL must be a valid URL.',
+            'metadata.call_to_action.url.starts_with' => 'Call to action URL must start with https.',
         ];
     }
 }
