@@ -17,6 +17,8 @@ use App\Shared\Helpers\JWTHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
+
 
 /**
  * Announcement Controller
@@ -24,7 +26,13 @@ use Illuminate\Routing\Controller;
  * Handles HTTP requests for announcement management.
  * Delegates all business logic to AnnouncementService.
  *
- * CAPA 3A: Update and Delete operations.
+ * Role-based visibility:
+ * - PLATFORM_ADMIN: sees all announcements from all companies
+ * - COMPANY_ADMIN: sees all announcements (any status) from their own company
+ * - AGENT/USER: sees only PUBLISHED announcements from followed companies
+ *
+ * Feature: Content Management
+ * Base URL: /api/announcements
  */
 class AnnouncementController extends Controller
 {
@@ -36,6 +44,115 @@ class AnnouncementController extends Controller
     ) {
     }
 
+    #[OA\Get(
+        path: '/announcements',
+        operationId: 'list_announcements',
+        summary: 'List announcements with role-based visibility',
+        description: 'Returns a paginated list of announcements. PLATFORM_ADMIN sees all announcements from all companies. COMPANY_ADMIN sees all announcements (any status) from their own company. AGENT/USER see only PUBLISHED announcements from followed companies.',
+        tags: ['Announcements'],
+        parameters: [
+            new OA\Parameter(
+                name: 'status',
+                in: 'query',
+                description: 'Filter by announcement status (case-insensitive)',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['draft', 'scheduled', 'published', 'archived'])
+            ),
+            new OA\Parameter(
+                name: 'type',
+                in: 'query',
+                description: 'Filter by announcement type',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['MAINTENANCE', 'INCIDENT', 'NEWS', 'ALERT'])
+            ),
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                description: 'Search in title and content (case-insensitive)',
+                required: false,
+                schema: new OA\Schema(type: 'string', maxLength: 100)
+            ),
+            new OA\Parameter(
+                name: 'sort',
+                in: 'query',
+                description: 'Sort field and direction (prefix with - for descending)',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['-published_at', '-created_at', 'title'])
+            ),
+            new OA\Parameter(
+                name: 'published_after',
+                in: 'query',
+                description: 'Filter announcements published after this date (YYYY-MM-DD)',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date')
+            ),
+            new OA\Parameter(
+                name: 'published_before',
+                in: 'query',
+                description: 'Filter announcements published before this date (YYYY-MM-DD)',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date')
+            ),
+            new OA\Parameter(
+                name: 'company_id',
+                in: 'query',
+                description: 'Filter by company (only PLATFORM_ADMIN)',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+            new OA\Parameter(
+                name: 'page',
+                in: 'query',
+                description: 'Page number for pagination',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                in: 'query',
+                description: 'Items per page (max 100)',
+                required: false,
+                schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'List of announcements with pagination',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(ref: '#/components/schemas/AnnouncementList')
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                new OA\Property(property: 'per_page', type: 'integer', example: 20),
+                                new OA\Property(property: 'total', type: 'integer', example: 150),
+                                new OA\Property(property: 'last_page', type: 'integer', example: 8),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
      * List announcements with role-based visibility (CAPA 3E).
      *
@@ -141,6 +258,50 @@ class AnnouncementController extends Controller
         ], 200);
     }
 
+    #[OA\Get(
+        path: '/announcements/schemas',
+        operationId: 'get_announcement_schemas',
+        summary: 'Get announcement type schemas',
+        description: 'Returns the metadata schema structure for each announcement type. Only COMPANY_ADMIN and PLATFORM_ADMIN can access this endpoint. Used by frontend to dynamically build forms.',
+        tags: ['Announcements'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Schemas for all announcement types (MAINTENANCE, INCIDENT, NEWS, ALERT)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            description: 'Schema definitions keyed by announcement type'
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (insufficient permissions - requires COMPANY_ADMIN or PLATFORM_ADMIN)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Insufficient permissions'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
      * Get announcement schemas for all types (CAPA 3E).
      *
@@ -323,6 +484,71 @@ class AnnouncementController extends Controller
         ], 200);
     }
 
+    #[OA\Get(
+        path: '/announcements/{announcement}',
+        operationId: 'get_announcement',
+        summary: 'Get a single announcement by ID',
+        description: 'Returns detailed information about a specific announcement. Visibility depends on user role and company context. PLATFORM_ADMIN can view any announcement. COMPANY_ADMIN can view any announcement from their own company. AGENT/USER can only view PUBLISHED announcements from followed companies.',
+        tags: ['Announcements'],
+        parameters: [
+            new OA\Parameter(
+                name: 'announcement',
+                in: 'path',
+                description: 'Announcement ID (UUID)',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Announcement details',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            ref: '#/components/schemas/Announcement'
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (insufficient permissions or does not follow company)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Insufficient permissions'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Announcement not found',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement not found'),
+                        new OA\Property(property: 'code', type: 'string', example: 'NOT_FOUND'),
+                        new OA\Property(property: 'category', type: 'string', example: 'resource'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
      * Get a single announcement by ID with role-based visibility (CAPA 3E).
      *
@@ -333,12 +559,24 @@ class AnnouncementController extends Controller
      *
      * Route: GET /api/announcements/{id}
      *
-     * @param Announcement $announcement The announcement to retrieve (route model binding)
+     * @param string $announcement The announcement ID (route parameter)
      * @param VisibilityService $visibilityService Service for role-based checks
      * @return JsonResponse Success response with announcement data
      */
-    public function show(Announcement $announcement, VisibilityService $visibilityService): JsonResponse
+    public function show(string $announcement, VisibilityService $visibilityService): JsonResponse
     {
+        // Resolve the model manually to allow middleware to handle ModelNotFoundException
+        try {
+            $announcement = Announcement::findOrFail($announcement);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        }
+
         $user = auth()->user();
 
         // 1. PLATFORM_ADMIN can see any announcement
@@ -399,6 +637,87 @@ class AnnouncementController extends Controller
         ], 200);
     }
 
+    #[OA\Put(
+        path: '/announcements/{announcement}',
+        operationId: 'update_announcement',
+        summary: 'Update an announcement',
+        description: 'Updates an existing announcement with partial data. Only DRAFT or SCHEDULED announcements can be edited (except PUBLISHED ALERT which can only update ended_at). Metadata fields are intelligently merged based on announcement type. Only COMPANY_ADMIN can update announcements from their own company.',
+        tags: ['Announcements'],
+        parameters: [
+            new OA\Parameter(
+                name: 'announcement',
+                in: 'path',
+                description: 'Announcement ID (UUID)',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Partial announcement data (all fields optional)',
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'title', type: 'string', description: 'Announcement title', minLength: 3, maxLength: 255),
+                    new OA\Property(property: 'content', type: 'string', description: 'Announcement content/body'),
+                    new OA\Property(property: 'urgency', type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], description: 'Urgency level (type-specific)'),
+                    new OA\Property(property: 'scheduled_start', type: 'string', format: 'date-time', description: 'Maintenance scheduled start'),
+                    new OA\Property(property: 'scheduled_end', type: 'string', format: 'date-time', description: 'Maintenance scheduled end'),
+                    new OA\Property(property: 'is_emergency', type: 'boolean', description: 'Is emergency maintenance'),
+                    new OA\Property(property: 'affected_services', type: 'array', items: new OA\Items(type: 'string'), description: 'List of affected services'),
+                    new OA\Property(property: 'resolution_content', type: 'string', maxLength: 1000, description: 'Incident resolution details'),
+                    new OA\Property(property: 'metadata', type: 'object', description: 'Type-specific metadata for NEWS/ALERT'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Announcement updated successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement updated successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            ref: '#/components/schemas/Announcement'
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthorized or invalid JWT'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (insufficient permissions or cannot edit published announcement)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Cannot edit published announcement'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Announcement not found',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement not found'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
      * Update an existing announcement.
      *
@@ -592,6 +911,75 @@ class AnnouncementController extends Controller
         }
     }
 
+    #[OA\Delete(
+        path: '/announcements/{announcement}',
+        operationId: 'delete_announcement',
+        summary: 'Delete an announcement',
+        description: 'Permanently deletes an announcement. Only DRAFT or ARCHIVED announcements can be deleted. PUBLISHED and SCHEDULED announcements must be archived/unscheduled first. Only COMPANY_ADMIN can delete announcements from their own company.',
+        tags: ['Announcements'],
+        parameters: [
+            new OA\Parameter(
+                name: 'announcement',
+                in: 'path',
+                description: 'Announcement ID (UUID)',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Announcement deleted successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement deleted successfully'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad request (cannot delete published or scheduled announcement)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Cannot delete published announcement'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthorized or invalid JWT'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (insufficient permissions)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Insufficient permissions'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Announcement not found',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement not found'),
+                    ]
+                )
+            ),
+        ]
+    )]
     /**
      * Delete an announcement permanently.
      *

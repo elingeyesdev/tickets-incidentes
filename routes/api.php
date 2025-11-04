@@ -220,7 +220,15 @@ Route::middleware('jwt.require')->group(function () {
 
     // Get single announcement with role-based visibility (CAPA 3E)
     Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])
-        ->name('announcements.show');
+        ->name('announcements.show')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 });
 
 // ========== ANNOUNCEMENTS - Management Endpoints (COMPANY_ADMIN Only) ==========
@@ -234,41 +242,113 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
 
     // Mark maintenance as started
     Route::post('/maintenance/{announcement}/start', [MaintenanceAnnouncementController::class, 'markStart'])
-        ->name('announcements.maintenance.start');
+        ->name('announcements.maintenance.start')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Mark maintenance as completed
     Route::post('/maintenance/{announcement}/complete', [MaintenanceAnnouncementController::class, 'markComplete'])
-        ->name('announcements.maintenance.complete');
+        ->name('announcements.maintenance.complete')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // ========== GENERAL ANNOUNCEMENT ACTIONS ==========
 
     // Update announcement (partial updates for DRAFT or SCHEDULED only)
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])
-        ->name('announcements.update');
+        ->name('announcements.update')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Delete announcement (soft delete)
     Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])
-        ->name('announcements.destroy');
+        ->name('announcements.destroy')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Publish announcement immediately
     Route::post('/{announcement}/publish', [AnnouncementActionController::class, 'publish'])
-        ->name('announcements.publish');
+        ->name('announcements.publish')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Schedule announcement for future publication
     Route::post('/{announcement}/schedule', [AnnouncementActionController::class, 'schedule'])
-        ->name('announcements.schedule');
+        ->name('announcements.schedule')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Unschedule announcement (back to DRAFT)
     Route::post('/{announcement}/unschedule', [AnnouncementActionController::class, 'unschedule'])
-        ->name('announcements.unschedule');
+        ->name('announcements.unschedule')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Archive announcement
     Route::post('/{announcement}/archive', [AnnouncementActionController::class, 'archive'])
-        ->name('announcements.archive');
+        ->name('announcements.archive')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // Restore archived announcement
     Route::post('/{announcement}/restore', [AnnouncementActionController::class, 'restore'])
-        ->name('announcements.restore');
+        ->name('announcements.restore')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // ========== INCIDENT ANNOUNCEMENTS ==========
 
@@ -278,7 +358,15 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
 
     // Resolve incident
     Route::post('/incidents/{announcement}/resolve', [IncidentAnnouncementController::class, 'resolve'])
-        ->name('announcements.incidents.resolve');
+        ->name('announcements.incidents.resolve')
+        ->missing(function () {
+            return response()->json([
+                'success' => false,
+                'message' => 'Announcement not found',
+                'code' => 'NOT_FOUND',
+                'category' => 'resource',
+            ], 404);
+        });
 
     // ========== NEWS ANNOUNCEMENTS ==========
 
