@@ -213,6 +213,14 @@ Route::middleware('jwt.require')->group(function () {
     // List announcements with role-based visibility (CAPA 3E)
     Route::get('/announcements', [AnnouncementController::class, 'index'])
         ->name('announcements.index');
+
+    // Get announcement schemas (COMPANY_ADMIN and PLATFORM_ADMIN only) - MUST come before {announcement}
+    Route::get('/announcements/schemas', [AnnouncementController::class, 'getSchemas'])
+        ->name('announcements.schemas');
+
+    // Get single announcement with role-based visibility (CAPA 3E)
+    Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])
+        ->name('announcements.show');
 });
 
 // ========== ANNOUNCEMENTS - Management Endpoints (COMPANY_ADMIN Only) ==========
@@ -233,10 +241,6 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
         ->name('announcements.maintenance.complete');
 
     // ========== GENERAL ANNOUNCEMENT ACTIONS ==========
-
-    // Get single announcement
-    Route::get('/{announcement}', [AnnouncementController::class, 'show'])
-        ->name('announcements.show');
 
     // Update announcement (partial updates for DRAFT or SCHEDULED only)
     Route::put('/{announcement}', [AnnouncementController::class, 'update'])

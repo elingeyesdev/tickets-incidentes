@@ -138,6 +138,31 @@ class UpdateAnnouncementRequest extends FormRequest
             'metadata.call_to_action' => ['nullable', 'array'],
             'metadata.call_to_action.text' => ['required_with:metadata.call_to_action', 'string'],
             'metadata.call_to_action.url' => ['required_with:metadata.call_to_action', 'url', 'starts_with:https'],
+
+            // ALERT-specific metadata (nested in metadata - do NOT conflict with MAINTENANCE/INCIDENT top-level fields)
+            'metadata.urgency' => ['sometimes', 'in:HIGH,CRITICAL'],
+            'metadata.alert_type' => ['sometimes', 'in:security,system,service,compliance'],
+            'metadata.message' => ['sometimes', 'string', 'min:10', 'max:500'],
+            'metadata.action_required' => [
+                'sometimes',
+                'boolean',
+                function ($attribute, $value, $fail) {
+                    $announcement = $this->route('announcement');
+                    if (!$announcement) {
+                        return;
+                    }
+
+                    // Once action_required is true, cannot change back to false
+                    $currentActionRequired = $announcement->metadata['action_required'] ?? false;
+                    if ($currentActionRequired === true && $value === false) {
+                        $fail('Cannot change action_required from true to false.');
+                    }
+                },
+            ],
+            'metadata.action_description' => ['sometimes', 'string', 'max:300'],
+            'metadata.started_at' => ['sometimes', 'date_format:Y-m-d\TH:i:sP'],
+            'metadata.ended_at' => ['sometimes', 'nullable', 'date_format:Y-m-d\TH:i:sP'],
+            'metadata.affected_services' => ['sometimes', 'nullable', 'array'],
         ];
     }
 
@@ -189,6 +214,17 @@ class UpdateAnnouncementRequest extends FormRequest
             'metadata.call_to_action.url.required_with' => 'Call to action URL is required when providing a call to action.',
             'metadata.call_to_action.url.url' => 'Call to action URL must be a valid URL.',
             'metadata.call_to_action.url.starts_with' => 'Call to action URL must start with https.',
+
+            // ALERT-specific metadata messages
+            'metadata.urgency.in' => 'Alert urgency must be either HIGH or CRITICAL.',
+            'metadata.alert_type.in' => 'Alert type must be one of: security, system, service, or compliance.',
+            'metadata.message.min' => 'The alert message must be at least 10 characters.',
+            'metadata.message.max' => 'The alert message cannot exceed 500 characters.',
+            'metadata.action_required.boolean' => 'The action required field must be true or false.',
+            'metadata.action_description.max' => 'The action description cannot exceed 300 characters.',
+            'metadata.started_at.date_format' => 'The started at field must be in ISO8601 format.',
+            'metadata.ended_at.date_format' => 'The ended at field must be in ISO8601 format.',
+            'metadata.affected_services.array' => 'The affected services must be an array.',
         ];
     }
 }

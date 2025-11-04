@@ -79,7 +79,6 @@ class AnnouncementService
             && $announcement->status === PublicationStatus::PUBLISHED
             && isset($data['metadata'])
             && count($data) === 1
-            && count($data['metadata']) === 1
             && isset($data['metadata']['ended_at']);
 
         // Only allow updates for DRAFT or SCHEDULED (or alerts marking as ended)
