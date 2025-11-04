@@ -16,11 +16,13 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\AnnouncementSchemaController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
 use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\IncidentAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\NewsAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\AlertAnnouncementController;
+use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -208,6 +210,10 @@ Route::middleware('jwt.require')->group(function () {
 // REST API ENDPOINTS - Content Management (Announcements)
 // ================================================================================
 
+// ========== HELP CENTER - Public Endpoints ==========
+Route::get('/help-center/categories', [HelpCenterCategoryController::class, 'index'])
+    ->name('help-center.categories.index');
+
 // ========== ANNOUNCEMENTS - Read Endpoints (All Authenticated Users) ==========
 Route::middleware('jwt.require')->group(function () {
     // List announcements with role-based visibility (CAPA 3E)
@@ -215,7 +221,7 @@ Route::middleware('jwt.require')->group(function () {
         ->name('announcements.index');
 
     // Get announcement schemas (COMPANY_ADMIN and PLATFORM_ADMIN only) - MUST come before {announcement}
-    Route::get('/announcements/schemas', [AnnouncementController::class, 'getSchemas'])
+    Route::get('/announcements/schemas', AnnouncementSchemaController::class)
         ->name('announcements.schemas');
 
     // Get single announcement with role-based visibility (CAPA 3E)
