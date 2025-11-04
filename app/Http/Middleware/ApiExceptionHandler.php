@@ -60,6 +60,9 @@ class ApiExceptionHandler
     {
         try {
             return $next($request);
+        } catch (ModelNotFoundException $e) {
+            // Handle ModelNotFoundException directly (route model binding failures)
+            return $this->handleModelNotFoundException($e);
         } catch (LaravelValidationException $e) {
             // Validación de Laravel Form Requests
             return $this->handleValidationException($e);
@@ -75,10 +78,6 @@ class ApiExceptionHandler
         } catch (QueryException $e) {
             // Errores de base de datos
             return $this->handleDatabaseException($e);
-        } catch (ModelNotFoundException $e) {
-            // Re-throw ModelNotFoundException to be handled by bootstrap/app.php exception handler
-            // This allows the global handler to provide model-specific 404 responses
-            throw $e;
         } catch (Throwable $e) {
             // Cualquier otra excepción
             return $this->handleGenericException($e);
@@ -260,6 +259,32 @@ class ApiExceptionHandler
      */
     public function handleDatabaseException(QueryException $e): \Illuminate\Http\JsonResponse
     {
+        // Special case: Invalid UUID should be treated as "not found" (404), not database error (500)
+        // This occurs when route model binding tries to find a record with an invalid UUID format
+        $errorMessage = $e->getMessage();
+        if (str_contains($errorMessage, 'invalid input syntax for type uuid')) {
+            // Extract model info from SQL query if possible
+            $sql = $e->getSql();
+            $model = null;
+
+            // Try to determine the model from the table name
+            if (str_contains($sql, 'company_announcements')) {
+                $model = 'App\\Features\\ContentManagement\\Models\\Announcement';
+            } elseif (str_contains($sql, 'business.companies')) {
+                $model = 'App\\Features\\CompanyManagement\\Models\\Company';
+            } elseif (str_contains($sql, 'auth.users')) {
+                $model = 'App\\Features\\UserManagement\\Models\\User';
+            }
+
+            // Create a mock ModelNotFoundException and handle it
+            $modelNotFoundException = new ModelNotFoundException();
+            if ($model) {
+                $modelNotFoundException->setModel($model);
+            }
+
+            return $this->handleModelNotFoundException($modelNotFoundException);
+        }
+
         $code = ErrorCodeRegistry::DATABASE_ERROR;
         $category = ErrorCodeRegistry::getCategory($code);
 
@@ -350,20 +375,20 @@ class ApiExceptionHandler
 
         // Asignar códigos específicos según el modelo
         if ($model === 'App\\Features\\CompanyManagement\\Models\\Company') {
-            $errorCode = 'COMPANY_NOT_FOUND';
+            $errorCode = ErrorCodeRegistry::COMPANY_NOT_FOUND;
             $message = 'Company not found';
         } elseif ($model === 'App\\Features\\UserManagement\\Models\\User') {
-            $errorCode = 'USER_NOT_FOUND';
+            $errorCode = ErrorCodeRegistry::USER_NOT_FOUND;
             $message = 'User not found';
         } elseif ($model === 'App\\Features\\CompanyManagement\\Models\\CompanyRequest') {
-            $errorCode = 'REQUEST_NOT_FOUND';
+            $errorCode = ErrorCodeRegistry::NOT_FOUND;
             $message = 'Request not found';
         } elseif ($model === 'App\\Features\\ContentManagement\\Models\\Announcement') {
-            $errorCode = 'ANNOUNCEMENT_NOT_FOUND';
+            $errorCode = ErrorCodeRegistry::NOT_FOUND;
             $message = 'Announcement not found';
         }
 
-        $category = 'resource';
+        $category = ErrorCodeRegistry::getCategory($errorCode);
 
         $response = [
             'success' => false,

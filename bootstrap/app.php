@@ -23,8 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            ApiExceptionHandler::class,  // ← API exception handler
+            // Note: HandleInertiaRequests removed from API (causes exception handling issues)
+            // Note: ApiExceptionHandler is NOT used as middleware
+            // Instead, exceptions are handled via bootstrap/app.php renderable handlers
         ]);
 
         // API routes are stateless - disable CSRF protection for all /api/* routes
@@ -51,25 +52,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Log::debug('ModelNotFoundException renderable called', [
                 'path' => $request->path(),
                 'is_api' => $request->is('api/*'),
-                'exception' => get_class($e),
             ]);
 
             if ($request->is('api/*')) {
-                try {
-                    $handler = new ApiExceptionHandler();
-                    return $handler->handleModelNotFoundException($e);
-                } catch (\Throwable $handlerError) {
-                    // If handler itself fails, return a generic 500 error
-                    \Log::error('ApiExceptionHandler failed: ' . $handlerError->getMessage(), [
-                        'exception' => $handlerError,
-                        'original_exception' => $e,
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Internal server error while handling ModelNotFoundException',
-                        'error' => $handlerError->getMessage(),
-                    ], 500);
-                }
+                \Log::debug('Handling ModelNotFoundException for API');
+                $handler = new ApiExceptionHandler();
+                return $handler->handleModelNotFoundException($e);
             }
         });
 
