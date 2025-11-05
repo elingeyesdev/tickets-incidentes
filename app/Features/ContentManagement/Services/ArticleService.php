@@ -304,6 +304,31 @@ class ArticleService
             return $article;
         }
 
+        // AGENT: Solo PUBLISHED de su company
+        if ($user->hasRole('AGENT')) {
+            $agentRole = $user->userRoles()
+                ->where('role_code', 'AGENT')
+                ->first();
+
+            // Validar que tiene asignada una compañía
+            if (!$agentRole || !$agentRole->company_id) {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // Solo puede ver PUBLISHED
+            if ($article->status !== 'PUBLISHED') {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // Solo de su compañía
+            if ($agentRole->company_id !== $article->company_id) {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // Permitir acceso, no incrementar views
+            return $article;
+        }
+
         // USER: Solo PUBLISHED de empresas que sigue
         if ($user->hasRole('USER')) {
             // Validar estado
@@ -388,6 +413,29 @@ class ArticleService
                 $status = strtoupper($filters['status']);
                 $query->where('status', $status);
             }
+
+        } elseif ($user->hasRole('AGENT')) {
+            // AGENT: Solo PUBLISHED de su empresa
+            $agentRole = $user->userRoles()
+                ->where('role_code', 'AGENT')
+                ->first();
+
+            if (!$agentRole || !$agentRole->company_id) {
+                throw new Exception('Usuario no tiene empresa asignada', 500);
+            }
+
+            $agentCompanyId = $agentRole->company_id;
+
+            // Si especifica ?company_id, validar que sea su empresa
+            if ($requestedCompanyId && $requestedCompanyId !== $agentCompanyId) {
+                throw new Exception('Forbidden: No tienes permiso para acceder a artículos de otra empresa', 403);
+            }
+
+            $query->where('company_id', $agentCompanyId);
+
+            // Status default AGENT: solo PUBLISHED (hardcoded)
+            // AGENT NUNCA puede ver DRAFT
+            $query->where('status', 'PUBLISHED');
 
         } else {
             // END_USER (USER role): Solo empresas que sigue + PUBLISHED

@@ -1092,7 +1092,8 @@ class ListArticlesTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
 
-        // Verificar que retorna TODOS 16 artículos (5 + 8 + 3)
+        // Verificar que retorna TODOS los artículos (5 + 8 + 3 = 16)
+        // PLATFORM_ADMIN ve todos los artículos
         $this->assertCount(16, $response->json('data'));
 
         // Verificar que hay artículos de las 3 empresas
