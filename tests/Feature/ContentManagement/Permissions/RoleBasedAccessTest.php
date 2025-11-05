@@ -6,7 +6,7 @@ namespace Tests\Feature\ContentManagement\Permissions;
 
 use App\Features\ContentManagement\Models\HelpCenterArticle;
 use App\Features\ContentManagement\Models\Announcement;
-use App\Features\ContentManagement\Models\Category;
+use App\Features\ContentManagement\Models\ArticleCategory;
 use App\Features\UserManagement\Models\User;
 use App\Features\CompanyManagement\Models\Company;
 use Tests\TestCase;
@@ -18,7 +18,7 @@ class RoleBasedAccessTest extends TestCase
 
     protected Company $companyA;
     protected Company $companyB;
-    protected Category $category;
+    protected ArticleCategory $category;
 
     protected function setUp(): void
     {
@@ -26,7 +26,7 @@ class RoleBasedAccessTest extends TestCase
 
         $this->companyA = Company::factory()->create(['name' => 'Company A']);
         $this->companyB = Company::factory()->create(['name' => 'Company B']);
-        $this->category = Category::factory()->create(['company_id' => $this->companyA->id]);
+        $this->category = ArticleCategory::factory()->create(['company_id' => $this->companyA->id]);
     }
 
     /**
@@ -208,7 +208,7 @@ class RoleBasedAccessTest extends TestCase
             'category_id' => $this->category->id,
         ]);
 
-        $categoryB = Category::factory()->create(['company_id' => $this->companyB->id]);
+        $categoryB = ArticleCategory::factory()->create(['company_id' => $this->companyB->id]);
         $articleB = HelpCenterArticle::factory()->create([
             'company_id' => $this->companyB->id,
             'status' => 'PUBLISHED',
@@ -283,7 +283,7 @@ class RoleBasedAccessTest extends TestCase
     public function test_company_admin_cannot_create_content_for_other_company(): void
     {
         $adminA = User::factory()->withRole('COMPANY_ADMIN', $this->companyA->id)->create();
-        $categoryB = Category::factory()->create(['company_id' => $this->companyB->id]);
+        $categoryB = ArticleCategory::factory()->create(['company_id' => $this->companyB->id]);
 
         // Attempt to create article for Company B (should fail)
         $response = $this->actingAs($adminA)->postJson('/api/articles', [
@@ -453,7 +453,7 @@ class RoleBasedAccessTest extends TestCase
         $response->assertStatus(200);
 
         // In Company B: Can READ PUBLISHED (follows company)
-        $categoryB = Category::factory()->create(['company_id' => $this->companyB->id]);
+        $categoryB = ArticleCategory::factory()->create(['company_id' => $this->companyB->id]);
         $publishedB = HelpCenterArticle::factory()->create([
             'company_id' => $this->companyB->id,
             'status' => 'PUBLISHED',
@@ -534,7 +534,7 @@ class RoleBasedAccessTest extends TestCase
     {
         $agentA = User::factory()->withRole('AGENT', $this->companyA->id)->create();
 
-        $categoryB = Category::factory()->create(['company_id' => $this->companyB->id]);
+        $categoryB = ArticleCategory::factory()->create(['company_id' => $this->companyB->id]);
         $articleB = HelpCenterArticle::factory()->create([
             'company_id' => $this->companyB->id,
             'status' => 'PUBLISHED',
