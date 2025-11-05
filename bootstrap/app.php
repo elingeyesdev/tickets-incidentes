@@ -3,13 +3,12 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ApiExceptionHandler;
 use App\Http\Middleware\AuthenticateJwt;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web-jwt-pure.php',  // ← Web routes with Inertia
+        web: __DIR__.'/../routes/web-jwt-pure.php',  // ← Web routes with Blade templates
         api: __DIR__.'/../routes/api.php',           // ← GraphQL endpoint
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
@@ -21,14 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
-            HandleInertiaRequests::class,
+            // Using Laravel Blade templates - no Inertia middleware needed
         ]);
 
-        // Add middleware to the API group for stateless Inertia & cookie-based refresh tokens
+        // API middleware for GraphQL endpoint & JWT authentication
         $middleware->api(prepend: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            // Note: HandleInertiaRequests removed from API (causes exception handling issues)
             // Note: ApiExceptionHandler is NOT used as middleware
             // Instead, exceptions are handled via bootstrap/app.php renderable handlers
         ]);

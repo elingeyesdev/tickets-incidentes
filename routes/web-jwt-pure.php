@@ -3,244 +3,223 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Refactored for Clean Separation of Concerns
+| Web Routes - Blade Template Engine
 |--------------------------------------------------------------------------
 |
-| Architecture:
-| - Backend (Laravel): Only provides JSON responses via GraphQL + JWT validation
-| - Frontend (React): Handles ALL authorization logic via AuthGuard
-|
-| Middleware aliases:
-| - web.auth: WebAuthenticationMiddleware (validates JWT token only)
+| All routes now use Laravel Blade templates instead of Inertia.js/React
+| Place corresponding blade templates in resources/views/
 |
 */
 
 // ============================================================================
 // PUBLIC ROUTES (No auth required)
-// Frontend (AuthGuard + PublicRoute) handles redirections
 // ============================================================================
 
 Route::get('/login', function () {
-    return Inertia::render('Public/Login');
+    return view('public.login');
 })->name('login');
 
 Route::get('/register', function () {
-    return Inertia::render('Public/Register');
+    return view('public.register');
 })->name('register');
 
 Route::get('/forgot-password', function () {
-    return Inertia::render('Public/ForgotPassword');
+    return view('public.forgot-password');
 })->name('password.request');
 
 Route::get('/reset-password/{token}', function (string $token) {
-    return Inertia::render('Public/ResetPassword', ['token' => $token]);
+    return view('public.reset-password', ['token' => $token]);
 })->name('password.reset');
 
-// Home page - accessible to everyone (Welcome page handles redirection based on auth state)
 Route::get('/', function () {
-    return Inertia::render('Public/Welcome');
+    return view('public.welcome');
 })->name('home');
 
-// Register user page
 Route::get('/register-user', function () {
-    return Inertia::render('Public/Register');
+    return view('public.register');
 })->name('register.user');
 
-// Register company page
 Route::get('/solicitud-empresa', function () {
-    return Inertia::render('Public/RegisterCompany');
+    return view('public.register-company');
 })->name('register.company');
 
 // ============================================================================
-// AUTHENTICATED ROUTES (ALL behind web.auth middleware)
-// Frontend (AuthGuard) handles ALL authorization & redirections
+// AUTHENTICATED ROUTES
 // ============================================================================
 
 Route::middleware(['web.auth'])->group(function () {
 
-    // Email verification (before onboarding)
     Route::get('/verify-email', function () {
-        return Inertia::render('Public/VerifyEmail');
+        return view('public.verify-email');
     })->name('verify.email');
 
-    // Onboarding steps
     Route::prefix('onboarding')->group(function () {
         Route::get('/profile', function () {
-            return Inertia::render('Authenticated/Onboarding/CompleteProfile');
+            return view('authenticated.onboarding.complete-profile');
         })->name('onboarding.profile');
 
         Route::get('/preferences', function () {
-            return Inertia::render('Authenticated/Onboarding/ConfigurePreferences');
+            return view('authenticated.onboarding.configure-preferences');
         })->name('onboarding.preferences');
     });
 
-    // Role selector (for multi-role users)
     Route::get('/role-selector', function () {
-        return Inertia::render('Authenticated/RoleSelector');
+        return view('authenticated.role-selector');
     })->name('role.selector');
 
-    // Dashboard route - renders User/Dashboard for USER role
     Route::get('/dashboard', function () {
-        return Inertia::render('User/Dashboard');
+        return view('user.dashboard');
     })->name('dashboard');
 
-    // Admin routes
     Route::prefix('admin')->group(function () {
         Route::get('/dashboard', function () {
-            return Inertia::render('Admin/Dashboard');
+            return view('admin.dashboard');
         })->name('admin.dashboard');
 
         Route::get('/users', function () {
-            return Inertia::render('Admin/Users');
+            return view('admin.users');
         })->name('admin.users');
 
         Route::get('/users/create', function () {
-            return Inertia::render('Admin/Users/Create');
+            return view('admin.users.create');
         })->name('admin.users.create');
 
         Route::get('/users/{id}', function (string $id) {
-            return Inertia::render('Admin/Users/Show', ['userId' => $id]);
+            return view('admin.users.show', ['userId' => $id]);
         })->name('admin.users.show');
 
         Route::get('/users/{id}/edit', function (string $id) {
-            return Inertia::render('Admin/Users/Edit', ['userId' => $id]);
+            return view('admin.users.edit', ['userId' => $id]);
         })->name('admin.users.edit');
 
         Route::get('/companies', function () {
-            return Inertia::render('Admin/Companies');
+            return view('admin.companies');
         })->name('admin.companies');
 
         Route::get('/companies/create', function () {
-            return Inertia::render('Admin/Companies/Create');
+            return view('admin.companies.create');
         })->name('admin.companies.create');
 
         Route::get('/companies/{id}', function (string $id) {
-            return Inertia::render('Admin/Companies/Show', ['companyId' => $id]);
+            return view('admin.companies.show', ['companyId' => $id]);
         })->name('admin.companies.show');
 
         Route::get('/companies/{id}/edit', function (string $id) {
-            return Inertia::render('Admin/Companies/Edit', ['companyId' => $id]);
+            return view('admin.companies.edit', ['companyId' => $id]);
         })->name('admin.companies.edit');
 
         Route::get('/settings', function () {
-            return Inertia::render('Admin/Settings');
+            return view('admin.settings');
         })->name('admin.settings');
 
         Route::get('/audit-logs', function () {
-            return Inertia::render('Admin/AuditLogs');
+            return view('admin.audit-logs');
         })->name('admin.audit.logs');
     });
 
-    // Company admin routes
     Route::prefix('empresa')->group(function () {
         Route::get('/dashboard', function () {
-            return Inertia::render('Company/Dashboard');
+            return view('company.dashboard');
         })->name('company.dashboard');
 
         Route::get('/tickets', function () {
-            return Inertia::render('Company/Tickets');
+            return view('company.tickets');
         })->name('company.tickets');
 
         Route::get('/tickets/{id}', function (string $id) {
-            return Inertia::render('Company/Tickets/Show', ['ticketId' => $id]);
+            return view('company.tickets.show', ['ticketId' => $id]);
         })->name('company.tickets.show');
 
         Route::get('/team', function () {
-            return Inertia::render('Company/Team');
+            return view('company.team');
         })->name('company.team');
 
         Route::get('/team/invite', function () {
-            return Inertia::render('Company/Team/Invite');
+            return view('company.team.invite');
         })->name('company.team.invite');
 
         Route::get('/settings', function () {
-            return Inertia::render('Company/Settings');
+            return view('company.settings');
         })->name('company.settings');
 
         Route::get('/profile', function () {
-            return Inertia::render('Company/Profile');
+            return view('company.profile');
         })->name('company.profile');
     });
 
-    // Agent routes
     Route::prefix('agent')->group(function () {
         Route::get('/dashboard', function () {
-            return Inertia::render('Agent/Dashboard');
+            return view('agent.dashboard');
         })->name('agent.dashboard');
 
         Route::get('/tickets', function () {
-            return Inertia::render('Agent/Tickets');
+            return view('agent.tickets');
         })->name('agent.tickets');
 
         Route::get('/tickets/{id}', function (string $id) {
-            return Inertia::render('Agent/Tickets/Show', ['ticketId' => $id]);
+            return view('agent.tickets.show', ['ticketId' => $id]);
         })->name('agent.tickets.show');
 
         Route::get('/knowledge-base', function () {
-            return Inertia::render('Agent/KnowledgeBase');
+            return view('agent.knowledge-base');
         })->name('agent.knowledge.base');
     });
 
-    // User tickets - routes to User/Dashboard
     Route::prefix('tickets')->group(function () {
         Route::get('/', function () {
-            return Inertia::render('User/Dashboard');
+            return view('user.dashboard');
         })->name('tickets.index');
 
         Route::get('/create', function () {
-            return Inertia::render('Tickets/Create');
+            return view('tickets.create');
         })->name('tickets.create');
 
         Route::get('/{id}', function (string $id) {
-            return Inertia::render('Tickets/Show', ['ticketId' => $id]);
+            return view('tickets.show', ['ticketId' => $id]);
         })->name('tickets.show');
 
         Route::get('/{id}/edit', function (string $id) {
-            return Inertia::render('Tickets/Edit', ['ticketId' => $id]);
+            return view('tickets.edit', ['ticketId' => $id]);
         })->name('tickets.edit');
     });
 
-    // Profile routes
     Route::prefix('profile')->group(function () {
         Route::get('/', function () {
-            return Inertia::render('Profile/Index');
+            return view('profile.index');
         })->name('profile.index');
 
         Route::get('/edit', function () {
-            return Inertia::render('Profile/Edit');
+            return view('profile.edit');
         })->name('profile.edit');
 
         Route::get('/security', function () {
-            return Inertia::render('Profile/Security');
+            return view('profile.security');
         })->name('profile.security');
 
         Route::get('/notifications', function () {
-            return Inertia::render('Profile/Notifications');
+            return view('profile.notifications');
         })->name('profile.notifications');
 
         Route::get('/sessions', function () {
-            return Inertia::render('Profile/Sessions');
+            return view('profile.sessions');
         })->name('profile.sessions');
     });
 
-    // Notifications
     Route::prefix('notifications')->group(function () {
         Route::get('/', function () {
-            return Inertia::render('Notifications/Index');
+            return view('notifications.index');
         })->name('notifications.index');
 
         Route::get('/{id}', function (string $id) {
-            return Inertia::render('Notifications/Show', ['notificationId' => $id]);
+            return view('notifications.show', ['notificationId' => $id]);
         })->name('notifications.show');
     });
 
-    // Search
     Route::get('/search', function () {
-        return Inertia::render('Search/Index', [
+        return view('search.index', [
             'query' => request()->query('q', ''),
         ]);
     })->name('search');
