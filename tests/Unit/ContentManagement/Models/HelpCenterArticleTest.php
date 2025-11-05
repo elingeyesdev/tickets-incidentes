@@ -57,11 +57,8 @@ class HelpCenterArticleTest extends TestCase
     #[Test]
     public function test_article_belongs_to_category(): void
     {
-        // Arrange: Crear artículo con categoría asociada
-        $category = ArticleCategory::factory()->create([
-            'code' => 'SECURITY_PRIVACY',
-            'name' => 'Security & Privacy',
-        ]);
+        // Arrange: Crear artículo con categoría asociada (usa factory sin override)
+        $category = ArticleCategory::factory()->create();
 
         $article = HelpCenterArticle::factory()->create([
             'category_id' => $category->id,
@@ -72,8 +69,8 @@ class HelpCenterArticleTest extends TestCase
 
         // Assert: La relación funciona correctamente
         $this->assertEquals($category->id, $relatedCategory->id);
-        $this->assertEquals('SECURITY_PRIVACY', $relatedCategory->code);
-        $this->assertEquals('Security & Privacy', $relatedCategory->name);
+        $this->assertEquals($category->code, $relatedCategory->code);
+        $this->assertEquals($category->name, $relatedCategory->name);
     }
 
     /**
@@ -134,26 +131,33 @@ class HelpCenterArticleTest extends TestCase
     #[Test]
     public function test_is_published_scope(): void
     {
-        // Arrange: Crear artículos DRAFT y PUBLISHED
+        // Arrange: Crear artículos DRAFT y PUBLISHED con la misma company
+        $company = \App\Features\CompanyManagement\Models\Company::factory()->create();
+
         $draftArticle = HelpCenterArticle::factory()->create([
+            'company_id' => $company->id,
             'status' => 'DRAFT',
             'published_at' => null,
         ]);
 
         $publishedArticle1 = HelpCenterArticle::factory()->create([
+            'company_id' => $company->id,
             'status' => 'PUBLISHED',
             'published_at' => now()->subDay(),
         ]);
 
         $publishedArticle2 = HelpCenterArticle::factory()->create([
+            'company_id' => $company->id,
             'status' => 'PUBLISHED',
             'published_at' => now()->subHours(2),
         ]);
 
-        // Act: Usar el scope published()
-        $publishedArticles = HelpCenterArticle::published()->get();
+        // Act: Usar el scope published() filtrando por company_id para aislar este test
+        $publishedArticles = HelpCenterArticle::published()
+            ->where('company_id', $company->id)
+            ->get();
 
-        // Assert: Solo se devuelven artículos PUBLISHED
+        // Assert: Solo se devuelven los 2 artículos PUBLISHED de este test
         $this->assertCount(2, $publishedArticles);
         $this->assertTrue($publishedArticles->contains($publishedArticle1));
         $this->assertTrue($publishedArticles->contains($publishedArticle2));
@@ -166,14 +170,9 @@ class HelpCenterArticleTest extends TestCase
     #[Test]
     public function test_by_category_scope(): void
     {
-        // Arrange: Crear categorías y artículos
-        $securityCategory = ArticleCategory::factory()->create([
-            'code' => 'SECURITY_PRIVACY',
-        ]);
-
-        $billingCategory = ArticleCategory::factory()->create([
-            'code' => 'BILLING_PAYMENTS',
-        ]);
+        // Arrange: Crear categorías y artículos (usa factory sin override para evitar unique constraint)
+        $securityCategory = ArticleCategory::factory()->create();
+        $billingCategory = ArticleCategory::factory()->create();
 
         $securityArticle1 = HelpCenterArticle::factory()->create([
             'category_id' => $securityCategory->id,
@@ -190,10 +189,10 @@ class HelpCenterArticleTest extends TestCase
             'title' => 'Payment methods',
         ]);
 
-        // Act: Usar el scope byCategory()
-        $securityArticles = HelpCenterArticle::byCategory('SECURITY_PRIVACY')->get();
+        // Act: Usar el scope byCategory() con el código generado dinámicamente
+        $securityArticles = HelpCenterArticle::byCategory($securityCategory->code)->get();
 
-        // Assert: Solo se devuelven artículos de la categoría SECURITY_PRIVACY
+        // Assert: Solo se devuelven artículos de la categoría security
         $this->assertCount(2, $securityArticles);
         $this->assertTrue($securityArticles->contains($securityArticle1));
         $this->assertTrue($securityArticles->contains($securityArticle2));

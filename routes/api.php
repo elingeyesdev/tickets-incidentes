@@ -23,6 +23,7 @@ use App\Features\ContentManagement\Http\Controllers\IncidentAnnouncementControll
 use App\Features\ContentManagement\Http\Controllers\NewsAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\AlertAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController;
+use App\Features\ContentManagement\Http\Controllers\ArticleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -385,4 +386,15 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
     // Create alert announcement (draft, publish or schedule in one request)
     Route::post('/alerts', [AlertAnnouncementController::class, 'store'])
         ->name('announcements.alerts.store');
+});
+
+// ========== HELP CENTER ARTICLES - Management Endpoints (COMPANY_ADMIN Only) ==========
+Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
+    // Create help center article (always as DRAFT)
+    Route::post('/help-center/articles', [ArticleController::class, 'store'])
+        ->name('articles.store');
+
+    // Update help center article
+    Route::put('/help-center/articles/{article}', [ArticleController::class, 'update'])
+        ->name('articles.update');
 });
