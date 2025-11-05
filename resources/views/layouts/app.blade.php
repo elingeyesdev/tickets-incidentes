@@ -87,7 +87,7 @@
                     </a>
                 </div>
 
-                <nav class="mt-2">
+                <nav class="mt-2" id="sidebarNav">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
                         <!-- Dashboard -->
                         <li class="nav-item">
@@ -97,25 +97,21 @@
                             </a>
                         </li>
 
-                        <!-- Usuarios (Admin) -->
-                        @if(auth()->check() && (auth()->user()->hasRole('PLATFORM_ADMIN') || auth()->user()->hasRole('COMPANY_ADMIN')))
-                            <li class="nav-item">
-                                <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-users"></i>
-                                    <p>Usuarios</p>
-                                </a>
-                            </li>
-                        @endif
+                        <!-- Usuarios (Admin) - Se muestra dinámicamente -->
+                        <li class="nav-item" id="usersMenuItem" style="display: none;">
+                            <a href="{{ route('admin.users') }}" class="nav-link">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
 
-                        <!-- Empresas (Admin) -->
-                        @if(auth()->check() && (auth()->user()->hasRole('PLATFORM_ADMIN') || auth()->user()->hasRole('COMPANY_ADMIN')))
-                            <li class="nav-item">
-                                <a href="{{ route('admin.companies') }}" class="nav-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-building"></i>
-                                    <p>Empresas</p>
-                                </a>
-                            </li>
-                        @endif
+                        <!-- Empresas (Admin) - Se muestra dinámicamente -->
+                        <li class="nav-item" id="companiesMenuItem" style="display: none;">
+                            <a href="{{ route('admin.companies') }}" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>Empresas</p>
+                            </a>
+                        </li>
 
                         <!-- Perfil -->
                         <li class="nav-item">
@@ -173,6 +169,15 @@
         const API_URL = '{{ env('APP_URL', 'http://localhost:8000') }}/api';
         const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+            if (!token) {
+                console.warn('No se encontró token de autenticación');
+                // No redirigir aquí, dejar que la lógica de cada página decida
+            }
+        });
+
         // Configurar headers por defecto para todas las requests
         async function apiRequest(endpoint, method = 'GET', data = null) {
             // Obtener token del localStorage o sessionStorage
@@ -197,17 +202,19 @@
 
             const response = await fetch(`${API_URL}${endpoint}`, options);
 
-            // Si es 401, redirigir a login
+            // Si es 401, limpiar tokens y redirigir a login
             if (response.status === 401) {
                 localStorage.removeItem('accessToken');
                 sessionStorage.removeItem('accessToken');
+                // Mostrar mensaje antes de redirigir
+                alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
                 window.location.href = '{{ route('login') }}';
                 return;
             }
 
             if (!response.ok) {
                 const result = await response.json();
-                throw new Error(result.message || `Error ${response.status}`);
+                throw new Error(result.message || result.errors?.message || `Error ${response.status}`);
             }
 
             return await response.json();
@@ -253,6 +260,46 @@
             `;
             document.querySelector('.content').insertBefore(alertDiv, document.querySelector('.content').firstChild);
         }
+    </script>
+
+    <script>
+        // Cargar datos del usuario y mostrar menú basado en roles
+        async function loadUserMenuItems() {
+            try {
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    window.location.href = '{{ route('login') }}';
+                    return;
+                }
+
+                const response = await apiRequest('/auth/status');
+                const user = response.user;
+
+                // Mostrar items del menú basados en roles
+                const isAdmin = user.roleContexts.some(r =>
+                    r.roleCode === 'PLATFORM_ADMIN' || r.roleCode === 'COMPANY_ADMIN'
+                );
+
+                if (isAdmin) {
+                    document.getElementById('usersMenuItem').style.display = '';
+                    document.getElementById('companiesMenuItem').style.display = '';
+                }
+
+                // Actualizar nombre de usuario en navbar
+                const userLink = document.querySelector('.navbar-nav .nav-link');
+                if (userLink) {
+                    userLink.innerHTML = `<i class="fas fa-user"></i> ${user.displayName}`;
+                }
+
+            } catch (error) {
+                console.error('Error cargando datos de usuario:', error);
+                // Si hay error, dejar al usuario ver el contenido
+                // pero sin mostrar items de admin
+            }
+        }
+
+        // Cargar menú cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', loadUserMenuItems);
     </script>
 
     @yield('scripts')
