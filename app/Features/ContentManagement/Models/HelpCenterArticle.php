@@ -10,12 +10,13 @@ use App\Shared\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HelpCenterArticle extends Model
 {
-    use HasFactory, HasUuid;
+    use HasFactory, HasUuid, SoftDeletes;
 
-    protected $table = 'help_center_articles';
+    protected $table = 'business.help_center_articles';
 
     protected $fillable = [
         'company_id',
@@ -32,6 +33,7 @@ class HelpCenterArticle extends Model
     protected $casts = [
         'published_at' => 'datetime',
         'views_count' => 'integer',
+        'deleted_at' => 'datetime',
     ];
 
     protected $attributes = [

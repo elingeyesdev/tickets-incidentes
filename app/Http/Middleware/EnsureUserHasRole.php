@@ -50,6 +50,7 @@ class EnsureUserHasRole
         }
 
         return response()->json([
+            'success' => false,
             'message' => 'Insufficient permissions',
             'code' => 'INSUFFICIENT_PERMISSIONS'
         ], 403);

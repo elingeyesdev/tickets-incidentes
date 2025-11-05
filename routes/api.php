@@ -236,6 +236,14 @@ Route::middleware('jwt.require')->group(function () {
                 'category' => 'resource',
             ], 404);
         });
+
+    // List help center articles (only PUBLISHED articles visible to all users)
+    Route::get('/help-center/articles', [ArticleController::class, 'index'])
+        ->name('articles.index');
+
+    // Get single help center article
+    Route::get('/help-center/articles/{article}', [ArticleController::class, 'show'])
+        ->name('articles.show');
 });
 
 // ========== ANNOUNCEMENTS - Management Endpoints (COMPANY_ADMIN Only) ==========
@@ -397,4 +405,16 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
     // Update help center article
     Route::put('/help-center/articles/{article}', [ArticleController::class, 'update'])
         ->name('articles.update');
+
+    // Publish help center article
+    Route::post('/help-center/articles/{article}/publish', [ArticleController::class, 'publish'])
+        ->name('articles.publish');
+
+    // Unpublish help center article
+    Route::post('/help-center/articles/{article}/unpublish', [ArticleController::class, 'unpublish'])
+        ->name('articles.unpublish');
+
+    // Delete help center article (only DRAFT articles)
+    Route::delete('/help-center/articles/{article}', [ArticleController::class, 'destroy'])
+        ->name('articles.destroy');
 });

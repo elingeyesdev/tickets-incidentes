@@ -162,6 +162,19 @@ class User extends Model implements Authenticatable
         return $this->userRoles()->where('is_active', true);
     }
 
+    /**
+     * Obtener empresas seguidas por el usuario (relación many-to-many)
+     */
+    public function followedCompanies(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            \App\Features\CompanyManagement\Models\Company::class,
+            'business.user_company_followers',
+            'user_id',
+            'company_id'
+        )->withTimestamps('followed_at', 'followed_at');
+    }
+
     // ==================== MÉTODOS DE AUTENTICACIÓN ====================
 
     /**
