@@ -8,8 +8,8 @@ use App\Http\Middleware\AuthenticateJwt;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web-jwt-pure.php',  // ← Web routes with Blade templates
-        api: __DIR__.'/../routes/api.php',           // ← GraphQL endpoint
+        web: __DIR__.'/../routes/web.php',           // ← Web routes with Blade templates
+        api: __DIR__.'/../routes/api.php',           // ← REST API endpoints
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
