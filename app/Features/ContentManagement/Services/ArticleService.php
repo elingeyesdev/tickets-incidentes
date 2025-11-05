@@ -249,6 +249,89 @@ class ArticleService
     }
 
     /**
+     * Ver un artículo del Help Center
+     *
+     * REGLAS DE VISIBILIDAD:
+     * - USER: Solo PUBLISHED de empresas que sigue
+     * - COMPANY_ADMIN: DRAFT + PUBLISHED de su empresa únicamente
+     * - PLATFORM_ADMIN: Cualquier estado de cualquier empresa
+     *
+     * SIDE EFFECT:
+     * - Incrementa views_count SOLO si:
+     *   - Artículo status = PUBLISHED
+     *   - Usuario es USER (no ADMIN)
+     *
+     * @param User|null $user - Usuario autenticado
+     * @param string $articleId - ID del artículo
+     * @return HelpCenterArticle - Artículo encontrado
+     * @throws Exception si no está autenticado (401)
+     * @throws Exception si el artículo no existe (404)
+     * @throws AuthorizationException si no tiene permisos (403)
+     */
+    public function viewArticle(?User $user, string $articleId): HelpCenterArticle
+    {
+        // 1. VALIDAR AUTENTICACIÓN
+        if (!$user) {
+            throw new Exception('Unauthenticated', 401);
+        }
+
+        // 2. BUSCAR ARTÍCULO (sin soft-deletes)
+        $article = HelpCenterArticle::find($articleId);
+
+        if (!$article) {
+            throw new Exception('Article not found', 404);
+        }
+
+        // 3. VALIDAR VISIBILIDAD SEGÚN ROL
+
+        // PLATFORM_ADMIN: Ve todo
+        if ($user->hasRole('PLATFORM_ADMIN')) {
+            // Permitir acceso, no incrementar views
+            return $article;
+        }
+
+        // COMPANY_ADMIN: Solo su empresa
+        if ($user->hasRole('COMPANY_ADMIN')) {
+            $adminRole = $user->userRoles()
+                ->where('role_code', 'COMPANY_ADMIN')
+                ->first();
+
+            if (!$adminRole || $adminRole->company_id !== $article->company_id) {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // Permitir acceso, no incrementar views
+            return $article;
+        }
+
+        // USER: Solo PUBLISHED de empresas que sigue
+        if ($user->hasRole('USER')) {
+            // Validar estado
+            if ($article->status !== 'PUBLISHED') {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // Validar seguimiento de empresa
+            $isFollowing = $user->followedCompanies()
+                ->where('business.companies.id', $article->company_id)
+                ->exists();
+
+            if (!$isFollowing) {
+                throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+            }
+
+            // SIDE EFFECT: Incrementar views_count
+            $article->increment('views_count');
+            $article->refresh();
+
+            return $article;
+        }
+
+        // Por defecto: No permitir
+        throw new AuthorizationException('Forbidden: You do not have permission to view this article');
+    }
+
+    /**
      * Listar artículos del Help Center con filtros, búsqueda y paginación
      *
      * REGLAS DE VISIBILIDAD:

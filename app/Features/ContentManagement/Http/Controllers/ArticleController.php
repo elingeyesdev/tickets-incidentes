@@ -71,19 +71,48 @@ class ArticleController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $article = HelpCenterArticle::find($id);
+        try {
+            $user = auth()->user();
 
-        if (!$article) {
+            // Llamar al service que tiene la lógica
+            $article = $this->articleService->viewArticle($user, $id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Article retrieved successfully',
+                'data' => ArticleResource::make($article),
+            ], 200);
+
+        } catch (AuthorizationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Artículo no encontrado',
-            ], 404);
-        }
+                'message' => $e->getMessage(),
+            ], 403);
 
-        return response()->json([
-            'success' => true,
-            'data' => ArticleResource::make($article),
-        ], 200);
+        } catch (\Exception $e) {
+            // Convert code to integer
+            $code = is_numeric($e->getCode()) ? (int) $e->getCode() : 500;
+
+            // Manejar códigos específicos
+            if ($code === 401) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 401);
+            }
+
+            if ($code === 404) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function store(StoreArticleRequest $request): JsonResponse
