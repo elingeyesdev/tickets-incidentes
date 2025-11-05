@@ -17,7 +17,9 @@ class ListArticleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'sometimes|uuid|exists:business.companies,id',
+            // Note: Usar 'companies' sin prefijo de schema para compatibilidad con tests
+            // El modelo Company ya especifica el schema correcto (business.companies)
+            'company_id' => 'sometimes|uuid|exists:companies,id',
             'category' => 'sometimes|string|in:ACCOUNT_PROFILE,SECURITY_PRIVACY,BILLING_PAYMENTS,TECHNICAL_SUPPORT',
             'status' => 'sometimes|string|in:draft,published',
             'search' => 'sometimes|string|max:255',

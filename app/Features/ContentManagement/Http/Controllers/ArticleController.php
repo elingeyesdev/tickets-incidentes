@@ -45,21 +45,21 @@ class ArticleController extends Controller
                 ]
             ], 200);
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-
-            // Log for debugging
-            \Log::error('ListArticles Exception', [
-                'message' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
+            // Convert code to integer to ensure strict comparison works
+            $statusCode = is_numeric($e->getCode()) ? (int) $e->getCode() : 500;
 
             if ($statusCode === 403) {
                 return response()->json([
                     'success' => false,
                     'message' => $e->getMessage(),
                 ], 403);
+            }
+
+            if ($statusCode === 404) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 404);
             }
 
             return response()->json([

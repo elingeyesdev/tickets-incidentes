@@ -591,10 +591,11 @@ class ListArticlesTest extends TestCase
         $this->assertCount(3, $response->json('data'));
 
         // Verificar que todos contienen "contraseña" en el título (case-insensitive)
+        // Usar mb_strtolower para soporte correcto de caracteres especiales (ñ, acentos)
         $titles = collect($response->json('data'))->pluck('title');
         foreach ($titles as $title) {
             $this->assertTrue(
-                str_contains(strtolower($title), 'contraseña'),
+                str_contains(mb_strtolower($title, 'UTF-8'), 'contraseña'),
                 "El título '{$title}' debe contener 'contraseña'"
             );
         }

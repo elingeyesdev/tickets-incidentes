@@ -292,7 +292,7 @@ class ArticleService
 
             // Si especifica ?company_id, validar que sea su empresa
             if ($requestedCompanyId && $requestedCompanyId !== $adminCompanyId) {
-                throw new Exception('No tienes permiso para acceder a artículos de otra empresa', 403);
+                throw new Exception('Forbidden: No tienes permiso para acceder a artículos de otra empresa', 403);
             }
 
             $query->where('company_id', $adminCompanyId);
@@ -308,16 +308,15 @@ class ArticleService
 
         } else {
             // END_USER (USER role): Solo empresas que sigue + PUBLISHED
-            // Usar select para especificar exactamente qué columna queremos
+            // Especificar tabla completa para evitar ambigüedad en el JOIN
             $followedCompanyIds = $user->followedCompanies()
-                ->select('business.companies.id')
                 ->pluck('business.companies.id')
                 ->toArray();
 
             // Si especifica ?company_id, validar que la siga
             if ($requestedCompanyId) {
                 if (!in_array($requestedCompanyId, $followedCompanyIds)) {
-                    throw new Exception('No tienes permiso para acceder a esta empresa', 403);
+                    throw new Exception('Forbidden: No tienes permiso para acceder a esta empresa', 403);
                 }
                 $query->where('company_id', $requestedCompanyId);
             } else {
@@ -347,11 +346,12 @@ class ArticleService
         }
 
         // 4. BÚSQUEDA (title + content)
+        // Usar LOWER + LIKE para soporte correcto de caracteres especiales (ñ, acentos)
         if (isset($filters['search'])) {
             $searchTerm = $filters['search'];
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'ILIKE', "%{$searchTerm}%")
-                    ->orWhere('content', 'ILIKE', "%{$searchTerm}%");
+                $q->whereRaw('LOWER(title) LIKE LOWER(?)', ["%{$searchTerm}%"])
+                    ->orWhereRaw('LOWER(content) LIKE LOWER(?)', ["%{$searchTerm}%"]);
             });
         }
 
