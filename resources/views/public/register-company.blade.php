@@ -3,90 +3,132 @@
 @section('title', 'Registrar Empresa')
 
 @section('content')
-<div class="card">
-    <div class="card-header text-center">
-        <h4 class="mb-0">
-            <i class="fas fa-building me-2"></i> Solicitud de Empresa
-        </h4>
-    </div>
-
-    <div class="card-body p-4">
-        <div id="alerts"></div>
-
-        <p class="text-muted mb-4">
-            ¿Tu empresa quiere utilizar nuestro helpdesk? Completa este formulario y nos pondremos en contacto pronto.
-        </p>
-
-        <form id="companyRequestForm">
-            <div class="mb-3">
-                <label for="companyName" class="form-label">Nombre de la Empresa</label>
-                <input
-                    type="text"
-                    class="form-control"
-                    id="companyName"
-                    name="companyName"
-                    placeholder="Mi Empresa S.A."
-                    required
-                    minlength="3"
-                >
+<div class="register-page">
+    <div class="register-box">
+        <div class="card card-outline card-secondary">
+            <div class="card-header text-center">
+                <h1><b>Solicitud de Empresa</b></h1>
             </div>
 
-            <div class="mb-3">
-                <label for="contactEmail" class="form-label">Email de Contacto</label>
-                <input
-                    type="email"
-                    class="form-control"
-                    id="contactEmail"
-                    name="contactEmail"
-                    placeholder="contacto@empresa.com"
-                    required
-                >
+            <div class="card-body">
+                <p class="login-box-msg">¿Tu empresa quiere utilizar nuestro helpdesk? Completa este formulario y nos pondremos en contacto pronto.</p>
+
+                <div id="alerts"></div>
+
+                <form id="companyRequestForm">
+                    <!-- Company Name -->
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="companyName"
+                                name="companyName"
+                                placeholder="Nombre de la Empresa"
+                                required
+                                minlength="3"
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Email -->
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input
+                                type="email"
+                                class="form-control"
+                                id="contactEmail"
+                                name="contactEmail"
+                                placeholder="Email de Contacto"
+                                required
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Phone -->
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input
+                                type="tel"
+                                class="form-control"
+                                id="contactPhone"
+                                name="contactPhone"
+                                placeholder="Teléfono de Contacto (Opcional)"
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Name -->
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="contactName"
+                                name="contactName"
+                                placeholder="Nombre de Contacto"
+                                required
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <div class="input-group">
+                            <textarea
+                                class="form-control"
+                                id="description"
+                                name="description"
+                                rows="4"
+                                placeholder="Descripción (Opcional) - Cuéntanos sobre tu empresa..."
+                            ></textarea>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <i class="fas fa-align-left"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-secondary btn-block">
+                                <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr>
+
+                <p class="mb-1 text-center">
+                    <a href="{{ route('login') }}">Ya tengo una cuenta</a>
+                </p>
+                <p class="mb-0 text-center">
+                    <a href="{{ route('register') }}">Registrarme como usuario</a>
+                </p>
             </div>
-
-            <div class="mb-3">
-                <label for="contactPhone" class="form-label">Teléfono de Contacto</label>
-                <input
-                    type="tel"
-                    class="form-control"
-                    id="contactPhone"
-                    name="contactPhone"
-                    placeholder="+34 600 123 456"
-                >
-            </div>
-
-            <div class="mb-3">
-                <label for="contactName" class="form-label">Nombre de Contacto</label>
-                <input
-                    type="text"
-                    class="form-control"
-                    id="contactName"
-                    name="contactName"
-                    placeholder="Juan Pérez"
-                    required
-                >
-            </div>
-
-            <div class="mb-3">
-                <label for="description" class="form-label">Descripción (Opcional)</label>
-                <textarea
-                    class="form-control"
-                    id="description"
-                    name="description"
-                    rows="4"
-                    placeholder="Cuéntanos sobre tu empresa..."
-                ></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-                <i class="fas fa-paper-plane me-2"></i> Enviar Solicitud
-            </button>
-        </form>
-
-        <hr class="my-4">
-
-        <div class="text-center text-muted">
-            <p class="mb-0">¿Ya tienes una cuenta? <a href="{{ route('login') }}">Inicia sesión aquí</a></p>
-            <p class="mb-0 mt-2">¿Eres usuario individual? <a href="{{ route('register') }}">Regístrate como usuario</a></p>
         </div>
     </div>
 </div>
@@ -110,23 +152,23 @@ document.getElementById('companyRequestForm').addEventListener('submit', async f
     const submitBtn = this.querySelector('button[type="submit"]');
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Enviando...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
     try {
         const response = await apiRequest('/company-requests', 'POST', formData);
 
         alertsDiv.innerHTML = `
-            <div class="alert alert-success alert-dismissible fade show">
-                <i class="fas fa-check-circle me-2"></i>
-                <strong>¡Solicitud enviada!</strong> Nos pondremos en contacto con los datos que proporcionaste en los próximos días.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-success alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h5><i class="icon fas fa-check"></i> Solicitud enviada!</h5>
+                Nos pondremos en contacto con los datos que proporcionaste en los próximos días.
             </div>
         `;
 
         // Limpiar el formulario
         document.getElementById('companyRequestForm').reset();
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Enviar Solicitud';
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Solicitud';
 
         // Redirigir después de 2 segundos
         setTimeout(() => {
@@ -135,13 +177,14 @@ document.getElementById('companyRequestForm').addEventListener('submit', async f
 
     } catch (error) {
         alertsDiv.innerHTML = `
-            <div class="alert alert-danger alert-dismissible fade show">
-                <i class="fas fa-exclamation-circle me-2"></i> ${error.message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <h5><i class="icon fas fa-ban"></i> Error!</h5>
+                ${error.message}
             </div>
         `;
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Enviar Solicitud';
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Solicitud';
     }
 });
 </script>

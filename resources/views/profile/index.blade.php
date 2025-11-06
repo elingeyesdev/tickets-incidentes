@@ -5,141 +5,199 @@
 
 @section('content')
 <div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <div id="profileAvatar" class="mb-3">
-                    <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center"
-                         style="width: 120px; height: 120px; color: white; font-size: 3rem;">
-                        <i class="fas fa-user"></i>
+    <!-- TARJETA PERFIL -->
+    <div class="col-md-3">
+        <div class="card card-primary card-outline">
+            <div class="card-body box-profile">
+                <div class="text-center">
+                    <div id="profileAvatar" class="mb-3">
+                        <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center"
+                             style="width: 120px; height: 120px; color: white; font-size: 3rem;">
+                            <i class="fas fa-user"></i>
+                        </div>
                     </div>
                 </div>
-                <h4 id="profileName">Cargando...</h4>
-                <p class="text-muted" id="profileEmail"></p>
+
+                <h3 class="profile-username text-center" id="profileName">Cargando...</h3>
+                <p class="text-muted text-center" id="profileEmail"></p>
+                <p class="text-center">
+                    <code id="profileCode"></code>
+                </p>
+
                 <hr>
-                <p class="mb-0">
-                    <strong>Código:</strong> <code id="profileCode"></code>
+
+                <strong><i class="fas fa-circle-notch mr-1"></i> Estado</strong>
+                <p class="text-muted">
+                    <span id="profileStatus" class="badge"></span>
                 </p>
-                <p class="mb-0 mt-2">
-                    <strong>Estado:</strong> <span id="profileStatus" class="badge"></span>
-                </p>
-                <p class="mb-0 mt-2">
-                    <strong>Roles:</strong><br>
+
+                <strong><i class="fas fa-user-tag mr-1"></i> Roles</strong>
+                <p class="text-muted">
                     <div id="profileRoles"></div>
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- FORMULARIO EDITAR -->
     <div class="col-md-8">
-        <div class="card">
+        <div class="card card-info card-outline">
             <div class="card-header">
-                <h5 class="card-title mb-0">Editar Información</h5>
+                <h3 class="card-title">
+                    <i class="fas fa-edit mr-1"></i>
+                    Editar Información
+                </h3>
             </div>
             <div class="card-body">
                 <div id="profileFormErrors"></div>
                 <form id="profileForm">
-                    <div class="row mb-3">
+                    <div class="row">
                         <div class="col-md-6">
-                            <label for="firstName" class="form-label">Nombre</label>
-                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+                            <div class="form-group">
+                                <label for="firstName">Nombre</label>
+                                <input type="text" class="form-control form-control-lg" id="firstName" name="firstName" placeholder="Ingrese su nombre" required>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="lastName" class="form-label">Apellido</label>
-                            <input type="text" class="form-control" id="lastName" name="lastName" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" disabled>
-                        <small class="text-muted">El email no puede ser modificado</small>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="phoneNumber" class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="language" class="form-label">Idioma</label>
-                            <select class="form-select" id="language" name="language">
-                                <option value="es">Español</option>
-                                <option value="en">Inglés</option>
-                            </select>
+                            <div class="form-group">
+                                <label for="lastName">Apellido</label>
+                                <input type="text" class="form-control form-control-lg" id="lastName" name="lastName" placeholder="Ingrese su apellido" required>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="row mb-3">
+                    <div class="row">
                         <div class="col-md-6">
-                            <label for="theme" class="form-label">Tema</label>
-                            <select class="form-select" id="theme" name="theme">
-                                <option value="light">Claro</option>
-                                <option value="dark">Oscuro</option>
-                            </select>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" class="form-control form-control-lg" id="email" disabled>
+                                <small class="text-muted">El email no puede ser modificado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="phoneNumber">Teléfono <span class="text-muted">(opcional)</span></label>
+                                <input type="tel" class="form-control form-control-lg" id="phoneNumber" name="phoneNumber" placeholder="+52 999 999 9999">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i> Guardar Cambios
-                        </button>
-                        <button type="reset" class="btn btn-secondary">
-                            <i class="fas fa-redo me-2"></i> Descartar
-                        </button>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="language">Idioma</label>
+                                <select class="form-control" id="language" name="language">
+                                    <option value="es">Español</option>
+                                    <option value="en">Inglés</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="theme">Tema</label>
+                                <select class="form-control" id="theme" name="theme">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Oscuro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-2"></i> Guardar
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-redo mr-2"></i> Descartar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="card mt-3">
+        <!-- TARJETA SEGURIDAD -->
+        <div class="card card-warning card-outline">
             <div class="card-header">
-                <h5 class="card-title mb-0">Seguridad</h5>
+                <h3 class="card-title">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Seguridad
+                </h3>
             </div>
             <div class="card-body">
-                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                    <i class="fas fa-key me-2"></i> Cambiar Contraseña
+                <p class="text-muted">
+                    Proteja su cuenta cambiando su contraseña regularmente.
+                </p>
+                <button class="btn btn-warning" data-toggle="modal" data-target="#changePasswordModal">
+                    <i class="fas fa-key mr-2"></i> Cambiar Contraseña
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Cambiar Contraseña -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Cambiar Contraseña</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="changePasswordForm">
-                <div class="modal-body">
-                    <div id="passwordErrors"></div>
-
-                    <div class="mb-3">
-                        <label for="currentPassword" class="form-label">Contraseña Actual</label>
-                        <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="newPassword" class="form-label">Nueva Contraseña</label>
-                        <input type="password" class="form-control" id="newPassword" name="newPassword" required minlength="8">
-                        <small class="text-muted">Mínimo 8 caracteres</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required minlength="8">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> Cambiar
+            <div class="card card-primary mb-0">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-key mr-1"></i>
+                        Cambiar Contraseña
+                    </h3>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-            </form>
+                <form id="changePasswordForm">
+                    <div class="card-body">
+                        <div id="passwordErrors"></div>
+
+                        <div class="form-group">
+                            <label for="currentPassword">Contraseña Actual</label>
+                            <input type="password"
+                                   class="form-control"
+                                   id="currentPassword"
+                                   name="currentPassword"
+                                   placeholder="Ingrese su contraseña actual"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="newPassword">Nueva Contraseña</label>
+                            <input type="password"
+                                   class="form-control"
+                                   id="newPassword"
+                                   name="newPassword"
+                                   placeholder="Mínimo 8 caracteres"
+                                   required
+                                   minlength="8">
+                            <small class="form-text text-muted">Mínimo 8 caracteres</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirmar Contraseña</label>
+                            <input type="password"
+                                   class="form-control"
+                                   id="confirmPassword"
+                                   name="confirmPassword"
+                                   placeholder="Confirme la nueva contraseña"
+                                   required
+                                   minlength="8">
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-2"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary float-right">
+                            <i class="fas fa-save mr-2"></i> Cambiar
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

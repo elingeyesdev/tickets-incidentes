@@ -4,149 +4,187 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Helpdesk') }} - @yield('title')</title>
+    <title>@yield('title', 'Helpdesk')</title>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <!-- AdminLTE CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- DataTables -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/css/dataTables.bootstrap5.min.css">
 
-    <style>
-        .main-sidebar {
-            background-color: #2c3e50;
-        }
-        .brand-link {
-            background-color: #34495e;
-            border-bottom: 1px solid #1a252f;
-        }
-        .nav-link.active {
-            background-color: #667eea;
-            border-left: 4px solid #667eea;
-        }
-        .nav-link:hover {
-            background-color: rgba(102, 126, 234, 0.1);
-        }
-        .content-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            padding: 1.5rem;
-        }
-        .card {
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary {
-            background-color: #667eea;
-            border-color: #667eea;
-        }
-        .btn-primary:hover {
-            background-color: #5568d3;
-            border-color: #5568d3;
-        }
-    </style>
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+    <!-- Tempusdominus Bootstrap 4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css">
+
+    <!-- iCheck for checkboxes and radio inputs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icheck-bootstrap/3.0.1/icheck-bootstrap.min.css">
+
+    <!-- Bootstrap Color Picker -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.min.css">
+
+    <!-- Select2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+
+    <!-- Bootstrap4 Duallistbox -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap4-duallistbox/4.0.2/bootstrap-duallistbox.min.css">
+
+    <!-- BS Stepper -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bs-stepper/1.7.0/css/bs-stepper.min.css">
+
+    <!-- dropzonejs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/dropzone.min.css">
+
+    <!-- AdminLTE CSS v3 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+
+    <!-- DataTables Bootstrap 4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/css/dataTables.bootstrap4.min.css">
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.27/sweetalert2.min.css">
 
     @yield('styles')
 </head>
-<body class="hold-transition light-mode sidebar-mini">
+
+<body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
         <!-- Navbar -->
-        <nav class="main-header navbar navbar-expand-lg navbar-light bg-white border-bottom">
-            <div class="container-fluid">
-                <button class="navbar-toggler order-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="{{ route('dashboard') }}" class="nav-link">
+                        <i class="fas fa-home mr-2"></i> Inicio
+                    </a>
+                </li>
+            </ul>
 
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a href="{{ route('profile.index') }}" class="nav-link">
-                                <i class="fas fa-user"></i> Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" onclick="logout()" class="nav-link">
-                                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- User Account Menu -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                        <i class="fas fa-user-circle"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown" id="userMenu">
+                        <div class="dropdown-header">Cargando...</div>
+                    </div>
+                </li>
+
+                <!-- Fullscreen Toggle -->
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                    </a>
+                </li>
+            </ul>
         </nav>
 
-        <!-- Sidebar -->
-        <aside class="main-sidebar">
-            <div class="sidebar">
-                <div class="brand-link d-flex align-items-center justify-content-between px-3 py-3">
-                    <a href="{{ route('dashboard') }}" class="text-white text-decoration-none">
-                        <i class="fas fa-headset me-2"></i>
-                        <strong>Helpdesk</strong>
-                    </a>
-                </div>
+        <!-- Left side column. contains the sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="{{ route('dashboard') }}" class="brand-link">
+                <img src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light"><strong>Helpdesk</strong></span>
+            </a>
 
-                <nav class="mt-2" id="sidebarNav">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                        <!-- Dashboard -->
-                        <li class="nav-item">
-                            <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-home"></i>
-                                <p>Dashboard</p>
-                            </a>
-                        </li>
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" id="sidebarMenu">
+                    <!-- Dashboard -->
+                    <li class="nav-item">
+                        <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
 
-                        <!-- Usuarios (Admin) - Se muestra dinámicamente -->
-                        <li class="nav-item" id="usersMenuItem" style="display: none;">
-                            <a href="{{ route('admin.users') }}" class="nav-link">
-                                <i class="nav-icon fas fa-users"></i>
-                                <p>Usuarios</p>
-                            </a>
-                        </li>
+                    <!-- Users Management -->
+                    <li class="nav-item" id="usersMenuParent" style="display: none;">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Usuarios <i class="right fas fa-angle-left"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Gestionar Usuarios</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                        <!-- Empresas (Admin) - Se muestra dinámicamente -->
-                        <li class="nav-item" id="companiesMenuItem" style="display: none;">
-                            <a href="{{ route('admin.companies') }}" class="nav-link">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>Empresas</p>
-                            </a>
-                        </li>
+                    <!-- Companies Management -->
+                    <li class="nav-item" id="companiesMenuParent" style="display: none;">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-building"></i>
+                            <p>Empresas <i class="right fas fa-angle-left"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.companies') }}" class="nav-link {{ request()->routeIs('admin.companies*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Gestionar Empresas</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                        <!-- Perfil -->
-                        <li class="nav-item">
-                            <a href="{{ route('profile.index') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-user-circle"></i>
-                                <p>Mi Perfil</p>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+                    <li class="nav-header">Cuenta</li>
+
+                    <!-- Profile -->
+                    <li class="nav-item">
+                        <a href="{{ route('profile.index') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-user"></i>
+                            <p>Mi Perfil</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </aside>
 
-        <!-- Content -->
+        <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
             <div class="content-header">
-                <h1 class="mb-0">@yield('header')</h1>
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">@yield('header')</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Inicio</a></li>
+                                <li class="breadcrumb-item active">@yield('breadcrumb', 'Página')</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <!-- Main content -->
             <div class="content">
                 <div class="container-fluid">
                     @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <h5 class="alert-heading">Error!</h5>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            <h5><i class="icon fas fa-ban"></i> Error!</h5>
                             @foreach ($errors->all() as $error)
                                 <div>{{ $error }}</div>
                             @endforeach
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
 
                     @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            <h5><i class="icon fas fa-check"></i> Éxito!</h5>
                             {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     @endif
 
@@ -154,34 +192,47 @@
                 </div>
             </div>
         </div>
+
+        <!-- Control Sidebar (optional) -->
+        <aside class="control-sidebar control-sidebar-dark">
+            <!-- Control sidebar content goes here -->
+        </aside>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- AdminLTE JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
     <!-- jQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-    <!-- DataTables -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- jQuery UI 1.11.4 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ui/1.13.2/jquery-ui.min.js"></script>
+
+    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+    <script>
+        $.widget.bridge('uibutton', $.ui.button)
+    </script>
+
+    <!-- Bootstrap 4 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/js/bootstrap.bundle.min.js"></script>
+
+    <!-- overlayScrollbars -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.3.0/browser/overlayscrollbars.browser.es6.min.js"></script>
+
+    <!-- AdminLTE App -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+
+    <!-- DataTables & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.27/sweetalert2.min.js"></script>
 
     <script>
         const API_URL = '{{ env('APP_URL', 'http://localhost:8000') }}/api';
         const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // Verificar autenticación al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-            if (!token) {
-                console.warn('No se encontró token de autenticación');
-                // No redirigir aquí, dejar que la lógica de cada página decida
-            }
-        });
-
-        // Configurar headers por defecto para todas las requests
+        // Helper para hacer requests a la API
         async function apiRequest(endpoint, method = 'GET', data = null) {
-            // Obtener token del localStorage o sessionStorage
-            const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+            const token = localStorage.getItem('accessToken');
 
             const options = {
                 method,
@@ -202,13 +253,12 @@
 
             const response = await fetch(`${API_URL}${endpoint}`, options);
 
-            // Si es 401, limpiar tokens y redirigir a login
             if (response.status === 401) {
                 localStorage.removeItem('accessToken');
                 sessionStorage.removeItem('accessToken');
-                // Mostrar mensaje antes de redirigir
-                alert('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
-                window.location.href = '{{ route('login') }}';
+                Swal.fire('Sesión Expirada', 'Por favor, inicia sesión nuevamente.', 'warning').then(() => {
+                    window.location.href = '{{ route('login') }}';
+                });
                 return;
             }
 
@@ -220,50 +270,7 @@
             return await response.json();
         }
 
-        async function logout() {
-            if (!confirm('¿Está seguro que desea cerrar sesión?')) {
-                return;
-            }
-
-            try {
-                // Hacer logout en el servidor
-                const token = localStorage.getItem('accessToken');
-                if (token) {
-                    await apiRequest('/auth/logout', 'POST');
-                }
-            } catch (e) {
-                console.error('Error al cerrar sesión:', e);
-            }
-
-            // Limpiar datos locales
-            localStorage.removeItem('accessToken');
-            sessionStorage.removeItem('accessToken');
-            window.location.href = '{{ route('login') }}';
-        }
-
-        function showError(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.content').insertBefore(alertDiv, document.querySelector('.content').firstChild);
-        }
-
-        function showSuccess(message) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.content').insertBefore(alertDiv, document.querySelector('.content').firstChild);
-        }
-    </script>
-
-    <script>
-        // Cargar datos del usuario y mostrar menú basado en roles
+        // Cargar menú dinámico según roles
         async function loadUserMenuItems() {
             try {
                 const token = localStorage.getItem('accessToken');
@@ -275,33 +282,71 @@
                 const response = await apiRequest('/auth/status');
                 const user = response.user;
 
-                // Mostrar items del menú basados en roles
+                // Mostrar items admin solo si tiene rol de admin
                 const isAdmin = user.roleContexts.some(r =>
                     r.roleCode === 'PLATFORM_ADMIN' || r.roleCode === 'COMPANY_ADMIN'
                 );
 
                 if (isAdmin) {
-                    document.getElementById('usersMenuItem').style.display = '';
-                    document.getElementById('companiesMenuItem').style.display = '';
+                    document.getElementById('usersMenuParent').style.display = '';
+                    document.getElementById('companiesMenuParent').style.display = '';
                 }
 
-                // Actualizar nombre de usuario en navbar
-                const userLink = document.querySelector('.navbar-nav .nav-link');
-                if (userLink) {
-                    userLink.innerHTML = `<i class="fas fa-user"></i> ${user.displayName}`;
-                }
+                // Actualizar nombre en menú de usuario
+                document.getElementById('userMenu').innerHTML = `
+                    <div class="dropdown-header">${user.displayName}</div>
+                    <small class="dropdown-item text-muted">${user.email}</small>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ route('profile.index') }}">
+                        <i class="fas fa-user mr-2"></i> Perfil
+                    </a>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-cog mr-2"></i> Configuración
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="logout()">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                    </a>
+                `;
 
             } catch (error) {
                 console.error('Error cargando datos de usuario:', error);
-                // Si hay error, dejar al usuario ver el contenido
-                // pero sin mostrar items de admin
             }
         }
 
-        // Cargar menú cuando el DOM esté listo
+        async function logout() {
+            const result = await Swal.fire({
+                title: '¿Cerrar sesión?',
+                text: '¿Está seguro que desea cerrar sesión?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, cerrar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const token = localStorage.getItem('accessToken');
+                    if (token) {
+                        await apiRequest('/auth/logout', 'POST');
+                    }
+                } catch (e) {
+                    console.error('Error al cerrar sesión:', e);
+                }
+
+                localStorage.removeItem('accessToken');
+                sessionStorage.removeItem('accessToken');
+                window.location.href = '{{ route('login') }}';
+            }
+        }
+
+        // Inicializar
         document.addEventListener('DOMContentLoaded', loadUserMenuItems);
     </script>
 
     @yield('scripts')
 </body>
+
 </html>

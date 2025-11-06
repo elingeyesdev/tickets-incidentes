@@ -3,124 +3,167 @@
 @section('title', 'Registrarse')
 
 @section('content')
-<div class="card">
-    <div class="card-header text-center">
-        <h4 class="mb-0">
-            <i class="fas fa-user-plus me-2"></i> Crear Cuenta
-        </h4>
-    </div>
-
-    <div class="card-body p-4">
-        <div id="alerts"></div>
-
-        <form id="registerForm">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="firstName" class="form-label">Nombre</label>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="firstName"
-                        name="firstName"
-                        placeholder="Juan"
-                        required
-                        minlength="2"
-                    >
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="lastName" class="form-label">Apellido</label>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="lastName"
-                        name="lastName"
-                        placeholder="Pérez"
-                        required
-                        minlength="2"
-                    >
-                </div>
+<div class="register-page">
+    <div class="register-box">
+        <div class="card card-outline card-success">
+            <div class="card-header text-center">
+                <a href="{{ route('home') }}" class="h1"><b>Help</b>Desk</a>
             </div>
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    name="email"
-                    placeholder="tu@email.com"
-                    required
-                >
-                <small class="text-muted d-block mt-1">Usarás este email para iniciar sesión</small>
+            <div class="card-body">
+                <p class="login-box-msg">Crear nueva cuenta</p>
+
+                <div id="alerts"></div>
+
+                <form id="registerForm">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <div class="input-group mb-3">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="firstName"
+                                        name="firstName"
+                                        placeholder="Nombre"
+                                        required
+                                        minlength="2"
+                                    >
+                                    <div class="input-group-append">
+                                        <div class="input-group-text">
+                                            <span class="fas fa-user"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <div class="input-group mb-3">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="lastName"
+                                        name="lastName"
+                                        placeholder="Apellido"
+                                        required
+                                        minlength="2"
+                                    >
+                                    <div class="input-group-append">
+                                        <div class="input-group-text">
+                                            <span class="fas fa-user"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-group mb-3">
+                            <input
+                                type="email"
+                                class="form-control"
+                                id="email"
+                                name="email"
+                                placeholder="Email"
+                                required
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-envelope"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted">Usarás este email para iniciar sesión</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-group mb-3">
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="password"
+                                name="password"
+                                placeholder="Contraseña"
+                                required
+                                minlength="8"
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted">Mínimo 8 caracteres, debe contener letras, números y símbolos</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-group mb-3">
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="passwordConfirmation"
+                                name="passwordConfirmation"
+                                placeholder="Confirmar contraseña"
+                                required
+                                minlength="8"
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="icheck-primary">
+                            <input
+                                type="checkbox"
+                                id="acceptsTerms"
+                                name="acceptsTerms"
+                                required
+                            >
+                            <label for="acceptsTerms">
+                                Acepto los <a href="#" target="_blank">términos de servicio</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="icheck-primary">
+                            <input
+                                type="checkbox"
+                                id="acceptsPrivacyPolicy"
+                                name="acceptsPrivacyPolicy"
+                                required
+                            >
+                            <label for="acceptsPrivacyPolicy">
+                                Acepto la <a href="#" target="_blank">política de privacidad</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fas fa-user-plus mr-2"></i> Crear Cuenta
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr>
+
+                <p class="mb-0 text-center">
+                    <a href="{{ route('login') }}" class="text-center">Ya tengo cuenta</a>
+                </p>
             </div>
-
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input
-                    type="password"
-                    class="form-control"
-                    id="password"
-                    name="password"
-                    placeholder="••••••••"
-                    required
-                    minlength="8"
-                >
-                <small class="text-muted d-block mt-1">Mínimo 8 caracteres, debe contener letras, números y símbolos</small>
-            </div>
-
-            <div class="mb-3">
-                <label for="passwordConfirmation" class="form-label">Confirmar Contraseña</label>
-                <input
-                    type="password"
-                    class="form-control"
-                    id="passwordConfirmation"
-                    name="passwordConfirmation"
-                    placeholder="••••••••"
-                    required
-                    minlength="8"
-                >
-            </div>
-
-            <div class="mb-3 form-check">
-                <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="acceptsTerms"
-                    name="acceptsTerms"
-                    required
-                >
-                <label class="form-check-label" for="acceptsTerms">
-                    Acepto los <a href="#" target="_blank">términos de servicio</a>
-                </label>
-            </div>
-
-            <div class="mb-3 form-check">
-                <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="acceptsPrivacyPolicy"
-                    name="acceptsPrivacyPolicy"
-                    required
-                >
-                <label class="form-check-label" for="acceptsPrivacyPolicy">
-                    Acepto la <a href="#" target="_blank">política de privacidad</a>
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-                <i class="fas fa-user-plus me-2"></i> Crear Cuenta
-            </button>
-        </form>
-
-        <hr class="my-4">
-
-        <div class="text-center text-muted">
-            <p class="mb-0">¿Ya tienes cuenta? <a href="{{ route('login') }}">Inicia sesión aquí</a></p>
         </div>
     </div>
 </div>
-
 @endsection
 
 @section('scripts')

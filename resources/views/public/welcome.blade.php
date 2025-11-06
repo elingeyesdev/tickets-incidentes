@@ -4,110 +4,198 @@
 
 @section('styles')
 <style>
-    .welcome-section {
+    .welcome-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem 1rem;
+    }
+    .welcome-container {
+        width: 100%;
+        max-width: 1000px;
         text-align: center;
-        padding: 3rem 0;
     }
-    .welcome-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: white;
-    }
-    .welcome-subtitle {
-        font-size: 1.2rem;
-        color: rgba(255, 255, 255, 0.9);
+    .welcome-logo {
         margin-bottom: 2rem;
     }
-    .features {
+    .welcome-logo h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .welcome-logo i {
+        font-size: 3rem;
+        margin-right: 1rem;
+        vertical-align: middle;
+    }
+    .welcome-subtitle {
+        font-size: 1.3rem;
+        color: rgba(255, 255, 255, 0.95);
+        margin-bottom: 3rem;
+        font-weight: 400;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .features-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 2rem;
-        margin-top: 3rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
     }
     .feature-card {
-        background: white;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .feature-card .card-body {
+        padding: 2rem 1.5rem;
     }
     .feature-icon {
-        font-size: 2.5rem;
-        color: #667eea;
+        color: #007bff;
         margin-bottom: 1rem;
     }
+    .feature-card h5 {
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 0.75rem;
+    }
+    .feature-card p {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 0;
+        line-height: 1.5;
+    }
     .auth-buttons {
-        margin-top: 2rem;
         display: flex;
         gap: 1rem;
         justify-content: center;
+        flex-wrap: wrap;
     }
     .auth-buttons .btn {
-        padding: 0.75rem 2rem;
+        padding: 0.75rem 2.5rem;
+        font-size: 1.1rem;
         font-weight: 600;
-        border-radius: 8px;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
-    .btn-light {
+    .btn-primary {
         background-color: white;
-        color: #667eea;
-        border: none;
+        border-color: white;
+        color: #007bff;
     }
-    .btn-light:hover {
-        background-color: rgba(255, 255, 255, 0.9);
+    .btn-primary:hover {
+        background-color: #f8f9fa;
+        border-color: #f8f9fa;
+        color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     }
     .btn-outline-light {
         color: white;
         border: 2px solid white;
+        background-color: transparent;
     }
     .btn-outline-light:hover {
         background-color: white;
-        color: #667eea;
+        border-color: white;
+        color: #007bff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    @media (max-width: 768px) {
+        .welcome-logo h1 {
+            font-size: 2.5rem;
+        }
+        .welcome-logo i {
+            font-size: 2.2rem;
+        }
+        .welcome-subtitle {
+            font-size: 1.1rem;
+        }
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .auth-buttons .btn {
+            padding: 0.65rem 2rem;
+            font-size: 1rem;
+        }
     }
 </style>
 @endsection
 
 @section('content')
-<div style="width: 100%; max-width: 800px;">
-    <div class="welcome-section">
-        <h1 class="welcome-title">
-            <i class="fas fa-headset me-3"></i> Helpdesk
-        </h1>
-        <p class="welcome-subtitle">
-            Sistema integral de gestión de tickets y soporte técnico
-        </p>
+<div class="welcome-page">
+    <div class="welcome-container">
+        <!-- Logo y Título Principal -->
+        <div class="welcome-logo">
+            <h1>
+                <i class="fas fa-headset"></i>Helpdesk
+            </h1>
+            <p class="welcome-subtitle">
+                Sistema integral de gestión de tickets y soporte técnico profesional
+            </p>
+        </div>
 
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-ticket-alt"></i>
+        <!-- Tarjetas de Características -->
+        <div class="features-grid">
+            <!-- Feature 1: Gestión de Tickets -->
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="fas fa-ticket-alt fa-3x"></i>
+                    </div>
+                    <h5>Gestión de Tickets</h5>
+                    <p>Crea, asigna y resuelve tickets de soporte de manera eficiente y organizada</p>
                 </div>
-                <h5>Gestión de Tickets</h5>
-                <p class="text-muted">Crea y gestiona tickets de soporte de forma eficiente</p>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-users"></i>
+            <!-- Feature 2: Equipo Colaborativo -->
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                    <h5>Equipo Colaborativo</h5>
+                    <p>Trabaja en equipo con asignaciones inteligentes y comunicación centralizada</p>
                 </div>
-                <h5>Equipo Colaborativo</h5>
-                <p class="text-muted">Trabaja con tu equipo en tiempo real</p>
             </div>
 
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-bar"></i>
+            <!-- Feature 3: Reportes Detallados -->
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line fa-3x"></i>
+                    </div>
+                    <h5>Reportes Detallados</h5>
+                    <p>Analiza métricas y tendencias para mejorar la calidad del servicio</p>
                 </div>
-                <h5>Reportes Detallados</h5>
-                <p class="text-muted">Analiza el desempeño de tu equipo</p>
+            </div>
+
+            <!-- Feature 4: Soporte 24/7 -->
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock fa-3x"></i>
+                    </div>
+                    <h5>Soporte 24/7</h5>
+                    <p>Sistema disponible en todo momento para atender necesidades urgentes</p>
+                </div>
             </div>
         </div>
 
+        <!-- Botones de Autenticación -->
         <div class="auth-buttons">
-            <a href="{{ route('login') }}" class="btn btn-light">
-                <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
+            <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-sign-in-alt mr-2"></i>Iniciar Sesión
             </a>
-            <a href="{{ route('register') }}" class="btn btn-outline-light">
-                <i class="fas fa-user-plus me-2"></i> Registrarse
+            <a href="{{ route('register') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-user-plus mr-2"></i>Registrarse
             </a>
         </div>
     </div>

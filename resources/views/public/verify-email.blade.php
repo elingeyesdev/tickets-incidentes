@@ -3,54 +3,62 @@
 @section('title', 'Verificar Email')
 
 @section('content')
-<div class="card">
-    <div class="card-header text-center">
-        <h4 class="mb-0">
-            <i class="fas fa-envelope me-2"></i> Verificar tu Email
-        </h4>
-    </div>
-
-    <div class="card-body p-4">
-        <div id="alerts"></div>
-
-        <div class="text-center mb-4">
-            <i class="fas fa-envelope-circle-check text-success" style="font-size: 3rem;"></i>
-            <p class="text-muted mt-3">
-                Hemos enviado un enlace de verificación a tu email. Por favor, haz clic en el enlace para completar tu registro.
-            </p>
-        </div>
-
-        <div class="mb-4">
-            <label class="form-label">Código de Verificación (opcional)</label>
-            <div class="input-group">
-                <input
-                    type="text"
-                    class="form-control form-control-lg"
-                    id="verificationCode"
-                    placeholder="000000"
-                    maxlength="6"
-                    inputmode="numeric"
-                >
-                <button class="btn btn-primary" type="button" onclick="verifyCode()">
-                    <i class="fas fa-check me-2"></i> Verificar
-                </button>
+<div class="login-page">
+    <div class="login-box">
+        <div class="card card-outline card-success">
+            <div class="card-header text-center">
+                <div class="mb-3">
+                    <i class="fas fa-envelope-circle-check fa-3x text-success"></i>
+                </div>
+                <h3 class="mb-0">
+                    <b>Verifica tu Email</b>
+                </h3>
             </div>
-            <small class="text-muted d-block mt-2">Si recibiste un código en tu email, puedes ingresarlo aquí</small>
-        </div>
 
-        <hr class="my-4">
+            <div class="card-body">
+                <div id="alerts"></div>
 
-        <div class="text-center">
-            <p class="text-muted mb-2">¿No recibiste el email?</p>
-            <button class="btn btn-outline-primary btn-sm" onclick="resendEmail()">
-                <i class="fas fa-redo me-2"></i> Reenviar Email
-            </button>
-        </div>
+                <p class="text-muted text-center mb-4">
+                    Hemos enviado un enlace de verificación a tu correo electrónico. Por favor, revisa tu bandeja de entrada e ingresa el token a continuación.
+                </p>
 
-        <div class="text-center mt-4">
-            <small class="text-muted">
-                <a href="#" onclick="logout()">Cambiar cuenta</a>
-            </small>
+                <!-- Input de token con botón -->
+                <div class="mb-4">
+                    <label class="form-label">Token de Verificación</label>
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            class="form-control form-control-lg"
+                            id="verificationCode"
+                            placeholder="Pega tu token de verificación aquí"
+                        >
+                        <button class="btn btn-success" type="button" onclick="verifyCode()">
+                            <i class="fas fa-check me-2"></i> Verificar
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Copia el token largo que recibiste por email
+                    </small>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Botón reenviar -->
+                <div class="text-center mb-3">
+                    <p class="text-muted mb-2">¿No recibiste el email?</p>
+                    <button class="btn btn-outline-success btn-sm" onclick="resendEmail()">
+                        <i class="fas fa-paper-plane me-2"></i> Reenviar Email
+                    </button>
+                </div>
+
+                <!-- Link cambiar cuenta -->
+                <div class="text-center">
+                    <a href="#" class="text-muted" onclick="logout()">
+                        <i class="fas fa-user-slash me-1"></i> Cambiar cuenta
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -62,26 +70,21 @@
 const alertsDiv = document.getElementById('alerts');
 
 async function verifyCode() {
-    const code = document.getElementById('verificationCode').value.trim();
+    const token = document.getElementById('verificationCode').value.trim();
 
-    if (!code) {
-        showErrorAlert('Por favor ingresa el código de verificación');
-        return;
-    }
-
-    if (!/^\d{6}$/.test(code)) {
-        showErrorAlert('El código debe ser 6 dígitos');
+    if (!token) {
+        showErrorAlert('Por favor ingresa el token de verificación');
         return;
     }
 
     try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
             throw new Error('No hay sesión activa');
         }
 
         const response = await apiRequest('/auth/email/verify', 'POST', {
-            code: code
+            token: token
         });
 
         showSuccessAlert('¡Email verificado exitosamente! Redirigiendo...');
@@ -109,7 +112,7 @@ async function resendEmail() {
 
         await apiRequest('/auth/email/verify/resend', 'POST');
 
-        showSuccessAlert('Email reenviado correctamente. Revisa tu bandeja de entrada.');
+        showSuccessAlert('Email de verificación reenviado. Revisa tu bandeja de entrada.');
 
         setTimeout(() => {
             btn.disabled = false;

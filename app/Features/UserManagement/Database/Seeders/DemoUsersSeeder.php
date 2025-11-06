@@ -81,7 +81,7 @@ class DemoUsersSeeder extends Seeder
 
         UserRole::create([
             'user_id' => $user->id,
-            'role_code' => 'platform_admin',
+            'role_code' => 'PLATFORM_ADMIN',
             'company_id' => null,
             'is_active' => true,
         ]);
@@ -119,7 +119,7 @@ class DemoUsersSeeder extends Seeder
         // Asignar rol USER (global)
         UserRole::create([
             'user_id' => $user->id,
-            'role_code' => 'user',
+            'role_code' => 'USER',
             'company_id' => null,
             'is_active' => true,
         ]);
@@ -128,7 +128,7 @@ class DemoUsersSeeder extends Seeder
         // TODO: Cuando tengamos CompanyManagement, asignar a empresa real
         UserRole::create([
             'user_id' => $user->id,
-            'role_code' => 'agent',
+            'role_code' => 'AGENT',
             'company_id' => null, // TODO: Asignar empresa cuando exista CompanyManagement
             'is_active' => true,
         ]);
@@ -165,7 +165,7 @@ class DemoUsersSeeder extends Seeder
 
         UserRole::create([
             'user_id' => $user->id,
-            'role_code' => 'user',
+            'role_code' => 'USER',
             'company_id' => null,
             'is_active' => true,
         ]);
@@ -185,7 +185,7 @@ class DemoUsersSeeder extends Seeder
             ->each(function (User $user) {
                 UserRole::create([
                     'user_id' => $user->id,
-                    'role_code' => 'user',
+                    'role_code' => 'USER',
                     'company_id' => null,
                     'is_active' => true,
                 ]);

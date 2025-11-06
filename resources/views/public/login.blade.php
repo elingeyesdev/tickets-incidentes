@@ -3,67 +3,99 @@
 @section('title', 'Iniciar Sesión')
 
 @section('content')
-<div class="card">
-    <div class="card-header text-center">
-        <h4 class="mb-0">
-            <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
-        </h4>
-    </div>
-
-    <div class="card-body p-4">
-        <div id="alerts"></div>
-
-        <form id="loginForm">
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input
-                    type="email"
-                    class="form-control"
-                    id="email"
-                    name="email"
-                    placeholder="tu@email.com"
-                    required
-                >
-                <small class="text-muted d-block mt-1">Usa el correo registrado en tu cuenta</small>
+<div class="login-page">
+    <div class="login-box">
+        <div class="card card-outline card-primary">
+            <!-- Logo Header -->
+            <div class="card-header text-center">
+                <a href="{{ url('/') }}" class="h1"><b>Help</b>Desk</a>
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input
-                    type="password"
-                    class="form-control"
-                    id="password"
-                    name="password"
-                    placeholder="••••••••"
-                    required
-                >
+            <!-- Card Body -->
+            <div class="card-body">
+                <p class="login-box-msg">Inicia sesión para comenzar tu sesión</p>
+
+                <!-- Alerts Container -->
+                <div id="alerts"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <!-- Email Input Group -->
+                    <div class="form-group">
+                        <div class="input-group mb-3">
+                            <input
+                                type="email"
+                                class="form-control"
+                                id="email"
+                                name="email"
+                                placeholder="Email"
+                                required
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-envelope"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted small">Usa el correo registrado en tu cuenta</small>
+                    </div>
+
+                    <!-- Password Input Group -->
+                    <div class="form-group">
+                        <div class="input-group mb-3">
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="password"
+                                name="password"
+                                placeholder="Contraseña"
+                                required
+                            >
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me Checkbox -->
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="icheck-primary">
+                                <input
+                                    type="checkbox"
+                                    id="rememberMe"
+                                    name="rememberMe"
+                                >
+                                <label for="rememberMe">
+                                    Recuérdame
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                Ingresar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Divider -->
+                <p class="mb-1 mt-3">
+                    <a href="{{ route('password.request') }}">Olvidé mi contraseña</a>
+                </p>
+                <p class="mb-0">
+                    <a href="{{ route('register') }}" class="text-center">Registrar una nueva cuenta</a>
+                </p>
             </div>
-
-            <div class="mb-3 form-check">
-                <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="rememberMe"
-                    name="rememberMe"
-                >
-                <label class="form-check-label" for="rememberMe">
-                    Recuérdame
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-                <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
-            </button>
-        </form>
-
-        <hr class="my-4">
-
-        <div class="text-center text-muted">
-            <p class="mb-0">¿No tienes cuenta? <a href="{{ route('register') }}">Regístrate aquí</a></p>
-            <p class="mb-0 mt-2"><a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a></p>
+            <!-- /.card-body -->
         </div>
+        <!-- /.card -->
     </div>
+    <!-- /.login-box -->
 </div>
+<!-- /.login-page -->
 
 @endsection
 
