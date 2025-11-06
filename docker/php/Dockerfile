@@ -62,20 +62,3 @@ EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm", "-F"]
 
-# =============================================================================
-# VITE STAGE
-# =============================================================================
-FROM base AS vite
-
-COPY docker/php/entrypoint-vite.sh /usr/local/bin/entrypoint-vite.sh
-
-RUN chmod +x /usr/local/bin/entrypoint-vite.sh
-
-WORKDIR /var/www
-
-USER helpdesk
-
-EXPOSE 5173
-
-ENTRYPOINT ["/usr/local/bin/entrypoint-vite.sh"]
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

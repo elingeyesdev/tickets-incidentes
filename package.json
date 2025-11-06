@@ -1,9 +1,4 @@
 {
-    "$schema": "https://json.schemastore.org/package.json",
-    "private": true,
-    "scripts": {
-        "dev": "echo 'Using Laravel Blade - no frontend build needed'"
-    },
-    "devDependencies": {},
-    "dependencies": {}
+  "private": true,
+  "description": "Laravel Helpdesk - Using Blade Templating (No Frontend Build Required)"
 }
