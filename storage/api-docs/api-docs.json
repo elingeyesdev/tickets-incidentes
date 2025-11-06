@@ -4683,7 +4683,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/{id}/publish": {
@@ -4820,11 +4825,19 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/{id}/schedule": {
             "post": {
+                "tags": [
+                    "Announcement Actions"
+                ],
                 "summary": "Schedule announcement for future publication",
                 "description": "Schedule an announcement for future publication. Changes status to SCHEDULED and enqueues PublishAnnouncementJob with calculated delay. The scheduled_for datetime must be 5 minutes to 1 year in the future. Can only schedule announcements in DRAFT status. If rescheduling a previously SCHEDULED announcement, the old job is cancelled and new job is enqueued. Automatic job cancellation occurs if announcement is published before scheduled time.",
                 "operationId": "schedule_announcement",
@@ -4972,7 +4985,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/{id}/unschedule": {
@@ -5109,7 +5127,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/{id}/archive": {
@@ -5242,7 +5265,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/{id}/restore": {
@@ -5375,7 +5403,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/announcements": {
@@ -5558,7 +5591,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/announcements/{announcement}": {
@@ -5669,7 +5707,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -5822,7 +5865,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -5917,7 +5965,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/announcements/schemas": {
@@ -6515,7 +6568,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/help-center/articles/{id}": {
@@ -6957,7 +7015,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
@@ -7085,7 +7148,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/help-center/articles/{id}/publish": {
@@ -7286,7 +7354,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/help-center/articles/{id}/unpublish": {
@@ -7490,7 +7563,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/help-center/categories": {
@@ -7888,7 +7966,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/v1/announcements/incidents/{id}/resolve": {
@@ -8168,7 +8251,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/maintenance": {
@@ -8343,7 +8431,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/maintenance/{announcement}/start": {
@@ -8459,7 +8552,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/maintenance/{announcement}/complete": {
@@ -8581,7 +8679,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/announcements/news": {
@@ -8821,7 +8924,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/users/me/profile": {

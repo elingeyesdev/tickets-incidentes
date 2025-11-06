@@ -65,6 +65,9 @@ class NewsAnnouncementController extends Controller
             )
         ),
         tags: ['News Announcements'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         responses: [
             new OA\Response(
                 response: 201,

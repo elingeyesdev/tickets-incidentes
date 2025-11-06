@@ -115,6 +115,9 @@ class AnnouncementController extends Controller
                 schema: new OA\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1)
             ),
         ),
+        security: [
+            ['bearerAuth' => []],
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -261,6 +264,9 @@ class AnnouncementController extends Controller
         description: 'Returns a single announcement by ID with role-based visibility. PLATFORM_ADMIN can view any announcement. COMPANY_ADMIN can view any announcement from their company. AGENT/USER can only view PUBLISHED announcements from followed companies.',
         summary: 'Get announcement by ID',
         tags: ['Announcements'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',
@@ -410,6 +416,9 @@ class AnnouncementController extends Controller
         operationId: 'update_announcement',
         description: 'Update an existing announcement with partial data. Only DRAFT and SCHEDULED announcements can be edited. Published ALERT announcements (via special exception) can only update ended_at field. Supports type-specific metadata fields: MAINTENANCE (urgency, scheduled_start, scheduled_end, is_emergency, affected_services), INCIDENT (resolution_content, affected_services), NEWS (news_type, target_audience, summary, call_to_action), ALERT (urgency, alert_type, message, action_required, action_description, started_at, ended_at, affected_services).',
         summary: 'Update announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Announcement update data with type-specific metadata fields (all fields optional)',
             required: true,
@@ -682,6 +691,9 @@ class AnnouncementController extends Controller
         description: 'Delete an announcement permanently. Only DRAFT or ARCHIVED announcements can be deleted. Published and SCHEDULED announcements cannot be deleted.',
         summary: 'Delete announcement',
         tags: ['Announcements'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',

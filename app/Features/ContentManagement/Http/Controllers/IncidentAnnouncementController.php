@@ -58,6 +58,9 @@ class IncidentAnnouncementController extends Controller
             )
         ),
         tags: ['Incident Announcements'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         responses: [
             new OA\Response(
                 response: 201,
@@ -233,6 +236,9 @@ class IncidentAnnouncementController extends Controller
         operationId: 'resolve_incident_announcement',
         description: 'Mark an incident announcement as resolved with resolution details and timestamps. Only COMPANY_ADMIN users can resolve incidents from their company. Can only be called once per incident - subsequent calls will return 400 Bad Request if already resolved. Updates the metadata with is_resolved=true, resolution_content, and resolved_at timestamp. Can optionally update the title and ended_at timestamp. Announcement type must be INCIDENT.',
         summary: 'Resolve an incident announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Incident resolution data',
             required: true,

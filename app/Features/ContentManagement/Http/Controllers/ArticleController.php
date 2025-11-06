@@ -357,6 +357,10 @@ class ArticleController extends Controller
         operationId: 'create_article',
         description: 'Create a new help center article in DRAFT status. Only COMPANY_ADMIN users can create articles. Company ID is automatically inferred from JWT token. Author ID is set to the authenticated user. Articles always start in DRAFT status regardless of the action parameter. Category must be one of the 4 global categories.',
         summary: 'Create a new article',
+        tags: ['Help Center: Articles'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Article data to create',
             required: true,
@@ -371,7 +375,6 @@ class ArticleController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Help Center: Articles'],
         responses: [
             new OA\Response(
                 response: 201,
@@ -476,6 +479,9 @@ class ArticleController extends Controller
         operationId: 'update_article',
         description: 'Update an existing help center article. Only COMPANY_ADMIN can update articles from their company. Articles can be updated in any status (DRAFT or PUBLISHED). For PUBLISHED articles, published_at timestamp is preserved. Views count is always preserved. Title must be unique per company. Category can be changed to any valid global category. Partial updates are supported.',
         summary: 'Update an article',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Article fields to update (all fields optional for partial updates)',
             required: true,
@@ -621,6 +627,9 @@ class ArticleController extends Controller
         operationId: 'publish_article',
         description: 'Publish a help center article from DRAFT to PUBLISHED status. Only COMPANY_ADMIN can publish articles from their company. Article must be in DRAFT status to publish. Sets published_at to current timestamp and fires ArticlePublished event. Published articles become visible to END_USERs who follow the company.',
         summary: 'Publish an article',
+        security: [
+            ['bearerAuth' => []],
+        ],
         tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
@@ -757,6 +766,9 @@ class ArticleController extends Controller
         operationId: 'unpublish_article',
         description: 'Unpublish a help center article from PUBLISHED back to DRAFT status. Only COMPANY_ADMIN can unpublish articles from their company. Article must be in PUBLISHED status to unpublish. Sets published_at to null. Views count is preserved. Unpublished articles become invisible to END_USERs.',
         summary: 'Unpublish an article',
+        security: [
+            ['bearerAuth' => []],
+        ],
         tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
@@ -893,6 +905,9 @@ class ArticleController extends Controller
         operationId: 'delete_article',
         description: 'Permanently delete a help center article using soft delete. Only COMPANY_ADMIN can delete articles from their company. Articles must be in DRAFT status to be deleted. PUBLISHED articles cannot be deleted and will return 403 Forbidden. DELETE is idempotent - subsequent calls to a deleted article return 404. Deleted articles are soft-deleted and can be recovered from database if needed.',
         summary: 'Delete an article',
+        security: [
+            ['bearerAuth' => []],
+        ],
         tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(

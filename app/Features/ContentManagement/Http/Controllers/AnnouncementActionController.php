@@ -41,6 +41,9 @@ class AnnouncementActionController
         description: 'Publish an announcement immediately, changing its status to PUBLISHED and setting published_at to current timestamp. Can publish announcements in DRAFT or SCHEDULED status. Cannot publish announcements that are already PUBLISHED or ARCHIVED. User must be the COMPANY_ADMIN who owns the announcement. If announcement was previously SCHEDULED, any queued publication jobs are automatically cancelled by the service.',
         summary: 'Publish announcement immediately',
         tags: ['Announcement Actions'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -164,6 +167,10 @@ class AnnouncementActionController
         operationId: 'schedule_announcement',
         description: 'Schedule an announcement for future publication. Changes status to SCHEDULED and enqueues PublishAnnouncementJob with calculated delay. The scheduled_for datetime must be 5 minutes to 1 year in the future. Can only schedule announcements in DRAFT status. If rescheduling a previously SCHEDULED announcement, the old job is cancelled and new job is enqueued. Automatic job cancellation occurs if announcement is published before scheduled time.',
         summary: 'Schedule announcement for future publication',
+        tags: ['Announcement Actions'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Schedule data with future publication datetime',
             required: true,
@@ -306,6 +313,9 @@ class AnnouncementActionController
         description: 'Unschedule a SCHEDULED announcement, returning it to DRAFT status. Removes scheduled_for from metadata and cancels any queued PublishAnnouncementJob in Redis. Cannot unschedule announcements that are not SCHEDULED (DRAFT, PUBLISHED, ARCHIVED return 400 errors). Also prevents unscheduling of PUBLISHED announcements (separate validation).',
         summary: 'Unschedule announcement',
         tags: ['Announcement Actions'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -459,6 +469,9 @@ class AnnouncementActionController
         description: 'Archive a PUBLISHED announcement, changing its status to ARCHIVED. Only PUBLISHED announcements can be archived (service validation). Preserves published_at timestamp. Archived announcements can be restored to DRAFT status later. Cannot archive DRAFT or SCHEDULED announcements.',
         summary: 'Archive published announcement',
         tags: ['Announcement Actions'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -583,6 +596,9 @@ class AnnouncementActionController
         description: 'Restore an ARCHIVED announcement to DRAFT status, clearing published_at timestamp. Only ARCHIVED announcements can be restored (service validation). Preserves original content and metadata (urgency, scheduled dates, etc.). Restored announcements become editable again and can be re-published. Cannot restore DRAFT or PUBLISHED announcements.',
         summary: 'Restore archived announcement to draft',
         tags: ['Announcement Actions'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'id',

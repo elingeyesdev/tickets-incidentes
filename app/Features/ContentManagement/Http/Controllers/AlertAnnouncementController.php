@@ -60,6 +60,9 @@ class AlertAnnouncementController extends Controller
             )
         ),
         tags: ['Alert Announcements'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         responses: [
             new OA\Response(
                 response: 201,
