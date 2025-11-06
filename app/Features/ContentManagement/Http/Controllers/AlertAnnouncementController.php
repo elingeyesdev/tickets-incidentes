@@ -14,6 +14,7 @@ use App\Shared\Helpers\JWTHelper;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * Alert Announcement Controller
@@ -24,13 +25,115 @@ use Illuminate\Routing\Controller;
  */
 class AlertAnnouncementController extends Controller
 {
+    #[OA\Post(
+        path: '/api/announcements/alerts',
+        operationId: 'create_alert_announcement',
+        description: 'Create a new alert announcement for urgent notifications. Only COMPANY_ADMIN role can create alerts. Company ID is automatically inferred from JWT token. Alerts can be created as DRAFT (default), published immediately (action=publish), or scheduled for future publication (action=schedule). Alert-specific metadata includes urgency (HIGH or CRITICAL only), alert_type (security, system, service, compliance), message, action_required flag, optional action_description (required if action_required=true), started_at datetime, optional ended_at datetime, and optional affected_services array. If action=schedule, a PublishAnnouncementJob is dispatched with calculated delay.',
+        summary: 'Create alert announcement',
+        requestBody: new OA\RequestBody(
+            description: 'Alert announcement creation data with security-critical metadata',
+            required: true,
+            content: new OA\JsonContent(
+                required: ['title', 'content', 'metadata'],
+                properties: [
+                    new OA\Property(property: 'title', description: 'Alert title (5-200 characters)', type: 'string', example: 'Security Breach Detected'),
+                    new OA\Property(property: 'content', description: 'Alert content/description (minimum 10 characters)', type: 'string', example: 'We have detected unauthorized access attempts. Please change your password immediately.'),
+                    new OA\Property(
+                        property: 'metadata',
+                        description: 'Alert-specific metadata object with security and operational details',
+                        properties: [
+                            new OA\Property(property: 'urgency', description: 'Urgency level (HIGH or CRITICAL only for alerts)', type: 'string', enum: ['HIGH', 'CRITICAL'], example: 'CRITICAL'),
+                            new OA\Property(property: 'alert_type', description: 'Type of alert', type: 'string', enum: ['security', 'system', 'service', 'compliance'], example: 'security'),
+                            new OA\Property(property: 'message', description: 'Alert message (10-500 characters)', type: 'string', example: 'Immediate action required: Change your password now'),
+                            new OA\Property(property: 'action_required', description: 'Whether action is required from users (boolean, if true action_description becomes required)', type: 'boolean', example: true),
+                            new OA\Property(property: 'action_description', description: 'Description of required action (required if action_required=true, max 300 chars)', type: 'string', example: 'Navigate to Settings > Security and update your password', nullable: true),
+                            new OA\Property(property: 'started_at', description: 'Alert start datetime (ISO8601, required)', type: 'string', format: 'date-time', example: '2025-11-06T10:00:00Z'),
+                            new OA\Property(property: 'ended_at', description: 'Alert end datetime (ISO8601, optional, must be after started_at)', type: 'string', format: 'date-time', example: '2025-11-06T18:00:00Z', nullable: true),
+                            new OA\Property(property: 'affected_services', description: 'Array of affected service names (optional)', type: 'array', items: new OA\Items(type: 'string'), example: ['authentication', 'user_management'], nullable: true),
+                        ],
+                        type: 'object'
+                    ),
+                    new OA\Property(property: 'action', description: 'Action to perform: draft (default), publish (immediately), or schedule (requires scheduled_for)', type: 'string', enum: ['draft', 'publish', 'schedule'], example: 'publish', nullable: true),
+                    new OA\Property(property: 'scheduled_for', description: 'ISO8601 datetime for scheduling publication (required if action=schedule, must be at least 5 minutes in future, max 1 year)', type: 'string', format: 'date-time', example: '2025-11-20T10:00:00Z', nullable: true),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Announcements - Alerts'],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Alert announcement created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', description: 'Success indicator', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', description: 'Success message indicating the action performed', type: 'string', enum: ['Alert created as draft', 'Alert published successfully', 'Alert scheduled for {scheduled_for}']),
+                        new OA\Property(property: 'data', description: 'Created alert announcement resource with type=ALERT, status (DRAFT/PUBLISHED/SCHEDULED), full metadata, and timestamps', type: 'object'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad request - validation or logic errors',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', description: 'Error message', type: 'string', example: 'The title must be at least 5 characters.'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', description: 'Error message', type: 'string', example: 'Unauthenticated'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden - user lacks COMPANY_ADMIN role or valid company in JWT',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', description: 'Error message', type: 'string', example: 'Insufficient permissions'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Unprocessable Entity - validation errors in request data',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', description: 'Validation error message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(property: 'errors', description: 'Object with field names as keys and array of error messages as values', type: 'object', example: ['title' => ['The title must be at least 5 characters.'], 'metadata.urgency' => ['The metadata.urgency must be HIGH or CRITICAL.']]),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Internal Server Error - unexpected server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', description: 'Error message', type: 'string', example: 'An unexpected error occurred'),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * Store a new alert announcement
      *
      * POST /api/announcements/alerts
      *
      * Creates an alert announcement with optional immediate publishing or scheduling.
-     * Company ID is inferred from authenticated user's JWT token.
+     * Company ID is inferred from an authenticated user's JWT token.
+     * Dispatches PublishAnnouncementJob if action=schedule.
      *
      * @param CreateAlertRequest $request Validated request data
      * @return JsonResponse 201 Created with announcement data
@@ -40,7 +143,7 @@ class AlertAnnouncementController extends Controller
         $validated = $request->validated();
 
         // Get company_id from JWT token using JWTHelper
-        // JWTHelper extracts company_id for COMPANY_ADMIN role from JWT payload
+        //  extracts company_id for the COMPANY_ADMIN role from JWT payload
         try {
             $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
 
@@ -113,7 +216,7 @@ class AlertAnnouncementController extends Controller
         // Load relationships for resource
         $announcement->load(['company', 'author.profile']);
 
-        // Determine success message
+        // Determine a success message
         $message = match ($action) {
             'publish' => 'Alert published successfully',
             'schedule' => "Alert scheduled for {$validated['scheduled_for']}",

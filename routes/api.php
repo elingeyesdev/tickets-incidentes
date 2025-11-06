@@ -251,7 +251,7 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
 
     // ========== MAINTENANCE ANNOUNCEMENTS ==========
 
-    // Create maintenance announcement (draft, publish or schedule in one request)
+    // Create a maintenance announcement (draft, publish or schedule in one request)
     Route::post('/maintenance', [MaintenanceAnnouncementController::class, 'store'])
         ->name('announcements.maintenance.store');
 
@@ -398,7 +398,7 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('announcements'
 
 // ========== HELP CENTER ARTICLES - Management Endpoints (COMPANY_ADMIN Only) ==========
 Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
-    // Create help center article (always as DRAFT)
+    // Create a help center a rticle (always as DRAFT)
     Route::post('/help-center/articles', [ArticleController::class, 'store'])
         ->name('articles.store');
 

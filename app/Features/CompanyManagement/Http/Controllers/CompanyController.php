@@ -39,28 +39,28 @@ class CompanyController extends Controller
     #[OA\Get(
         path: '/api/companies/minimal',
         operationId: 'list_companies_minimal',
-        summary: 'List minimal companies for selectors',
         description: 'Returns a paginated list of active companies with minimal information (id, code, name, logo). Public endpoint without authentication required.',
+        summary: 'List minimal companies for selectors',
         tags: ['Companies'],
         parameters: [
             new OA\Parameter(
                 name: 'search',
-                in: 'query',
                 description: 'Filter companies by name (case-insensitive search)',
+                in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'string')
             ),
             new OA\Parameter(
                 name: 'per_page',
-                in: 'query',
                 description: 'Number of items per page',
+                in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'integer', default: 50)
             ),
             new OA\Parameter(
                 name: 'page',
-                in: 'query',
                 description: 'Page number for pagination',
+                in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'integer', default: 1, minimum: 1)
             ),
@@ -70,42 +70,42 @@ class CompanyController extends Controller
                 response: 200,
                 description: 'Minimal company list with pagination',
                 content: new OA\JsonContent(
-                    type: 'object',
                     properties: [
                         new OA\Property(
                             property: 'data',
                             type: 'array',
                             items: new OA\Items(
-                                type: 'object',
                                 properties: [
                                     new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
                                     new OA\Property(property: 'company_code', type: 'string', example: 'CMP-2025-00001'),
                                     new OA\Property(property: 'name', type: 'string', example: 'Acme Corporation'),
                                     new OA\Property(property: 'logo_url', type: 'string', nullable: true, example: 'https://example.com/logo.png'),
-                                ]
+                                ],
+                                type: 'object'
                             )
                         ),
                         new OA\Property(
                             property: 'meta',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'total', type: 'integer', example: 150),
                                 new OA\Property(property: 'current_page', type: 'integer', example: 1),
                                 new OA\Property(property: 'last_page', type: 'integer', example: 3),
                                 new OA\Property(property: 'per_page', type: 'integer', example: 50),
-                            ]
+                            ],
+                            type: 'object'
                         ),
                         new OA\Property(
                             property: 'links',
-                            type: 'object',
                             properties: [
                                 new OA\Property(property: 'first', type: 'string', nullable: true),
                                 new OA\Property(property: 'last', type: 'string', nullable: true),
                                 new OA\Property(property: 'prev', type: 'string', nullable: true),
                                 new OA\Property(property: 'next', type: 'string', nullable: true),
-                            ]
+                            ],
+                            type: 'object'
                         ),
-                    ]
+                    ],
+                    type: 'object'
                 )
             ),
         ]

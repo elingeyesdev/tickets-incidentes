@@ -15,6 +15,7 @@ use App\Shared\Helpers\JWTHelper;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * Incident Announcement Controller
@@ -30,6 +31,124 @@ class IncidentAnnouncementController extends Controller
     ) {
     }
 
+    #[OA\Post(
+        path: '/api/v1/announcements/incidents',
+        operationId: 'create_incident_announcement',
+        description: 'Create a new incident announcement. Only COMPANY_ADMIN users can create incidents. Company ID is automatically inferred from JWT token. Incidents are created in DRAFT status by default, but can be immediately published or scheduled using the action parameter. Metadata includes urgency level, affected services, incident timestamps (started_at, ended_at), resolution tracking (is_resolved, resolved_at, resolution_content).',
+        summary: 'Create a new incident announcement',
+        requestBody: new OA\RequestBody(
+            description: 'Incident announcement data to create',
+            required: true,
+            content: new OA\JsonContent(
+                required: ['title', 'content', 'urgency', 'is_resolved'],
+                properties: [
+                    new OA\Property(property: 'title', description: 'Incident title', type: 'string'),
+                    new OA\Property(property: 'content', description: 'Incident description and details', type: 'string'),
+                    new OA\Property(property: 'urgency', description: 'Urgency level of the incident', type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+                    new OA\Property(property: 'is_resolved', description: 'Whether the incident is initially marked as resolved', type: 'boolean', example: false),
+                    new OA\Property(property: 'started_at', description: 'When the incident started (ISO 8601). Defaults to current time if not provided', type: 'string', format: 'date-time', nullable: true),
+                    new OA\Property(property: 'ended_at', description: 'When the incident ended (ISO 8601, optional)', type: 'string', format: 'date-time', nullable: true),
+                    new OA\Property(property: 'resolved_at', description: 'When the incident was resolved (ISO 8601, optional)', type: 'string', format: 'date-time', nullable: true),
+                    new OA\Property(property: 'resolution_content', description: 'Details about how the incident was resolved (optional)', type: 'string', nullable: true),
+                    new OA\Property(property: 'affected_services', description: 'List of affected services (optional)', type: 'array', items: new OA\Items(type: 'string'), example: ['API', 'Dashboard']),
+                    new OA\Property(property: 'action', description: 'Action to perform: draft (default), publish (immediately), or schedule (for scheduled_for parameter)', type: 'string', enum: ['draft', 'publish', 'schedule'], example: 'draft'),
+                    new OA\Property(property: 'scheduled_for', description: 'When to publish the incident (ISO 8601, required if action=schedule)', type: 'string', format: 'date-time', nullable: true),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Incident Announcements'],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Incident announcement created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', enum: ['Incident created as draft', 'Incident published successfully', 'Incident scheduled successfully'], example: 'Incident created as draft'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'company_id', description: 'Set from JWT token', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'author_id', description: 'Set to authenticated user ID', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'type', type: 'string', enum: ['INCIDENT'], example: 'INCIDENT'),
+                                new OA\Property(property: 'title', type: 'string'),
+                                new OA\Property(property: 'content', type: 'string'),
+                                new OA\Property(property: 'status', description: 'DRAFT by default, PUBLISHED if action=publish, SCHEDULED if action=schedule', type: 'string', enum: ['DRAFT', 'PUBLISHED', 'SCHEDULED']),
+                                new OA\Property(
+                                    property: 'metadata',
+                                    properties: [
+                                        new OA\Property(property: 'urgency', type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+                                        new OA\Property(property: 'is_resolved', type: 'boolean'),
+                                        new OA\Property(property: 'started_at', type: 'string', format: 'date-time'),
+                                        new OA\Property(property: 'ended_at', type: 'string', format: 'date-time', nullable: true),
+                                        new OA\Property(property: 'resolved_at', type: 'string', format: 'date-time', nullable: true),
+                                        new OA\Property(property: 'resolution_content', type: 'string', nullable: true),
+                                        new OA\Property(property: 'affected_services', type: 'array', items: new OA\Items(type: 'string')),
+                                    ],
+                                    type: 'object'
+                                ),
+                                new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                                new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthorized - Missing JWT token or JWT invalid (cannot extract company ID)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'User not authenticated or invalid JWT'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden - User has no assigned company in JWT token',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'User has no assigned company'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Unprocessable Entity - Validation failed',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['title' => ['The title field is required.'], 'urgency' => ['The urgency field is required.']]
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Internal Server Error - Database or service error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'An unexpected error occurred'),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * Store a new incident announcement
      *
@@ -109,6 +228,142 @@ class IncidentAnnouncementController extends Controller
         ], 201);
     }
 
+    #[OA\Post(
+        path: '/api/v1/announcements/incidents/{id}/resolve',
+        operationId: 'resolve_incident_announcement',
+        description: 'Mark an incident announcement as resolved with resolution details and timestamps. Only COMPANY_ADMIN users can resolve incidents from their company. Can only be called once per incident - subsequent calls will return 400 Bad Request if already resolved. Updates the metadata with is_resolved=true, resolution_content, and resolved_at timestamp. Can optionally update the title and ended_at timestamp. Announcement type must be INCIDENT.',
+        summary: 'Resolve an incident announcement',
+        requestBody: new OA\RequestBody(
+            description: 'Incident resolution data',
+            required: true,
+            content: new OA\JsonContent(
+                required: ['resolution_content'],
+                properties: [
+                    new OA\Property(property: 'resolution_content', description: 'Details about how the incident was resolved', type: 'string'),
+                    new OA\Property(property: 'resolved_at', description: 'When the incident was resolved (ISO 8601). Defaults to current time if not provided', type: 'string', format: 'date-time', nullable: true),
+                    new OA\Property(property: 'ended_at', description: 'When the incident ended (ISO 8601, optional)', type: 'string', format: 'date-time', nullable: true),
+                    new OA\Property(property: 'title', description: 'Updated incident title (optional)', type: 'string', nullable: true),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Incident Announcements'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'Incident announcement unique identifier (UUID)',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Incident resolved successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Incident resolved successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'company_id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'author_id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'type', type: 'string', enum: ['INCIDENT'], example: 'INCIDENT'),
+                                new OA\Property(property: 'title', description: 'Updated title if provided', type: 'string'),
+                                new OA\Property(property: 'content', type: 'string'),
+                                new OA\Property(property: 'status', type: 'string', enum: ['DRAFT', 'PUBLISHED', 'SCHEDULED']),
+                                new OA\Property(
+                                    property: 'metadata',
+                                    properties: [
+                                        new OA\Property(property: 'urgency', type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+                                        new OA\Property(property: 'is_resolved', description: 'Set to true by resolve operation', type: 'boolean', example: true),
+                                        new OA\Property(property: 'started_at', type: 'string', format: 'date-time'),
+                                        new OA\Property(property: 'ended_at', description: 'Updated if provided in request', type: 'string', format: 'date-time', nullable: true),
+                                        new OA\Property(property: 'resolved_at', description: 'Set by resolve operation (defaults to now if not provided)', type: 'string', format: 'date-time'),
+                                        new OA\Property(property: 'resolution_content', description: 'Set from request body', type: 'string'),
+                                        new OA\Property(property: 'affected_services', type: 'array', items: new OA\Items(type: 'string')),
+                                    ],
+                                    type: 'object'
+                                ),
+                                new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                                new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad Request - Incident already resolved, not an incident type, or invalid data',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', enum: ['Incident is already resolved', 'Announcement is not an incident type'], example: 'Incident is already resolved'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthorized - Missing JWT token or JWT invalid',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthorized or invalid JWT'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden - User does not belong to the incident\'s company',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Insufficient permissions'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Not Found - Incident announcement does not exist',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Announcement not found'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Unprocessable Entity - Validation failed',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['resolution_content' => ['The resolution_content field is required.']]
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Internal Server Error - Database or service error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'An unexpected error occurred'),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * Resolve incident
      *

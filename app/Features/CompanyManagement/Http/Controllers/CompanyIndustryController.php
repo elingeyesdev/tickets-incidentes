@@ -51,14 +51,14 @@ class CompanyIndustryController extends Controller
     #[OA\Get(
         path: '/api/company-industries',
         operationId: 'list_company_industries',
-        summary: 'Listar todas las industrias disponibles',
         description: 'Obtiene el catálogo completo de industrias para selección en formularios. Endpoint público sin autenticación requerida. Opcionalmente incluye conteos de empresas activas por industria.',
+        summary: 'Listar todas las industrias disponibles',
         tags: ['Company Industries'],
         parameters: [
             new OA\Parameter(
                 name: 'with_counts',
-                in: 'query',
                 description: 'Incluir conteo de empresas activas por industria (default: false)',
+                in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'boolean', example: false)
             ),
@@ -68,24 +68,24 @@ class CompanyIndustryController extends Controller
                 response: 200,
                 description: 'Lista de industrias obtenida exitosamente',
                 content: new OA\JsonContent(
-                    type: 'object',
                     properties: [
                         new OA\Property(
                             property: 'data',
                             type: 'array',
                             items: new OA\Items(
-                                type: 'object',
                                 properties: [
                                     new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
-                                    new OA\Property(property: 'code', type: 'string', example: 'technology', description: 'Código único de la industria'),
-                                    new OA\Property(property: 'name', type: 'string', example: 'Tecnología', description: 'Nombre de la industria'),
-                                    new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Empresas de tecnología y software', description: 'Descripción de la industria'),
+                                    new OA\Property(property: 'code', description: 'Código único de la industria', type: 'string', example: 'technology'),
+                                    new OA\Property(property: 'name', description: 'Nombre de la industria', type: 'string', example: 'Tecnología'),
+                                    new OA\Property(property: 'description', description: 'Descripción de la industria', type: 'string', example: 'Empresas de tecnología y software', nullable: true),
                                     new OA\Property(property: 'createdAt', type: 'string', format: 'date-time', example: '2025-10-31T12:00:00Z'),
-                                    new OA\Property(property: 'activeCompaniesCount', type: 'integer', example: 45, description: 'Conteo de empresas activas (solo si with_counts=true)'),
-                                ]
+                                    new OA\Property(property: 'activeCompaniesCount', description: 'Conteo de empresas activas (solo si with_counts=true)', type: 'integer', example: 45),
+                                ],
+                                type: 'object'
                             )
                         ),
-                    ]
+                    ],
+                    type: 'object'
                 )
             ),
         ]
