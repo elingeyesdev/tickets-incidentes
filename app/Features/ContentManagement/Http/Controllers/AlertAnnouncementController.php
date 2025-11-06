@@ -30,6 +30,9 @@ class AlertAnnouncementController extends Controller
         operationId: 'create_alert_announcement',
         description: 'Create a new alert announcement for urgent notifications. Only COMPANY_ADMIN role can create alerts. Company ID is automatically inferred from JWT token. Alerts can be created as DRAFT (default), published immediately (action=publish), or scheduled for future publication (action=schedule). Alert-specific metadata includes urgency (HIGH or CRITICAL only), alert_type (security, system, service, compliance), message, action_required flag, optional action_description (required if action_required=true), started_at datetime, optional ended_at datetime, and optional affected_services array. If action=schedule, a PublishAnnouncementJob is dispatched with calculated delay.',
         summary: 'Create alert announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Alert announcement creation data with security-critical metadata',
             required: true,
@@ -60,9 +63,6 @@ class AlertAnnouncementController extends Controller
             )
         ),
         tags: ['Alert Announcements'],
-        security: [
-            ['bearerAuth' => []],
-        ],
         responses: [
             new OA\Response(
                 response: 201,

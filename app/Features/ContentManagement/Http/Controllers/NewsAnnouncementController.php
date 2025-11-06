@@ -30,6 +30,9 @@ class NewsAnnouncementController extends Controller
         operationId: 'create_news_announcement',
         description: 'Create a new news announcement. Only COMPANY_ADMIN role can create news announcements. Company ID is automatically inferred from JWT token. News can be created as DRAFT (default), published immediately (action=publish), or scheduled for future publication (action=schedule). The request body field "body" is stored as "content" in the database. Metadata includes news_type (feature_release, policy_update, general_update), target_audience array (users, agents, admins), summary text, and optional call_to_action with text and https URL. If action=schedule, a PublishAnnouncementJob is dispatched with calculated delay.',
         summary: 'Create news announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'News announcement creation data',
             required: true,
@@ -65,9 +68,6 @@ class NewsAnnouncementController extends Controller
             )
         ),
         tags: ['News Announcements'],
-        security: [
-            ['bearerAuth' => []],
-        ],
         responses: [
             new OA\Response(
                 response: 201,

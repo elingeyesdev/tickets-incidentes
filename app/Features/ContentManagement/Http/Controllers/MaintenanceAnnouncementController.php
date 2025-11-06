@@ -35,6 +35,9 @@ class MaintenanceAnnouncementController extends Controller
         operationId: 'create_maintenance_announcement',
         description: 'Create a new maintenance announcement. Only COMPANY_ADMIN can create maintenance announcements. Company ID is automatically inferred from JWT token. Can be created in DRAFT status by default, published immediately, or scheduled for future publication. Metadata includes scheduled maintenance times (scheduled_start, scheduled_end), actual execution times (actual_start, actual_end), urgency level, and affected services.',
         summary: 'Create maintenance announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Maintenance announcement data to create',
             required: true,
@@ -55,9 +58,6 @@ class MaintenanceAnnouncementController extends Controller
             )
         ),
         tags: ['Maintenance Announcements'],
-        security: [
-            ['bearerAuth' => []],
-        ],
         responses: [
             new OA\Response(
                 response: 201,
@@ -187,10 +187,10 @@ class MaintenanceAnnouncementController extends Controller
         operationId: 'mark_maintenance_start',
         description: 'Record the actual start time of a maintenance window. Sets actual_start timestamp in metadata to current time. Can only be called once per maintenance announcement - subsequent calls return 400 if already started. User must be the COMPANY_ADMIN who owns the announcement and it must be a MAINTENANCE type announcement.',
         summary: 'Mark maintenance as started',
-        tags: ['Maintenance Announcements'],
         security: [
             ['bearerAuth' => []],
         ],
+        tags: ['Maintenance Announcements'],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',

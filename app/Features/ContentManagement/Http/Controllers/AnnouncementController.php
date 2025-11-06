@@ -49,6 +49,9 @@ class AnnouncementController extends Controller
         operationId: 'list_announcements',
         description: 'Returns paginated list of announcements with role-based visibility. PLATFORM_ADMIN sees all from all companies. COMPANY_ADMIN sees all states from their company. AGENT/USER see only PUBLISHED from followed companies.',
         summary: 'List announcements with role-based visibility',
+        security: [
+            ['bearerAuth' => []],
+        ],
         tags: ['Announcements'],
         parameters: array(
             new OA\Parameter(
@@ -115,9 +118,6 @@ class AnnouncementController extends Controller
                 schema: new OA\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1)
             ),
         ),
-        security: [
-            ['bearerAuth' => []],
-        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -263,10 +263,10 @@ class AnnouncementController extends Controller
         operationId: 'get_announcement',
         description: 'Returns a single announcement by ID with role-based visibility. PLATFORM_ADMIN can view any announcement. COMPANY_ADMIN can view any announcement from their company. AGENT/USER can only view PUBLISHED announcements from followed companies.',
         summary: 'Get announcement by ID',
-        tags: ['Announcements'],
         security: [
             ['bearerAuth' => []],
         ],
+        tags: ['Announcements'],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',
@@ -690,10 +690,10 @@ class AnnouncementController extends Controller
         operationId: 'delete_announcement',
         description: 'Delete an announcement permanently. Only DRAFT or ARCHIVED announcements can be deleted. Published and SCHEDULED announcements cannot be deleted.',
         summary: 'Delete announcement',
-        tags: ['Announcements'],
         security: [
             ['bearerAuth' => []],
         ],
+        tags: ['Announcements'],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',

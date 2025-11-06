@@ -40,10 +40,10 @@ class AnnouncementActionController
         operationId: 'publish_announcement',
         description: 'Publish an announcement immediately, changing its status to PUBLISHED and setting published_at to current timestamp. Can publish announcements in DRAFT or SCHEDULED status. Cannot publish announcements that are already PUBLISHED or ARCHIVED. User must be the COMPANY_ADMIN who owns the announcement. If announcement was previously SCHEDULED, any queued publication jobs are automatically cancelled by the service.',
         summary: 'Publish announcement immediately',
-        tags: ['Announcement Actions'],
         security: [
             ['bearerAuth' => []],
         ],
+        tags: ['Announcement Actions'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -167,7 +167,6 @@ class AnnouncementActionController
         operationId: 'schedule_announcement',
         description: 'Schedule an announcement for future publication. Changes status to SCHEDULED and enqueues PublishAnnouncementJob with calculated delay. The scheduled_for datetime must be 5 minutes to 1 year in the future. Can only schedule announcements in DRAFT status. If rescheduling a previously SCHEDULED announcement, the old job is cancelled and new job is enqueued. Automatic job cancellation occurs if announcement is published before scheduled time.',
         summary: 'Schedule announcement for future publication',
-        tags: ['Announcement Actions'],
         security: [
             ['bearerAuth' => []],
         ],
@@ -182,6 +181,7 @@ class AnnouncementActionController
                 type: 'object'
             )
         ),
+        tags: ['Announcement Actions'],
         parameters: [
             new OA\Parameter(
                 name: 'id',

@@ -36,6 +36,9 @@ class IncidentAnnouncementController extends Controller
         operationId: 'create_incident_announcement',
         description: 'Create a new incident announcement. Only COMPANY_ADMIN users can create incidents. Company ID is automatically inferred from JWT token. Incidents are created in DRAFT status by default, but can be immediately published or scheduled using the action parameter. Metadata includes urgency level, affected services, incident timestamps (started_at, ended_at), resolution tracking (is_resolved, resolved_at, resolution_content).',
         summary: 'Create a new incident announcement',
+        security: [
+            ['bearerAuth' => []],
+        ],
         requestBody: new OA\RequestBody(
             description: 'Incident announcement data to create',
             required: true,
@@ -58,9 +61,6 @@ class IncidentAnnouncementController extends Controller
             )
         ),
         tags: ['Incident Announcements'],
-        security: [
-            ['bearerAuth' => []],
-        ],
         responses: [
             new OA\Response(
                 response: 201,
