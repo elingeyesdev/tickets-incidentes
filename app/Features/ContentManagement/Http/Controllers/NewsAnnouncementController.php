@@ -64,7 +64,7 @@ class NewsAnnouncementController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Announcements - News'],
+        tags: ['News Announcements'],
         responses: [
             new OA\Response(
                 response: 201,

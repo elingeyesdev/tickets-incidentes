@@ -59,7 +59,7 @@ class AlertAnnouncementController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Announcements - Alerts'],
+        tags: ['Alert Announcements'],
         responses: [
             new OA\Response(
                 response: 201,

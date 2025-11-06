@@ -28,7 +28,7 @@ class ArticleController extends Controller
         operationId: 'list_articles',
         description: 'List help center articles with advanced filtering, searching, sorting, and pagination. Visibility rules vary by user role: END_USER sees only PUBLISHED articles from followed companies, COMPANY_ADMIN sees all articles (PUBLISHED + DRAFT) from their company, PLATFORM_ADMIN sees all articles from all companies.',
         summary: 'List help center articles',
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'page',
@@ -220,7 +220,7 @@ class ArticleController extends Controller
         operationId: 'view_article',
         description: 'Retrieve a single help center article by ID. Visibility rules: END_USER can only view PUBLISHED articles from companies they follow. COMPANY_ADMIN can view any article (PUBLISHED or DRAFT) from their company. PLATFORM_ADMIN can view any article from any company. Automatically increments views_count by 1 when a PUBLISHED article is viewed (DRAFT articles do not increment views_count).',
         summary: 'View a single article',
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -371,7 +371,7 @@ class ArticleController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         responses: [
             new OA\Response(
                 response: 201,
@@ -489,7 +489,7 @@ class ArticleController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -621,7 +621,7 @@ class ArticleController extends Controller
         operationId: 'publish_article',
         description: 'Publish a help center article from DRAFT to PUBLISHED status. Only COMPANY_ADMIN can publish articles from their company. Article must be in DRAFT status to publish. Sets published_at to current timestamp and fires ArticlePublished event. Published articles become visible to END_USERs who follow the company.',
         summary: 'Publish an article',
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -757,7 +757,7 @@ class ArticleController extends Controller
         operationId: 'unpublish_article',
         description: 'Unpublish a help center article from PUBLISHED back to DRAFT status. Only COMPANY_ADMIN can unpublish articles from their company. Article must be in PUBLISHED status to unpublish. Sets published_at to null. Views count is preserved. Unpublished articles become invisible to END_USERs.',
         summary: 'Unpublish an article',
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -893,7 +893,7 @@ class ArticleController extends Controller
         operationId: 'delete_article',
         description: 'Permanently delete a help center article using soft delete. Only COMPANY_ADMIN can delete articles from their company. Articles must be in DRAFT status to be deleted. PUBLISHED articles cannot be deleted and will return 403 Forbidden. DELETE is idempotent - subsequent calls to a deleted article return 404. Deleted articles are soft-deleted and can be recovered from database if needed.',
         summary: 'Delete an article',
-        tags: ['Help Center - Articles'],
+        tags: ['Help Center: Articles'],
         parameters: [
             new OA\Parameter(
                 name: 'id',

@@ -4437,7 +4437,7 @@
         "/api/announcements/alerts": {
             "post": {
                 "tags": [
-                    "Announcements - Alerts"
+                    "Alert Announcements"
                 ],
                 "summary": "Create alert announcement",
                 "description": "Create a new alert announcement for urgent notifications. Only COMPANY_ADMIN role can create alerts. Company ID is automatically inferred from JWT token. Alerts can be created as DRAFT (default), published immediately (action=publish), or scheduled for future publication (action=schedule). Alert-specific metadata includes urgency (HIGH or CRITICAL only), alert_type (security, system, service, compliance), message, action_required flag, optional action_description (required if action_required=true), started_at datetime, optional ended_at datetime, and optional affected_services array. If action=schedule, a PublishAnnouncementJob is dispatched with calculated delay.",
@@ -4689,7 +4689,7 @@
         "/api/announcements/{id}/publish": {
             "post": {
                 "tags": [
-                    "Announcements - Actions"
+                    "Announcement Actions"
                 ],
                 "summary": "Publish announcement immediately",
                 "description": "Publish an announcement immediately, changing its status to PUBLISHED and setting published_at to current timestamp. Can publish announcements in DRAFT or SCHEDULED status. Cannot publish announcements that are already PUBLISHED or ARCHIVED. User must be the COMPANY_ADMIN who owns the announcement. If announcement was previously SCHEDULED, any queued publication jobs are automatically cancelled by the service.",
@@ -4978,7 +4978,7 @@
         "/api/announcements/{id}/unschedule": {
             "post": {
                 "tags": [
-                    "Announcements - Actions"
+                    "Announcement Actions"
                 ],
                 "summary": "Unschedule announcement",
                 "description": "Unschedule a SCHEDULED announcement, returning it to DRAFT status. Removes scheduled_for from metadata and cancels any queued PublishAnnouncementJob in Redis. Cannot unschedule announcements that are not SCHEDULED (DRAFT, PUBLISHED, ARCHIVED return 400 errors). Also prevents unscheduling of PUBLISHED announcements (separate validation).",
@@ -5115,7 +5115,7 @@
         "/api/announcements/{id}/archive": {
             "post": {
                 "tags": [
-                    "Announcements - Actions"
+                    "Announcement Actions"
                 ],
                 "summary": "Archive published announcement",
                 "description": "Archive a PUBLISHED announcement, changing its status to ARCHIVED. Only PUBLISHED announcements can be archived (service validation). Preserves published_at timestamp. Archived announcements can be restored to DRAFT status later. Cannot archive DRAFT or SCHEDULED announcements.",
@@ -5248,7 +5248,7 @@
         "/api/announcements/{id}/restore": {
             "post": {
                 "tags": [
-                    "Announcements - Actions"
+                    "Announcement Actions"
                 ],
                 "summary": "Restore archived announcement to draft",
                 "description": "Restore an ARCHIVED announcement to DRAFT status, clearing published_at timestamp. Only ARCHIVED announcements can be restored (service validation). Preserves original content and metadata (urgency, scheduled dates, etc.). Restored announcements become editable again and can be re-published. Cannot restore DRAFT or PUBLISHED announcements.",
@@ -5990,7 +5990,7 @@
         "/api/help-center/articles": {
             "get": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "List help center articles",
                 "description": "List help center articles with advanced filtering, searching, sorting, and pagination. Visibility rules vary by user role: END_USER sees only PUBLISHED articles from followed companies, COMPANY_ADMIN sees all articles (PUBLISHED + DRAFT) from their company, PLATFORM_ADMIN sees all articles from all companies.",
@@ -6268,7 +6268,7 @@
             },
             "post": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "Create a new article",
                 "description": "Create a new help center article in DRAFT status. Only COMPANY_ADMIN users can create articles. Company ID is automatically inferred from JWT token. Author ID is set to the authenticated user. Articles always start in DRAFT status regardless of the action parameter. Category must be one of the 4 global categories.",
@@ -6521,7 +6521,7 @@
         "/api/help-center/articles/{id}": {
             "get": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "View a single article",
                 "description": "Retrieve a single help center article by ID. Visibility rules: END_USER can only view PUBLISHED articles from companies they follow. COMPANY_ADMIN can view any article (PUBLISHED or DRAFT) from their company. PLATFORM_ADMIN can view any article from any company. Automatically increments views_count by 1 when a PUBLISHED article is viewed (DRAFT articles do not increment views_count).",
@@ -6701,7 +6701,7 @@
             },
             "put": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "Update an article",
                 "description": "Update an existing help center article. Only COMPANY_ADMIN can update articles from their company. Articles can be updated in any status (DRAFT or PUBLISHED). For PUBLISHED articles, published_at timestamp is preserved. Views count is always preserved. Title must be unique per company. Category can be changed to any valid global category. Partial updates are supported.",
@@ -6961,7 +6961,7 @@
             },
             "delete": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "Delete an article",
                 "description": "Permanently delete a help center article using soft delete. Only COMPANY_ADMIN can delete articles from their company. Articles must be in DRAFT status to be deleted. PUBLISHED articles cannot be deleted and will return 403 Forbidden. DELETE is idempotent - subsequent calls to a deleted article return 404. Deleted articles are soft-deleted and can be recovered from database if needed.",
@@ -7091,7 +7091,7 @@
         "/api/help-center/articles/{id}/publish": {
             "post": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "Publish an article",
                 "description": "Publish a help center article from DRAFT to PUBLISHED status. Only COMPANY_ADMIN can publish articles from their company. Article must be in DRAFT status to publish. Sets published_at to current timestamp and fires ArticlePublished event. Published articles become visible to END_USERs who follow the company.",
@@ -7292,7 +7292,7 @@
         "/api/help-center/articles/{id}/unpublish": {
             "post": {
                 "tags": [
-                    "Help Center - Articles"
+                    "Help Center: Articles"
                 ],
                 "summary": "Unpublish an article",
                 "description": "Unpublish a help center article from PUBLISHED back to DRAFT status. Only COMPANY_ADMIN can unpublish articles from their company. Article must be in PUBLISHED status to unpublish. Sets published_at to null. Views count is preserved. Unpublished articles become invisible to END_USERs.",
@@ -7496,7 +7496,7 @@
         "/api/help-center/categories": {
             "get": {
                 "tags": [
-                    "Help Center - Categories"
+                    "Help Center: Categories"
                 ],
                 "summary": "List all help center categories",
                 "description": "Retrieve all available help center article categories. Returns the 4 global categories: ACCOUNT_PROFILE, SECURITY_PRIVACY, BILLING_PAYMENTS, and TECHNICAL_SUPPORT. These categories are used to organize and filter help center articles. All users (authenticated or not) can view categories to understand the available article organization structure.",
@@ -8174,7 +8174,7 @@
         "/api/announcements/maintenance": {
             "post": {
                 "tags": [
-                    "Announcements - Maintenance"
+                    "Maintenance Announcements"
                 ],
                 "summary": "Create maintenance announcement",
                 "description": "Create a new maintenance announcement. Only COMPANY_ADMIN can create maintenance announcements. Company ID is automatically inferred from JWT token. Can be created in DRAFT status by default, published immediately, or scheduled for future publication. Metadata includes scheduled maintenance times (scheduled_start, scheduled_end), actual execution times (actual_start, actual_end), urgency level, and affected services.",
@@ -8349,7 +8349,7 @@
         "/api/announcements/maintenance/{announcement}/start": {
             "post": {
                 "tags": [
-                    "Announcements - Maintenance"
+                    "Maintenance Announcements"
                 ],
                 "summary": "Mark maintenance as started",
                 "description": "Record the actual start time of a maintenance window. Sets actual_start timestamp in metadata to current time. Can only be called once per maintenance announcement - subsequent calls return 400 if already started. User must be the COMPANY_ADMIN who owns the announcement and it must be a MAINTENANCE type announcement.",
@@ -8465,7 +8465,7 @@
         "/api/announcements/maintenance/{announcement}/complete": {
             "post": {
                 "tags": [
-                    "Announcements - Maintenance"
+                    "Maintenance Announcements"
                 ],
                 "summary": "Mark maintenance as completed",
                 "description": "Records the actual end time of a maintenance window. Requires maintenance to have been started first (actual_start must be set). Validates that end time is after start time. User must be the COMPANY_ADMIN who owns the announcement. The actual_end is set to the current time automatically.",
@@ -8587,7 +8587,7 @@
         "/api/announcements/news": {
             "post": {
                 "tags": [
-                    "Announcements - News"
+                    "News Announcements"
                 ],
                 "summary": "Create news announcement",
                 "description": "Create a new news announcement. Only COMPANY_ADMIN role can create news announcements. Company ID is automatically inferred from JWT token. News can be created as DRAFT (default), published immediately (action=publish), or scheduled for future publication (action=schedule). The request body field \"body\" is stored as \"content\" in the database. Metadata includes news_type (feature_release, policy_update, general_update), target_audience array (users, agents, admins), summary text, and optional call_to_action with text and https URL. If action=schedule, a PublishAnnouncementJob is dispatched with calculated delay.",
@@ -10291,36 +10291,36 @@
             "description": "Company Requests"
         },
         {
-            "name": "Announcements - Alerts",
-            "description": "Announcements - Alerts"
+            "name": "Alert Announcements",
+            "description": "Alert Announcements"
         },
         {
-            "name": "Announcements - Actions",
-            "description": "Announcements - Actions"
+            "name": "Announcement Actions",
+            "description": "Announcement Actions"
         },
         {
             "name": "Announcements",
             "description": "Announcements"
         },
         {
-            "name": "Help Center - Articles",
-            "description": "Help Center - Articles"
+            "name": "Help Center: Articles",
+            "description": "Help Center: Articles"
         },
         {
-            "name": "Help Center - Categories",
-            "description": "Help Center - Categories"
+            "name": "Help Center: Categories",
+            "description": "Help Center: Categories"
         },
         {
             "name": "Incident Announcements",
             "description": "Incident Announcements"
         },
         {
-            "name": "Announcements - Maintenance",
-            "description": "Announcements - Maintenance"
+            "name": "Maintenance Announcements",
+            "description": "Maintenance Announcements"
         },
         {
-            "name": "Announcements - News",
-            "description": "Announcements - News"
+            "name": "News Announcements",
+            "description": "News Announcements"
         },
         {
             "name": "User Profile",

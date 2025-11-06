@@ -22,7 +22,7 @@ class HelpCenterCategoryController extends Controller
         operationId: 'list_article_categories',
         description: 'Retrieve all available help center article categories. Returns the 4 global categories: ACCOUNT_PROFILE, SECURITY_PRIVACY, BILLING_PAYMENTS, and TECHNICAL_SUPPORT. These categories are used to organize and filter help center articles. All users (authenticated or not) can view categories to understand the available article organization structure.',
         summary: 'List all help center categories',
-        tags: ['Help Center - Categories'],
+        tags: ['Help Center: Categories'],
         responses: [
             new OA\Response(
                 response: 200,

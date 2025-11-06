@@ -54,7 +54,7 @@ class MaintenanceAnnouncementController extends Controller
                 type: 'object'
             )
         ),
-        tags: ['Announcements - Maintenance'],
+        tags: ['Maintenance Announcements'],
         responses: [
             new OA\Response(
                 response: 201,
@@ -184,7 +184,7 @@ class MaintenanceAnnouncementController extends Controller
         operationId: 'mark_maintenance_start',
         description: 'Record the actual start time of a maintenance window. Sets actual_start timestamp in metadata to current time. Can only be called once per maintenance announcement - subsequent calls return 400 if already started. User must be the COMPANY_ADMIN who owns the announcement and it must be a MAINTENANCE type announcement.',
         summary: 'Mark maintenance as started',
-        tags: ['Announcements - Maintenance'],
+        tags: ['Maintenance Announcements'],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',
@@ -312,7 +312,7 @@ class MaintenanceAnnouncementController extends Controller
         operationId: 'mark_maintenance_complete',
         description: 'Records the actual end time of a maintenance window. Requires maintenance to have been started first (actual_start must be set). Validates that end time is after start time. User must be the COMPANY_ADMIN who owns the announcement. The actual_end is set to the current time automatically.',
         summary: 'Mark maintenance as completed',
-        tags: ['Announcements - Maintenance'],
+        tags: ['Maintenance Announcements'],
         parameters: [
             new OA\Parameter(
                 name: 'announcement',
