@@ -14,6 +14,9 @@ services:
     container_name: helpdesk_app
     restart: unless-stopped
     working_dir: /var/www
+    # ⚠️ LINUX OPTIMIZATION: Set memory limits using environment
+    mem_limit: 4g
+    mem_reservation: 2g
     volumes:
       - .:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
