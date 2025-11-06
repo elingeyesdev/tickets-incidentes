@@ -45,7 +45,7 @@ class AnnouncementController extends Controller
     }
 
     #[OA\Get(
-        path: '/announcements',
+        path: '/api/announcements',
         operationId: 'list_announcements',
         description: 'Returns paginated list of announcements with role-based visibility. PLATFORM_ADMIN sees all from all companies. COMPANY_ADMIN sees all states from their company. AGENT/USER see only PUBLISHED from followed companies.',
         summary: 'List announcements with role-based visibility',
@@ -259,7 +259,7 @@ class AnnouncementController extends Controller
     }
 
     #[OA\Get(
-        path: '/announcements/{announcement}',
+        path: '/api/announcements/{announcement}',
         operationId: 'get_announcement',
         description: 'Returns a single announcement by ID with role-based visibility. PLATFORM_ADMIN can view any announcement. COMPANY_ADMIN can view any announcement from their company. AGENT/USER can only view PUBLISHED announcements from followed companies.',
         summary: 'Get announcement by ID',
@@ -412,7 +412,7 @@ class AnnouncementController extends Controller
     }
 
     #[OA\Put(
-        path: '/announcements/{announcement}',
+        path: '/api/announcements/{announcement}',
         operationId: 'update_announcement',
         description: 'Update an existing announcement with partial data. Only DRAFT and SCHEDULED announcements can be edited. Published ALERT announcements (via special exception) can only update ended_at field. Supports type-specific metadata fields: MAINTENANCE (urgency, scheduled_start, scheduled_end, is_emergency, affected_services), INCIDENT (resolution_content, affected_services), NEWS (news_type, target_audience, summary, call_to_action), ALERT (urgency, alert_type, message, action_required, action_description, started_at, ended_at, affected_services).',
         summary: 'Update announcement',
@@ -686,7 +686,7 @@ class AnnouncementController extends Controller
     }
 
     #[OA\Delete(
-        path: '/announcements/{announcement}',
+        path: '/api/announcements/{announcement}',
         operationId: 'delete_announcement',
         description: 'Delete an announcement permanently. Only DRAFT or ARCHIVED announcements can be deleted. Published and SCHEDULED announcements cannot be deleted.',
         summary: 'Delete announcement',

@@ -23,7 +23,7 @@ use App\Shared\Helpers\JWTHelper;
 class AnnouncementSchemaController extends Controller
 {
     #[OA\Get(
-        path: '/announcements/schemas',
+        path: '/api/announcements/schemas',
         operationId: 'get_announcement_schemas',
         description: 'Returns the metadata schema structure for each announcement type. Only COMPANY_ADMIN and PLATFORM_ADMIN can access this endpoint. Used by frontend to dynamically build forms.',
         summary: 'Get announcement type schemas',

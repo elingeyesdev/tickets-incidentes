@@ -747,3 +747,4 @@ For comprehensive coding standards and patterns, see:
 - `.cursor/rules/arquitecture-frontend.mdc` - Frontend-specific architecture rules
 
 These files contain detailed code patterns, naming conventions, and best practices that complement this CLAUDE.md file.
+- to memorize cuando hagas commits no coloques hecho por claude

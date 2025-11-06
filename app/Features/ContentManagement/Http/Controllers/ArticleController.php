@@ -29,6 +29,9 @@ class ArticleController extends Controller
         description: 'List help center articles with advanced filtering, searching, sorting, and pagination. Visibility rules vary by user role: END_USER sees only PUBLISHED articles from followed companies, COMPANY_ADMIN sees all articles (PUBLISHED + DRAFT) from their company, PLATFORM_ADMIN sees all articles from all companies.',
         summary: 'List help center articles',
         tags: ['Help Center: Articles'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'page',
@@ -221,6 +224,9 @@ class ArticleController extends Controller
         description: 'Retrieve a single help center article by ID. Visibility rules: END_USER can only view PUBLISHED articles from companies they follow. COMPANY_ADMIN can view any article (PUBLISHED or DRAFT) from their company. PLATFORM_ADMIN can view any article from any company. Automatically increments views_count by 1 when a PUBLISHED article is viewed (DRAFT articles do not increment views_count).',
         summary: 'View a single article',
         tags: ['Help Center: Articles'],
+        security: [
+            ['bearerAuth' => []],
+        ],
         parameters: [
             new OA\Parameter(
                 name: 'id',
@@ -357,7 +363,6 @@ class ArticleController extends Controller
         operationId: 'create_article',
         description: 'Create a new help center article in DRAFT status. Only COMPANY_ADMIN users can create articles. Company ID is automatically inferred from JWT token. Author ID is set to the authenticated user. Articles always start in DRAFT status regardless of the action parameter. Category must be one of the 4 global categories.',
         summary: 'Create a new article',
-        tags: ['Help Center: Articles'],
         security: [
             ['bearerAuth' => []],
         ],
@@ -375,6 +380,7 @@ class ArticleController extends Controller
                 type: 'object'
             )
         ),
+        tags: ['Help Center: Articles'],
         responses: [
             new OA\Response(
                 response: 201,
