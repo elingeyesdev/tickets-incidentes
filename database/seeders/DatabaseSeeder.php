@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Features\CompanyManagement\Database\Seeders\CompanyIndustrySeeder;
+use App\Features\CompanyManagement\Database\Seeders\RealBolivianCompaniesSeeder;
 use App\Features\UserManagement\Database\Seeders\RolesSeeder;
 use App\Features\UserManagement\Database\Seeders\DefaultUserSeeder;
 use Illuminate\Database\Seeder;
@@ -41,6 +42,9 @@ class DatabaseSeeder extends Seeder
 
         // Seed default platform admin user (for development/testing)
         $this->call(DefaultUserSeeder::class);
+
+        // Seed real Bolivian companies with demo data
+        $this->call(RealBolivianCompaniesSeeder::class);
 
         // Future: Add other essential seeders here
         // Example:
