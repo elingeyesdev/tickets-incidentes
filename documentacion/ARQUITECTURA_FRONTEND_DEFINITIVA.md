@@ -113,7 +113,7 @@ Controllers API:
 ```
 resources/
 │
-├── views/
+├`── views/
 │   │
 │   ├── layouts/                       [LAYOUTSS BASE - 3 PLANTILLAS]
 │   │   ├── public.blade.php           [ZONA PÚBLICA] Navbar + Footer
@@ -171,7 +171,7 @@ resources/
 │   │   │                                       PUT /api/company-requests/{id}
 │   │   │
 │   │   ├── company-admin/             [ROL: COMPANY_ADMIN]
-│   │   │   ├── dashboard.blade.php           📊 Dashboard empresa
+│   │   │   ├── dashboard.blade.php           📊 Dashboard empresa`
 │   │   │   ├── company/
 │   │   │   │   ├── settings.blade.php       ⚙️ Datos empresa (nombre, email, teléfono)
 │   │   │   │   │                               PUT /api/companies/{id}
