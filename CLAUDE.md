@@ -748,3 +748,4 @@ For comprehensive coding standards and patterns, see:
 
 These files contain detailed code patterns, naming conventions, and best practices that complement this CLAUDE.md file.
 - to memorize cuando hagas commits no coloques hecho por claude
+- usar siempre docker

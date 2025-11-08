@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>JWT System - Interactive Testing</title>
+    <title>🔐 JWT System - Alpine.js Testing</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,24 +13,15 @@
             min-height: 100vh;
             padding: 20px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
         .header {
             background: white;
             padding: 30px;
             border-radius: 10px 10px 0 0;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        .header h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
+        .header h1 { color: #333; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 14px; }
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -49,9 +41,7 @@
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
+        .form-group { margin-bottom: 15px; }
         .form-group label {
             display: block;
             color: #333;
@@ -65,7 +55,6 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 13px;
-            transition: border-color 0.3s;
         }
         .form-group input:focus {
             outline: none;
@@ -98,12 +87,6 @@
             cursor: not-allowed;
             transform: none;
         }
-        .button-secondary {
-            background: #6c757d;
-        }
-        .button-secondary:hover {
-            background: #5a6268;
-        }
         .output {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -111,10 +94,10 @@
             padding: 12px;
             font-family: 'Courier New', monospace;
             font-size: 12px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             margin-top: 10px;
-            line-height: 1.4;
+            line-height: 1.6;
         }
         .log-entry {
             margin: 5px 0;
@@ -137,435 +120,309 @@
             color: #0c5460;
             background: #d1ecf1;
         }
-        .status-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 15px;
-            border-left: 4px solid #667eea;
-        }
-        .status-box h4 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 12px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .status-item:last-child {
-            border-bottom: none;
-        }
-        .status-label {
-            color: #667eea;
-            font-weight: 600;
-        }
-        .status-value {
-            color: #666;
-            word-break: break-all;
-        }
-        .wide {
-            grid-column: 1 / -1;
-        }
+        .wide { grid-column: 1 / -1; }
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
+            .grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 JWT System - Interactive API Testing</h1>
-            <p>Test the JWT authentication system with your real backend API</p>
+            <h1>🔐 JWT System - Alpine.js Interactive Testing</h1>
+            <p>Real test with Alpine.js + REST API</p>
         </div>
 
         <div class="grid">
             <!-- Login Form -->
-            <div class="card">
+            <div class="card" x-data="authApp()" @login.window="onLogin">
                 <h2>1️⃣ Login & Get Tokens</h2>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="loginEmail" placeholder="test@example.com" value="test@example.com">
+                    <input type="email" x-model="email" placeholder="javier.rodriguez@pilandina.com.bo">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="loginPassword" placeholder="Password" value="">
+                    <input type="password" x-model="password" placeholder="Password">
                 </div>
                 <div class="button-group">
-                    <button onclick="testLogin()">Login</button>
-                    <button class="button-secondary" onclick="clearOutput('output-login')">Clear</button>
+                    <button @click="login()" :disabled="isLoading">Login</button>
+                    <button @click="clearLogs('login')" class="button-secondary">Clear</button>
                 </div>
-                <div class="output" id="output-login"></div>
-                <div class="status-box" id="status-login" style="display: none;">
-                    <h4>✅ Login Successful</h4>
-                    <div class="status-item">
-                        <span class="status-label">Access Token:</span>
-                        <span class="status-value" id="status-token">-</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Expires In:</span>
-                        <span class="status-value" id="status-expires">-</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">User Email:</span>
-                        <span class="status-value" id="status-user">-</span>
-                    </div>
-                </div>
+                <div class="output" x-ref="loginOutput"></div>
             </div>
 
-            <!-- Test Protected Endpoint -->
-            <div class="card">
+            <!-- Status -->
+            <div class="card" x-data="authApp()">
                 <h2>2️⃣ Test Protected Endpoint</h2>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Get current user status using access token</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">GET /api/auth/status</p>
                 <div class="button-group">
-                    <button onclick="testStatus()">Get Status</button>
-                    <button class="button-secondary" onclick="clearOutput('output-status')">Clear</button>
+                    <button @click="getStatus()" :disabled="isLoading">Get Status</button>
+                    <button @click="clearLogs('status')" class="button-secondary">Clear</button>
                 </div>
-                <div class="output" id="output-status"></div>
+                <div class="output" x-ref="statusOutput"></div>
             </div>
 
-            <!-- Refresh Token -->
-            <div class="card">
+            <!-- Refresh -->
+            <div class="card" x-data="authApp()">
                 <h2>3️⃣ Refresh Access Token</h2>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Use HttpOnly cookie to get a new access token</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">POST /api/auth/refresh</p>
                 <div class="button-group">
-                    <button onclick="testRefresh()">Refresh Token</button>
-                    <button class="button-secondary" onclick="clearOutput('output-refresh')">Clear</button>
+                    <button @click="refresh()" :disabled="isLoading">Refresh Token</button>
+                    <button @click="clearLogs('refresh')" class="button-secondary">Clear</button>
                 </div>
-                <div class="output" id="output-refresh"></div>
+                <div class="output" x-ref="refreshOutput"></div>
             </div>
 
-            <!-- Session Info -->
-            <div class="card">
-                <h2>4️⃣ View Session Info</h2>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">View all active sessions</p>
+            <!-- Storage -->
+            <div class="card" x-data="authApp()">
+                <h2>4️⃣ View localStorage</h2>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Inspect stored tokens</p>
                 <div class="button-group">
-                    <button onclick="testSessions()">Get Sessions</button>
-                    <button class="button-secondary" onclick="clearOutput('output-sessions')">Clear</button>
+                    <button @click="inspectStorage()">Inspect</button>
+                    <button @click="clearAllStorage()" class="button-secondary">Clear All</button>
                 </div>
-                <div class="output" id="output-sessions"></div>
+                <div class="output" x-ref="storageOutput"></div>
             </div>
 
             <!-- Logout -->
-            <div class="card">
+            <div class="card" x-data="authApp()">
                 <h2>5️⃣ Logout</h2>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Invalidate current session and tokens</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">POST /api/auth/logout</p>
                 <div class="button-group">
-                    <button onclick="testLogout()" style="background: #dc3545;">Logout</button>
-                    <button class="button-secondary" onclick="clearOutput('output-logout')">Clear</button>
+                    <button @click="logout()" :disabled="isLoading">Logout</button>
+                    <button @click="clearLogs('logout')" class="button-secondary">Clear</button>
                 </div>
-                <div class="output" id="output-logout"></div>
+                <div class="output" x-ref="logoutOutput"></div>
             </div>
 
-            <!-- LocalStorage Inspector -->
+            <!-- Info -->
             <div class="card wide">
-                <h2>📦 LocalStorage Inspector</h2>
-                <div class="button-group">
-                    <button onclick="inspectStorage()">Inspect Storage</button>
-                    <button class="button-secondary" onclick="clearStorage()">Clear All</button>
-                </div>
-                <div class="output" id="output-storage" style="max-height: 200px;"></div>
-            </div>
-
-            <!-- Console Guide -->
-            <div class="card wide">
-                <h2>📋 Instructions</h2>
-                <ol style="font-size: 13px; line-height: 1.8; margin-left: 20px; color: #666;">
-                    <li><strong>Login first:</strong> Use the "Login" button to get tokens. Your credentials will be stored in localStorage.</li>
-                    <li><strong>Inspect Storage:</strong> Click "Inspect Storage" to see what's saved locally (access token, expiry, etc).</li>
-                    <li><strong>Test Protected:</strong> Use "Get Status" to test that your token works on protected endpoints.</li>
-                    <li><strong>Refresh:</strong> Click "Refresh Token" to get a new access token using the HttpOnly refresh cookie.</li>
-                    <li><strong>View Sessions:</strong> See all active sessions with device info (IP, user-agent).</li>
-                    <li><strong>Logout:</strong> Click "Logout" to invalidate your tokens.</li>
-                    <li><strong>DevTools:</strong> Open F12 → Console to see detailed logs. Look for [TokenManager], [AuthChannel], etc.</li>
-                    <li><strong>Cookies:</strong> Open F12 → Application → Cookies to see the HttpOnly refresh_token cookie.</li>
-                </ol>
+                <h2>📋 How to Test</h2>
+                <ul style="font-size: 12px; color: #666; line-height: 1.8;">
+                    <li><strong>Step 1:</strong> Click "Login" with credentials</li>
+                    <li><strong>Step 2:</strong> Click "Get Status" to test protected endpoint</li>
+                    <li><strong>Step 3:</strong> Close and reopen this page - token stays in localStorage</li>
+                    <li><strong>Step 4:</strong> Click "Refresh Token" to get new token</li>
+                    <li><strong>Step 5:</strong> Click "Logout" to clear session</li>
+                    <li><strong>DevTools:</strong> Open F12 → Console for detailed logs</li>
+                </ul>
             </div>
         </div>
     </div>
 
     <script>
-        // ========== HELPERS ==========
+        function authApp() {
+            return {
+                email: 'javier.rodriguez@pilandina.com.bo',
+                password: 'mklmklmkl',
+                isLoading: false,
 
-        function log(containerId, message, type = 'info') {
-            const container = document.getElementById(containerId);
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            container.appendChild(entry);
-            container.scrollTop = container.scrollHeight;
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        }
+                log(refName, message, type = 'info') {
+                    const ref = this.$refs[refName];
+                    if (!ref) return;
 
-        function clearOutput(containerId) {
-            document.getElementById(containerId).innerHTML = '';
-        }
+                    const entry = document.createElement('div');
+                    entry.className = `log-entry log-${type}`;
+                    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                    ref.appendChild(entry);
+                    ref.scrollTop = ref.scrollHeight;
+                    console.log(`[${type.toUpperCase()}] ${message}`);
+                },
 
-        function getStoredToken() {
-            return localStorage.getItem('helpdesk_access_token');
-        }
+                clearLogs(refName) {
+                    const ref = this.$refs[refName];
+                    if (ref) ref.innerHTML = '';
+                },
 
-        // ========== TESTS ==========
+                async login() {
+                    this.isLoading = true;
+                    this.clearLogs('login');
 
-        async function testLogin() {
-            const outputId = 'output-login';
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+                    try {
+                        this.log('login', `⏳ Attempting login with ${this.email}...`, 'info');
 
-            clearOutput(outputId);
-            clearOutput('output-status');
-            clearOutput('output-refresh');
-            clearOutput('output-logout');
-
-            if (!email || !password) {
-                log(outputId, '❌ Please enter email and password', 'error');
-                return;
-            }
-
-            try {
-                log(outputId, `⏳ Attempting login with ${email}...`, 'info');
-
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    log(outputId, '✅ Login successful!', 'success');
-                    log(outputId, `Token: ${data.data.accessToken.substring(0, 50)}...`, 'success');
-                    log(outputId, `Expires In: ${data.data.expiresIn} seconds`, 'success');
-                    log(outputId, `User: ${data.data.user.displayName} (${data.data.user.email})`, 'success');
-
-                    // Store token
-                    localStorage.setItem('helpdesk_access_token', data.data.accessToken);
-                    localStorage.setItem('helpdesk_token_expiry', Date.now() + data.data.expiresIn * 1000);
-
-                    // Show status box
-                    const statusBox = document.getElementById('status-login');
-                    statusBox.style.display = 'block';
-                    document.getElementById('status-token').textContent = data.data.accessToken.substring(0, 40) + '...';
-                    document.getElementById('status-expires').textContent = data.data.expiresIn + 's';
-                    document.getElementById('status-user').textContent = data.data.user.email;
-
-                    // Show roles
-                    if (data.data.user.roleContexts && data.data.user.roleContexts.length > 0) {
-                        const roles = data.data.user.roleContexts.map(r => r.roleName).join(', ');
-                        log(outputId, `Roles: ${roles}`, 'info');
-                    }
-
-                    log(outputId, '✅ Token saved to localStorage', 'success');
-                    log(outputId, '→ You can now use "Get Status" to test protected endpoints', 'info');
-
-                } else {
-                    log(outputId, `❌ Login failed: ${data.message}`, 'error');
-                    if (data.errors) {
-                        Object.entries(data.errors).forEach(([field, messages]) => {
-                            log(outputId, `  ${field}: ${messages.join(', ')}`, 'error');
+                        const response = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ email: this.email, password: this.password })
                         });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            this.log('login', `❌ Login failed: ${data.message}`, 'error');
+                            return;
+                        }
+
+                        const token = data.accessToken;
+                        const expiresIn = data.expiresIn;
+                        const user = data.user;
+
+                        // Save to localStorage
+                        localStorage.setItem('access_token', token);
+                        localStorage.setItem('token_expires_at', Date.now() + (expiresIn * 1000));
+
+                        this.log('login', '✅ Login successful!', 'success');
+                        this.log('login', `📌 TOKEN: ${token}`, 'success');
+                        this.log('login', `Expires In: ${expiresIn} seconds`, 'success');
+                        this.log('login', `User: ${user.displayName || user.email}`, 'success');
+
+                        if (user.roleContexts?.length > 0) {
+                            const roles = user.roleContexts.map(r => r.roleName).join(', ');
+                            this.log('login', `Roles: ${roles}`, 'info');
+                        }
+
+                    } catch (e) {
+                        this.log('login', `❌ Error: ${e.message}`, 'error');
+                    } finally {
+                        this.isLoading = false;
                     }
-                }
-            } catch (e) {
-                log(outputId, `❌ Error: ${e.message}`, 'error');
-            }
-        }
+                },
 
-        async function testStatus() {
-            const outputId = 'output-status';
-            const token = getStoredToken();
+                async getStatus() {
+                    this.isLoading = true;
+                    this.clearLogs('status');
 
-            clearOutput(outputId);
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        if (!token) {
+                            this.log('status', '❌ No token found. Please login first.', 'error');
+                            return;
+                        }
 
-            if (!token) {
-                log(outputId, '❌ No token found. Please login first.', 'error');
-                return;
-            }
+                        this.log('status', '⏳ Fetching user status...', 'info');
 
-            try {
-                log(outputId, '⏳ Fetching user status...', 'info');
+                        const response = await fetch('/api/auth/status', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
 
-                const response = await fetch('/api/auth/status', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                        const data = await response.json();
 
-                const data = await response.json();
+                        if (!response.ok) {
+                            this.log('status', `❌ Failed: ${data.message}`, 'error');
+                            return;
+                        }
 
-                if (response.ok) {
-                    log(outputId, '✅ Status request successful!', 'success');
-                    log(outputId, `Authenticated: ${data.data.isAuthenticated}`, 'success');
-                    log(outputId, `User: ${data.data.user.displayName}`, 'success');
-                    log(outputId, `Email: ${data.data.user.email}`, 'success');
-                    log(outputId, `Email Verified: ${data.data.user.emailVerified ? 'Yes' : 'No'}`, 'info');
-                    log(outputId, `Status: ${data.data.user.status}`, 'info');
+                        this.log('status', '✅ Status request successful!', 'success');
+                        this.log('status', `Authenticated: ${data.isAuthenticated}`, 'success');
+                        this.log('status', `User: ${data.user.displayName}`, 'success');
+                        this.log('status', `Email: ${data.user.email}`, 'info');
 
-                    if (data.data.user.roleContexts) {
-                        log(outputId, `Roles: ${data.data.user.roleContexts.map(r => r.roleName).join(', ')}`, 'info');
+                    } catch (e) {
+                        this.log('status', `❌ Error: ${e.message}`, 'error');
+                    } finally {
+                        this.isLoading = false;
                     }
-                } else {
-                    log(outputId, `❌ Status request failed: ${data.message}`, 'error');
-                }
-            } catch (e) {
-                log(outputId, `❌ Error: ${e.message}`, 'error');
-            }
-        }
+                },
 
-        async function testRefresh() {
-            const outputId = 'output-refresh';
+                async refresh() {
+                    this.isLoading = true;
+                    this.clearLogs('refresh');
 
-            clearOutput(outputId);
+                    try {
+                        this.log('refresh', '⏳ Requesting token refresh...', 'info');
 
-            try {
-                log(outputId, '⏳ Requesting token refresh...', 'info');
-                log(outputId, 'Note: HttpOnly cookie (refresh_token) is sent automatically', 'info');
+                        const response = await fetch('/api/auth/refresh', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        });
 
-                const response = await fetch('/api/auth/refresh', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
+                        const data = await response.json();
 
-                const data = await response.json();
+                        if (!response.ok) {
+                            this.log('refresh', `❌ Failed: ${data.message}`, 'error');
+                            return;
+                        }
 
-                if (response.ok) {
-                    log(outputId, '✅ Token refresh successful!', 'success');
-                    log(outputId, `New Token: ${data.data.accessToken.substring(0, 50)}...`, 'success');
-                    log(outputId, `Expires In: ${data.data.expiresIn} seconds`, 'success');
+                        const token = data.accessToken;
+                        const expiresIn = data.expiresIn;
 
-                    // Update stored token
-                    localStorage.setItem('helpdesk_access_token', data.data.accessToken);
-                    localStorage.setItem('helpdesk_token_expiry', Date.now() + data.data.expiresIn * 1000);
+                        // Update localStorage
+                        localStorage.setItem('access_token', token);
+                        localStorage.setItem('token_expires_at', Date.now() + (expiresIn * 1000));
 
-                    log(outputId, '✅ New token saved to localStorage', 'success');
-                } else {
-                    log(outputId, `❌ Refresh failed: ${data.message}`, 'error');
-                }
-            } catch (e) {
-                log(outputId, `❌ Error: ${e.message}`, 'error');
-            }
-        }
+                        this.log('refresh', '✅ Token refresh successful!', 'success');
+                        this.log('refresh', `📌 NEW TOKEN: ${token}`, 'success');
+                        this.log('refresh', `Expires In: ${expiresIn} seconds`, 'success');
 
-        async function testSessions() {
-            const outputId = 'output-sessions';
-            const token = getStoredToken();
+                    } catch (e) {
+                        this.log('refresh', `❌ Error: ${e.message}`, 'error');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
 
-            clearOutput(outputId);
+                inspectStorage() {
+                    this.clearLogs('storage');
 
-            if (!token) {
-                log(outputId, '❌ No token found. Please login first.', 'error');
-                return;
-            }
+                    const token = localStorage.getItem('access_token');
+                    const expiresAt = localStorage.getItem('token_expires_at');
 
-            try {
-                log(outputId, '⏳ Fetching active sessions...', 'info');
+                    this.log('storage', 'localStorage contents:', 'info');
 
-                const response = await fetch('/api/auth/sessions', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    log(outputId, `✅ Found ${data.data.length} active session(s):`, 'success');
-
-                    data.data.forEach((session, index) => {
-                        log(outputId, `\nSession ${index + 1}:`, 'info');
-                        log(outputId, `  Device: ${session.device_name || 'Unknown'}`, 'info');
-                        log(outputId, `  IP: ${session.ip_address || 'Unknown'}`, 'info');
-                        log(outputId, `  Last Used: ${session.last_used_at || 'Never'}`, 'info');
-                    });
-                } else {
-                    log(outputId, `❌ Failed to fetch sessions: ${data.message}`, 'error');
-                }
-            } catch (e) {
-                log(outputId, `❌ Error: ${e.message}`, 'error');
-            }
-        }
-
-        async function testLogout() {
-            const outputId = 'output-logout';
-            const token = getStoredToken();
-
-            clearOutput(outputId);
-
-            if (!token) {
-                log(outputId, '⚠️  No token found, but clearing local storage anyway', 'info');
-                clearStorage();
-                return;
-            }
-
-            try {
-                log(outputId, '⏳ Logging out...', 'info');
-
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    log(outputId, '✅ Logout successful!', 'success');
-                    log(outputId, 'Clearing local storage...', 'info');
-                    clearStorage();
-                    document.getElementById('status-login').style.display = 'none';
-                    log(outputId, '✅ All tokens cleared', 'success');
-                } else {
-                    log(outputId, `❌ Logout failed: ${data.message}`, 'error');
-                }
-            } catch (e) {
-                log(outputId, `❌ Error: ${e.message}`, 'error');
-            }
-        }
-
-        function inspectStorage() {
-            const outputId = 'output-storage';
-            clearOutput(outputId);
-
-            const keys = [
-                'helpdesk_access_token',
-                'helpdesk_token_expiry',
-                'helpdesk_token_issued_at'
-            ];
-
-            log(outputId, 'localStorage contents:', 'info');
-
-            keys.forEach(key => {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    if (key.includes('token') && !key.includes('expiry')) {
-                        log(outputId, `${key}: ${value.substring(0, 50)}...`, 'success');
-                    } else if (key.includes('expiry') || key.includes('issued')) {
-                        const date = new Date(parseInt(value));
-                        log(outputId, `${key}: ${value} (${date.toLocaleString()})`, 'info');
+                    if (token) {
+                        this.log('storage', `✅ access_token: ${token.substring(0, 50)}...`, 'success');
                     } else {
-                        log(outputId, `${key}: ${value}`, 'info');
+                        this.log('storage', '❌ access_token: (empty)', 'error');
                     }
-                } else {
-                    log(outputId, `${key}: (empty)`, 'info');
+
+                    if (expiresAt) {
+                        const date = new Date(parseInt(expiresAt));
+                        const expired = new Date() > date;
+                        this.log('storage', `${expired ? '❌' : '✅'} token_expires_at: ${date.toLocaleString()}`, expired ? 'error' : 'success');
+                    } else {
+                        this.log('storage', '❌ token_expires_at: (empty)', 'error');
+                    }
+                },
+
+                clearAllStorage() {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('token_expires_at');
+                    this.clearLogs('storage');
+                    this.log('storage', '✅ All storage cleared', 'success');
+                },
+
+                async logout() {
+                    this.isLoading = true;
+                    this.clearLogs('logout');
+
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        if (!token) {
+                            this.log('logout', '⚠️ No token, clearing storage anyway', 'info');
+                            this.clearAllStorage();
+                            return;
+                        }
+
+                        this.log('logout', '⏳ Logging out...', 'info');
+
+                        const response = await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            this.log('logout', `⚠️ Server logout failed: ${data.message}`, 'error');
+                        } else {
+                            this.log('logout', '✅ Server logout successful', 'success');
+                        }
+
+                        this.clearAllStorage();
+                        this.log('logout', '✅ All tokens cleared', 'success');
+
+                    } catch (e) {
+                        this.log('logout', `⚠️ Error: ${e.message}`, 'error');
+                        this.clearAllStorage();
+                    } finally {
+                        this.isLoading = false;
+                    }
                 }
-            });
-
-            log(outputId, '\nCookies:', 'info');
-            log(outputId, 'refresh_token: Check F12 → Application → Cookies (HttpOnly, not accessible from JS)', 'info');
-        }
-
-        function clearStorage() {
-            const keys = [
-                'helpdesk_access_token',
-                'helpdesk_token_expiry',
-                'helpdesk_token_issued_at'
-            ];
-
-            keys.forEach(key => localStorage.removeItem(key));
-            console.log('LocalStorage cleared');
+            }
         }
     </script>
 </body>

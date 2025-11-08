@@ -165,18 +165,18 @@ class HeartbeatService {
 
       const data = await response.json();
 
-      // Validate response structure: { data: { isAuthenticated, user } }
-      if (!data.data || typeof data.data.isAuthenticated !== 'boolean') {
+      // Validate response structure: { isAuthenticated, user }
+      if (typeof data.isAuthenticated !== 'boolean') {
         this._log('Invalid ping response structure', data);
         return false;
       }
 
-      if (!data.data.isAuthenticated) {
+      if (!data.isAuthenticated) {
         this._log('Ping returned unauthenticated status');
         return false;
       }
 
-      this._log('Ping successful', { user: data.data.user?.email || 'unknown' });
+      this._log('Ping successful', { user: data.user?.email || 'unknown' });
       return true;
     } catch (error) {
       if (error.name === 'AbortError') {

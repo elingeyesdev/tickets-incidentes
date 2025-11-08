@@ -229,14 +229,14 @@ class TokenManager {
 
       const data = await response.json();
 
-      // Parse response structure: { data: { accessToken, expiresIn } }
-      if (!data.data || !data.data.accessToken) {
+      // Parse response structure: { accessToken, expiresIn, tokenType }
+      if (!data.accessToken) {
         throw new Error('Invalid refresh response structure');
       }
 
       return {
-        accessToken: data.data.accessToken,
-        expiresIn: data.data.expiresIn || TokenManager.CONFIG.DEFAULT_TTL
+        accessToken: data.accessToken,
+        expiresIn: data.expiresIn || TokenManager.CONFIG.DEFAULT_TTL
       };
     } catch (error) {
       // Retry logic with exponential backoff
