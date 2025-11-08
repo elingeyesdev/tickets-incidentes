@@ -1,305 +1,531 @@
 @extends('layouts.guest')
 
-@section('title', 'Bienvenido - Helpdesk')
-
-@section('content')
-
-<!-- Hero Section -->
-<section class="py-5 py-md-6">
-    <div class="container">
-        <div class="text-center">
-            <!-- Badge -->
-            <div class="mb-3">
-                <span class="badge bg-primary">
-                    <i class="fas fa-star me-2"></i> Sistema de Soporte Profesional
-                </span>
-            </div>
-
-            <!-- Title -->
-            <h1 class="display-3 fw-bold mb-4" style="color: #1f2937;">
-                Gestiona Tus <span style="color: #2563eb;">Tickets</span> <br>
-                de Forma Profesional
-            </h1>
-
-            <!-- Subtitle -->
-            <p class="h5 text-muted mb-5" style="max-width: 600px; margin: 0 auto;">
-                Plataforma integral de helpdesk diseñada para empresas modernas.
-                Administra solicitudes, colabora con tu equipo y resuelve problemas rápidamente.
-            </p>
-
-            <!-- CTA Buttons -->
-            <div class="d-flex gap-3 justify-content-center flex-wrap mb-5">
-                <a href="{{ route('register') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-building me-2"></i> Solicitar Empresa
-                    <i class="fas fa-arrow-right ms-2"></i>
-                </a>
-                <a href="{{ route('login') }}" class="btn btn-outline-primary btn-lg">
-                    <i class="fas fa-sign-in-alt me-2"></i> Ingresar
-                </a>
-                <a href="{{ route('register') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-user-plus me-2"></i> Crear Cuenta
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Features Section -->
-<section class="py-5" style="background-color: #f9fafb;">
-    <div class="container">
-        <!-- Section Header -->
-        <div class="text-center mb-5">
-            <h2 class="h2 fw-bold mb-3">Características Principales</h2>
-            <p class="h6 text-muted" style="max-width: 500px; margin: 0 auto;">
-                Todo lo que necesitas para gestionar soporte eficientemente
-            </p>
-        </div>
-
-        <!-- Features Grid -->
-        <div class="row g-4">
-            <!-- Feature 1: Gestión Segura -->
-            <div class="col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-inline-flex align-items-center justify-content-center"
-                                 style="width: 50px; height: 50px; background-color: #dbeafe; border-radius: 0.5rem;">
-                                <i class="fas fa-shield-alt fa-lg" style="color: #2563eb;"></i>
-                            </div>
-                        </div>
-                        <h5 class="card-title fw-bold mb-2">Gestión Segura</h5>
-                        <p class="card-text text-muted">
-                            Autenticación JWT avanzada con encriptación de datos.
-                            Protección de privacidad en cada nivel.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 2: Respuesta Rápida -->
-            <div class="col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-inline-flex align-items-center justify-content-center"
-                                 style="width: 50px; height: 50px; background-color: #dcfce7; border-radius: 0.5rem;">
-                                <i class="fas fa-bolt fa-lg" style="color: #16a34a;"></i>
-                            </div>
-                        </div>
-                        <h5 class="card-title fw-bold mb-2">Respuesta Rápida</h5>
-                        <p class="card-text text-muted">
-                            Sistema optimizado para atención inmediata.
-                            Notificaciones en tiempo real de nuevos tickets.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 3: Multi-empresa -->
-            <div class="col-lg-4">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-inline-flex align-items-center justify-content-center"
-                                 style="width: 50px; height: 50px; background-color: #f3e8ff; border-radius: 0.5rem;">
-                                <i class="fas fa-users fa-lg" style="color: #a855f7;"></i>
-                            </div>
-                        </div>
-                        <h5 class="card-title fw-bold mb-2">Multi-Empresa</h5>
-                        <p class="card-text text-muted">
-                            Soporte para múltiples empresas y equipos.
-                            Escalabilidad sin límites.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Benefits Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="row g-5 align-items-center">
-            <!-- Left Column: Benefits List -->
-            <div class="col-lg-6">
-                <h2 class="h2 fw-bold mb-4">¿Por Qué Elegirnos?</h2>
-
-                <!-- Benefit Item 1 -->
-                <div class="d-flex gap-3 mb-4">
-                    <div>
-                        <i class="fas fa-check-circle fa-lg" style="color: #16a34a;"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1">Sistema de Tickets Avanzado</h5>
-                        <p class="text-muted mb-0">
-                            Crea, asigna y resuelve tickets de forma eficiente.
-                            Categorización automática y priorización inteligente.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Benefit Item 2 -->
-                <div class="d-flex gap-3 mb-4">
-                    <div>
-                        <i class="fas fa-check-circle fa-lg" style="color: #16a34a;"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1">Seguimiento en Tiempo Real</h5>
-                        <p class="text-muted mb-0">
-                            Monitorea el progreso de cada ticket.
-                            Historial completo de cambios y comentarios.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Benefit Item 3 -->
-                <div class="d-flex gap-3">
-                    <div>
-                        <i class="fas fa-check-circle fa-lg" style="color: #16a34a;"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1">Escalabilidad Garantizada</h5>
-                        <p class="text-muted mb-0">
-                            Infraestructura diseñada para crecer con tu negocio.
-                            Rendimiento consistente bajo cualquier carga.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: CTA Card -->
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-lg p-4" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);">
-                    <div class="card-body text-white text-center">
-                        <div class="mb-3">
-                            <i class="fas fa-headset fa-4x mb-3" style="opacity: 0.9;"></i>
-                        </div>
-                        <h4 class="h4 fw-bold mb-2">¡Empezar Ahora es Fácil!</h4>
-                        <p class="mb-4" style="font-size: 1.1rem;">
-                            Registra tu empresa en minutos y comienza a gestionar tickets profesionalmente.
-                        </p>
-                        <div class="d-grid gap-2">
-                            <a href="{{ route('register') }}" class="btn btn-light btn-lg fw-bold">
-                                <i class="fas fa-building me-2"></i> Solicitar Empresa
-                            </a>
-                            <a href="{{ route('login') }}" class="btn btn-outline-light btn-lg fw-bold">
-                                <i class="fas fa-sign-in-alt me-2"></i> Ya Tengo Cuenta
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA Final Section -->
-<section class="py-5" style="background-color: #f3f4f6;">
-    <div class="container text-center">
-        <h2 class="h2 fw-bold mb-3">¿Listo Para Mejorar Tu Soporte?</h2>
-        <p class="h6 text-muted mb-4" style="max-width: 600px; margin: 0 auto;">
-            Únete a cientos de empresas que ya confían en nuestro sistema para gestionar
-            su servicio al cliente de forma profesional.
-        </p>
-        <div class="d-flex gap-3 justify-content-center flex-wrap">
-            <a href="{{ route('register') }}" class="btn btn-primary btn-lg">
-                <i class="fas fa-check me-2"></i> Comenzar Ahora
-            </a>
-            <a href="#features" class="btn btn-outline-primary btn-lg">
-                <i class="fas fa-info-circle me-2"></i> Conocer Más
-            </a>
-        </div>
-    </div>
-</section>
-
-@endsection
+@section('title', 'Inicio - Sistema de Gestión de Incidentes')
 
 @section('css')
-<style>
-    /* Hero adjustments */
-    .display-3 {
-        line-height: 1.2;
-    }
+    <style>
+        /* AdminLTE v3 Custom Enhancements */
 
-    /* Card hover effect */
-    .card {
-        transition: all 0.3s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    /* Badge styling */
-    .badge {
-        padding: 0.5rem 1rem;
-        font-size: 0.95rem;
-        font-weight: 500;
-    }
-
-    /* Button improvements */
-    .btn-lg {
-        padding: 0.75rem 2rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .display-3 {
-            font-size: 2rem;
+        /* Layout ajustes */
+        .content-wrapper {
+            margin-left: 0 !important;
+            background: #fff;
         }
 
-        .h5 {
-            font-size: 1rem;
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            overflow-x: hidden;
+        }
+
+        main {
+            overflow: hidden;
+            width: 100%;
+            padding: 0 !important;
+        }
+
+        /* Hero Section - usando degradados de AdminLTE */
+        .hero-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 100px 15px 80px;
+            text-align: center;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.5)" d="M0,96L48,112C96,128,192,160,288,170.7C384,181,480,171,576,160C672,149,768,139,864,144C960,149,1056,171,1152,176C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: cover;
+            opacity: 0.3;
+        }
+
+        .hero-section > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge-lg {
+            padding: 10px 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 50px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+        }
+
+        /* Feature Cards - AdminLTE Card Style */
+        .card {
+            border: 0;
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+            border-top: 4px solid transparent;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+        }
+
+        .card-hover.border-top-primary {
+            border-top-color: #007bff !important;
+        }
+
+        .card-hover.border-top-success {
+            border-top-color: #28a745 !important;
+        }
+
+        .card-hover.border-top-purple {
+            border-top-color: #6f42c1 !important;
+        }
+
+        .card-hover:hover.border-top-primary {
+            box-shadow: 0 8px 24px rgba(0, 123, 255, 0.15) !important;
+        }
+
+        .card-hover:hover.border-top-success {
+            box-shadow: 0 8px 24px rgba(40, 167, 69, 0.15) !important;
+        }
+
+        .card-hover:hover.border-top-purple {
+            box-shadow: 0 8px 24px rgba(111, 66, 193, 0.15) !important;
+        }
+
+        .feature-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        /* AdminLTE Light backgrounds */
+        .bg-primary-light {
+            background: rgba(0, 123, 255, 0.1);
+        }
+
+        .bg-success-light {
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .bg-purple-light {
+            background: rgba(111, 66, 193, 0.1);
+        }
+
+        .text-primary { color: #007bff; }
+        .text-success { color: #28a745; }
+        .text-purple { color: #6f42c1; }
+
+        /* Info styling - AdminLTE pattern */
+        .info-box {
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125);
+            border-radius: 0.28rem;
+            background-color: #fff;
+            display: flex;
+            margin-bottom: 1.5rem;
+            min-height: 90px;
+            padding: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .info-box:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .info-box-icon {
+            border-radius: 0.28rem;
+            -webkit-box-align: center;
+            align-items: center;
+            display: flex;
+            -webkit-box-pack: center;
+            justify-content: center;
+            width: 90px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .info-box-icon.bg-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+
+        .info-box-icon.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+
+        .info-box-icon.bg-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: white;
+        }
+
+        .info-box-icon.bg-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+            color: white;
+        }
+
+        .info-box-content {
+            display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            flex-direction: column;
+            -webkit-box-pack: center;
+            justify-content: center;
+            line-height: 1.8;
+            margin-left: 15px;
+            width: 100%;
+        }
+
+        .info-box-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #6c757d;
+        }
+
+        .info-box-number {
+            display: block;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        /* Button enhancements - AdminLTE v3 Style */
+        .btn {
+            border-radius: 0.28rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
         }
 
         .btn-lg {
-            padding: 0.6rem 1.5rem;
-            font-size: 0.95rem;
-        }
-    }
-
-    /* Dark mode support (if needed) */
-    @media (prefers-color-scheme: dark) {
-        body {
-            background-color: #111827;
-            color: #f3f4f6;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
         }
 
-        .card {
-            background-color: #1f2937;
-            color: #f3f4f6;
+        /* Primary Button - AdminLTE Standard */
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            color: #f3f4f6;
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: #0069d9;
+            border-color: #0062cc;
+            color: white;
         }
-    }
-</style>
+
+        /* Outline Secondary Button - AdminLTE Alternative */
+        .btn-outline-secondary {
+            color: #6c757d;
+            border-color: #6c757d;
+            background-color: white;
+        }
+
+        .btn-outline-secondary:hover,
+        .btn-outline-secondary:focus,
+        .btn-outline-secondary:active {
+            color: white;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        /* Dark Button - AdminLTE Standard */
+        .btn-dark {
+            background-color: #343a40;
+            border-color: #343a40;
+            color: white;
+        }
+
+        .btn-dark:hover,
+        .btn-dark:focus,
+        .btn-dark:active {
+            background-color: #23272b;
+            border-color: #1d2124;
+            color: white;
+        }
+
+        /* Block Button */
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        /* Sections */
+        .features-section,
+        .optimization-section {
+            margin: 0;
+            width: 100%;
+        }
+
+        .features-section {
+            background-color: #ffffff;
+        }
+
+        .optimization-section {
+            background-color: #f8f9fa;
+        }
+
+        /* Gradient backgrounds - AdminLTE */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+            color: white;
+        }
+
+        /* Check icons styling */
+        .check-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 60px 15px 40px;
+            }
+
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+
+            .hero-section .lead {
+                font-size: 1rem;
+            }
+
+            .card-hover {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+@endsection
+
+@section('content')
+    {{-- Hero Section --}}
+    <div class="hero-section">
+        <div class="container">
+            <span class="badge badge-primary badge-lg mb-3">
+                <i class="fas fa-ticket-alt mr-1"></i> Sistema de Gestión de Incidentes
+            </span>
+
+            <h1 class="display-4 font-weight-bold mb-3">
+                Gestiona el soporte de tu empresa de manera
+                <span class="text-primary">profesional</span>
+            </h1>
+
+            <p class="lead text-muted mb-4" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+                Plataforma completa de helpdesk que permite a las empresas gestionar tickets de
+                soporte, clasificar incidentes y brindar atención al cliente de forma eficiente.
+            </p>
+
+            <div class="btn-group-lg" role="group">
+                <a href="{{ route('register') }}" class="btn btn-primary mr-2 mb-2">
+                    <i class="fas fa-arrow-right mr-1"></i> Registrar Empresa
+                </a>
+
+                <a href="{{ route('login') }}" class="btn btn-outline-secondary mr-2 mb-2">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Iniciar Sesión
+                </a>
+
+                <a href="{{ route('register') }}" class="btn btn-dark mb-2">
+                    <i class="fas fa-user-plus mr-1"></i> Registrar Usuario
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {{-- Features Section --}}
+    <div class="features-section py-5 bg-white">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="font-weight-bold mb-2">
+                        Todo lo que necesitas para gestionar soporte
+                    </h2>
+                    <p class="text-muted mb-0" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+                        Herramientas profesionales diseñadas para empresas que buscan excelencia en atención al cliente
+                    </p>
+                </div>
+            </div>
+
+            {{-- Feature Cards --}}
+            <div class="row">
+                {{-- Feature 1: Gestión Segura --}}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card card-hover border-top-primary h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-primary-light mx-auto">
+                                <i class="fas fa-shield-alt text-primary"></i>
+                            </div>
+                            <h5 class="font-weight-bold card-title">Gestión Segura</h5>
+                            <p class="card-text text-muted">
+                                Sistema seguro para múltiples empresas con datos protegidos y acceso controlado
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Feature 2: Respuesta Rápida --}}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card card-hover border-top-success h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-success-light mx-auto">
+                                <i class="fas fa-bolt text-success"></i>
+                            </div>
+                            <h5 class="font-weight-bold card-title">Respuesta Rápida</h5>
+                            <p class="card-text text-muted">
+                                Clasificación automática por categorías y prioridades para resolver incidentes eficientemente
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Feature 3: Multi-empresa --}}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card card-hover border-top-purple h-100">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-purple-light mx-auto">
+                                <i class="fas fa-users text-purple"></i>
+                            </div>
+                            <h5 class="font-weight-bold card-title">Multi-empresa</h5>
+                            <p class="card-text text-muted">
+                                Diseñado para ofrecer servicios de helpdesk a múltiples empresas desde una sola plataforma
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Optimization Section --}}
+    <div class="optimization-section py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                {{-- Left Column - Benefits List --}}
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="mb-3">
+                        <span class="badge badge-primary mb-2" style="font-size: 0.875rem; padding: 8px 16px;">
+                            <i class="fas fa-check-circle mr-1"></i> Características Principales
+                        </span>
+                    </div>
+                    <h2 class="font-weight-bold mb-4">
+                        Optimiza la atención al cliente de tu empresa
+                    </h2>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="check-circle mr-3">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-weight-bold">Tickets Organizados</h5>
+                                <p class="text-muted mb-0">Clasifica y prioriza todos los incidentes automáticamente</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="check-circle mr-3">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-weight-bold">Seguimiento Completo</h5>
+                                <p class="text-muted mb-0">Historial detallado de todos los tickets y resoluciones</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start">
+                            <div class="check-circle mr-3">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-weight-bold">Escalabilidad</h5>
+                                <p class="text-muted mb-0">Crece con tu empresa, desde startups hasta grandes corporaciones</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right Column - CTA Card --}}
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow">
+                        <div class="card-body py-5 text-center">
+                            <div class="mb-4">
+                                <div class="d-inline-flex align-items-center justify-content-center"
+                                     style="width: 80px; height: 80px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 12px; color: white;">
+                                    <i class="fas fa-headset fa-2x"></i>
+                                </div>
+                            </div>
+
+                            <h3 class="font-weight-bold mb-2">¿Listo para comenzar?</h3>
+                            <p class="text-muted mb-4">
+                                Registra tu empresa o inicia sesión para gestionar tickets profesionalmente
+                            </p>
+
+                            <a href="{{ route('register') }}" class="btn btn-primary btn-lg btn-block mb-3">
+                                <i class="fas fa-building mr-2"></i> Registrar Mi Empresa
+                            </a>
+
+                            <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-block">
+                                <i class="fas fa-sign-in-alt mr-2"></i> Ya tengo cuenta - Iniciar Sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('js')
-<script>
-    // Smooth scroll para links internos
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    });
+    <script>
+        console.log('HELPDESK - Sistema de Gestión de Incidentes');
 
-    // Log para debugging
-    console.log('[Welcome] Page loaded');
-</script>
+        // Smooth scroll para anclas
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
 @endsection
