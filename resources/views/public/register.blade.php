@@ -188,6 +188,19 @@
                 </span>
             </button>
         </form>
+
+        <!-- Google Sign Up Button -->
+        <div class="mt-3">
+            <button
+                type="button"
+                class="btn btn-block btn-danger"
+                @click="registerWithGoogle()"
+                :disabled="loading"
+            >
+                <i class="fab fa-google mr-2"></i>
+                Registrarse con Google
+            </button>
+        </div>
     </div>
 @stop
 
