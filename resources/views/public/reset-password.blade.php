@@ -1,6 +1,6 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('auth_header', __('adminlte::adminlte.password_reset_message'))
+@section('auth_header', 'Establecer Nueva Contraseña')
 
 @section('auth_body')
     <div x-data="resetPasswordForm()" x-init="init()">
@@ -120,12 +120,12 @@
 @section('auth_footer')
     <p class="my-0">
         <a href="{{ route('login') }}">
-            {{ __('adminlte::adminlte.sign_in') }}
+            Volver a iniciar sesión
         </a>
     </p>
     <p class="my-0">
-        <a href="{{ route('register') }}">
-            {{ __('adminlte::adminlte.register_a_new_membership') }}
+        <a href="{{ route('password.request') }}">
+            ¿Otro problema con tu contraseña?
         </a>
     </p>
 @stop

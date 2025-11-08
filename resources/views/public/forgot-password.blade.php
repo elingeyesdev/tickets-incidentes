@@ -1,6 +1,6 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('auth_header', __('adminlte::adminlte.password_reset_message'))
+@section('auth_header', 'Recuperar Contraseña')
 
 @section('auth_body')
     <div x-data="forgotPasswordForm()" x-init="init()">
@@ -82,7 +82,7 @@
 @section('auth_footer')
     <p class="my-0">
         <a href="{{ route('login') }}">
-            {{ __('adminlte::adminlte.sign_in') }}
+            Volver a iniciar sesión
         </a>
     </p>
     <p class="my-0">

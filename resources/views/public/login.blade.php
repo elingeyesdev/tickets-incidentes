@@ -4,22 +4,6 @@
     <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
 @stop
 
-@php
-    $loginUrl = View::getSection('login_url') ?? config('adminlte.login_url', 'login');
-    $registerUrl = View::getSection('register_url') ?? config('adminlte.register_url', 'register');
-    $passResetUrl = View::getSection('password_reset_url') ?? config('adminlte.password_reset_url', 'password/reset');
-
-    if (config('adminlte.use_route_url', false)) {
-        $loginUrl = $loginUrl ? route($loginUrl) : '';
-        $registerUrl = $registerUrl ? route($registerUrl) : '';
-        $passResetUrl = $passResetUrl ? route($passResetUrl) : '';
-    } else {
-        $loginUrl = $loginUrl ? url($loginUrl) : '';
-        $registerUrl = $registerUrl ? url($registerUrl) : '';
-        $passResetUrl = $passResetUrl ? url($passResetUrl) : '';
-    }
-@endphp
-
 @section('auth_header', __('adminlte::adminlte.login_message'))
 
 @section('auth_body')
@@ -138,7 +122,7 @@
                 :disabled="loading"
             >
                 <i class="fab fa-google mr-2"></i>
-                {{ __('adminlte::adminlte.sign_in_with') }} Google
+                Iniciar sesión con Google
             </button>
         </div>
     </div>
@@ -146,22 +130,18 @@
 
 @section('auth_footer')
     {{-- Password reset link --}}
-    @if($passResetUrl)
-        <p class="my-0">
-            <a href="{{ $passResetUrl }}">
-                {{ __('adminlte::adminlte.i_forgot_my_password') }}
-            </a>
-        </p>
-    @endif
+    <p class="my-0">
+        <a href="{{ route('password.request') }}">
+            {{ __('adminlte::adminlte.i_forgot_my_password') }}
+        </a>
+    </p>
 
     {{-- Register link --}}
-    @if($registerUrl)
-        <p class="my-0">
-            <a href="{{ $registerUrl }}">
-                {{ __('adminlte::adminlte.register_a_new_membership') }}
-            </a>
-        </p>
-    @endif
+    <p class="my-0">
+        <a href="{{ route('register') }}">
+            {{ __('adminlte::adminlte.register_a_new_membership') }}
+        </a>
+    </p>
 @stop
 
 @section('adminlte_css')
