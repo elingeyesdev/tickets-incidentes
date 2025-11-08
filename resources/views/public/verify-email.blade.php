@@ -1,502 +1,301 @@
-@extends('layouts.onboarding')
+@extends('adminlte::master')
 
-@section('title', 'Verificar Email')
+@section('adminlte_css')
+    <style>
+        .verify-email-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
-@section('step_title')
-    <span x-data="{ state: Alpine.store('verifyEmail') ? Alpine.store('verifyEmail').verificationStatus : 'pending' }">
-        <template x-if="state === 'pending'">Verifica tu Email</template>
-        <template x-if="state === 'verifying'">Verificando...</template>
-        <template x-if="state === 'success'">¡Email Verificado!</template>
-        <template x-if="state === 'error'">Error de Verificación</template>
-    </span>
-@endsection
+        .verify-email-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            padding: 40px;
+            text-align: center;
+        }
 
-@section('step_subtitle')
-    Paso 1 de 3
-@endsection
+        .verify-email-icon {
+            font-size: 64px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
 
-@section('content')
-<div x-data="verifyEmailForm()" x-init="init()">
-    <!-- Pending State -->
-    <template x-if="verificationStatus === 'pending'">
-        <div>
-            <div class="text-center mb-4">
-                <div class="mb-3">
-                    <i class="fas fa-envelope fa-4x text-primary"></i>
-                </div>
-                <p class="text-muted mb-3">
-                    Hemos enviado un correo de verificación a:
-                </p>
-                <p class="fw-bold text-primary mb-4" x-text="userEmail"></p>
-                <p class="text-muted small">
-                    Por favor, revisa tu bandeja de entrada y haz clic en el enlace de verificación.
-                </p>
+        .verify-email-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .verify-email-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .code-input {
+            font-size: 24px;
+            letter-spacing: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .resend-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .countdown {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+@stop
+
+@section('body')
+    <div class="verify-email-container">
+        <div class="verify-email-card" x-data="verifyEmailForm()" x-init="init()">
+            <div class="verify-email-icon">
+                <i class="fas fa-envelope-open-text"></i>
             </div>
 
-            <!-- Resend Section -->
-            <div class="d-grid gap-2 mb-3">
-                <button
-                    type="button"
-                    class="btn btn-outline-primary position-relative"
-                    @click="resendVerification()"
-                    :disabled="!canResend || loading"
-                >
-                    <template x-if="!canResend">
-                        <span>
-                            <i class="fas fa-clock me-2"></i>
-                            Reenviar en <strong x-text="countdown"></strong>s
-                        </span>
-                    </template>
-                    <template x-if="canResend && !loading">
-                        <span>
-                            <i class="fas fa-paper-plane me-2"></i>
-                            Reenviar Correo
-                        </span>
-                    </template>
-                    <template x-if="loading">
-                        <span>
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Enviando...
-                        </span>
-                    </template>
+            <h2>Verifica tu correo electrónico</h2>
 
-                    <!-- Resend Counter Badge -->
-                    <template x-if="resendCount > 0">
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" x-text="resendCount"></span>
-                    </template>
+            <!-- Error Alert -->
+            <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <button type="button" class="close" @click="error = false" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span x-text="errorMessage"></span>
+            </div>
 
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    @click="skip()"
-                    :disabled="loading"
-                >
-                    <i class="fas fa-forward me-2"></i>
-                    Omitir por Ahora
+            <!-- Success Alert -->
+            <div x-show="success" class="alert alert-success alert-dismissible fade show" role="alert">
+                <button type="button" class="close" @click="success = false" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
+                <i class="fas fa-check-circle mr-2"></i>
+                <span x-text="successMessage"></span>
             </div>
 
-            <!-- Info Alert -->
-            <div class="alert alert-info small" role="alert">
-                <i class="fas fa-info-circle me-2"></i>
-                ¿No recibes el correo? Revisa tu carpeta de spam.
-            </div>
-        </div>
-    </template>
-
-    <!-- Verifying State -->
-    <template x-if="verificationStatus === 'verifying'">
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
-                    <span class="visually-hidden">Verificando...</span>
-                </div>
-            </div>
-            <h5 class="fw-bold mb-2">Verificando tu email...</h5>
-            <p class="text-muted">Por favor, espera un momento.</p>
-        </div>
-    </template>
-
-    <!-- Success State -->
-    <template x-if="verificationStatus === 'success'">
-        <div class="text-center py-4">
-            <div class="mb-4">
-                <div class="checkmark-circle">
-                    <i class="fas fa-check-circle fa-5x text-success checkmark-animated"></i>
-                </div>
-            </div>
-            <h5 class="fw-bold mb-2">¡Email verificado exitosamente!</h5>
-            <p class="text-muted mb-4">
-                Tu cuenta ha sido verificada correctamente.
+            <p>
+                Hemos enviado un código de verificación a tu correo electrónico.
+                Ingresa el código para completar tu registro.
             </p>
 
-            <div class="alert alert-success" role="alert">
-                <i class="fas fa-info-circle me-2"></i>
-                <span>Redirigiendo al dashboard en <strong x-text="redirectCountdown"></strong> segundos...</span>
-            </div>
+            <form @submit.prevent="submit()" novalidate>
+                @csrf
 
-            <button
-                type="button"
-                class="btn btn-success w-100"
-                @click="goToDashboard()"
-            >
-                <i class="fas fa-arrow-right me-2"></i>
-                Continuar al Dashboard
-            </button>
-        </div>
-    </template>
+                {{-- Verification Code field --}}
+                <div class="form-group">
+                    <input
+                        type="text"
+                        name="code"
+                        class="form-control form-control-lg code-input"
+                        :class="{ 'is-invalid': errors.code }"
+                        x-model="formData.code"
+                        @input="formData.code = formData.code.toUpperCase()"
+                        @blur="validateCode"
+                        placeholder="000000"
+                        maxlength="6"
+                        :disabled="loading"
+                        autofocus
+                        required
+                    >
+                    <span class="invalid-feedback d-block" x-show="errors.code" x-text="errors.code"></span>
+                </div>
 
-    <!-- Error State -->
-    <template x-if="verificationStatus === 'error'">
-        <div class="text-center py-4">
-            <div class="mb-4">
-                <i class="fas fa-times-circle fa-5x text-danger"></i>
-            </div>
-            <h5 class="fw-bold mb-2">Error al Verificar Email</h5>
-            <p class="text-muted mb-4" x-text="message"></p>
-
-            <div class="d-grid gap-2">
+                {{-- Verify Button --}}
                 <button
-                    type="button"
-                    class="btn btn-primary"
-                    @click="resendVerification()"
+                    type="submit"
+                    class="btn btn-block btn-primary btn-lg"
                     :disabled="loading"
                 >
-                    <template x-if="loading">
-                        <span>
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Reenviando...
-                        </span>
-                    </template>
-                    <template x-if="!loading">
-                        <span>
-                            <i class="fas fa-redo me-2"></i>
-                            Reenviar Correo
-                        </span>
-                    </template>
+                    <span x-show="!loading">
+                        <i class="fas fa-check mr-2"></i>
+                        Verificar correo
+                    </span>
+                    <span x-show="loading">
+                        <span class="spinner-border spinner-border-sm mr-2"></span>
+                        Verificando...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Resend Section -->
+            <div class="resend-section">
+                <p class="text-muted mb-3">¿No recibiste el código?</p>
+
+                <button
+                    type="button"
+                    class="btn btn-link"
+                    @click="resendCode()"
+                    :disabled="loading || !canResend"
+                >
+                    <span x-show="!loading">
+                        Enviar código nuevamente
+                    </span>
+                    <span x-show="loading">
+                        <span class="spinner-border spinner-border-sm mr-2"></span>
+                        Enviando...
+                    </span>
                 </button>
 
-                <a href="/login" class="btn btn-outline-secondary">
-                    <i class="fas fa-sign-in-alt me-2"></i>
-                    Volver al Login
-                </a>
+                <div x-show="!canResend" class="countdown">
+                    Puedes reintentar en <span x-text="resendCountdown"></span> segundos
+                </div>
+            </div>
+
+            <!-- Help Link -->
+            <div class="mt-4 pt-3 border-top">
+                <p class="text-muted small mb-0">
+                    Si tienes problemas, <a href="{{ route('login') }}">vuelve al inicio de sesión</a>
+                </p>
             </div>
         </div>
-    </template>
-</div>
-@endsection
+    </div>
+@stop
 
-@section('footer_actions')
-<div class="text-center" x-data="{ status: Alpine.store('verifyEmail') ? Alpine.store('verifyEmail').verificationStatus : 'pending' }">
-    <template x-if="status === 'pending'">
-        <small class="text-muted">
-            Al omitir, algunas funcionalidades pueden estar limitadas
-        </small>
-    </template>
-</div>
-@endsection
+@section('adminlte_js')
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-@section('additional_info')
-<p class="small mb-0">
-    <a href="/login" class="text-white text-decoration-none">
-        <i class="fas fa-arrow-left me-2"></i>
-        Volver al login
-    </a>
-</p>
-@endsection
+    <script>
+        function verifyEmailForm() {
+            return {
+                formData: {
+                    code: '',
+                },
+                errors: {
+                    code: '',
+                },
+                loading: false,
+                success: false,
+                error: false,
+                successMessage: '',
+                errorMessage: '',
+                canResend: true,
+                resendCountdown: 0,
+                resendTimer: null,
 
-@section('js')
-<script>
-document.addEventListener('alpine:init', () => {
-    // Create global store for verification status
-    Alpine.store('verifyEmail', {
-        verificationStatus: 'pending'
-    });
+                init() {
+                    // Initialize
+                },
 
-    Alpine.data('verifyEmailForm', () => ({
-        // UI state
-        verificationStatus: 'pending', // pending, verifying, success, error
-        message: '',
-        loading: false,
+                validateCode() {
+                    this.errors.code = '';
+                    if (!this.formData.code) {
+                        this.errors.code = 'El código es requerido';
+                        return false;
+                    }
+                    if (this.formData.code.length !== 6) {
+                        this.errors.code = 'El código debe tener 6 caracteres';
+                        return false;
+                    }
+                    if (!/^[0-9A-Z]+$/.test(this.formData.code)) {
+                        this.errors.code = 'El código solo puede contener números y letras';
+                        return false;
+                    }
+                    return true;
+                },
 
-        // Token from URL
-        token: '',
+                async submit() {
+                    const codeValid = this.validateCode();
 
-        // User email (from authStore)
-        userEmail: '',
+                    if (!codeValid) {
+                        return;
+                    }
 
-        // Resend control
-        canResend: false,
-        countdown: 60,
-        resendCount: 0,
-        countdownTimer: null,
+                    this.loading = true;
+                    this.error = false;
+                    this.success = false;
 
-        // Redirect countdown
-        redirectCountdown: 3,
-        redirectTimer: null,
+                    try {
+                        const response = await fetch('/api/auth/email/verify', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-Token': document.querySelector('input[name="_token"]').value,
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                            },
+                            body: JSON.stringify({
+                                code: this.formData.code,
+                            }),
+                        });
 
-        // Services
-        authStore: null,
+                        const data = await response.json();
 
-        /**
-         * Initialize component
-         */
-        async init() {
-            console.log('[VerifyEmailForm] Initialized');
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Código inválido');
+                        }
 
-            // Get authStore
-            this.authStore = Alpine.store('auth');
+                        this.successMessage = '¡Correo verificado exitosamente! Redirigiendo...';
+                        this.success = true;
 
-            // Get user email from authStore
-            if (this.authStore && this.authStore.user) {
-                this.userEmail = this.authStore.user.email;
-            } else {
-                this.userEmail = 'tu correo electrónico';
-            }
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 2000);
 
-            // Check URL for token
-            const urlParams = new URLSearchParams(window.location.search);
-            this.token = urlParams.get('token');
+                    } catch (err) {
+                        console.error('Verify email error:', err);
+                        this.errorMessage = err.message || 'Error desconocido';
+                        this.error = true;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
 
-            if (this.token) {
-                console.log('[VerifyEmailForm] Token found in URL, auto-verifying...');
-                await this.verifyWithToken();
-            } else {
-                console.log('[VerifyEmailForm] No token, showing pending state');
-                this.startCountdown();
-            }
-        },
+                async resendCode() {
+                    this.loading = true;
 
-        /**
-         * Verify email with token
-         */
-        async verifyWithToken() {
-            this.verificationStatus = 'verifying';
-            this.updateGlobalStore();
+                    try {
+                        const response = await fetch('/api/auth/email/verify/resend', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-Token': document.querySelector('input[name="_token"]').value,
+                                'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                            },
+                        });
 
-            try {
-                const response = await fetch('/api/auth/email/verify', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: this.token
-                    }),
-                });
+                        const data = await response.json();
 
-                const result = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Error al enviar el código');
+                        }
 
-                if (!response.ok) {
-                    throw new Error(result.message || 'Error al verificar email');
-                }
+                        this.successMessage = 'Código enviado nuevamente a tu correo';
+                        this.success = true;
 
-                console.log('[VerifyEmailForm] Verification successful');
+                        // Start resend countdown
+                        this.canResend = false;
+                        this.resendCountdown = 60;
 
-                // Update state to success
-                this.verificationStatus = 'success';
-                this.message = '¡Email verificado exitosamente!';
-                this.updateGlobalStore();
+                        this.resendTimer = setInterval(() => {
+                            this.resendCountdown--;
+                            if (this.resendCountdown <= 0) {
+                                clearInterval(this.resendTimer);
+                                this.canResend = true;
+                            }
+                        }, 1000);
 
-                // Start redirect countdown
-                this.startRedirectCountdown();
-
-                // If opened in new tab (from email), close it
-                if (window.opener) {
-                    setTimeout(() => {
-                        window.close();
-                    }, 3000);
-                }
-
-            } catch (error) {
-                console.error('[VerifyEmailForm] Verification error:', error);
-                this.verificationStatus = 'error';
-                this.message = error.message || 'Error al verificar tu email. El token puede estar expirado.';
-                this.updateGlobalStore();
-            }
-        },
-
-        /**
-         * Resend verification email
-         */
-        async resendVerification() {
-            console.log('[VerifyEmailForm] Resending verification email');
-            this.loading = true;
-
-            try {
-                const token = this.authStore.tokenManager.getAccessToken();
-
-                const response = await fetch('/api/auth/email/verify/resend', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.message || 'Error al reenviar correo');
-                }
-
-                console.log('[VerifyEmailForm] Resend successful');
-
-                // Increment resend count
-                this.resendCount++;
-
-                // Reset countdown
-                this.canResend = false;
-                this.countdown = 60;
-                this.startCountdown();
-
-                // Show success message
-                alert('Correo de verificación reenviado. Por favor, revisa tu bandeja de entrada.');
-
-            } catch (error) {
-                console.error('[VerifyEmailForm] Resend error:', error);
-                alert('Error al reenviar el correo. Por favor, intenta nuevamente.');
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        /**
-         * Skip verification
-         */
-        skip() {
-            console.log('[VerifyEmailForm] Skip verification');
-
-            // Show confirmation dialog
-            if (confirm('¿Estás seguro de que deseas omitir la verificación?\n\nOmitir la verificación puede limitar algunas funcionalidades de tu cuenta.')) {
-                // Redirect to dashboard or role selector
-                window.location.href = '/dashboard';
-            }
-        },
-
-        /**
-         * Start countdown timer for resend button
-         */
-        startCountdown() {
-            this.countdownTimer = setInterval(() => {
-                this.countdown--;
-
-                if (this.countdown <= 0) {
-                    clearInterval(this.countdownTimer);
-                    this.canResend = true;
-                }
-            }, 1000);
-        },
-
-        /**
-         * Start redirect countdown timer
-         */
-        startRedirectCountdown() {
-            this.redirectTimer = setInterval(() => {
-                this.redirectCountdown--;
-
-                if (this.redirectCountdown <= 0) {
-                    clearInterval(this.redirectTimer);
-                    this.goToDashboard();
-                }
-            }, 1000);
-        },
-
-        /**
-         * Go to dashboard
-         */
-        goToDashboard() {
-            window.location.href = '/dashboard';
-        },
-
-        /**
-         * Update global store
-         */
-        updateGlobalStore() {
-            Alpine.store('verifyEmail').verificationStatus = this.verificationStatus;
+                    } catch (err) {
+                        console.error('Resend code error:', err);
+                        this.errorMessage = err.message || 'Error desconocido';
+                        this.error = true;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+            };
         }
-    }));
-});
-</script>
-@endsection
-
-@section('css')
-<style>
-    /* Checkmark animation */
-    .checkmark-animated {
-        animation: checkmarkBounce 0.6s ease-in-out;
-    }
-
-    @keyframes checkmarkBounce {
-        0% {
-            opacity: 0;
-            transform: scale(0);
-        }
-        50% {
-            transform: scale(1.1);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    /* Spinner pulse */
-    .spinner-border {
-        animation: spinner-border 0.75s linear infinite, pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.5;
-        }
-    }
-
-    /* Badge positioning */
-    .badge {
-        font-size: 0.7rem;
-    }
-
-    /* Button hover effects */
-    .btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        transition: all 0.3s ease;
-    }
-
-    .btn-success:hover:not(:disabled) {
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
-
-    /* Icon animations */
-    .fa-envelope {
-        animation: fadeInDown 0.5s ease-in-out;
-    }
-
-    .fa-times-circle {
-        animation: fadeInScale 0.5s ease-in-out;
-    }
-
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.5);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .fa-4x {
-            font-size: 3rem;
-        }
-
-        .fa-5x {
-            font-size: 3.5rem;
-        }
-    }
-</style>
-@endsection
+    </script>
+@stop

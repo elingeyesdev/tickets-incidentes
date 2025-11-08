@@ -1,341 +1,263 @@
-@extends('layouts.guest')
+@extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('title', 'Restablecer Contraseña - Helpdesk')
+@section('auth_header', __('adminlte::adminlte.password_reset_message'))
 
-@section('content')
-<div class="row justify-content-center">
-    <div class="col-12 col-md-6 col-lg-5">
-        <!-- Reset Password Card -->
-        <div class="card shadow-sm border-0" x-data="resetPasswordForm()" x-init="init()">
-            <div class="card-header bg-primary text-white text-center py-4">
-                <h4 class="mb-0">
-                    <i class="fas fa-lock-open me-2"></i>
-                    Restablecer Contraseña
-                </h4>
-            </div>
-
-            <div class="card-body p-4">
-                <!-- Token Invalid State -->
-                <template x-if="tokenInvalid">
-                    <div>
-                        <div class="text-center mb-4">
-                            <div class="mb-3">
-                                <i class="fas fa-times-circle fa-4x text-danger"></i>
-                            </div>
-                            <h5 class="fw-bold mb-2">Token Inválido o Expirado</h5>
-                            <p class="text-muted">
-                                El enlace de restablecimiento es inválido o ha expirado.
-                                Por favor, solicita un nuevo enlace.
-                            </p>
-                        </div>
-
-                        <a href="/forgot-password" class="btn btn-primary w-100 mb-2">
-                            <i class="fas fa-redo me-2"></i>
-                            Solicitar Nuevo Enlace
-                        </a>
-
-                        <a href="/login" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-sign-in-alt me-2"></i>
-                            Volver al Login
-                        </a>
-                    </div>
-                </template>
-
-                <!-- Form State -->
-                <template x-if="!tokenInvalid">
-                    <div>
-                        <!-- Info Message -->
-                        <div class="alert alert-info" role="alert">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres.
-                        </div>
-
-                        <!-- Error Alert -->
-                        <template x-if="error">
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                <span x-text="error"></span>
-                                <button type="button" class="btn-close" @click="clearError()" aria-label="Close"></button>
-                            </div>
-                        </template>
-
-                        <!-- Reset Password Form -->
-                        <form @submit.prevent="handleSubmit()">
-                            <!-- Password Input -->
-                            <div class="mb-3">
-                                <label for="password" class="form-label">
-                                    <i class="fas fa-lock text-muted me-1"></i>
-                                    Nueva Contraseña
-                                </label>
-                                <div class="input-group">
-                                    <input
-                                        :type="showPassword ? 'text' : 'password'"
-                                        id="password"
-                                        class="form-control"
-                                        :class="{ 'is-invalid': errors.password }"
-                                        x-model="formData.password"
-                                        placeholder="Mínimo 8 caracteres"
-                                        required
-                                        autocomplete="new-password"
-                                        :disabled="loading"
-                                    >
-                                    <button
-                                        class="btn btn-outline-secondary"
-                                        type="button"
-                                        @click="showPassword = !showPassword"
-                                        :disabled="loading"
-                                    >
-                                        <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                                    </button>
-                                </div>
-                                <template x-if="errors.password">
-                                    <div class="invalid-feedback d-block" x-text="errors.password"></div>
-                                </template>
-                            </div>
-
-                            <!-- Password Confirmation Input -->
-                            <div class="mb-4">
-                                <label for="passwordConfirmation" class="form-label">
-                                    <i class="fas fa-lock text-muted me-1"></i>
-                                    Confirmar Nueva Contraseña
-                                </label>
-                                <div class="input-group">
-                                    <input
-                                        :type="showPasswordConfirmation ? 'text' : 'password'"
-                                        id="passwordConfirmation"
-                                        class="form-control"
-                                        :class="{ 'is-invalid': errors.passwordConfirmation }"
-                                        x-model="formData.passwordConfirmation"
-                                        placeholder="Repite tu nueva contraseña"
-                                        required
-                                        autocomplete="new-password"
-                                        :disabled="loading"
-                                    >
-                                    <button
-                                        class="btn btn-outline-secondary"
-                                        type="button"
-                                        @click="showPasswordConfirmation = !showPasswordConfirmation"
-                                        :disabled="loading"
-                                    >
-                                        <i :class="showPasswordConfirmation ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                                    </button>
-                                </div>
-                                <template x-if="errors.passwordConfirmation">
-                                    <div class="invalid-feedback d-block" x-text="errors.passwordConfirmation"></div>
-                                </template>
-                            </div>
-
-                            <!-- Submit Button -->
-                            <button
-                                type="submit"
-                                class="btn btn-primary w-100 mb-3"
-                                :disabled="loading"
-                            >
-                                <template x-if="loading">
-                                    <span>
-                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        Restableciendo contraseña...
-                                    </span>
-                                </template>
-                                <template x-if="!loading">
-                                    <span>
-                                        <i class="fas fa-check me-2"></i>
-                                        Restablecer Contraseña
-                                    </span>
-                                </template>
-                            </button>
-
-                            <!-- Back to Login Link -->
-                            <div class="text-center">
-                                <a href="/login" class="text-decoration-none">
-                                    <i class="fas fa-arrow-left me-2"></i>
-                                    Volver al login
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </template>
-            </div>
+@section('auth_body')
+    <div x-data="resetPasswordForm()" x-init="init()">
+        <!-- Error Alert -->
+        <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <button type="button" class="close" @click="error = false" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span x-text="errorMessage"></span>
         </div>
+
+        <!-- Success Alert -->
+        <div x-show="success" class="alert alert-success alert-dismissible fade show" role="alert">
+            <button type="button" class="close" @click="success = false" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <i class="fas fa-check-circle mr-2"></i>
+            <span x-text="successMessage"></span>
+        </div>
+
+        <form @submit.prevent="submit()" novalidate>
+            @csrf
+
+            {{-- Token field --}}
+            <input type="hidden" name="token" x-model="token" value="{{ $token }}">
+
+            {{-- Email field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.email }"
+                    x-model="formData.email"
+                    @blur="validateEmail"
+                    placeholder="{{ __('adminlte::adminlte.email') }}"
+                    :disabled="loading"
+                    autofocus
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-envelope {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.email" x-text="errors.email"></span>
+            </div>
+
+            {{-- Password field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="password"
+                    name="password"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.password }"
+                    x-model="formData.password"
+                    @blur="validatePassword"
+                    placeholder="{{ __('adminlte::adminlte.password') }}"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.password" x-text="errors.password"></span>
+            </div>
+
+            {{-- Password confirmation field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="password"
+                    name="password_confirmation"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.passwordConfirmation }"
+                    x-model="formData.passwordConfirmation"
+                    @blur="validatePasswordConfirmation"
+                    placeholder="{{ __('adminlte::adminlte.retype_password') }}"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.passwordConfirmation" x-text="errors.passwordConfirmation"></span>
+            </div>
+
+            {{-- Confirm password reset button --}}
+            <button
+                type="submit"
+                class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
+                :disabled="loading"
+            >
+                <span x-show="!loading">
+                    <span class="fas fa-sync-alt"></span>
+                    {{ __('adminlte::adminlte.reset_password') }}
+                </span>
+                <span x-show="loading">
+                    <span class="spinner-border spinner-border-sm mr-2"></span>
+                    Reseteando...
+                </span>
+            </button>
+        </form>
     </div>
-</div>
-@endsection
+@stop
 
-@section('js')
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('resetPasswordForm', () => ({
-        // Form data
-        formData: {
-            password: '',
-            passwordConfirmation: ''
-        },
+@section('auth_footer')
+    <p class="my-0">
+        <a href="{{ route('login') }}">
+            {{ __('adminlte::adminlte.sign_in') }}
+        </a>
+    </p>
+    <p class="my-0">
+        <a href="{{ route('register') }}">
+            {{ __('adminlte::adminlte.register_a_new_membership') }}
+        </a>
+    </p>
+@stop
 
-        // UI state
-        showPassword: false,
-        showPasswordConfirmation: false,
-        loading: false,
-        error: null,
-        errors: {},
-        tokenInvalid: false,
+@section('adminlte_js')
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-        // Token from URL
-        token: '',
+    <script>
+        function resetPasswordForm() {
+            return {
+                token: '{{ $token }}',
+                formData: {
+                    email: '',
+                    password: '',
+                    passwordConfirmation: '',
+                },
+                errors: {
+                    email: '',
+                    password: '',
+                    passwordConfirmation: '',
+                },
+                loading: false,
+                success: false,
+                error: false,
+                successMessage: '',
+                errorMessage: '',
 
-        /**
-         * Initialize component
-         */
-        init() {
-            console.log('[ResetPasswordForm] Initialized');
+                init() {
+                    // Initialize form
+                },
 
-            // Get token from URL query parameter
-            const urlParams = new URLSearchParams(window.location.search);
-            this.token = urlParams.get('token');
+                validateEmail() {
+                    this.errors.email = '';
+                    if (!this.formData.email) {
+                        this.errors.email = 'El correo es requerido';
+                        return false;
+                    }
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(this.formData.email)) {
+                        this.errors.email = 'Ingresa un correo válido';
+                        return false;
+                    }
+                    return true;
+                },
 
-            if (!this.token) {
-                console.error('[ResetPasswordForm] No token found in URL');
-                this.tokenInvalid = true;
-            } else {
-                console.log('[ResetPasswordForm] Token found');
-            }
-        },
+                validatePassword() {
+                    this.errors.password = '';
+                    if (!this.formData.password) {
+                        this.errors.password = 'La contraseña es requerida';
+                        return false;
+                    }
+                    if (this.formData.password.length < 8) {
+                        this.errors.password = 'La contraseña debe tener al menos 8 caracteres';
+                        return false;
+                    }
+                    // Check for letters, numbers and special characters
+                    const hasLetters = /[a-zA-Z]/.test(this.formData.password);
+                    const hasNumbers = /[0-9]/.test(this.formData.password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(this.formData.password);
 
-        /**
-         * Handle form submission
-         */
-        async handleSubmit() {
-            console.log('[ResetPasswordForm] Submit attempt');
-            this.loading = true;
-            this.error = null;
-            this.errors = {};
+                    if (!hasLetters || !hasNumbers || !hasSpecial) {
+                        this.errors.password = 'La contraseña debe contener letras, números y caracteres especiales';
+                        return false;
+                    }
+                    return true;
+                },
 
-            // Validation
-            if (!this.validateForm()) {
-                this.loading = false;
-                return;
-            }
+                validatePasswordConfirmation() {
+                    this.errors.passwordConfirmation = '';
+                    if (!this.formData.passwordConfirmation) {
+                        this.errors.passwordConfirmation = 'Confirma tu contraseña';
+                        return false;
+                    }
+                    if (this.formData.password !== this.formData.passwordConfirmation) {
+                        this.errors.passwordConfirmation = 'Las contraseñas no coinciden';
+                        return false;
+                    }
+                    return true;
+                },
 
-            try {
-                const response = await fetch('/api/auth/password-reset/confirm', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: this.token,
-                        password: this.formData.password,
-                        passwordConfirmation: this.formData.passwordConfirmation
-                    }),
-                });
+                async submit() {
+                    const emailValid = this.validateEmail();
+                    const passwordValid = this.validatePassword();
+                    const passwordConfirmationValid = this.validatePasswordConfirmation();
 
-                const result = await response.json();
-
-                if (!response.ok) {
-                    // Check if token is invalid
-                    if (response.status === 400 || response.status === 404) {
-                        this.tokenInvalid = true;
-                        throw new Error('Token inválido o expirado');
+                    if (!emailValid || !passwordValid || !passwordConfirmationValid) {
+                        return;
                     }
 
-                    throw new Error(result.message || 'Error al restablecer contraseña');
-                }
+                    this.loading = true;
+                    this.error = false;
+                    this.success = false;
 
-                console.log('[ResetPasswordForm] Password reset successful');
+                    try {
+                        const response = await fetch('/api/auth/password-reset/confirm', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-Token': document.querySelector('input[name="_token"]').value,
+                            },
+                            body: JSON.stringify({
+                                token: this.token,
+                                email: this.formData.email,
+                                password: this.formData.password,
+                                password_confirmation: this.formData.passwordConfirmation,
+                            }),
+                        });
 
-                // Show success message and redirect
-                alert('Contraseña restablecida exitosamente. Redirigiendo al login...');
-                window.location.href = '/login';
+                        const data = await response.json();
 
-            } catch (error) {
-                console.error('[ResetPasswordForm] Error:', error);
-                this.error = error.message || 'Error de conexión. Por favor, intenta nuevamente.';
-            } finally {
-                this.loading = false;
-            }
-        },
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Error al resetear la contraseña');
+                        }
 
-        /**
-         * Validate form data
-         */
-        validateForm() {
-            let isValid = true;
+                        this.successMessage = '¡Contraseña reseteada exitosamente! Redirigiendo...';
+                        this.success = true;
 
-            // Password validation
-            if (!this.formData.password) {
-                this.errors.password = 'La contraseña es requerida';
-                isValid = false;
-            } else if (this.formData.password.length < 8) {
-                this.errors.password = 'La contraseña debe tener al menos 8 caracteres';
-                isValid = false;
-            }
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
 
-            // Password confirmation validation
-            if (!this.formData.passwordConfirmation) {
-                this.errors.passwordConfirmation = 'Debes confirmar tu contraseña';
-                isValid = false;
-            } else if (this.formData.password !== this.formData.passwordConfirmation) {
-                this.errors.passwordConfirmation = 'Las contraseñas no coinciden';
-                isValid = false;
-            }
-
-            return isValid;
-        },
-
-        /**
-         * Clear error message
-         */
-        clearError() {
-            this.error = null;
+                    } catch (err) {
+                        console.error('Reset password error:', err);
+                        this.errorMessage = err.message || 'Error desconocido';
+                        this.error = true;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+            };
         }
-    }));
-});
-</script>
-@endsection
-
-@section('css')
-<style>
-    .card {
-        border-radius: 0.5rem;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-
-    .card-header {
-        border-top-left-radius: 0.5rem;
-        border-top-right-radius: 0.5rem;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .form-control:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
-    }
-
-    .fa-times-circle {
-        animation: fadeInScale 0.5s ease-in-out;
-    }
-
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.5);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .card {
-            margin: 0 1rem;
-        }
-    }
-</style>
-@endsection
+    </script>
+@stop

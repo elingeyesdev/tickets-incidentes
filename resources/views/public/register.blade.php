@@ -1,514 +1,399 @@
-@extends('layouts.guest')
+@extends('adminlte::auth.auth-page', ['authType' => 'register'])
 
-@section('title', 'Registro - Helpdesk')
+@php
+    $loginUrl = View::getSection('login_url') ?? config('adminlte.login_url', 'login');
+    $registerUrl = View::getSection('register_url') ?? config('adminlte.register_url', 'register');
 
-@section('content')
-<div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6">
-        <!-- Register Card -->
-        <div class="card shadow-sm border-0" x-data="registerForm()" x-init="init()">
-            <div class="card-header bg-primary text-white text-center py-4">
-                <h4 class="mb-0">
-                    <i class="fas fa-user-plus me-2"></i>
-                    Crear Cuenta
-                </h4>
-            </div>
+    if (config('adminlte.use_route_url', false)) {
+        $loginUrl = $loginUrl ? route($loginUrl) : '';
+        $registerUrl = $registerUrl ? route($registerUrl) : '';
+    } else {
+        $loginUrl = $loginUrl ? url($loginUrl) : '';
+        $registerUrl = $registerUrl ? url($registerUrl) : '';
+    }
+@endphp
 
-            <div class="card-body p-4">
-                <!-- Error Alert -->
-                <template x-if="error">
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <span x-text="error"></span>
-                        <button type="button" class="btn-close" @click="clearError()" aria-label="Close"></button>
-                    </div>
-                </template>
+@section('auth_header', __('adminlte::adminlte.register_message'))
 
-                <!-- Register Form -->
-                <form @submit.prevent="handleRegister()">
-                    <!-- Name Row -->
-                    <div class="row">
-                        <!-- First Name -->
-                        <div class="col-md-6 mb-3">
-                            <label for="firstName" class="form-label">
-                                <i class="fas fa-user text-muted me-1"></i>
-                                Nombre
-                            </label>
-                            <input
-                                type="text"
-                                id="firstName"
-                                class="form-control"
-                                :class="{ 'is-invalid': errors.firstName }"
-                                x-model="formData.firstName"
-                                placeholder="Juan"
-                                required
-                                autocomplete="given-name"
-                                :disabled="loading"
-                            >
-                            <template x-if="errors.firstName">
-                                <div class="invalid-feedback" x-text="errors.firstName"></div>
-                            </template>
-                        </div>
-
-                        <!-- Last Name -->
-                        <div class="col-md-6 mb-3">
-                            <label for="lastName" class="form-label">
-                                <i class="fas fa-user text-muted me-1"></i>
-                                Apellido
-                            </label>
-                            <input
-                                type="text"
-                                id="lastName"
-                                class="form-control"
-                                :class="{ 'is-invalid': errors.lastName }"
-                                x-model="formData.lastName"
-                                placeholder="Pérez"
-                                required
-                                autocomplete="family-name"
-                                :disabled="loading"
-                            >
-                            <template x-if="errors.lastName">
-                                <div class="invalid-feedback" x-text="errors.lastName"></div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <!-- Email Input -->
-                    <div class="mb-3">
-                        <label for="email" class="form-label">
-                            <i class="fas fa-envelope text-muted me-1"></i>
-                            Correo Electrónico
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            class="form-control"
-                            :class="{ 'is-invalid': errors.email }"
-                            x-model="formData.email"
-                            placeholder="usuario@ejemplo.com"
-                            required
-                            autocomplete="email"
-                            :disabled="loading"
-                        >
-                        <template x-if="errors.email">
-                            <div class="invalid-feedback" x-text="errors.email"></div>
-                        </template>
-                    </div>
-
-                    <!-- Password Input -->
-                    <div class="mb-3">
-                        <label for="password" class="form-label">
-                            <i class="fas fa-lock text-muted me-1"></i>
-                            Contraseña
-                        </label>
-                        <div class="input-group">
-                            <input
-                                :type="showPassword ? 'text' : 'password'"
-                                id="password"
-                                class="form-control"
-                                :class="{ 'is-invalid': errors.password }"
-                                x-model="formData.password"
-                                @input="calculatePasswordStrength()"
-                                placeholder="Mínimo 8 caracteres"
-                                required
-                                autocomplete="new-password"
-                                :disabled="loading"
-                            >
-                            <button
-                                class="btn btn-outline-secondary"
-                                type="button"
-                                @click="showPassword = !showPassword"
-                                :disabled="loading"
-                            >
-                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                            </button>
-                        </div>
-
-                        <!-- Password Strength Indicator -->
-                        <template x-if="formData.password.length > 0">
-                            <div class="mt-2">
-                                <div class="progress" style="height: 5px;">
-                                    <div
-                                        class="progress-bar"
-                                        :class="{
-                                            'bg-danger': passwordStrength <= 1,
-                                            'bg-warning': passwordStrength >= 2 && passwordStrength <= 3,
-                                            'bg-success': passwordStrength >= 4
-                                        }"
-                                        :style="`width: ${(passwordStrength / 5) * 100}%`"
-                                    ></div>
-                                </div>
-                                <small class="text-muted" x-text="getPasswordStrengthText()"></small>
-                            </div>
-                        </template>
-
-                        <template x-if="errors.password">
-                            <div class="invalid-feedback d-block" x-text="errors.password"></div>
-                        </template>
-                    </div>
-
-                    <!-- Password Confirmation Input -->
-                    <div class="mb-3">
-                        <label for="passwordConfirmation" class="form-label">
-                            <i class="fas fa-lock text-muted me-1"></i>
-                            Confirmar Contraseña
-                        </label>
-                        <div class="input-group">
-                            <input
-                                :type="showPasswordConfirmation ? 'text' : 'password'"
-                                id="passwordConfirmation"
-                                class="form-control"
-                                :class="{ 'is-invalid': errors.passwordConfirmation }"
-                                x-model="formData.passwordConfirmation"
-                                placeholder="Repite tu contraseña"
-                                required
-                                autocomplete="new-password"
-                                :disabled="loading"
-                            >
-                            <button
-                                class="btn btn-outline-secondary"
-                                type="button"
-                                @click="showPasswordConfirmation = !showPasswordConfirmation"
-                                :disabled="loading"
-                            >
-                                <i :class="showPasswordConfirmation ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                            </button>
-                        </div>
-                        <template x-if="errors.passwordConfirmation">
-                            <div class="invalid-feedback d-block" x-text="errors.passwordConfirmation"></div>
-                        </template>
-                    </div>
-
-                    <!-- Accept Terms Checkbox -->
-                    <div class="form-check mb-2">
-                        <input
-                            type="checkbox"
-                            class="form-check-input"
-                            :class="{ 'is-invalid': errors.acceptsTerms }"
-                            id="acceptsTerms"
-                            x-model="formData.acceptsTerms"
-                            required
-                            :disabled="loading"
-                        >
-                        <label class="form-check-label" for="acceptsTerms">
-                            Acepto los
-                            <a href="/terms" target="_blank" class="text-decoration-none">Términos y Condiciones</a>
-                        </label>
-                        <template x-if="errors.acceptsTerms">
-                            <div class="invalid-feedback d-block" x-text="errors.acceptsTerms"></div>
-                        </template>
-                    </div>
-
-                    <!-- Accept Privacy Policy Checkbox -->
-                    <div class="form-check mb-3">
-                        <input
-                            type="checkbox"
-                            class="form-check-input"
-                            :class="{ 'is-invalid': errors.acceptsPrivacyPolicy }"
-                            id="acceptsPrivacyPolicy"
-                            x-model="formData.acceptsPrivacyPolicy"
-                            required
-                            :disabled="loading"
-                        >
-                        <label class="form-check-label" for="acceptsPrivacyPolicy">
-                            Acepto la
-                            <a href="/privacy" target="_blank" class="text-decoration-none">Política de Privacidad</a>
-                        </label>
-                        <template x-if="errors.acceptsPrivacyPolicy">
-                            <div class="invalid-feedback d-block" x-text="errors.acceptsPrivacyPolicy"></div>
-                        </template>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button
-                        type="submit"
-                        class="btn btn-primary w-100 mb-3"
-                        :disabled="loading"
-                    >
-                        <template x-if="loading">
-                            <span>
-                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Creando cuenta...
-                            </span>
-                        </template>
-                        <template x-if="!loading">
-                            <span>
-                                <i class="fas fa-user-plus me-2"></i>
-                                Crear Cuenta
-                            </span>
-                        </template>
-                    </button>
-
-                    <!-- Divider -->
-                    <div class="position-relative mb-3">
-                        <hr>
-                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">
-                            O
-                        </span>
-                    </div>
-
-                    <!-- Google Register Button (Placeholder) -->
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary w-100 mb-3"
-                        disabled
-                        title="Próximamente disponible"
-                    >
-                        <i class="fab fa-google me-2"></i>
-                        Registrarse con Google
-                        <small class="d-block text-muted" style="font-size: 0.75rem;">(Próximamente)</small>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Card Footer -->
-            <div class="card-footer text-center bg-light">
-                <p class="mb-0">
-                    ¿Ya tienes cuenta?
-                    <a href="/login" class="text-decoration-none fw-bold">
-                        Inicia sesión aquí
-                    </a>
-                </p>
-            </div>
+@section('auth_body')
+    <div x-data="registerForm()" x-init="init()" @keydown.enter="submit()">
+        <!-- Error Alert -->
+        <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <button type="button" class="close" @click="error = false" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span x-text="errorMessage"></span>
         </div>
+
+        <form @submit.prevent="submit()" novalidate>
+            @csrf
+
+            {{-- First Name field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="text"
+                    name="firstName"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.firstName }"
+                    x-model="formData.firstName"
+                    @blur="validateFirstName"
+                    placeholder="Nombre"
+                    :disabled="loading"
+                    autofocus
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-user {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.firstName" x-text="errors.firstName"></span>
+            </div>
+
+            {{-- Last Name field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="text"
+                    name="lastName"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.lastName }"
+                    x-model="formData.lastName"
+                    @blur="validateLastName"
+                    placeholder="Apellido"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-user {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.lastName" x-text="errors.lastName"></span>
+            </div>
+
+            {{-- Email field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.email }"
+                    x-model="formData.email"
+                    @blur="validateEmail"
+                    placeholder="{{ __('adminlte::adminlte.email') }}"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-envelope {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.email" x-text="errors.email"></span>
+            </div>
+
+            {{-- Password field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="password"
+                    name="password"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.password }"
+                    x-model="formData.password"
+                    @blur="validatePassword"
+                    placeholder="{{ __('adminlte::adminlte.password') }}"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.password" x-text="errors.password"></span>
+            </div>
+
+            {{-- Password Confirmation field --}}
+            <div class="input-group mb-3">
+                <input
+                    type="password"
+                    name="passwordConfirmation"
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.passwordConfirmation }"
+                    x-model="formData.passwordConfirmation"
+                    @blur="validatePasswordConfirmation"
+                    placeholder="{{ __('adminlte::adminlte.retype_password') }}"
+                    :disabled="loading"
+                    required
+                >
+
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    </div>
+                </div>
+
+                <span class="invalid-feedback d-block" x-show="errors.passwordConfirmation" x-text="errors.passwordConfirmation"></span>
+            </div>
+
+            {{-- Terms and Conditions --}}
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input
+                        type="checkbox"
+                        class="custom-control-input"
+                        id="acceptsTerms"
+                        name="acceptsTerms"
+                        x-model="formData.acceptsTerms"
+                        @change="validateTerms"
+                        :disabled="loading"
+                        required
+                    >
+                    <label class="custom-control-label" for="acceptsTerms">
+                        Acepto los <a href="#" target="_blank">términos y condiciones</a>
+                    </label>
+                </div>
+                <span class="invalid-feedback d-block" x-show="errors.acceptsTerms" x-text="errors.acceptsTerms"></span>
+            </div>
+
+            {{-- Privacy Policy --}}
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input
+                        type="checkbox"
+                        class="custom-control-input"
+                        id="acceptsPrivacyPolicy"
+                        name="acceptsPrivacyPolicy"
+                        x-model="formData.acceptsPrivacyPolicy"
+                        @change="validatePrivacyPolicy"
+                        :disabled="loading"
+                        required
+                    >
+                    <label class="custom-control-label" for="acceptsPrivacyPolicy">
+                        Acepto la <a href="#" target="_blank">política de privacidad</a>
+                    </label>
+                </div>
+                <span class="invalid-feedback d-block" x-show="errors.acceptsPrivacyPolicy" x-text="errors.acceptsPrivacyPolicy"></span>
+            </div>
+
+            {{-- Register Button --}}
+            <button
+                type="submit"
+                class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
+                :disabled="loading"
+            >
+                <span x-show="!loading">
+                    <span class="fas fa-user-plus"></span>
+                    {{ __('adminlte::adminlte.register') }}
+                </span>
+                <span x-show="loading">
+                    <span class="spinner-border spinner-border-sm mr-2"></span>
+                    Registrando...
+                </span>
+            </button>
+        </form>
     </div>
-</div>
-@endsection
+@stop
 
-@section('js')
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('registerForm', () => ({
-        // Form data
-        formData: {
-            firstName: '',
-            lastName: '',
-            email: '',
-            password: '',
-            passwordConfirmation: '',
-            acceptsTerms: false,
-            acceptsPrivacyPolicy: false
-        },
+@section('auth_footer')
+    <p class="my-0">
+        <a href="{{ $loginUrl }}">
+            {{ __('adminlte::adminlte.i_already_have_a_membership') }}
+        </a>
+    </p>
+@stop
 
-        // UI state
-        showPassword: false,
-        showPasswordConfirmation: false,
-        passwordStrength: 0,
-        loading: false,
-        error: null,
-        errors: {},
+@section('adminlte_js')
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-        // Services
-        authStore: null,
+    <script>
+        function registerForm() {
+            return {
+                formData: {
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    password: '',
+                    passwordConfirmation: '',
+                    acceptsTerms: false,
+                    acceptsPrivacyPolicy: false,
+                },
+                errors: {
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    password: '',
+                    passwordConfirmation: '',
+                    acceptsTerms: '',
+                    acceptsPrivacyPolicy: '',
+                },
+                loading: false,
+                error: false,
+                errorMessage: '',
 
-        /**
-         * Initialize component
-         */
-        init() {
-            console.log('[RegisterForm] Initialized');
-            this.authStore = Alpine.store('auth');
+                init() {
+                    // Initialize form
+                },
 
-            // Check if already authenticated
-            if (this.authStore && this.authStore.isAuthenticated) {
-                console.log('[RegisterForm] User already authenticated, redirecting...');
-                window.location.href = '/dashboard';
-            }
-        },
+                validateFirstName() {
+                    this.errors.firstName = '';
+                    if (!this.formData.firstName) {
+                        this.errors.firstName = 'El nombre es requerido';
+                        return false;
+                    }
+                    if (this.formData.firstName.length < 2) {
+                        this.errors.firstName = 'El nombre debe tener al menos 2 caracteres';
+                        return false;
+                    }
+                    return true;
+                },
 
-        /**
-         * Handle registration submission
-         */
-        async handleRegister() {
-            console.log('[RegisterForm] Register attempt');
-            this.loading = true;
-            this.error = null;
-            this.errors = {};
+                validateLastName() {
+                    this.errors.lastName = '';
+                    if (!this.formData.lastName) {
+                        this.errors.lastName = 'El apellido es requerido';
+                        return false;
+                    }
+                    if (this.formData.lastName.length < 2) {
+                        this.errors.lastName = 'El apellido debe tener al menos 2 caracteres';
+                        return false;
+                    }
+                    return true;
+                },
 
-            // Validation
-            if (!this.validateForm()) {
-                this.loading = false;
-                return;
-            }
+                validateEmail() {
+                    this.errors.email = '';
+                    if (!this.formData.email) {
+                        this.errors.email = 'El correo es requerido';
+                        return false;
+                    }
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(this.formData.email)) {
+                        this.errors.email = 'Ingresa un correo válido';
+                        return false;
+                    }
+                    return true;
+                },
 
-            try {
-                const result = await this.authStore.register({
-                    firstName: this.formData.firstName,
-                    lastName: this.formData.lastName,
-                    email: this.formData.email,
-                    password: this.formData.password,
-                    passwordConfirmation: this.formData.passwordConfirmation,
-                    acceptsTerms: this.formData.acceptsTerms,
-                    acceptsPrivacyPolicy: this.formData.acceptsPrivacyPolicy
-                });
+                validatePassword() {
+                    this.errors.password = '';
+                    if (!this.formData.password) {
+                        this.errors.password = 'La contraseña es requerida';
+                        return false;
+                    }
+                    if (this.formData.password.length < 8) {
+                        this.errors.password = 'La contraseña debe tener al menos 8 caracteres';
+                        return false;
+                    }
+                    // Check for letters, numbers and special characters
+                    const hasLetters = /[a-zA-Z]/.test(this.formData.password);
+                    const hasNumbers = /[0-9]/.test(this.formData.password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(this.formData.password);
 
-                if (result.success) {
-                    console.log('[RegisterForm] Registration successful');
-                    // Redirect to verify email
-                    window.location.href = '/verify-email';
-                } else {
-                    console.error('[RegisterForm] Registration failed:', result.error);
-                    this.error = result.error || 'Error al registrar usuario';
-                }
-            } catch (error) {
-                console.error('[RegisterForm] Registration error:', error);
-                this.error = 'Error de conexión. Por favor, intenta nuevamente.';
-            } finally {
-                this.loading = false;
-            }
-        },
+                    if (!hasLetters || !hasNumbers || !hasSpecial) {
+                        this.errors.password = 'La contraseña debe contener letras, números y caracteres especiales';
+                        return false;
+                    }
+                    return true;
+                },
 
-        /**
-         * Validate form data
-         */
-        validateForm() {
-            let isValid = true;
+                validatePasswordConfirmation() {
+                    this.errors.passwordConfirmation = '';
+                    if (!this.formData.passwordConfirmation) {
+                        this.errors.passwordConfirmation = 'Confirma tu contraseña';
+                        return false;
+                    }
+                    if (this.formData.password !== this.formData.passwordConfirmation) {
+                        this.errors.passwordConfirmation = 'Las contraseñas no coinciden';
+                        return false;
+                    }
+                    return true;
+                },
 
-            // First name validation
-            if (!this.formData.firstName || this.formData.firstName.trim().length < 2) {
-                this.errors.firstName = 'El nombre debe tener al menos 2 caracteres';
-                isValid = false;
-            }
+                validateTerms() {
+                    this.errors.acceptsTerms = '';
+                    if (!this.formData.acceptsTerms) {
+                        this.errors.acceptsTerms = 'Debes aceptar los términos y condiciones';
+                        return false;
+                    }
+                    return true;
+                },
 
-            // Last name validation
-            if (!this.formData.lastName || this.formData.lastName.trim().length < 2) {
-                this.errors.lastName = 'El apellido debe tener al menos 2 caracteres';
-                isValid = false;
-            }
+                validatePrivacyPolicy() {
+                    this.errors.acceptsPrivacyPolicy = '';
+                    if (!this.formData.acceptsPrivacyPolicy) {
+                        this.errors.acceptsPrivacyPolicy = 'Debes aceptar la política de privacidad';
+                        return false;
+                    }
+                    return true;
+                },
 
-            // Email validation
-            if (!this.formData.email) {
-                this.errors.email = 'El correo electrónico es requerido';
-                isValid = false;
-            } else if (!this.isValidEmail(this.formData.email)) {
-                this.errors.email = 'Formato de correo electrónico inválido';
-                isValid = false;
-            }
+                async submit() {
+                    // Validar todos los campos
+                    const firstNameValid = this.validateFirstName();
+                    const lastNameValid = this.validateLastName();
+                    const emailValid = this.validateEmail();
+                    const passwordValid = this.validatePassword();
+                    const passwordConfirmationValid = this.validatePasswordConfirmation();
+                    const termsValid = this.validateTerms();
+                    const privacyValid = this.validatePrivacyPolicy();
 
-            // Password validation
-            if (!this.formData.password) {
-                this.errors.password = 'La contraseña es requerida';
-                isValid = false;
-            } else if (this.formData.password.length < 8) {
-                this.errors.password = 'La contraseña debe tener al menos 8 caracteres';
-                isValid = false;
-            } else if (!this.isPasswordComplex(this.formData.password)) {
-                this.errors.password = 'La contraseña debe contener letras, números y símbolos';
-                isValid = false;
-            }
+                    if (!firstNameValid || !lastNameValid || !emailValid || !passwordValid || !passwordConfirmationValid || !termsValid || !privacyValid) {
+                        return;
+                    }
 
-            // Password confirmation validation
-            if (this.formData.password !== this.formData.passwordConfirmation) {
-                this.errors.passwordConfirmation = 'Las contraseñas no coinciden';
-                isValid = false;
-            }
+                    this.loading = true;
+                    this.error = false;
 
-            // Terms validation
-            if (!this.formData.acceptsTerms) {
-                this.errors.acceptsTerms = 'Debes aceptar los términos y condiciones';
-                isValid = false;
-            }
+                    try {
+                        const response = await fetch('/api/auth/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-Token': document.querySelector('input[name="_token"]').value,
+                            },
+                            body: JSON.stringify(this.formData),
+                        });
 
-            // Privacy policy validation
-            if (!this.formData.acceptsPrivacyPolicy) {
-                this.errors.acceptsPrivacyPolicy = 'Debes aceptar la política de privacidad';
-                isValid = false;
-            }
+                        const data = await response.json();
 
-            return isValid;
-        },
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Error al registrarse');
+                        }
 
-        /**
-         * Calculate password strength (0-5)
-         */
-        calculatePasswordStrength() {
-            const password = this.formData.password;
-            let strength = 0;
+                        // Guardar tokens
+                        if (data.data.accessToken) {
+                            localStorage.setItem('access_token', data.data.accessToken);
+                        }
+                        if (data.data.refreshToken) {
+                            localStorage.setItem('refresh_token', data.data.refreshToken);
+                        }
 
-            if (password.length >= 8) strength++;
-            if (password.length >= 12) strength++;
-            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-            if (/\d/.test(password)) strength++;
-            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+                        // Redirigir al dashboard o a verificación de email
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 1500);
 
-            this.passwordStrength = strength;
-        },
-
-        /**
-         * Get password strength text
-         */
-        getPasswordStrengthText() {
-            const texts = {
-                0: 'Muy débil',
-                1: 'Débil',
-                2: 'Regular',
-                3: 'Media',
-                4: 'Fuerte',
-                5: 'Muy fuerte'
+                    } catch (err) {
+                        console.error('Register error:', err);
+                        this.errorMessage = err.message || 'Error desconocido';
+                        this.error = true;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
             };
-            return texts[this.passwordStrength] || 'Muy débil';
-        },
-
-        /**
-         * Check if password is complex enough
-         */
-        isPasswordComplex(password) {
-            const hasLetters = /[a-zA-Z]/.test(password);
-            const hasNumbers = /\d/.test(password);
-            const hasSymbols = /[^a-zA-Z0-9]/.test(password);
-            return hasLetters && hasNumbers && hasSymbols;
-        },
-
-        /**
-         * Email validation helper
-         */
-        isValidEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        },
-
-        /**
-         * Clear error message
-         */
-        clearError() {
-            this.error = null;
         }
-    }));
-});
-</script>
-@endsection
-
-@section('css')
-<style>
-    .card {
-        border-radius: 0.5rem;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    .card-header {
-        border-top-left-radius: 0.5rem;
-        border-top-right-radius: 0.5rem;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .form-control:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
-    }
-
-    .progress {
-        border-radius: 3px;
-    }
-
-    @media (max-width: 768px) {
-        .card {
-            margin: 0 1rem;
-        }
-    }
-</style>
-@endsection
+    </script>
+@stop
