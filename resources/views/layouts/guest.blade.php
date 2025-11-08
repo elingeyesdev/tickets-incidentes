@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/fontawesome-free/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -85,7 +85,7 @@
                         <ul class="list-unstyled small">
                             <li><a href="/" class="text-muted text-decoration-none">Inicio</a></li>
                             <li><a href="{{ route('register') }}" class="text-muted text-decoration-none">Registro</a></li>
-                            <li><a href="{{ route('forgot-password') }}" class="text-muted text-decoration-none">Recuperar contraseña</a></li>
+                            <li><a href="{{ route('password.request') }}" class="text-muted text-decoration-none">Recuperar contraseña</a></li>
                         </ul>
                     </div>
                     <div class="col-md-3">
