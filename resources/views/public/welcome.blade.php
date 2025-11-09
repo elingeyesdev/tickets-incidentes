@@ -514,6 +514,86 @@
     <script>
         console.log('HELPDESK - Sistema de Gestión de Incidentes');
 
+        /**
+         * Detect existing session and redirect to dashboard
+         */
+        (function() {
+            // Get access token from localStorage
+            const accessToken = localStorage.getItem('access_token');
+
+            // If no token, show welcome normally
+            if (!accessToken) {
+                return;
+            }
+
+            // Decode JWT to verify it's valid and get roles
+            try {
+                const payload = decodeJWT(accessToken);
+
+                // If no payload or no roles, clear and show welcome
+                if (!payload || !payload.roles || payload.roles.length === 0) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('active_role');
+                    return;
+                }
+
+                // Check if token is still valid (not expired)
+                if (payload.exp && payload.exp * 1000 < Date.now()) {
+                    // Token expired, clear localStorage
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('active_role');
+                    return;
+                }
+
+                // User is authenticated with valid token
+                // Redirect to /auth/prepare-web which will validate and set cookie
+                const roles = payload.roles;
+                let redirect = '/app/dashboard';
+
+                if (roles.length === 1) {
+                    // Single role: redirect directly to that dashboard
+                    const roleCode = roles[0].code;
+                    const dashboardMap = {
+                        'PLATFORM_ADMIN': '/app/admin/dashboard',
+                        'COMPANY_ADMIN': '/app/company/dashboard',
+                        'AGENT': '/app/agent/dashboard',
+                        'USER': '/app/user/dashboard'
+                    };
+                    redirect = dashboardMap[roleCode] || '/app/dashboard';
+                } else if (roles.length > 1) {
+                    // Multiple roles: show role selector
+                    redirect = '/auth-flow/role-selector';
+                }
+
+                // Redirect through /auth/prepare-web to validate and set cookie
+                console.log('Redirecting to dashboard with token...');
+                window.location.href = `/auth/prepare-web?token=${accessToken}&redirect=${encodeURIComponent(redirect)}`;
+
+            } catch (error) {
+                console.error('Error detecting session:', error);
+                // Clear invalid token and show welcome
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('active_role');
+            }
+
+            /**
+             * Decode JWT helper
+             */
+            function decodeJWT(token) {
+                try {
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    return JSON.parse(jsonPayload);
+                } catch (error) {
+                    console.error('Failed to decode JWT:', error);
+                    return null;
+                }
+            }
+        })();
+
         // Smooth scroll para anclas
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {

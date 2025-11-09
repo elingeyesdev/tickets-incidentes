@@ -146,6 +146,21 @@
 
 @section('adminlte_css')
     <style>
+        /* Ensanchar los cards de auth */
+        body .card {
+            max-width: 900px !important;
+            width: 90vw !important;
+        }
+
+        body .card-body {
+            padding: 2.5rem !important;
+        }
+
+        body .login-box {
+            width: 100%;
+            max-width: 900px !important;
+        }
+
         .btn-danger {
             background-color: #dc3545;
             border-color: #dc3545;
