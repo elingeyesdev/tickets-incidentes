@@ -34,7 +34,7 @@ class PasswordResetMail extends Mailable
     ) {
         // Generar URL de reset con token
         $frontendUrl = config('app.frontend_url', config('app.url'));
-        $this->resetUrl = $frontendUrl . '/reset-password?token=' . urlencode($resetToken);
+        $this->resetUrl = $frontendUrl . '/forgot-password?token=' . urlencode($resetToken);
 
         // Nombre para mostrar
         $this->displayName = $user->profile

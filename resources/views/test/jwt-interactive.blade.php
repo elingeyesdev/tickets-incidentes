@@ -4,7 +4,6 @@
     <title>🔐 JWT System - Alpine.js Testing</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -20,178 +19,101 @@
             border-radius: 10px 10px 0 0;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        .header h1 { color: #333; margin-bottom: 10px; }
+        .header h1 { color: #333; margin-bottom: 10px; font-size: 24px; }
         .header p { color: #666; font-size: 14px; }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .card {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .card h2 {
-            color: #667eea;
-            font-size: 16px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block;
-            color: #333;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        button {
-            flex: 1;
-            padding: 10px 15px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-        }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .output {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 10px;
-            line-height: 1.6;
-        }
-        .log-entry {
-            margin: 5px 0;
-            padding: 5px;
-            border-left: 3px solid #ccc;
-            padding-left: 8px;
-        }
-        .log-success {
-            border-left-color: #28a745;
-            color: #155724;
-            background: #d4edda;
-        }
-        .log-error {
-            border-left-color: #dc3545;
-            color: #721c24;
-            background: #f8d7da;
-        }
-        .log-info {
-            border-left-color: #17a2b8;
-            color: #0c5460;
-            background: #d1ecf1;
-        }
+        .card h2 { color: #667eea; font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; color: #333; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .button-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        button { flex: 1; padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; }
+        button:hover { background: #764ba2; transform: translateY(-2px); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .output { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 11px; max-height: 300px; overflow-y: auto; margin-top: 10px; line-height: 1.5; }
+        .log-entry { margin: 3px 0; padding: 3px 5px; border-left: 3px solid #ccc; padding-left: 5px; }
+        .log-success { border-left-color: #28a745; color: #155724; background: #d4edda; }
+        .log-error { border-left-color: #dc3545; color: #721c24; background: #f8d7da; }
+        .log-info { border-left-color: #17a2b8; color: #0c5460; background: #d1ecf1; }
         .wide { grid-column: 1 / -1; }
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-        }
+        .status-box { background: #f0f4f8; padding: 12px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; }
+        .status-box strong { color: #667eea; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 JWT System - Alpine.js Interactive Testing</h1>
+            <h1>🔐 JWT System - Alpine.js Testing</h1>
             <p>Real test with Alpine.js + REST API</p>
         </div>
 
-        <div class="grid">
+        <div class="grid" x-data="authApp()">
             <!-- Login Form -->
-            <div class="card" x-data="authApp()" @login.window="onLogin">
+            <div class="card">
                 <h2>1️⃣ Login & Get Tokens</h2>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" x-model="email" placeholder="javier.rodriguez@pilandina.com.bo">
+                    <input type="email" x-model="email" placeholder="lukqs05@gmail.com">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" x-model="password" placeholder="Password">
+                    <input type="password" x-model="password" placeholder="mklmklmkl">
                 </div>
                 <div class="button-group">
                     <button @click="login()" :disabled="isLoading">Login</button>
-                    <button @click="clearLogs('login')" class="button-secondary">Clear</button>
+                    <button @click="clearLogs('login')">Clear</button>
                 </div>
                 <div class="output" x-ref="loginOutput"></div>
             </div>
 
             <!-- Status -->
-            <div class="card" x-data="authApp()">
+            <div class="card">
                 <h2>2️⃣ Test Protected Endpoint</h2>
                 <p style="font-size: 12px; color: #666; margin-bottom: 15px;">GET /api/auth/status</p>
                 <div class="button-group">
                     <button @click="getStatus()" :disabled="isLoading">Get Status</button>
-                    <button @click="clearLogs('status')" class="button-secondary">Clear</button>
+                    <button @click="clearLogs('status')">Clear</button>
                 </div>
                 <div class="output" x-ref="statusOutput"></div>
             </div>
 
             <!-- Refresh -->
-            <div class="card" x-data="authApp()">
+            <div class="card">
                 <h2>3️⃣ Refresh Access Token</h2>
                 <p style="font-size: 12px; color: #666; margin-bottom: 15px;">POST /api/auth/refresh</p>
                 <div class="button-group">
                     <button @click="refresh()" :disabled="isLoading">Refresh Token</button>
-                    <button @click="clearLogs('refresh')" class="button-secondary">Clear</button>
+                    <button @click="clearLogs('refresh')">Clear</button>
                 </div>
                 <div class="output" x-ref="refreshOutput"></div>
             </div>
 
             <!-- Storage -->
-            <div class="card" x-data="authApp()">
+            <div class="card">
                 <h2>4️⃣ View localStorage</h2>
                 <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Inspect stored tokens</p>
                 <div class="button-group">
                     <button @click="inspectStorage()">Inspect</button>
-                    <button @click="clearAllStorage()" class="button-secondary">Clear All</button>
+                    <button @click="clearAllStorage()">Clear All</button>
                 </div>
                 <div class="output" x-ref="storageOutput"></div>
             </div>
 
             <!-- Logout -->
-            <div class="card" x-data="authApp()">
+            <div class="card">
                 <h2>5️⃣ Logout</h2>
                 <p style="font-size: 12px; color: #666; margin-bottom: 15px;">POST /api/auth/logout</p>
                 <div class="button-group">
                     <button @click="logout()" :disabled="isLoading">Logout</button>
-                    <button @click="clearLogs('logout')" class="button-secondary">Clear</button>
+                    <button @click="clearLogs('logout')">Clear</button>
                 </div>
                 <div class="output" x-ref="logoutOutput"></div>
             </div>
@@ -214,7 +136,7 @@
     <script>
         function authApp() {
             return {
-                email: 'javier.rodriguez@pilandina.com.bo',
+                email: 'lukqs05@gmail.com',
                 password: 'mklmklmkl',
                 isLoading: false,
 
@@ -260,12 +182,11 @@
                         const expiresIn = data.expiresIn;
                         const user = data.user;
 
-                        // Save to localStorage
                         localStorage.setItem('access_token', token);
                         localStorage.setItem('token_expires_at', Date.now() + (expiresIn * 1000));
 
                         this.log('login', '✅ Login successful!', 'success');
-                        this.log('login', `📌 TOKEN: ${token}`, 'success');
+                        this.log('login', `📌 TOKEN: ${token.substring(0, 40)}...`, 'success');
                         this.log('login', `Expires In: ${expiresIn} seconds`, 'success');
                         this.log('login', `User: ${user.displayName || user.email}`, 'success');
 
@@ -340,12 +261,11 @@
                         const token = data.accessToken;
                         const expiresIn = data.expiresIn;
 
-                        // Update localStorage
                         localStorage.setItem('access_token', token);
                         localStorage.setItem('token_expires_at', Date.now() + (expiresIn * 1000));
 
                         this.log('refresh', '✅ Token refresh successful!', 'success');
-                        this.log('refresh', `📌 NEW TOKEN: ${token}`, 'success');
+                        this.log('refresh', `📌 NEW TOKEN: ${token.substring(0, 40)}...`, 'success');
                         this.log('refresh', `Expires In: ${expiresIn} seconds`, 'success');
 
                     } catch (e) {
@@ -425,5 +345,8 @@
             }
         }
     </script>
+
+    <!-- Load Alpine.js at the end -->
+    <script src="https://unpkg.com/alpinejs@3.15.1/dist/cdn.min.js"></script>
 </body>
 </html>

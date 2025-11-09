@@ -25,31 +25,32 @@
         <form @submit.prevent="submit()" novalidate>
             @csrf
 
-            {{-- Token field --}}
-            <input type="hidden" name="token" x-model="token" value="{{ $token }}">
+            {{-- Token field (from URL query string) --}}
+            <input type="hidden" name="token" x-model="formData.token">
 
-            {{-- Email field --}}
-            <div class="input-group mb-3">
+            {{-- Code field (6 digits - only shown if no token) --}}
+            <div class="input-group mb-3" x-show="!formData.token">
                 <input
-                    type="email"
-                    name="email"
+                    type="text"
+                    name="code"
                     class="form-control"
-                    :class="{ 'is-invalid': errors.email }"
-                    x-model="formData.email"
-                    @blur="validateEmail"
-                    placeholder="{{ __('adminlte::adminlte.email') }}"
+                    :class="{ 'is-invalid': errors.code }"
+                    x-model="formData.code"
+                    @blur="validateCode"
+                    placeholder="Código de 6 dígitos"
                     :disabled="loading"
+                    maxlength="6"
+                    inputmode="numeric"
                     autofocus
-                    required
                 >
 
                 <div class="input-group-append">
                     <div class="input-group-text">
-                        <span class="fas fa-envelope {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                        <span class="fas fa-key {{ config('adminlte.classes_auth_icon', '') }}"></span>
                     </div>
                 </div>
 
-                <span class="invalid-feedback d-block" x-show="errors.email" x-text="errors.email"></span>
+                <span class="invalid-feedback d-block" x-show="errors.code" x-text="errors.code"></span>
             </div>
 
             {{-- Password field --}}
@@ -136,14 +137,14 @@
     <script>
         function resetPasswordForm() {
             return {
-                token: '{{ $token }}',
                 formData: {
-                    email: '',
+                    token: '',
+                    code: '',
                     password: '',
                     passwordConfirmation: '',
                 },
                 errors: {
-                    email: '',
+                    code: '',
                     password: '',
                     passwordConfirmation: '',
                 },
@@ -154,18 +155,24 @@
                 errorMessage: '',
 
                 init() {
-                    // Initialize form
+                    // Leer token del query string
+                    const urlParams = new URLSearchParams(window.location.search);
+                    this.formData.token = urlParams.get('token');
+
+                    // Si no hay token, se debe ingresar un código de 6 dígitos
+                    if (!this.formData.token) {
+                        // El campo de código será visible para que lo ingrese manualmente
+                    }
                 },
 
-                validateEmail() {
-                    this.errors.email = '';
-                    if (!this.formData.email) {
-                        this.errors.email = 'El correo es requerido';
+                validateCode() {
+                    this.errors.code = '';
+                    if (!this.formData.code) {
+                        this.errors.code = 'El código es requerido';
                         return false;
                     }
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailRegex.test(this.formData.email)) {
-                        this.errors.email = 'Ingresa un correo válido';
+                    if (!/^\d{6}$/.test(this.formData.code)) {
+                        this.errors.code = 'El código debe ser de 6 dígitos';
                         return false;
                     }
                     return true;
@@ -207,11 +214,15 @@
                 },
 
                 async submit() {
-                    const emailValid = this.validateEmail();
+                    // Validar según si tiene token o código
+                    if (!this.formData.token && !this.validateCode()) {
+                        return;
+                    }
+
                     const passwordValid = this.validatePassword();
                     const passwordConfirmationValid = this.validatePasswordConfirmation();
 
-                    if (!emailValid || !passwordValid || !passwordConfirmationValid) {
+                    if (!passwordValid || !passwordConfirmationValid) {
                         return;
                     }
 
@@ -220,6 +231,19 @@
                     this.success = false;
 
                     try {
+                        // Construir payload dinámicamente según si hay token o código
+                        const payload = {
+                            password: this.formData.password,
+                            passwordConfirmation: this.formData.passwordConfirmation,
+                        };
+
+                        // Agregar token o código según corresponda
+                        if (this.formData.token) {
+                            payload.token = this.formData.token;
+                        } else {
+                            payload.code = this.formData.code;
+                        }
+
                         const response = await fetch('/api/auth/password-reset/confirm', {
                             method: 'POST',
                             headers: {
@@ -228,12 +252,7 @@
                                 'X-Requested-With': 'XMLHttpRequest',
                                 'X-CSRF-Token': document.querySelector('input[name="_token"]').value,
                             },
-                            body: JSON.stringify({
-                                token: this.token,
-                                email: this.formData.email,
-                                password: this.formData.password,
-                                password_confirmation: this.formData.passwordConfirmation,
-                            }),
+                            body: JSON.stringify(payload),
                         });
 
                         const data = await response.json();

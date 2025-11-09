@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Route;
 // Remove these routes in production
 
 Route::prefix('test')->group(function () {
+    // Alpine.js test
+    Route::get('/alpine-test', function () {
+        return view('test.alpine-test');
+    })->name('test.alpine-test');
+
     // JWT System testing
     Route::get('/jwt-interactive', function () {
         return view('test.jwt-interactive');
@@ -40,14 +45,15 @@ Route::get('/forgot-password', function () {
     return view('public.forgot-password');
 })->name('password.request');
 
-Route::get('/reset-password/{token}', function ($token) {
-    return view('public.reset-password', ['token' => $token]);
-})->name('password.reset');
-
 // Email verification (requires authentication)
 Route::get('/verify-email', function () {
     return view('public.verify-email');
 })->middleware('jwt.require')->name('verification.notice');
+
+// Confirm password (requires authentication)
+Route::get('/confirm-password', function () {
+    return view('public.confirm-password');
+})->middleware('jwt.require')->name('password.confirm');
 
 // ========== PROTECTED ROUTES (Requires JWT) ==========
 

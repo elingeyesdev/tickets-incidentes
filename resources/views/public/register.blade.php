@@ -373,11 +373,11 @@
                         }
 
                         // Guardar tokens
-                        if (data.data.accessToken) {
-                            localStorage.setItem('access_token', data.data.accessToken);
+                        if (data.accessToken) {
+                            localStorage.setItem('access_token', data.accessToken);
                         }
-                        if (data.data.refreshToken) {
-                            localStorage.setItem('refresh_token', data.data.refreshToken);
+                        if (data.refreshToken) {
+                            localStorage.setItem('refresh_token', data.refreshToken);
                         }
 
                         // Redirigir al dashboard o a verificación de email
