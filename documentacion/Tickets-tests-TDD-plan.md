@@ -71,7 +71,6 @@ app/Features/TicketManagement/
 │   │
 │   ├── Middleware/
 │   │   ├── EnsureTicketOwner.php
-│   │   ├── EnsureFollowsCompany.php
 │   │   └── EnsureAgentRole.php
 │   │
 │   ├── Requests/
@@ -1695,7 +1694,7 @@ tests/Integration/TicketManagement/
 - ✅ Autorización por roles (USER, AGENT, ADMIN)
 - ✅ Ownership validation
 - ✅ Company isolation
-- ✅ Following status validation
+- ✅ Following affects information/notifications, not access control
 - ✅ Time-based edit restrictions
 - ✅ Agent-only internal notes
 

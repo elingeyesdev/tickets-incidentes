@@ -45,7 +45,7 @@
 - En una respuesta específica: `response_id = UUID`
 
 **✅ Company ID por Contexto**: Inferido según el rol
-- **USER**: Debe especificar `company_id` (debe seguir a la empresa)
+- **USER**: Debe especificar `company_id` (empresa debe existir en el sistema)
 - **AGENT/ADMIN**: Inferido automáticamente del JWT token
 
 **✅ Calificaciones Históricas**: Guarda snapshot del agente
