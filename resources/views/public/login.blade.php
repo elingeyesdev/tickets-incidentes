@@ -272,12 +272,10 @@
                             localStorage.removeItem('last_email');
                         }
 
-                        // Guardar tokens
+                        // Guardar SOLO access token en localStorage
+                        // SECURITY: refresh_token viene en HttpOnly cookie (no accesible a JavaScript)
                         if (data.accessToken) {
                             localStorage.setItem('access_token', data.accessToken);
-                        }
-                        if (data.refreshToken) {
-                            localStorage.setItem('refresh_token', data.refreshToken);
                         }
 
                         this.successMessage = 'Sesión iniciada. Redirigiendo...';
@@ -330,12 +328,10 @@
                             throw new Error(data.message || 'Error al iniciar sesión con Google');
                         }
 
-                        // Guardar tokens
+                        // Guardar SOLO access token en localStorage
+                        // SECURITY: refresh_token viene en HttpOnly cookie (no accesible a JavaScript)
                         if (data.accessToken) {
                             localStorage.setItem('access_token', data.accessToken);
-                        }
-                        if (data.refreshToken) {
-                            localStorage.setItem('refresh_token', data.refreshToken);
                         }
 
                         this.successMessage = 'Sesión iniciada. Redirigiendo...';
@@ -357,3 +353,4 @@
         }
     </script>
 @stop
+

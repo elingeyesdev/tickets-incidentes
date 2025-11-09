@@ -550,12 +550,10 @@
                             throw new Error(data.message || 'Error al restablecer la contraseña');
                         }
 
-                        // Guardar tokens
+                        // Guardar SOLO access token en localStorage
+                        // SECURITY: refresh_token viene en HttpOnly cookie (no accesible a JavaScript)
                         if (data.accessToken) {
                             localStorage.setItem('access_token', data.accessToken);
-                        }
-                        if (data.refreshToken) {
-                            localStorage.setItem('refresh_token', data.refreshToken);
                         }
 
                         // Mostrar mensaje de éxito

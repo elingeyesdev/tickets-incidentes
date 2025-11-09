@@ -4,15 +4,20 @@
  * IndexedDB persistence for authentication session restoration.
  * Provides secure storage for JWT tokens and user data with automatic cleanup.
  *
+ * SECURITY MODEL:
+ * - Access tokens: Stored here (60 min TTL makes this safe)
+ * - Refresh tokens: NOT STORED HERE - They are in HttpOnly cookies managed by browser
+ * - JavaScript cannot access refresh tokens (XSS protection)
+ *
  * Features:
- * - IndexedDB storage for auth state
+ * - IndexedDB storage for auth state (access token only)
  * - LocalStorage fallback for unsupported browsers
  * - TTL validation (don't restore expired tokens)
  * - Secure token handling
  * - Automatic migration between storage backends
  *
  * @author Helpdesk System
- * @version 1.0.0
+ * @version 2.0.0 (Secure HttpOnly Cookie Edition)
  */
 
 class PersistenceService {
@@ -145,6 +150,8 @@ class PersistenceService {
   /**
    * Save authentication state
    *
+   * SECURITY: Only access token is saved - refresh token is in HttpOnly cookie
+   *
    * @param {string} accessToken - JWT access token
    * @param {number} expiresAt - Expiry timestamp
    * @param {Object} user - User object (optional)
@@ -156,12 +163,13 @@ class PersistenceService {
 
     const authState = {
       id: 'current', // Single session storage
-      accessToken,
+      accessToken, // Only access token - refresh token NOT stored here
       expiresAt,
       user,
       sessionId,
       createdAt: Date.now(),
       updatedAt: Date.now()
+      // NOTE: refreshToken is NOT stored - it's in HttpOnly cookie
     };
 
     this._log('Saving auth state', { expiresAt, hasUser: !!user });
@@ -221,6 +229,8 @@ class PersistenceService {
   /**
    * Load authentication state
    *
+   * SECURITY: Only access token is returned - refresh token comes from HttpOnly cookie
+   *
    * @returns {Promise<Object|null>} Auth state or null
    */
   async loadAuthState() {
@@ -255,6 +265,7 @@ class PersistenceService {
       expiresAt: authState.expiresAt,
       user: authState.user,
       sessionId: authState.sessionId
+      // NOTE: refreshToken is NOT included - it's in HttpOnly cookie
     };
   }
 

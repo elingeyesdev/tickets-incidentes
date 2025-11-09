@@ -4,24 +4,32 @@
  * Core JWT token management system for Blade frontend.
  * Handles access token storage, automatic refresh, retry logic, and observer pattern.
  *
+ * SECURITY MODEL:
+ * - Access tokens: Stored in localStorage (60 min TTL makes this safe)
+ * - Refresh tokens: Stored in HttpOnly cookies ONLY (never in localStorage)
+ * - Browser automatically sends HttpOnly cookie on refresh requests
+ * - JavaScript cannot access refresh tokens (XSS protection)
+ *
  * Features:
- * - LocalStorage-based token persistence
- * - Automatic token refresh at 80% TTL
+ * - LocalStorage-based access token persistence
+ * - Automatic token refresh at 80% TTL using HttpOnly cookie
  * - Exponential backoff + jitter for retries
  * - Observer pattern (onRefresh, onExpiry callbacks)
  * - Fetch wrapper with auto-refresh on 401
  * - Request retry queue during refresh
  *
  * @author Helpdesk System
- * @version 1.0.0
+ * @version 2.0.0 (Secure HttpOnly Cookie Edition)
  */
 
 class TokenManager {
   /**
    * LocalStorage keys
+   *
+   * NOTE: Refresh token is NOT stored here - it's in HttpOnly cookie managed by browser
    */
   static STORAGE_KEYS = {
-    ACCESS_TOKEN: 'helpdesk_access_token',
+    ACCESS_TOKEN: 'access_token',  // Changed to match existing implementation
     TOKEN_EXPIRY: 'helpdesk_token_expiry',
     TOKEN_ISSUED_AT: 'helpdesk_token_issued_at'
   };
@@ -200,6 +208,8 @@ class TokenManager {
   /**
    * Perform actual refresh request with retry logic
    *
+   * IMPORTANT: No refresh token sent in body - browser automatically sends HttpOnly cookie
+   *
    * @private
    * @param {number} attempt - Current retry attempt
    * @returns {Promise<{accessToken: string, expiresIn: number}>}
@@ -208,11 +218,12 @@ class TokenManager {
     try {
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
-        credentials: 'include', // Send HttpOnly cookie
+        credentials: 'include', // CRITICAL: Send HttpOnly refresh_token cookie
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
+        // NO BODY - refresh token comes from HttpOnly cookie automatically
       });
 
       if (!response.ok) {
@@ -230,6 +241,7 @@ class TokenManager {
       const data = await response.json();
 
       // Parse response structure: { accessToken, expiresIn, tokenType }
+      // NOTE: New refresh token comes in Set-Cookie header (browser handles automatically)
       if (!data.accessToken) {
         throw new Error('Invalid refresh response structure');
       }

@@ -237,12 +237,9 @@ export default () => ({
             const { data } = result;
             const { accessToken, user, expiresIn, sessionId } = data;
 
-            // Save tokens
+            // Save access token to localStorage
+            // SECURITY: refresh_token is in HttpOnly cookie (browser managed, not JavaScript)
             this.tokenManager.setAccessToken(accessToken);
-
-            if (data.refreshToken) {
-                this.tokenManager.setRefreshToken(data.refreshToken);
-            }
 
             // Update state
             this.user = user;
@@ -302,12 +299,9 @@ export default () => ({
             const { data: responseData } = result;
             const { accessToken, user, sessionId } = responseData;
 
-            // Save tokens
+            // Save access token to localStorage
+            // SECURITY: refresh_token is in HttpOnly cookie (browser managed, not JavaScript)
             this.tokenManager.setAccessToken(accessToken);
-
-            if (responseData.refreshToken) {
-                this.tokenManager.setRefreshToken(responseData.refreshToken);
-            }
 
             // Update state
             this.user = user;
@@ -416,23 +410,21 @@ export default () => ({
     },
 
     /**
-     * Refresh JWT token
+     * Refresh JWT token using HttpOnly cookie
+     *
+     * SECURITY: No refresh token in body - browser sends HttpOnly cookie automatically
      */
     async refreshToken() {
         console.log('[AuthStore] Refreshing token...');
-        const refreshToken = this.tokenManager.getRefreshToken();
-
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
-        }
 
         const response = await fetch('/api/auth/refresh', {
             method: 'POST',
+            credentials: 'include', // CRITICAL: Send HttpOnly cookie
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken }),
+            }
+            // NO BODY - refresh token comes from HttpOnly cookie
         });
 
         if (!response.ok) {
@@ -442,12 +434,9 @@ export default () => ({
         const result = await response.json();
         const { data } = result;
 
-        // Update tokens
+        // Update access token in localStorage
+        // New refresh token comes in Set-Cookie header (browser handles automatically)
         this.tokenManager.setAccessToken(data.accessToken);
-
-        if (data.refreshToken) {
-            this.tokenManager.setRefreshToken(data.refreshToken);
-        }
 
         // Broadcast token refresh
         this.authChannel.broadcast('TOKEN_REFRESHED', {
