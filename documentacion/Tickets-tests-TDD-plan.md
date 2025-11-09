@@ -303,8 +303,9 @@ tests/Integration/TicketManagement/
 2. **test_filters_by_is_active_status**
     - is_active=true → solo activas
 
-3. **test_user_cannot_list_categories_from_unfollowed_company**
-    - No sigue empresa → error 403
+3. **test_user_can_list_categories_of_any_company**
+    - Usuario ve categorías de CUALQUIER empresa
+    - No hay restricción por "must follow"
 
 4. **test_agent_can_list_own_company_categories**
     - company_id inferido del JWT
@@ -348,8 +349,9 @@ tests/Integration/TicketManagement/
     - category_id inválido → error 422
     - category_id con is_active=false → error 422
 
-7. **test_user_must_follow_company_to_create_ticket**
-    - No sigue empresa → error 403
+7. **test_user_can_create_ticket_in_any_company**
+    - Usuario puede crear ticket en CUALQUIER empresa
+    - No se valida restricción "must follow"
 
 8. **test_ticket_code_is_generated_automatically**
     - Verifica formato TKT-2025-00001
@@ -431,8 +433,9 @@ tests/Integration/TicketManagement/
 16. **test_includes_related_data_in_list**
     - Incluye creator, owner_agent, category, counts
 
-17. **test_user_cannot_list_tickets_from_unfollowed_company**
-    - No sigue empresa → error 403
+17. **test_user_can_view_own_tickets_regardless_of_following**
+    - Usuario ve sus propios tickets sin restricción de following
+    - Ownership > following
 
 18. **test_unauthenticated_user_cannot_list_tickets**
     - Sin token → error 401
@@ -1253,23 +1256,31 @@ tests/Integration/TicketManagement/
 
 **Total de Tests: 6**
 
-1. **test_user_must_follow_company_to_create_ticket**
-    - No sigue → error 403
+1. **test_user_can_create_ticket_in_any_company**
+    - Usuario puede crear tickets sin restricción de following
+    - Following NO es barrera de acceso
 
-2. **test_user_must_follow_company_to_list_tickets**
-    - No sigue → error 403
+2. **test_following_affects_company_listing_order_not_access**
+    - Empresas que sigue aparecen primero en listados
+    - Pero TODAS las empresas son accesibles
+    - No hay error 403 por "unfollowed"
 
-3. **test_user_loses_access_after_unfollowing_company**
-    - Sigue → crea ticket → deja de seguir → no puede ver
+3. **test_following_affects_notifications_not_access**
+    - Usuario recibe notificaciones de empresas que sigue
+    - Sigue viendo tickets de empresas no seguidas si es propietario
+    - Ownership > following
 
 4. **test_agent_does_not_need_to_follow_own_company**
-    - Agent siempre tiene acceso
+    - Agent siempre tiene acceso a su empresa (por rol)
+    - No necesita "follow"
 
 5. **test_company_admin_does_not_need_to_follow_own_company**
-    - Admin siempre tiene acceso
+    - Admin siempre tiene acceso a su empresa (por rol)
+    - No necesita "follow"
 
-6. **test_middleware_validates_following_status**
-    - EnsureFollowsCompany funciona
+6. **test_following_provides_information_priority_only**
+    - Following es para información/UI prioritaria
+    - NO es control de acceso
 
 ---
 
@@ -1323,8 +1334,9 @@ tests/Integration/TicketManagement/
     - 2024 termina en 00999
     - 2025 empieza en 00001
 
-3. **test_validates_user_follows_company**
-    - No sigue → exception
+3. **test_validates_company_exists**
+    - company_id inválido → exception
+    - (Sin validación de "must follow")
 
 4. **test_list_filters_by_owner_for_users**
     - USER solo ve propios
@@ -1617,8 +1629,9 @@ tests/Integration/TicketManagement/
 2. **test_agent_access_isolated_between_companies**
     - Agent empresa A no gestiona tickets empresa B
 
-3. **test_following_status_affects_all_ticket_operations**
-    - Dejar de seguir → pierde acceso a todo
+3. **test_following_status_affects_information_not_operations**
+    - Following afecta notificaciones y orden en UI
+    - No afecta acceso a crear/ver tickets
 
 4. **test_role_changes_affect_permissions_immediately**
     - USER → promovido a AGENT → permisos actualizados
@@ -1638,7 +1651,7 @@ tests/Integration/TicketManagement/
 | **Internal Notes** | 4 | 25 | CRUD (solo agentes) |
 | **Attachments** | 4 | 37 | Upload, list, delete + validaciones |
 | **Ratings** | 3 | 26 | Crear, ver, actualizar |
-| **Permissions** | 3 | 26 | Ownership, following, roles |
+| **Permissions** | 3 | 26 | Ownership, roles, company-isolation |
 | **Unit Tests (Services)** | 4 | 30 | Business logic |
 | **Unit Tests (Models/Rules)** | 3 | 28 | Relaciones, validaciones |
 | **Unit Tests (Jobs)** | 1 | 5 | Auto-close job |

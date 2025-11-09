@@ -470,7 +470,7 @@ Content-Type: application/json
 ```
 
 **Validaciones**:
-- `company_id`: UUID válido, usuario debe seguir a la empresa
+- `company_id`: UUID válido, empresa debe existir en el sistema
 - `category_id`: UUID válido, categoría debe existir y estar activa
 - `title`: 5-255 caracteres
 - `initial_description`: 10-5000 caracteres
@@ -491,18 +491,6 @@ Content-Type: application/json
     "owner_agent_id": null,
     "created_at": "2025-11-09T14:30:00Z",
     "updated_at": "2025-11-09T14:30:00Z"
-  }
-}
-```
-
-**Response 403 Forbidden** (No sigue la empresa):
-```json
-{
-  "success": false,
-  "error": {
-    "code": "COMPANY_NOT_FOLLOWED",
-    "message": "No puedes crear tickets para esta empresa porque no la sigues",
-    "company_id": "550e8400-..."
   }
 }
 ```

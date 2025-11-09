@@ -22,7 +22,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - Authentication (unauthenticated, USER, AGENT, COMPANY_ADMIN)
  * - Listing categories for a company
  * - Filtering by is_active status
- * - Company following validation (USER can only see followed companies)
+ * - Listing shows all companies' categories
  * - AGENT can list their own company's categories
  * - Include active tickets count per category
  * - Unauthenticated access prevention
@@ -30,7 +30,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * Expected Status Codes:
  * - 200: Categories listed successfully
  * - 401: Unauthenticated
- * - 403: User trying to access unfollowed company's categories
+ * - 200: User can access any company's categories
  *
  * Query Parameters:
  * - company_id: UUID (required) - Filter categories by company
@@ -47,7 +47,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  *   - created_at: ISO8601
  *
  * Business Rules:
- * - USER: Can only list categories from companies they follow
+ * - USER: Can list categories from any company
  * - AGENT: Can only list categories from their own company
  * - COMPANY_ADMIN: Can list categories from their own company
  * - active_tickets_count excludes CLOSED tickets
@@ -175,35 +175,37 @@ class ListCategoriesTest extends TestCase
     // ==================== GROUP 3: Company Isolation & Following (Test 3) ====================
 
     /**
-     * Test #3: User cannot list categories from unfollowed company
+     * Test #3: User can list categories of any company
      *
-     * Verifies that a USER cannot list categories from a company they don't follow.
-     * This ensures proper company isolation.
+     * Verifies that a USER can list categories from ANY company, regardless of following status.
+     * Following is for information/UI priority, NOT access control.
      *
-     * Expected: 403 Forbidden
+     * Expected: 200 OK with categories
      */
     #[Test]
-    public function user_cannot_list_categories_from_unfollowed_company(): void
+    public function user_can_list_categories_of_any_company(): void
     {
         // Arrange
         $admin = $this->createCompanyAdmin();
         $companyId = $admin->userRoles()->where('role_code', 'COMPANY_ADMIN')->first()->company_id;
 
         // Create category for this company
-        $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Privada']);
+        $categoryResponse = $this->authenticateWithJWT($admin)
+            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Accesible']);
+        $categoryId = $categoryResponse->json('data.id');
 
         // Create a USER who does NOT follow this company
         $user = User::factory()->withRole('USER')->create();
 
-        // Act - User tries to list categories from unfollowed company
+        // Act - User lists categories from ANY company (no following required)
         $response = $this->authenticateWithJWT($user)
             ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
 
-        // Assert
-        $response->assertStatus(403);
+        // Assert - Should succeed (200, not 403)
+        $response->assertStatus(200);
         $response->assertJsonFragment([
-            'message' => 'You do not follow this company',
+            'id' => $categoryId,
+            'name' => 'Categoría Accesible',
         ]);
     }
 
