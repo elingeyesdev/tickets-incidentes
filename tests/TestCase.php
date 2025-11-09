@@ -6,11 +6,10 @@ use App\Features\Authentication\Services\TokenService;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Auth;
-use Nuwave\Lighthouse\Testing\MakesGraphQLRequests;
 
 abstract class TestCase extends BaseTestCase
 {
-    use MakesGraphQLRequests, \Tests\Traits\HandlesTimeTravelWithCache;
+    use \Tests\Traits\HandlesTimeTravelWithCache;
 
     /**
      * Indicates whether the default seeder should run before each test.
