@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Dashboard\PlatformAdminController;
+use App\Http\Controllers\Dashboard\CompanyAdminController;
+use App\Http\Controllers\Dashboard\AgentController;
+use App\Http\Controllers\Dashboard\UserController;
 
 // ========== TESTING ROUTES (Development Only) ==========
 // Remove these routes in production
@@ -58,12 +63,72 @@ Route::get('/confirm-password', function () {
 // ========== PROTECTED ROUTES (Requires JWT) ==========
 
 Route::middleware('jwt.require')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('app.dashboard');
-    })->name('dashboard');
-
+    // Legacy dashboard route (kept for backward compatibility)
     Route::get('/profile', function () {
         return view('app.profile');
     })->name('profile');
+});
+
+// ========== AUTH-FLOW ROUTES (Role Selection, Onboarding) ==========
+
+// Prepare web route - establishes JWT cookie and redirects
+Route::get('/auth/prepare-web', function () {
+    $token = request()->query('token');
+    $redirect = request()->query('redirect', '/app/dashboard');
+
+    if (!$token) {
+        return redirect('/login')->with('error', 'Token no proporcionado');
+    }
+
+    try {
+        // Validate token on backend to ensure it's valid
+        $tokenService = app(App\Features\Authentication\Services\TokenService::class);
+        $payload = $tokenService->validateAccessToken($token);
+
+        // Token is valid, establish JWT cookie and redirect
+        return redirect($redirect)
+            ->cookie('jwt_token', $token, 60, '/', null, false, true); // 60 minutes, HttpOnly, Lax
+    } catch (\Exception $e) {
+        return redirect('/login')->with('error', 'Token inválido: ' . $e->getMessage());
+    }
+})->name('auth.prepare-web');
+
+Route::middleware('jwt.require')->prefix('auth-flow')->group(function () {
+    // Role selector - shown when user has multiple roles and needs to select one
+    Route::get('/role-selector', function () {
+        return view('auth-flow.role-selector');
+    })->name('auth-flow.role-selector');
+});
+
+// ========== DASHBOARD ROUTES (Role-Based) ==========
+
+Route::middleware('jwt.require')->prefix('app')->group(function () {
+    // Fallback dashboard redirect (if frontend doesn't handle role detection)
+    // Normally frontend redirects directly to role-specific dashboard
+    Route::get('/dashboard', [DashboardController::class, 'redirect'])->name('dashboard');
+
+    // Platform Admin Dashboard (PLATFORM_ADMIN role)
+    Route::middleware('role:PLATFORM_ADMIN')->prefix('admin')->group(function () {
+        Route::get('/dashboard', [PlatformAdminController::class, 'dashboard'])
+            ->name('dashboard.platform-admin');
+    });
+
+    // Company Admin Dashboard (COMPANY_ADMIN role)
+    Route::middleware('role:COMPANY_ADMIN')->prefix('company')->group(function () {
+        Route::get('/dashboard', [CompanyAdminController::class, 'dashboard'])
+            ->name('dashboard.company-admin');
+    });
+
+    // Agent Dashboard (AGENT role)
+    Route::middleware('role:AGENT')->prefix('agent')->group(function () {
+        Route::get('/dashboard', [AgentController::class, 'dashboard'])
+            ->name('dashboard.agent');
+    });
+
+    // User Dashboard (USER role)
+    Route::middleware('role:USER')->prefix('user')->group(function () {
+        Route::get('/dashboard', [UserController::class, 'dashboard'])
+            ->name('dashboard.user');
+    });
 });
 

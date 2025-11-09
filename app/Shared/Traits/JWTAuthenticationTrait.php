@@ -91,18 +91,25 @@ trait JWTAuthenticationTrait
      */
     protected function extractJWTToken(Request $request): ?string
     {
+        // Primero intentar obtener del header Authorization (API calls)
         $header = $request->header('Authorization');
 
-        if (!$header) {
-            return null;
+        if ($header) {
+            // Remove "Bearer " prefix if present
+            if (stripos($header, 'Bearer ') === 0) {
+                return substr($header, 7);
+            }
+            return $header;
         }
 
-        // Remove "Bearer " prefix if present
-        if (stripos($header, 'Bearer ') === 0) {
-            return substr($header, 7);
+        // Si no hay header Authorization, intentar desde la cookie jwt_token
+        // (para rutas web/Blade que requieren autenticación)
+        $cookieToken = $request->cookie('jwt_token');
+        if ($cookieToken) {
+            return $cookieToken;
         }
 
-        return $header;
+        return null;
     }
 
     /**

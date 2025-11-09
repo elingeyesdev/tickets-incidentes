@@ -45,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.require' => \App\Http\Middleware\JWT\RequireJWTAuthentication::class,        // ← Autenticación OBLIGATORIA
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization
+            'role.selected' => \App\Http\Middleware\EnsureRoleSelected::class,  // ← Ensure user has selected active role
             'company.ownership' => \App\Features\CompanyManagement\Http\Middleware\EnsureCompanyOwnership::class,  // ← Company ownership validation
             'throttle.user' => \App\Http\Middleware\ThrottleByUser::class,  // ← User-based rate limiting (requires JWT)
         ]);

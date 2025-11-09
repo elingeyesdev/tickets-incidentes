@@ -204,6 +204,30 @@
                     }
                 },
 
+                decodeJWT(token) {
+                    try {
+                        const base64Url = token.split('.')[1];
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join(''));
+                        return JSON.parse(jsonPayload);
+                    } catch (error) {
+                        console.error('Failed to decode JWT:', error);
+                        return { roles: [] };
+                    }
+                },
+
+                getDashboardUrl(roleCode) {
+                    const dashboardMap = {
+                        'PLATFORM_ADMIN': '/app/admin/dashboard',
+                        'COMPANY_ADMIN': '/app/company/dashboard',
+                        'AGENT': '/app/agent/dashboard',
+                        'USER': '/app/user/dashboard'
+                    };
+                    return dashboardMap[roleCode] || '/app/dashboard';
+                },
+
                 validateEmail() {
                     this.errors.email = '';
                     if (!this.formData.email) {
@@ -278,12 +302,48 @@
                             localStorage.setItem('access_token', data.accessToken);
                         }
 
-                        this.successMessage = 'Sesión iniciada. Redirigiendo...';
-                        this.success = true;
+                        // Decodificar JWT para verificar roles
+                        const payload = this.decodeJWT(data.accessToken);
+                        const roles = payload.roles || [];
 
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 1500);
+                        // Lógica inteligente de roles:
+                        // - Si 1 rol: ir directo a /auth/prepare-web para establecer cookie
+                        // - Si múltiples: ir a role-selector
+                        if (roles.length === 1) {
+                            // Auto-asignar el único rol
+                            const activeRole = {
+                                code: roles[0].code,
+                                company_id: roles[0].company_id || null,
+                                company_name: roles[0].company_name || null
+                            };
+                            localStorage.setItem('active_role', JSON.stringify(activeRole));
+
+                            this.successMessage = 'Sesión iniciada. Redirigiendo...';
+                            this.success = true;
+
+                            // Ir a /auth/prepare-web que establece cookie y redirija al dashboard
+                            const dashboardUrl = this.getDashboardUrl(activeRole.code);
+                            setTimeout(() => {
+                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent(dashboardUrl)}`;
+                            }, 1500);
+                        } else if (roles.length > 1) {
+                            // Múltiples roles: ir a role-selector
+                            this.successMessage = 'Sesión iniciada. Selecciona un rol...';
+                            this.success = true;
+
+                            setTimeout(() => {
+                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/auth-flow/role-selector')}`;
+                            }, 1500);
+                        } else {
+                            // Sin roles: error
+                            throw new Error('Usuario sin roles asignados');
+                        }
+
+                        // El servidor también necesita el token en cookie para validar
+                        // rutas web (Blade). Redirigimos a /auth/prepare-web que:
+                        // 1. Valida el token
+                        // 2. Establece la cookie
+                        // 3. Redirija al dashboard correcto
 
                     } catch (err) {
                         console.error('Login error:', err);
@@ -338,7 +398,7 @@
                         this.success = true;
 
                         setTimeout(() => {
-                            window.location.href = '/dashboard';
+                            window.location.href = '/app/dashboard';
                         }, 1500);
 
                     } catch (err) {

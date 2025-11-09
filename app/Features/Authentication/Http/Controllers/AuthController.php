@@ -738,6 +738,50 @@ class AuthController
     }
 
     /**
+     * Set JWT token in a cookie for web routes (Blade templates)
+     *
+     * Web routes need the JWT in a cookie because they use regular HTTP navigation
+     * (window.location.href) which doesn't send custom headers like Authorization.
+     *
+     * API calls continue to use the Authorization header.
+     */
+    public function setWebToken(Request $request): JsonResponse
+    {
+        try {
+            // Get token from Authorization header
+            $authHeader = $request->header('Authorization', '');
+            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+                return response()->json(['message' => 'Invalid or missing Authorization header'], 401);
+            }
+
+            $token = str_replace('Bearer ', '', $authHeader);
+
+            // Validate token
+            $this->tokenService->validateAccessToken($token);
+
+            // Set token in cookie for web routes
+            return response()->json(['message' => 'Web token set'])
+                ->cookie(
+                    'jwt_token',
+                    $token,
+                    3600,  // 60 minutes (same as access token TTL)
+                    '/',
+                    null,
+                    !app()->isLocal(),  // Secure in production
+                    false,  // NOT HttpOnly (JavaScript needs to read for API calls)
+                    false,
+                    'lax'
+                );
+        } catch (TokenExpiredException $e) {
+            return response()->json(['message' => 'Token expired'], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json(['message' => 'Invalid token'], 401);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error setting web token: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Capitaliza nombres correctamente (Primera letra mayúscula, resto minúsculas)
      * También sanitiza quitando HTML tags
      *
