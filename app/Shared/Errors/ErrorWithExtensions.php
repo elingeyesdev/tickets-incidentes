@@ -2,22 +2,11 @@
 
 namespace App\Shared\Errors;
 
-use GraphQL\Error\ClientAware;
-use GraphQL\Error\Error;
-
 /**
  * Error with Extensions Support
  *
- * Custom Error class that properly preserves extensions (error codes and metadata).
+ * Custom Exception class that preserves extensions (error codes and metadata).
  * Used by REST API services to provide structured error responses.
- *
- * Problem:
- * - GraphQL\Error\Error constructor doesn't preserve extensions array parameter
- * - Responses need to access $errors[0]['extensions']['code']
- *
- * Solution:
- * - Implement ClientAware interface to return extensions
- * - Store extensions in constructor and return via getExtensions()
  *
  * Usage:
  * ```php
@@ -27,7 +16,7 @@ use GraphQL\Error\Error;
  * );
  * ```
  */
-class ErrorWithExtensions extends Error implements ClientAware
+class ErrorWithExtensions extends \Exception
 {
     private array $customExtensions = [];
 
@@ -43,24 +32,8 @@ class ErrorWithExtensions extends Error implements ClientAware
         array $extensions = [],
         ?\Throwable $previous = null
     ) {
-        parent::__construct(
-            $message,
-            null,      // nodes
-            null,      // source
-            [],        // positions
-            null,      // path
-            $previous  // previous
-        );
-
+        parent::__construct($message, 0, $previous);
         $this->customExtensions = $extensions;
-    }
-
-    /**
-     * Return true to expose error message to client
-     */
-    public function isClientSafe(): bool
-    {
-        return true;
     }
 
     /**

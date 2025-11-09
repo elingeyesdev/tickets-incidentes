@@ -44,7 +44,8 @@ class DatabaseSeeder extends Seeder
         $this->call(DefaultUserSeeder::class);
 
         // Seed real Bolivian companies with demo data
-        $this->call(RealBolivianCompaniesSeeder::class);
+        // DISABLED FOR TESTING: Tests create their own company data
+        // $this->call(RealBolivianCompaniesSeeder::class);
 
         // Future: Add other essential seeders here
         // Example:
