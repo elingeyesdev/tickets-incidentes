@@ -80,15 +80,15 @@ class ListCategoriesTest extends TestCase
     }
 
     /**
-     * Test #1: User can list categories of company they follow
+     * Test #1: User can list categories of any company
      *
-     * Verifies that a USER can list categories from a company they follow.
+     * Verifies that a USER can list categories from any company, regardless of following status.
+     * Following is for information/UI priority, NOT access control.
      *
      * Expected: 200 OK with array of categories
-     * Response: Should include all categories from the followed company
      */
     #[Test]
-    public function user_can_list_categories_of_company_they_follow(): void
+    public function user_can_list_categories_of_company(): void
     {
         // Arrange
         $admin = $this->createCompanyAdmin();
@@ -100,10 +100,9 @@ class ListCategoriesTest extends TestCase
         $category2Response = $this->authenticateWithJWT($admin)
             ->postJson('/api/v1/tickets/categories', ['name' => 'Ventas']);
 
-        // Create a USER who follows this company
+        // Create a USER (who does NOT need to follow this company)
         $user = User::factory()->withRole('USER')->create();
-        // TODO: When UserCompanyFollow model exists, create follow relationship
-        // For now, assume UserCompanyFollow::create(['user_id' => $user->id, 'company_id' => $companyId])
+        // No following relationship needed - users can list categories from any company
 
         // Act
         $response = $this->authenticateWithJWT($user)

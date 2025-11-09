@@ -298,7 +298,7 @@ tests/Integration/TicketManagement/
 
 1. **test_user_can_list_categories_of_company**
     - GET /tickets/categories?company_id=X
-    - Usuario sigue empresa → ve categorías
+    - Usuario puede listar categorías (sin restricción de following)
 
 2. **test_filters_by_is_active_status**
     - is_active=true → solo activas
