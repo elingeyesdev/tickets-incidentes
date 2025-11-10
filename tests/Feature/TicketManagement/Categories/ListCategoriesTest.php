@@ -16,7 +16,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Listing Ticket Categories
  *
- * Tests the endpoint GET /api/v1/tickets/categories?company_id={uuid}&is_active={bool}
+ * Tests the endpoint GET /api/tickets/categories?company_id={uuid}&is_active={bool}
  *
  * Coverage:
  * - Authentication (unauthenticated, USER, AGENT, COMPANY_ADMIN)
@@ -73,7 +73,7 @@ class ListCategoriesTest extends TestCase
         $companyId = $admin->userRoles()->where('role_code', 'COMPANY_ADMIN')->first()->company_id;
 
         // Act - No authenticateWithJWT() call
-        $response = $this->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+        $response = $this->getJson("/api/tickets/categories?company_id={$companyId}");
 
         // Assert
         $response->assertStatus(401);
@@ -96,9 +96,9 @@ class ListCategoriesTest extends TestCase
 
         // Create categories for this company
         $category1Response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Soporte Técnico']);
+            ->postJson('/api/tickets/categories', ['name' => 'Soporte Técnico']);
         $category2Response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Ventas']);
+            ->postJson('/api/tickets/categories', ['name' => 'Ventas']);
 
         // Create a USER (who does NOT need to follow this company)
         $user = User::factory()->withRole('USER')->create();
@@ -106,7 +106,7 @@ class ListCategoriesTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+            ->getJson("/api/tickets/categories?company_id={$companyId}");
 
         // Assert
         $response->assertStatus(200);
@@ -136,21 +136,21 @@ class ListCategoriesTest extends TestCase
 
         // Create active category
         $activeResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Activa']);
+            ->postJson('/api/tickets/categories', ['name' => 'Categoría Activa']);
         $activeCategoryId = $activeResponse->json('data.id');
 
         // Create inactive category
         $inactiveResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Inactiva']);
+            ->postJson('/api/tickets/categories', ['name' => 'Categoría Inactiva']);
         $inactiveCategoryId = $inactiveResponse->json('data.id');
 
         // Deactivate second category
         $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$inactiveCategoryId}", ['is_active' => false]);
+            ->putJson("/api/tickets/categories/{$inactiveCategoryId}", ['is_active' => false]);
 
         // Act & Assert - Filter by is_active=true
         $response = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}&is_active=true");
+            ->getJson("/api/tickets/categories?company_id={$companyId}&is_active=true");
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonFragment(['name' => 'Categoría Activa']);
@@ -158,7 +158,7 @@ class ListCategoriesTest extends TestCase
 
         // Act & Assert - Filter by is_active=false
         $response = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}&is_active=false");
+            ->getJson("/api/tickets/categories?company_id={$companyId}&is_active=false");
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonFragment(['name' => 'Categoría Inactiva']);
@@ -166,7 +166,7 @@ class ListCategoriesTest extends TestCase
 
         // Act & Assert - No filter (should return all)
         $response = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+            ->getJson("/api/tickets/categories?company_id={$companyId}");
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data');
     }
@@ -190,7 +190,7 @@ class ListCategoriesTest extends TestCase
 
         // Create category for this company
         $categoryResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Accesible']);
+            ->postJson('/api/tickets/categories', ['name' => 'Categoría Accesible']);
         $categoryId = $categoryResponse->json('data.id');
 
         // Create a USER who does NOT follow this company
@@ -198,7 +198,7 @@ class ListCategoriesTest extends TestCase
 
         // Act - User lists categories from ANY company (no following required)
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+            ->getJson("/api/tickets/categories?company_id={$companyId}");
 
         // Assert - Should succeed (200, not 403)
         $response->assertStatus(200);
@@ -227,9 +227,9 @@ class ListCategoriesTest extends TestCase
 
         // Create categories for this company
         $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Soporte']);
+            ->postJson('/api/tickets/categories', ['name' => 'Soporte']);
         $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Facturación']);
+            ->postJson('/api/tickets/categories', ['name' => 'Facturación']);
 
         // Create an AGENT for the same company
         $agent = User::factory()->create();
@@ -237,7 +237,7 @@ class ListCategoriesTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+            ->getJson("/api/tickets/categories?company_id={$companyId}");
 
         // Assert
         $response->assertStatus(200);
@@ -267,7 +267,7 @@ class ListCategoriesTest extends TestCase
 
         // Create category
         $categoryResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Soporte con Tickets']);
+            ->postJson('/api/tickets/categories', ['name' => 'Soporte con Tickets']);
         $categoryId = $categoryResponse->json('data.id');
 
         // Create tickets with different statuses
@@ -290,7 +290,7 @@ class ListCategoriesTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/categories?company_id={$companyId}");
+            ->getJson("/api/tickets/categories?company_id={$companyId}");
 
         // Assert
         $response->assertStatus(200);

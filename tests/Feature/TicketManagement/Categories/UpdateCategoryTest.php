@@ -14,7 +14,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Updating Ticket Categories
  *
- * Tests the endpoint PUT /api/v1/tickets/categories/:id
+ * Tests the endpoint PUT /api/tickets/categories/:id
  *
  * Coverage:
  * - Authentication and permissions (COMPANY_ADMIN only)
@@ -64,7 +64,7 @@ class UpdateCategoryTest extends TestCase
         // Create a category first
         $createPayload = ['name' => 'Soporte Original'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Update payload
@@ -75,7 +75,7 @@ class UpdateCategoryTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert
         $response->assertStatus(200);
@@ -106,13 +106,13 @@ class UpdateCategoryTest extends TestCase
         // Create a category (default is_active = true)
         $createPayload = ['name' => 'Categoría Activa'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Act - Deactivate category
         $updatePayload = ['is_active' => false];
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert
         $response->assertStatus(200);
@@ -125,7 +125,7 @@ class UpdateCategoryTest extends TestCase
         // Act - Reactivate category
         $updatePayload = ['is_active' => true];
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert
         $response->assertStatus(200);
@@ -155,17 +155,17 @@ class UpdateCategoryTest extends TestCase
 
         // Create two categories
         $category1Response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Uno']);
+            ->postJson('/api/tickets/categories', ['name' => 'Categoría Uno']);
         $categoryId1 = $category1Response->json('data.id');
 
         $category2Response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', ['name' => 'Categoría Dos']);
+            ->postJson('/api/tickets/categories', ['name' => 'Categoría Dos']);
         $categoryId2 = $category2Response->json('data.id');
 
         // Act - Try to update category 2 with category 1's name
         $updatePayload = ['name' => 'Categoría Uno'];
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId2}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId2}", $updatePayload);
 
         // Assert
         $response->assertStatus(422);
@@ -199,13 +199,13 @@ class UpdateCategoryTest extends TestCase
         // Create category in Company A
         $createPayload = ['name' => 'Categoría de Empresa A'];
         $createResponse = $this->authenticateWithJWT($adminCompanyA)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Act - Admin from Company B tries to update category from Company A
         $updatePayload = ['name' => 'Intento de Actualización'];
         $response = $this->authenticateWithJWT($adminCompanyB)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert - Should be forbidden or not found
         $this->assertContains($response->status(), [403, 404]);
@@ -240,13 +240,13 @@ class UpdateCategoryTest extends TestCase
             'description' => 'Descripción original',
         ];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Act - Update only description
         $updatePayload = ['description' => 'Descripción actualizada'];
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert - Name should remain unchanged
         $response->assertStatus(200);
@@ -262,7 +262,7 @@ class UpdateCategoryTest extends TestCase
         // Act - Update only name
         $updatePayload = ['name' => 'Nuevo Nombre'];
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert - Description should remain unchanged
         $response->assertStatus(200);
@@ -297,13 +297,13 @@ class UpdateCategoryTest extends TestCase
         // Create category as admin
         $createPayload = ['name' => 'Categoría Original'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Act - User tries to update
         $updatePayload = ['name' => 'Intento de Usuario'];
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/categories/{$categoryId}", $updatePayload);
+            ->putJson("/api/tickets/categories/{$categoryId}", $updatePayload);
 
         // Assert
         $response->assertStatus(403);

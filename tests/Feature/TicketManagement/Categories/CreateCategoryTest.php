@@ -14,7 +14,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Creating Ticket Categories
  *
- * Tests the endpoint POST /api/v1/tickets/categories
+ * Tests the endpoint POST /api/tickets/categories
  *
  * Coverage:
  * - Authentication (unauthenticated, USER, COMPANY_ADMIN)
@@ -64,7 +64,7 @@ class CreateCategoryTest extends TestCase
         ];
 
         // Act - No authenticateWithJWT() call
-        $response = $this->postJson('/api/v1/tickets/categories', $payload);
+        $response = $this->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(401);
@@ -96,7 +96,7 @@ class CreateCategoryTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -128,7 +128,7 @@ class CreateCategoryTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -166,7 +166,7 @@ class CreateCategoryTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -194,21 +194,21 @@ class CreateCategoryTest extends TestCase
         // Case 1: Name too short (2 chars, min is 3)
         $payload = ['name' => 'AB'];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('name');
 
         // Case 2: Name too long (101 chars, max is 100)
         $payload = ['name' => str_repeat('A', 101)];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('name');
 
         // Case 3: Valid name length (between 3 and 100)
         $payload = ['name' => 'Categoría Válida'];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(201);
     }
 
@@ -232,12 +232,12 @@ class CreateCategoryTest extends TestCase
         // Create first category
         $payload = ['name' => 'Soporte Técnico'];
         $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload)
+            ->postJson('/api/tickets/categories', $payload)
             ->assertStatus(201);
 
         // Act - Try to create duplicate category in same company
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -265,11 +265,11 @@ class CreateCategoryTest extends TestCase
 
         // Act - Create category in Company A
         $responseA = $this->authenticateWithJWT($adminCompanyA)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Act - Create category with same name in Company B
         $responseB = $this->authenticateWithJWT($adminCompanyB)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert - Both should succeed
         $responseA->assertStatus(201);
@@ -300,7 +300,7 @@ class CreateCategoryTest extends TestCase
         // Case 1: Without description (should be accepted)
         $payload = ['name' => 'Sin Descripción'];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(201);
         $response->assertJsonPath('data.description', null);
 
@@ -310,7 +310,7 @@ class CreateCategoryTest extends TestCase
             'description' => str_repeat('A', 501),
         ];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('description');
 
@@ -320,7 +320,7 @@ class CreateCategoryTest extends TestCase
             'description' => str_repeat('Descripción válida. ', 10), // ~200 chars
         ];
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
         $response->assertStatus(201);
     }
 
@@ -354,7 +354,7 @@ class CreateCategoryTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -373,7 +373,7 @@ class CreateCategoryTest extends TestCase
         ];
 
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $payload);
+            ->postJson('/api/tickets/categories', $payload);
 
         // Response should use company_id from JWT, NOT the one in payload
         if ($response->status() === 201) {

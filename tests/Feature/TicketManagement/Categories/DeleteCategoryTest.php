@@ -15,7 +15,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Deleting Ticket Categories
  *
- * Tests the endpoint DELETE /api/v1/tickets/categories/:id
+ * Tests the endpoint DELETE /api/tickets/categories/:id
  *
  * Coverage:
  * - Authentication and permissions (COMPANY_ADMIN only)
@@ -71,7 +71,7 @@ class DeleteCategoryTest extends TestCase
         // Create category
         $createPayload = ['name' => 'Categoría Sin Usar'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Verify category exists
@@ -82,7 +82,7 @@ class DeleteCategoryTest extends TestCase
 
         // Act - Delete category
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert
         $this->assertContains($response->status(), [200, 204]);
@@ -111,7 +111,7 @@ class DeleteCategoryTest extends TestCase
         // Create category
         $createPayload = ['name' => 'Categoría con Tickets Cerrados'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Create multiple closed tickets for this category
@@ -126,7 +126,7 @@ class DeleteCategoryTest extends TestCase
 
         // Act - Delete category
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert - Should succeed
         $this->assertContains($response->status(), [200, 204]);
@@ -157,7 +157,7 @@ class DeleteCategoryTest extends TestCase
         // Create category
         $createPayload = ['name' => 'Categoría con Tickets Abiertos'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Create open ticket for this category
@@ -168,7 +168,7 @@ class DeleteCategoryTest extends TestCase
 
         // Act - Try to delete category
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert - Should fail
         $response->assertStatus(422);
@@ -201,7 +201,7 @@ class DeleteCategoryTest extends TestCase
         // Create category
         $createPayload = ['name' => 'Categoría con Tickets Pendientes'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Create pending ticket for this category
@@ -212,7 +212,7 @@ class DeleteCategoryTest extends TestCase
 
         // Act - Try to delete category
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert - Should fail
         $response->assertStatus(422);
@@ -247,7 +247,7 @@ class DeleteCategoryTest extends TestCase
         // Create category
         $createPayload = ['name' => 'Categoría con Múltiples Tickets'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Create multiple active tickets (mix of OPEN, PENDING, IN_PROGRESS)
@@ -272,7 +272,7 @@ class DeleteCategoryTest extends TestCase
 
         // Act - Try to delete category
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert - Should fail with count
         $response->assertStatus(422);
@@ -310,12 +310,12 @@ class DeleteCategoryTest extends TestCase
         // Create category as admin
         $createPayload = ['name' => 'Categoría a Proteger'];
         $createResponse = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets/categories', $createPayload);
+            ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
         // Act - User tries to delete
         $response = $this->authenticateWithJWT($user)
-            ->deleteJson("/api/v1/tickets/categories/{$categoryId}");
+            ->deleteJson("/api/tickets/categories/{$categoryId}");
 
         // Assert
         $response->assertStatus(403);
