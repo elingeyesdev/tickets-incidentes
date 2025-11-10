@@ -117,7 +117,7 @@ class Category extends Model
     {
         try {
             return $this->tickets()
-                ->whereNotIn('status', ['CLOSED'])
+                ->whereNotIn('status', ['closed'])
                 ->count();
         } catch (\Exception $e) {
             // Durante FASE 2, la tabla de tickets no existe aún

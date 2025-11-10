@@ -15,10 +15,10 @@ namespace App\Features\TicketManagement\Enums;
  */
 enum TicketStatus: string
 {
-    case OPEN = 'OPEN';
-    case PENDING = 'PENDING';
-    case RESOLVED = 'RESOLVED';
-    case CLOSED = 'CLOSED';
+    case OPEN = 'open';
+    case PENDING = 'pending';
+    case RESOLVED = 'resolved';
+    case CLOSED = 'closed';
 
     /**
      * Obtiene todos los valores como array

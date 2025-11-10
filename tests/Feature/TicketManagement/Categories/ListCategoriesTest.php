@@ -273,11 +273,11 @@ class ListCategoriesTest extends TestCase
         // Create tickets with different statuses
         $openTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'OPEN',
+            'status' => 'open',
         ]);
         $pendingTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'PENDING',
+            'status' => 'pending',
         ]);
         $inProgressTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
@@ -285,7 +285,7 @@ class ListCategoriesTest extends TestCase
         ]);
         $closedTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'CLOSED',
+            'status' => 'closed',
         ]);
 
         // Act

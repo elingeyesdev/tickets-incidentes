@@ -117,11 +117,11 @@ class DeleteCategoryTest extends TestCase
         // Create multiple closed tickets for this category
         $closedTicket1 = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'CLOSED',
+            'status' => 'closed',
         ]);
         $closedTicket2 = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'CLOSED',
+            'status' => 'closed',
         ]);
 
         // Act - Delete category
@@ -163,7 +163,7 @@ class DeleteCategoryTest extends TestCase
         // Create open ticket for this category
         $openTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'OPEN',
+            'status' => 'open',
         ]);
 
         // Act - Try to delete category
@@ -207,7 +207,7 @@ class DeleteCategoryTest extends TestCase
         // Create pending ticket for this category
         $pendingTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'PENDING',
+            'status' => 'pending',
         ]);
 
         // Act - Try to delete category
@@ -253,11 +253,11 @@ class DeleteCategoryTest extends TestCase
         // Create multiple active tickets (mix of OPEN, PENDING, IN_PROGRESS)
         $openTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'OPEN',
+            'status' => 'open',
         ]);
         $pendingTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'PENDING',
+            'status' => 'pending',
         ]);
         $inProgressTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
@@ -267,7 +267,7 @@ class DeleteCategoryTest extends TestCase
         // Also create closed ticket (shouldn't count as active)
         $closedTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'CLOSED',
+            'status' => 'closed',
         ]);
 
         // Act - Try to delete category
