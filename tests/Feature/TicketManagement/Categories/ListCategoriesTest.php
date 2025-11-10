@@ -255,7 +255,7 @@ class ListCategoriesTest extends TestCase
      * Active tickets are those with status != CLOSED.
      *
      * Expected: 200 OK with active_tickets_count field
-     * Count: Should only include OPEN, PENDING, IN_PROGRESS, RESOLVED tickets
+     * Count: Should only include OPEN, PENDING, pending, RESOLVED tickets
      * Count: Should exclude CLOSED tickets
      */
     #[Test]
@@ -281,7 +281,7 @@ class ListCategoriesTest extends TestCase
         ]);
         $inProgressTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'IN_PROGRESS',
+            'status' => 'pending',
         ]);
         $closedTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
@@ -303,7 +303,7 @@ class ListCategoriesTest extends TestCase
         $this->assertNotNull($category, 'Category should be in response');
         $this->assertArrayHasKey('active_tickets_count', $category);
 
-        // Should count 3 active tickets (OPEN, PENDING, IN_PROGRESS)
+        // Should count 3 active tickets (OPEN, PENDING, pending)
         // Should NOT count CLOSED ticket
         $this->assertEquals(3, $category['active_tickets_count']);
     }

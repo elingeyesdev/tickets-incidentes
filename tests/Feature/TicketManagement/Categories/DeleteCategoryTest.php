@@ -46,7 +46,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - name: VARCHAR(100)
  *
  * Related: ticketing.tickets
- * - status: ENUM (OPEN, PENDING, IN_PROGRESS, RESOLVED, CLOSED)
+ * - status: ENUM (OPEN, PENDING, pending, RESOLVED, CLOSED)
  */
 class DeleteCategoryTest extends TestCase
 {
@@ -250,7 +250,7 @@ class DeleteCategoryTest extends TestCase
             ->postJson('/api/tickets/categories', $createPayload);
         $categoryId = $createResponse->json('data.id');
 
-        // Create multiple active tickets (mix of OPEN, PENDING, IN_PROGRESS)
+        // Create multiple active tickets (mix of OPEN, PENDING, pending)
         $openTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
             'status' => 'open',
@@ -261,7 +261,7 @@ class DeleteCategoryTest extends TestCase
         ]);
         $inProgressTicket = Ticket::factory()->create([
             'category_id' => $categoryId,
-            'status' => 'IN_PROGRESS',
+            'status' => 'pending',
         ]);
 
         // Also create closed ticket (shouldn't count as active)
