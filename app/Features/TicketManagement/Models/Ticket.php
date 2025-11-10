@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property string $initial_description
  * @property TicketStatus $status
  * @property string|null $owner_agent_id
+ * @property string $last_response_author_type
  * @property \DateTime $created_at
  * @property \DateTime $updated_at
  * @property \DateTime|null $first_response_at
@@ -81,6 +82,7 @@ class Ticket extends Model
         'initial_description',
         'status',
         'owner_agent_id',
+        'last_response_author_type',
         'first_response_at',
         'resolved_at',
         'closed_at',
@@ -95,6 +97,7 @@ class Ticket extends Model
         'company_id' => 'string',
         'category_id' => 'string',
         'owner_agent_id' => 'string',
+        'last_response_author_type' => 'string',
         'status' => TicketStatus::class,
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

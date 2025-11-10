@@ -30,6 +30,7 @@ return new class extends Migration
                 -- Ciclo de vida
                 status ticketing.ticket_status NOT NULL DEFAULT 'open',
                 owner_agent_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+                last_response_author_type VARCHAR(20) DEFAULT 'none',
 
                 -- Auditoría de ciclo de vida
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -45,6 +46,7 @@ return new class extends Migration
         DB::statement("COMMENT ON COLUMN ticketing.tickets.ticket_code IS 'Código único del ticket (TKT-2025-00001)'");
         DB::statement("COMMENT ON COLUMN ticketing.tickets.created_by_user_id IS 'Usuario que creó el ticket'");
         DB::statement("COMMENT ON COLUMN ticketing.tickets.owner_agent_id IS 'Agente asignado (se asigna automáticamente al primer agente que responde)'");
+        DB::statement("COMMENT ON COLUMN ticketing.tickets.last_response_author_type IS 'Tipo del autor de la última respuesta: none (sin respuestas), user (cliente), agent (agente). Se actualiza automáticamente por trigger.'");
         DB::statement("COMMENT ON COLUMN ticketing.tickets.status IS 'Estado actual del ticket'");
         DB::statement("COMMENT ON COLUMN ticketing.tickets.first_response_at IS 'Timestamp de la primera respuesta de un agente (para métrica de SLA)'");
 

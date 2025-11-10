@@ -14,16 +14,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // FUNCIÓN: Asignar automáticamente owner_agent_id al primer agente que responde
+        // FUNCIÓN: Asignar automáticamente owner_agent_id al primer agente que responde y actualizar last_response_author_type
         DB::statement("
             CREATE OR REPLACE FUNCTION ticketing.assign_ticket_owner_function()
             RETURNS TRIGGER AS \$\$
             BEGIN
-                -- Solo asignar si el ticket no tiene owner y el que responde es un agente
+                -- Si el que responde es un agente
                 IF NEW.author_type = 'agent' THEN
+                    -- Asignar owner_agent_id solo si el ticket no tiene owner
                     UPDATE ticketing.tickets
                     SET
                         owner_agent_id = NEW.author_id,
+                        last_response_author_type = 'agent',
                         first_response_at = CASE
                             WHEN first_response_at IS NULL THEN NOW()
                             ELSE first_response_at
@@ -34,6 +36,20 @@ return new class extends Migration
                         END
                     WHERE id = NEW.ticket_id
                     AND owner_agent_id IS NULL;
+
+                    -- Si el ticket ya tiene owner, solo actualizar last_response_author_type
+                    UPDATE ticketing.tickets
+                    SET
+                        last_response_author_type = 'agent'
+                    WHERE id = NEW.ticket_id
+                    AND owner_agent_id IS NOT NULL;
+
+                ELSIF NEW.author_type = 'user' THEN
+                    -- Si responde un usuario, solo actualizar last_response_author_type
+                    UPDATE ticketing.tickets
+                    SET
+                        last_response_author_type = 'user'
+                    WHERE id = NEW.ticket_id;
                 END IF;
 
                 RETURN NEW;
@@ -41,7 +57,7 @@ return new class extends Migration
             \$\$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("COMMENT ON FUNCTION ticketing.assign_ticket_owner_function() IS 'Asigna automáticamente el agente propietario al primer agente que responde un ticket.'");
+        DB::statement("COMMENT ON FUNCTION ticketing.assign_ticket_owner_function() IS 'Asigna automáticamente el agente propietario al primer agente que responde un ticket y actualiza last_response_author_type (agent/user).'");
 
         // TABLA: Categories
         DB::statement("

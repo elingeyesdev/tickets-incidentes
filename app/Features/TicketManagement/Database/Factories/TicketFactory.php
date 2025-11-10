@@ -56,6 +56,7 @@ class TicketFactory extends Factory
             'initial_description' => $this->faker->randomElement($descriptions) . ' ' . $this->faker->realText(200),
             'status' => TicketStatus::OPEN,
             'owner_agent_id' => null,  // NULL inicialmente, se asigna con trigger
+            'last_response_author_type' => 'none',  // 'none' por defecto, se actualiza con trigger
             'created_at' => now(),
             'updated_at' => now(),
             'first_response_at' => null,
@@ -72,6 +73,7 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status' => TicketStatus::PENDING,
             'owner_agent_id' => User::factory(),
+            'last_response_author_type' => 'agent',
             'first_response_at' => now()->subHours(2),
         ]);
     }
@@ -84,6 +86,7 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status' => TicketStatus::RESOLVED,
             'owner_agent_id' => User::factory(),
+            'last_response_author_type' => 'agent',
             'first_response_at' => now()->subDays(3),
             'resolved_at' => now()->subDay(),
         ]);
@@ -97,6 +100,7 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status' => TicketStatus::CLOSED,
             'owner_agent_id' => User::factory(),
+            'last_response_author_type' => 'agent',
             'first_response_at' => now()->subDays(10),
             'resolved_at' => now()->subDays(8),
             'closed_at' => now()->subDay(),
@@ -131,6 +135,7 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'owner_agent_id' => $agentId,
             'status' => TicketStatus::PENDING,
+            'last_response_author_type' => 'agent',
             'first_response_at' => now()->subHour(),
         ]);
     }
