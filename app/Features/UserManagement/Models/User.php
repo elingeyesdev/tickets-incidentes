@@ -201,6 +201,23 @@ class User extends Model implements Authenticatable
         return $this->password_hash;
     }
 
+    /**
+     * Override hasAttribute para prevenir que el trait Auditable
+     * intente setear columnas de auditoría que NO existen en la tabla users.
+     *
+     * La tabla auth.users NO tiene: created_by_id, updated_by_id, deleted_by_id
+     * Esto previene que el trait Auditable intente insertarlas durante factory creation.
+     */
+    public function hasAttribute($attribute): bool
+    {
+        // User model doesn't have auditable columns in database
+        if (in_array($attribute, ['created_by_id', 'updated_by_id', 'deleted_by_id'])) {
+            return false;
+        }
+        // Llamar al método del trait para otros atributos
+        return parent::hasAttribute($attribute);
+    }
+
     // ==================== MÉTODOS DE VERIFICACIÓN ====================
 
     /**
