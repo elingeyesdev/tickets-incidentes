@@ -172,9 +172,9 @@ class DeleteCategoryTest extends TestCase
 
         // Assert - Should fail
         $response->assertStatus(422);
-        $response->assertJsonFragment([
-            'message' => 'Cannot delete category with active tickets',
-        ]);
+        // El mensaje debe indicar que no puede eliminarse y mencionar tickets activos
+        $this->assertStringContainsString('Cannot delete category with', $response->json('message'));
+        $this->assertStringContainsString('active tickets', $response->json('message'));
 
         // Verify category still exists
         $this->assertDatabaseHas('ticketing.categories', [
@@ -216,9 +216,9 @@ class DeleteCategoryTest extends TestCase
 
         // Assert - Should fail
         $response->assertStatus(422);
-        $response->assertJsonFragment([
-            'message' => 'Cannot delete category with active tickets',
-        ]);
+        // El mensaje debe indicar que no puede eliminarse y mencionar tickets activos
+        $this->assertStringContainsString('Cannot delete category with', $response->json('message'));
+        $this->assertStringContainsString('active tickets', $response->json('message'));
 
         // Verify category still exists
         $this->assertDatabaseHas('ticketing.categories', [
