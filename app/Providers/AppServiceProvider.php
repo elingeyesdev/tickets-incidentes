@@ -70,5 +70,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Features\CompanyManagement\Models\Company::class,
             \App\Features\CompanyManagement\Policies\CompanyPolicy::class
         );
+
+        Gate::policy(
+            \App\Features\TicketManagement\Models\Category::class,
+            \App\Features\TicketManagement\Policies\CategoryPolicy::class
+        );
     }
 }

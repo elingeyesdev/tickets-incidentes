@@ -24,6 +24,7 @@ use App\Features\ContentManagement\Http\Controllers\NewsAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\AlertAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController;
 use App\Features\ContentManagement\Http\Controllers\ArticleController;
+use App\Features\TicketManagement\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -417,4 +418,30 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
     // Delete help center article (only DRAFT articles)
     Route::delete('/help-center/articles/{article}', [ArticleController::class, 'destroy'])
         ->name('articles.destroy');
+});
+
+// ================================================================================
+// REST API ENDPOINTS - Ticket Management (Categories)
+// ================================================================================
+
+// ========== TICKET CATEGORIES - Read Endpoints (All Authenticated Users) ==========
+Route::middleware('jwt.require')->group(function () {
+    // List categories for a company
+    Route::get('/tickets/categories', [CategoryController::class, 'index'])
+        ->name('tickets.categories.index');
+});
+
+// ========== TICKET CATEGORIES - Management Endpoints (COMPANY_ADMIN Only) ==========
+Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
+    // Create a ticket category
+    Route::post('/tickets/categories', [CategoryController::class, 'store'])
+        ->name('tickets.categories.store');
+
+    // Update a ticket category
+    Route::put('/tickets/categories/{id}', [CategoryController::class, 'update'])
+        ->name('tickets.categories.update');
+
+    // Delete a ticket category
+    Route::delete('/tickets/categories/{id}', [CategoryController::class, 'destroy'])
+        ->name('tickets.categories.destroy');
 });

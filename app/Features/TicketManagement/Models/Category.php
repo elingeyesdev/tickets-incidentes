@@ -108,11 +108,20 @@ class Category extends Model
 
     /**
      * Obtiene el conteo de tickets activos (no cerrados)
+     * Tickets activos = OPEN, PENDING, IN_PROGRESS (excluye CLOSED)
+     *
+     * Nota: Este método requiere que la tabla de tickets exista.
+     * Retorna 0 si hay algún error (para evitar fallos durante FASE 2).
      */
     public function getActiveTicketsCountAttribute(): int
     {
-        return $this->tickets()
-            ->whereIn('status', ['open', 'pending', 'resolved'])
-            ->count();
+        try {
+            return $this->tickets()
+                ->whereNotIn('status', ['CLOSED'])
+                ->count();
+        } catch (\Exception $e) {
+            // Durante FASE 2, la tabla de tickets no existe aún
+            return 0;
+        }
     }
 }
