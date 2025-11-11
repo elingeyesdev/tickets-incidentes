@@ -12,17 +12,22 @@
 ## 📑 TABLA DE CONTENIDOS
 
 1. [Arquitectura del Sistema](#arquitectura-del-sistema)
-2. [Índice Completo de Endpoints](#índice-completo-de-endpoints)
-3. [Autenticación y Contexto](#autenticación-y-contexto)
-4. [Endpoints - Categorías](#endpoints---categorías)
-5. [Endpoints - Tickets](#endpoints---tickets)
-6. [Endpoints - Respuestas](#endpoints---respuestas)
-7. [Endpoints - Notas Internas](#endpoints---notas-internas)
-8. [Endpoints - Adjuntos](#endpoints---adjuntos)
-9. [Endpoints - Calificaciones](#endpoints---calificaciones)
-10. [Reglas de Negocio](#reglas-de-negocio)
-11. [Permisos y Visibilidad](#permisos-y-visibilidad)
-12. [Códigos de Error](#códigos-de-error)
+2. [Estados y Transiciones](#estados-y-transiciones)
+3. [Índice Completo de Endpoints](#índice-completo-de-endpoints)
+4. [Autenticación y Contexto](#autenticación-y-contexto)
+5. [Endpoints - Categorías](#endpoints---categorías)
+6. [Endpoints - Tickets](#endpoints---tickets)
+   - [Query Parameters Detallados](#detalle-de-query-parameters-clave)
+   - [Ejemplos de Requests - Casos de Uso](#ejemplos-de-requests---casos-de-uso-completos)
+   - [Ejemplos de Responses - Estados](#ejemplos-de-responses---casos-de-estados-diferentes)
+7. [Endpoints - Respuestas](#endpoints---respuestas)
+8. [Endpoints - Notas Internas](#endpoints---notas-internas)
+9. [Endpoints - Adjuntos](#endpoints---adjuntos)
+10. [Endpoints - Calificaciones](#endpoints---calificaciones)
+11. [Reglas de Negocio](#reglas-de-negocio)
+12. [Resumen Crítico - Alineación con Base de Datos](#resumen-crítico---alineación-con-base-de-datos)
+13. [Permisos y Visibilidad](#permisos-y-visibilidad)
+14. [Códigos de Error](#códigos-de-error)
 
 ---
 
@@ -51,6 +56,145 @@
 **✅ Calificaciones Históricas**: Guarda snapshot del agente
 - `rated_agent_id` se guarda al momento de calificar
 - NO cambia si reasignan el ticket después
+
+---
+
+## 🔄 ESTADOS Y TRANSICIONES
+
+### Modelo de 4 Estados
+
+El sistema utiliza un modelo de 4 estados que refleja el ciclo de vida completo del ticket:
+
+| Estado | Significado | Cuándo Ocurre | Quién Espera Acción |
+|--------|-------------|---------------|---------------------|
+| **OPEN** | Ticket nuevo o cliente respondió | 1) Ticket recién creado (sin agente)<br>2) Cliente respondió a ticket PENDING | **AGENTE** debe responder |
+| **PENDING** | Agente respondió, esperando cliente | Agente respondió (automático vía trigger) | **CLIENTE** debe responder |
+| **RESOLVED** | Problema resuelto | Agente marca manualmente como resuelto | **CLIENTE** (cerrar o reabrir)<br>**SISTEMA** (auto-close en 7 días) |
+| **CLOSED** | Ticket cerrado definitivamente | 1) Manual (agente/cliente)<br>2) Auto-close después de 7 días en RESOLVED | Nadie (historial) |
+
+### Transiciones Automáticas (Triggers PostgreSQL)
+
+#### Trigger 1: Auto-Assignment + Status Change (OPEN → PENDING)
+```sql
+-- Se ejecuta DESPUÉS de INSERT en ticket_responses
+-- Condición: author_type = 'agent' Y owner_agent_id IS NULL
+
+UPDATE ticketing.tickets
+SET
+    owner_agent_id = NEW.author_id,
+    first_response_at = NOW(),
+    status = 'pending',
+    last_response_author_type = 'agent'
+WHERE id = NEW.ticket_id
+AND owner_agent_id IS NULL;
+```
+
+**Explicación**: Cuando el PRIMER agente responde a un ticket nuevo, automáticamente:
+- Se asigna el ticket a ese agente (`owner_agent_id`)
+- Cambia el status de `open` → `pending`
+- Marca `first_response_at` con el timestamp
+- Actualiza `last_response_author_type` a `agent`
+
+#### Trigger 2: Status Change (PENDING → OPEN)
+```sql
+-- Se ejecuta DESPUÉS de INSERT en ticket_responses
+-- Condición: author_type = 'user' Y status = 'pending'
+
+UPDATE ticketing.tickets
+SET
+    status = 'open',
+    last_response_author_type = 'user'
+WHERE id = NEW.ticket_id
+AND status = 'pending';
+```
+
+**Explicación**: Cuando el cliente responde a un ticket en estado `pending`:
+- Cambia el status de `pending` → `open`
+- Actualiza `last_response_author_type` a `user`
+- **IMPORTANTE**: El `owner_agent_id` SE MANTIENE igual (no se remueve)
+
+#### Trigger 3: Update last_response_author_type
+```sql
+-- Se ejecuta DESPUÉS de INSERT en ticket_responses
+-- SIEMPRE actualiza el campo last_response_author_type
+
+UPDATE ticketing.tickets
+SET
+    last_response_author_type = NEW.author_type,
+    updated_at = NOW()
+WHERE id = NEW.ticket_id;
+```
+
+**Explicación**: Cada vez que alguien responde (agente o cliente):
+- Actualiza `last_response_author_type` con el tipo de autor
+- Valores posibles: `'none'`, `'user'`, `'agent'`
+
+### Campo: last_response_author_type
+
+Campo crítico para la UI que indica quién respondió último:
+
+| Valor | Significado | Cuándo |
+|-------|-------------|--------|
+| `none` | Sin respuestas aún | Ticket recién creado |
+| `user` | Cliente respondió último | Cliente agregó una respuesta |
+| `agent` | Agente respondió último | Agente agregó una respuesta |
+
+**Uso en UI**:
+- Combinar con `status` para determinar estados visuales
+- Ejemplo: `status=open` + `last_response_author_type=user` = "Cliente respondió, necesita tu atención"
+- Ejemplo: `status=pending` + `last_response_author_type=agent` = "Esperando respuesta del cliente"
+
+### Diagrama de Flujo Completo
+
+```
+┌─────────────────────────────────────────────────┐
+│  TICKET NUEVO (Cliente crea ticket)            │
+│  status: open                                    │
+│  owner_agent_id: null                           │
+│  last_response_author_type: none                │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ (PRIMER Agente responde)
+                   │ [TRIGGER AUTO-ASSIGNMENT]
+                   ▼
+┌─────────────────────────────────────────────────┐
+│  AGENTE RESPONDIÓ (Esperando cliente)          │
+│  status: pending                                 │
+│  owner_agent_id: {agente-uuid}                  │
+│  last_response_author_type: agent               │
+│  first_response_at: 2025-11-11T10:30:00Z       │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ (Cliente responde)
+                   │ [TRIGGER STATUS CHANGE]
+                   ▼
+┌─────────────────────────────────────────────────┐
+│  CLIENTE RESPONDIÓ (Necesita atención agente)  │
+│  status: open                                    │
+│  owner_agent_id: {agente-uuid} ← SE MANTIENE   │
+│  last_response_author_type: user                │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ (Agente marca como resuelto)
+                   │ [MANUAL]
+                   ▼
+┌─────────────────────────────────────────────────┐
+│  PROBLEMA RESUELTO                              │
+│  status: resolved                                │
+│  owner_agent_id: {agente-uuid}                  │
+│  last_response_author_type: agent               │
+│  resolved_at: 2025-11-11T15:00:00Z             │
+└──────────────────┬──────────────────────────────┘
+                   │
+                   │ (Manual o Auto-close 7 días)
+                   ▼
+┌─────────────────────────────────────────────────┐
+│  TICKET CERRADO                                 │
+│  status: closed                                  │
+│  owner_agent_id: {agente-uuid}                  │
+│  closed_at: 2025-11-11T16:00:00Z               │
+└─────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -314,10 +458,11 @@ Authorization: Bearer {token}
 | Parámetro | Tipo | Default | Descripción |
 |-----------|------|---------|-------------|
 | `company_id` | uuid | - | Filtrar por empresa (requerido para USER) |
-| `status` | enum | - | `open`, `pending`, `resolved`, `closed` |
+| `status` | enum | - | `open`, `pending`, `resolved`, `closed` (soporta múltiples separados por coma) |
 | `category_id` | uuid | - | Filtrar por categoría |
-| `owner_agent_id` | uuid | - | Filtrar por agente (`me` = yo) |
-| `created_by_user_id` | uuid | - | Filtrar por creador |
+| `owner_agent_id` | string/uuid | - | Filtrar por agente: `null` (sin asignar), `me` (mis tickets), `{uuid}` (agente específico) |
+| `created_by` | string/uuid | - | Filtrar por creador: `me` (mis tickets creados), `{uuid}` (usuario específico) |
+| `last_response_author_type` | enum | - | Filtrar por quién respondió último: `none`, `user`, `agent` |
 | `search` | string | - | Búsqueda en título y descripción |
 | `created_after` | date | - | Creados después de fecha |
 | `created_before` | date | - | Creados antes de fecha |
@@ -325,22 +470,180 @@ Authorization: Bearer {token}
 | `page` | int | 1 | Número de página |
 | `per_page` | int | 20 | Items por página (max: 100) |
 
-**Reglas de Visibilidad**:
-- **USER**: Solo ve sus propios tickets
-- **AGENT**: Ve todos los tickets de su empresa
-- **COMPANY_ADMIN**: Ve todos los tickets de su empresa
+#### Detalle de Query Parameters Clave
 
-**Ejemplo Request (Usuario)**:
+**status** (Filtro por estado):
+- **Valores**: `open`, `pending`, `resolved`, `closed`
+- **Uso**: Filtrar tickets por uno o múltiples estados
+- **Ejemplos**:
+  - `status=open` → Solo tickets abiertos
+  - `status=pending,resolved` → Tickets en pending O resolved
+  - `status=open&status=pending` → Tickets en open O pending (alternativa)
+
+**owner_agent_id** (Filtro por agente asignado):
+- **Valores**:
+  - `null` → Tickets SIN asignar (literal string "null", no valor NULL de BD)
+  - `me` → Tickets asignados al agente autenticado
+  - `{uuid}` → Tickets asignados a un agente específico
+- **Uso**: Filtrar tickets según asignación de agente
+- **Ejemplos**:
+  - `owner_agent_id=null` → Tickets nuevos sin asignar (cola de entrada)
+  - `owner_agent_id=me` → Mis tickets asignados
+  - `owner_agent_id=550e8400-e29b-41d4-a716-446655440001` → Tickets de un agente específico
+
+**created_by** (Filtro por creador del ticket):
+- **Valores**:
+  - `me` → Tickets creados por el usuario autenticado
+  - `{uuid}` → Tickets creados por un usuario específico
+- **Uso**: Ver tickets que YO creé (perspectiva de cliente)
+- **Ejemplos**:
+  - `created_by=me` → Mis tickets como cliente
+  - `created_by=550e8400-e29b-41d4-a716-446655440001` → Tickets de un usuario específico
+
+**last_response_author_type** (Filtro por último respondedor):
+- **Valores**: `none`, `user`, `agent`
+- **Uso**: Filtrar tickets según quién respondió último (útil para priorización)
+- **Nota**: Campo actualizado automáticamente por trigger PostgreSQL
+- **Ejemplos**:
+  - `last_response_author_type=none` → Tickets sin respuestas aún
+  - `last_response_author_type=user` → Tickets donde cliente respondió último
+  - `last_response_author_type=agent` → Tickets donde agente respondió último
+
+**Reglas de Visibilidad**:
+- **USER**: Solo ve sus propios tickets (filtro automático por `created_by_user_id`)
+- **AGENT**: Ve todos los tickets de su empresa (filtro automático por `company_id`)
+- **COMPANY_ADMIN**: Ve todos los tickets de su empresa (filtro automático por `company_id`)
+
+---
+
+### Ejemplos de Requests - Casos de Uso Completos
+
+#### Caso 1: Obtener tickets NUEVOS (sin asignar)
+
 ```http
-GET /api/v1/tickets?company_id=550e8400-e29b&status=open&sort=-created_at
+GET /api/v1/tickets?status=open&owner_agent_id=null
+Authorization: Bearer {token-agente}
+```
+
+**Descripción**: Todos los agentes ven estos tickets. Son tickets sin respuesta de agente.
+
+**Uso**: Cola de entrada / Tickets disponibles para tomar
+
+**Response esperado**:
+- `status`: `open`
+- `owner_agent_id`: `null`
+- `last_response_author_type`: `none`
+
+---
+
+#### Caso 2: Obtener MIS tickets ASIGNADOS
+
+```http
+GET /api/v1/tickets?status=open&owner_agent_id=me
+Authorization: Bearer {token-agente}
+```
+
+**Descripción**: Solo veo mis tickets asignados que requieren mi respuesta.
+
+**Explicación del estado**:
+- `status=open` significa: ticket nuevo O cliente respondió a PENDING
+
+**Uso**: Bandeja de entrada del agente / Tickets que necesitan mi atención
+
+**Response esperado**:
+- `status`: `open`
+- `owner_agent_id`: `{mi_id}`
+- `last_response_author_type`: `none` (ticket nuevo) O `user` (cliente respondió)
+
+---
+
+#### Caso 3: Obtener tickets esperando RESPUESTA DEL CLIENTE
+
+```http
+GET /api/v1/tickets?status=pending&owner_agent_id=me
+Authorization: Bearer {token-agente}
+```
+
+**Descripción**: Mis tickets que ya respondí y estoy esperando que cliente responda.
+
+**Uso**: Tickets en espera / Seguimiento
+
+**Response esperado**:
+- `status`: `pending`
+- `owner_agent_id`: `{mi_id}`
+- `last_response_author_type`: `agent`
+
+---
+
+#### Caso 4: Obtener MIS TICKETS como CLIENTE
+
+```http
+GET /api/v1/tickets?status=pending,resolved,closed&created_by=me
 Authorization: Bearer {token-usuario}
 ```
 
-**Ejemplo Request (Agente - "mis tickets")**:
+**Descripción**: Ver mis propios tickets que no son OPEN (agente ya respondió).
+
+**Uso**: Historial de tickets como cliente / Seguimiento de mis solicitudes
+
+**Response esperado**:
+- `created_by_user_id`: `{mi_id}`
+- `status`: `pending`, `resolved`, o `closed`
+- Múltiples tickets con diferentes estados
+
+---
+
+#### Caso 5: Obtener TICKETS donde acabo de responder (CLIENTE)
+
 ```http
-GET /api/v1/tickets?owner_agent_id=me&status=pending&per_page=50
+GET /api/v1/tickets?status=open&created_by=me&last_response_author_type=user
+Authorization: Bearer {token-usuario}
+```
+
+**Descripción**: Mis tickets donde YO acabo de responder (y estoy esperando que agente responda).
+
+**Uso**: Tickets pendientes de respuesta del agente
+
+**Response esperado**:
+- `status`: `open`
+- `created_by_user_id`: `{mi_id}`
+- `owner_agent_id`: `{agente-uuid}` (agente asignado SE MANTIENE)
+- `last_response_author_type`: `user`
+
+---
+
+#### Caso 6: Obtener TICKETS donde cliente acaba de RESPONDER (AGENTE)
+
+```http
+GET /api/v1/tickets?status=open&owner_agent_id=me&last_response_author_type=user
 Authorization: Bearer {token-agente}
 ```
+
+**Descripción**: Mis tickets asignados donde el cliente acaba de responder (necesito atención urgente).
+
+**Uso**: Priorizar respuestas / Notificaciones de cliente
+
+**Response esperado**:
+- `status`: `open`
+- `owner_agent_id`: `{mi_id}`
+- `last_response_author_type`: `user`
+- Tickets que requieren mi respuesta inmediata
+
+---
+
+### Tabla Resumen de Filtros Comunes
+
+| Escenario (Rol) | Query String | Descripción |
+|-----------------|--------------|-------------|
+| **AGENTE: Cola de entrada** | `status=open&owner_agent_id=null` | Tickets nuevos sin asignar |
+| **AGENTE: Mis tickets activos** | `status=open&owner_agent_id=me` | Tickets asignados a mí que necesitan respuesta |
+| **AGENTE: En espera de cliente** | `status=pending&owner_agent_id=me` | Mis tickets esperando respuesta del cliente |
+| **AGENTE: Cliente respondió** | `status=open&owner_agent_id=me&last_response_author_type=user` | Mis tickets con nueva respuesta del cliente |
+| **AGENTE: Todos mis tickets** | `owner_agent_id=me` | Todos los tickets asignados a mí |
+| **CLIENTE: Mis tickets activos** | `created_by=me&status=open,pending` | Mis tickets en progreso |
+| **CLIENTE: Mis tickets resueltos** | `created_by=me&status=resolved` | Mis tickets resueltos (puedo cerrar) |
+| **CLIENTE: Historial completo** | `created_by=me` | Todos mis tickets |
+| **CLIENTE: Esperando agente** | `created_by=me&status=open&last_response_author_type=user` | Mis tickets donde respondí y espero agente |
 
 **Response 200 OK**:
 ```json
@@ -361,6 +664,7 @@ Authorization: Bearer {token-agente}
       "status": "pending",
       "owner_agent_id": "agent-uuid-1",
       "owner_agent_name": "María González",
+      "last_response_author_type": "agent",
       "created_at": "2025-11-05T10:30:00Z",
       "updated_at": "2025-11-05T11:15:00Z",
       "first_response_at": "2025-11-05T11:15:00Z",
@@ -379,11 +683,181 @@ Authorization: Bearer {token-agente}
     "to": 1,
     "filters_applied": {
       "company_id": "550e8400-e29b-41d4-a716-446655440001",
-      "status": "open"
+      "status": "pending"
     }
   }
 }
 ```
+
+---
+
+### Ejemplos de Responses - Casos de Estados Diferentes
+
+A continuación se muestran 4 ejemplos de responses que representan los diferentes estados del ciclo de vida de un ticket:
+
+#### Response Ejemplo 1: Ticket OPEN NUEVO (sin agente asignado)
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440099",
+    "ticket_code": "TKT-2025-00001",
+    "company_id": "550e8400-e29b-41d4-a716-446655440001",
+    "company_name": "Tech Solutions Inc.",
+    "created_by_user_id": "user-uuid-123",
+    "created_by_name": "Juan Pérez",
+    "created_by_email": "juan@email.com",
+    "category_id": "cat-uuid-1",
+    "category_name": "Soporte Técnico",
+    "title": "No puedo acceder al sistema",
+    "initial_description": "Cuando intento hacer login me sale error 500...",
+    "status": "open",
+    "owner_agent_id": null,
+    "owner_agent_name": null,
+    "last_response_author_type": "none",
+    "created_at": "2025-11-11T10:00:00Z",
+    "updated_at": "2025-11-11T10:00:00Z",
+    "first_response_at": null,
+    "resolved_at": null,
+    "closed_at": null,
+    "responses_count": 0,
+    "attachments_count": 1
+  }
+}
+```
+
+**Interpretación**:
+- Ticket recién creado por el cliente
+- Sin respuestas aún (`responses_count: 0`)
+- Sin agente asignado (`owner_agent_id: null`)
+- Campo `last_response_author_type: "none"` indica que nadie ha respondido
+- Visible para TODOS los agentes en la cola de entrada
+
+---
+
+#### Response Ejemplo 2: Ticket PENDING (agente respondió)
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440099",
+    "ticket_code": "TKT-2025-00001",
+    "company_id": "550e8400-e29b-41d4-a716-446655440001",
+    "company_name": "Tech Solutions Inc.",
+    "created_by_user_id": "user-uuid-123",
+    "created_by_name": "Juan Pérez",
+    "created_by_email": "juan@email.com",
+    "category_id": "cat-uuid-1",
+    "category_name": "Soporte Técnico",
+    "title": "No puedo acceder al sistema",
+    "initial_description": "Cuando intento hacer login me sale error 500...",
+    "status": "pending",
+    "owner_agent_id": "agent-uuid-456",
+    "owner_agent_name": "María González",
+    "last_response_author_type": "agent",
+    "created_at": "2025-11-11T10:00:00Z",
+    "updated_at": "2025-11-11T10:30:00Z",
+    "first_response_at": "2025-11-11T10:30:00Z",
+    "resolved_at": null,
+    "closed_at": null,
+    "responses_count": 1,
+    "attachments_count": 1
+  }
+}
+```
+
+**Interpretación**:
+- El agente María González respondió por primera vez
+- Trigger automático asignó el ticket a María (`owner_agent_id`)
+- Trigger cambió el status de `open` → `pending`
+- Campo `last_response_author_type: "agent"` indica que el agente respondió último
+- `first_response_at` se marcó con el timestamp de la primera respuesta
+- Esperando que el cliente responda
+
+---
+
+#### Response Ejemplo 3: Ticket OPEN (cliente respondió a PENDING)
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440099",
+    "ticket_code": "TKT-2025-00001",
+    "company_id": "550e8400-e29b-41d4-a716-446655440001",
+    "company_name": "Tech Solutions Inc.",
+    "created_by_user_id": "user-uuid-123",
+    "created_by_name": "Juan Pérez",
+    "created_by_email": "juan@email.com",
+    "category_id": "cat-uuid-1",
+    "category_name": "Soporte Técnico",
+    "title": "No puedo acceder al sistema",
+    "initial_description": "Cuando intento hacer login me sale error 500...",
+    "status": "open",
+    "owner_agent_id": "agent-uuid-456",
+    "owner_agent_name": "María González",
+    "last_response_author_type": "user",
+    "created_at": "2025-11-11T10:00:00Z",
+    "updated_at": "2025-11-11T11:00:00Z",
+    "first_response_at": "2025-11-11T10:30:00Z",
+    "resolved_at": null,
+    "closed_at": null,
+    "responses_count": 2,
+    "attachments_count": 1
+  }
+}
+```
+
+**Interpretación**:
+- El cliente Juan respondió a la respuesta del agente
+- Trigger cambió el status de `pending` → `open`
+- **IMPORTANTE**: El `owner_agent_id` SE MANTIENE (sigue asignado a María)
+- Campo `last_response_author_type: "user"` indica que el cliente respondió último
+- El ticket requiere atención urgente del agente María
+- `first_response_at` NO cambió (solo se marca la primera vez)
+
+---
+
+#### Response Ejemplo 4: Ticket RESOLVED
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440099",
+    "ticket_code": "TKT-2025-00001",
+    "company_id": "550e8400-e29b-41d4-a716-446655440001",
+    "company_name": "Tech Solutions Inc.",
+    "created_by_user_id": "user-uuid-123",
+    "created_by_name": "Juan Pérez",
+    "created_by_email": "juan@email.com",
+    "category_id": "cat-uuid-1",
+    "category_name": "Soporte Técnico",
+    "title": "No puedo acceder al sistema",
+    "initial_description": "Cuando intento hacer login me sale error 500...",
+    "status": "resolved",
+    "owner_agent_id": "agent-uuid-456",
+    "owner_agent_name": "María González",
+    "last_response_author_type": "agent",
+    "created_at": "2025-11-11T10:00:00Z",
+    "updated_at": "2025-11-11T15:00:00Z",
+    "first_response_at": "2025-11-11T10:30:00Z",
+    "resolved_at": "2025-11-11T15:00:00Z",
+    "closed_at": null,
+    "responses_count": 5,
+    "attachments_count": 1
+  }
+}
+```
+
+**Interpretación**:
+- El agente María marcó manualmente el ticket como resuelto
+- `resolved_at` se marcó con el timestamp de resolución
+- Campo `last_response_author_type: "agent"` (probablemente la última respuesta fue del agente)
+- Cliente puede cerrar el ticket o reabrirlo si el problema persiste
+- Sistema auto-cerrará el ticket en 7 días si no hay actividad
 
 ---
 
@@ -427,6 +901,7 @@ GET /api/v1/tickets/TKT-2025-00123
       "email": "maria@techsolutions.com",
       "avatar_url": "https://cdn.example.com/avatars/maria.jpg"
     },
+    "last_response_author_type": "agent",
     "created_at": "2025-11-05T10:30:00Z",
     "updated_at": "2025-11-05T11:15:00Z",
     "first_response_at": "2025-11-05T11:15:00Z",
@@ -489,6 +964,7 @@ Content-Type: application/json
     "title": "No puedo resetear mi contraseña",
     "status": "open",
     "owner_agent_id": null,
+    "last_response_author_type": "none",
     "created_at": "2025-11-09T14:30:00Z",
     "updated_at": "2025-11-09T14:30:00Z"
   }
@@ -781,12 +1257,24 @@ Content-Type: application/json
 **Validaciones**:
 - `response_content`: 1-5000 caracteres, requerido
 
-**⚠️ Side Effects (si author_type = agent)**:
-1. Si `owner_agent_id` es NULL → Se asigna automáticamente (trigger)
-2. Si `status` = `open` → Cambia a `pending` (trigger)
-3. Si `first_response_at` es NULL → Se marca timestamp (trigger)
+**⚠️ Side Effects Automáticos (Triggers PostgreSQL)**:
 
-**Response 201 Created**:
+**Si author_type = 'agent' Y es la PRIMERA respuesta**:
+1. `owner_agent_id` = Se asigna al agente que respondió
+2. `status` = Cambia de `open` → `pending`
+3. `first_response_at` = Se marca con timestamp actual
+4. `last_response_author_type` = Se actualiza a `'agent'`
+
+**Si author_type = 'user' Y status = 'pending'**:
+1. `status` = Cambia de `pending` → `open`
+2. `last_response_author_type` = Se actualiza a `'user'`
+3. **IMPORTANTE**: `owner_agent_id` NO se remueve (se mantiene)
+
+**SIEMPRE** (en cada respuesta):
+- `last_response_author_type` = Se actualiza con el tipo de autor (`'user'` o `'agent'`)
+- `updated_at` = Se actualiza con timestamp actual
+
+**Response 201 Created** (Ejemplo: Primera respuesta de agente):
 ```json
 {
   "success": true,
@@ -802,7 +1290,30 @@ Content-Type: application/json
     "ticket_updated": {
       "owner_agent_id": "agent-uuid-1",
       "status": "pending",
-      "first_response_at": "2025-11-09T15:00:00Z"
+      "first_response_at": "2025-11-09T15:00:00Z",
+      "last_response_author_type": "agent"
+    }
+  }
+}
+```
+
+**Response 201 Created** (Ejemplo: Cliente responde a ticket pending):
+```json
+{
+  "success": true,
+  "message": "Respuesta agregada exitosamente",
+  "data": {
+    "id": "resp-uuid-new-2",
+    "ticket_id": "tkt-uuid-1",
+    "author_id": "user-uuid-1",
+    "author_name": "Juan Pérez",
+    "author_type": "user",
+    "response_content": "Gracias, pero sigo sin poder acceder...",
+    "created_at": "2025-11-09T16:00:00Z",
+    "ticket_updated": {
+      "owner_agent_id": "agent-uuid-1",
+      "status": "open",
+      "last_response_author_type": "user"
     }
   }
 }
@@ -1198,51 +1709,160 @@ Authorization: Bearer {token}
 
 ## 📖 REGLAS DE NEGOCIO
 
-### Ciclo de Vida del Ticket
+### Ciclo de Vida del Ticket (Modelo de 4 Estados)
 
 ```
-┌─────────┐
-│  OPEN   │ ← Ticket recién creado
-└────┬────┘
-     │
-     │ (Agente responde por primera vez)
-     ▼
-┌─────────┐
-│ PENDING │ ← Ticket con respuesta de agente
-└────┬────┘
-     │
-     │ (Agente marca como resuelto)
-     ▼
-┌──────────┐
-│ RESOLVED │ ← Problema solucionado
-└────┬─────┘
-     │
-     │ (Manual o Auto después de 7 días)
-     ▼
-┌─────────┐
-│ CLOSED  │ ← Ticket cerrado
-└─────────┘
+┌─────────────────────────────────────────────┐
+│  OPEN (Nuevo)                               │
+│  - Ticket recién creado                     │
+│  - owner_agent_id: NULL                     │
+│  - last_response_author_type: 'none'        │
+└────────────────┬────────────────────────────┘
+                 │
+                 │ (PRIMER agente responde)
+                 │ [TRIGGER AUTO-ASSIGNMENT]
+                 ▼
+┌─────────────────────────────────────────────┐
+│  PENDING (Esperando cliente)                │
+│  - Agente respondió                         │
+│  - owner_agent_id: {agente-uuid}            │
+│  - last_response_author_type: 'agent'       │
+└────────────────┬────────────────────────────┘
+                 │                          ▲
+                 │ (Cliente responde)       │
+                 │ [TRIGGER STATUS]         │ (Agente responde)
+                 ▼                          │
+┌─────────────────────────────────────────────┐
+│  OPEN (Cliente respondió)                   │
+│  - Cliente respondió a PENDING              │
+│  - owner_agent_id: {agente-uuid} ← MANTIENE │
+│  - last_response_author_type: 'user'        │
+└────────────────┬────────────────────────────┘
+                 │
+                 │ (Agente marca como resuelto)
+                 │ [MANUAL]
+                 ▼
+┌─────────────────────────────────────────────┐
+│  RESOLVED (Problema resuelto)               │
+│  - Agente resolvió el problema              │
+│  - resolved_at: {timestamp}                 │
+│  - Cliente puede cerrar o reabrir           │
+└────────────────┬────────────────────────────┘
+                 │
+                 │ (Manual o Auto-close 7 días)
+                 │ [CRON JOB]
+                 ▼
+┌─────────────────────────────────────────────┐
+│  CLOSED (Cerrado definitivamente)           │
+│  - Ticket finalizado                        │
+│  - closed_at: {timestamp}                   │
+│  - Historial permanente                     │
+└─────────────────────────────────────────────┘
 ```
 
-### Auto-Assignment (Trigger PostgreSQL)
+### Triggers Automáticos PostgreSQL
+
+#### 1. Trigger: Auto-Assignment (OPEN → PENDING)
+
+**Condición**: `author_type = 'agent'` Y `owner_agent_id IS NULL`
 
 ```sql
 -- Se ejecuta DESPUÉS de INSERT en ticket_responses
--- Solo si author_type = 'agent' Y owner_agent_id IS NULL
+-- Cuando el PRIMER agente responde a un ticket nuevo
 
 UPDATE ticketing.tickets
 SET
     owner_agent_id = NEW.author_id,
     first_response_at = NOW(),
-    status = 'pending'
+    status = 'pending',
+    last_response_author_type = 'agent',
+    updated_at = NOW()
 WHERE id = NEW.ticket_id
 AND owner_agent_id IS NULL;
 ```
 
+**Efecto**: El ticket se asigna automáticamente al agente que respondió primero.
+
+---
+
+#### 2. Trigger: Status Change (PENDING → OPEN)
+
+**Condición**: `author_type = 'user'` Y `status = 'pending'`
+
+```sql
+-- Se ejecuta DESPUÉS de INSERT en ticket_responses
+-- Cuando el cliente responde a un ticket en PENDING
+
+UPDATE ticketing.tickets
+SET
+    status = 'open',
+    last_response_author_type = 'user',
+    updated_at = NOW()
+WHERE id = NEW.ticket_id
+AND status = 'pending';
+```
+
+**Efecto**: El ticket vuelve a estado OPEN, pero **mantiene** el `owner_agent_id`.
+
+---
+
+#### 3. Trigger: Update last_response_author_type
+
+**Condición**: SIEMPRE (en cada respuesta)
+
+```sql
+-- Se ejecuta DESPUÉS de INSERT en ticket_responses
+-- Actualiza quién respondió último
+
+UPDATE ticketing.tickets
+SET
+    last_response_author_type = NEW.author_type,
+    updated_at = NOW()
+WHERE id = NEW.ticket_id;
+```
+
+**Efecto**: Mantiene sincronizado quién fue el último en responder.
+
+---
+
+### Diferencias Importantes: OPEN Nuevo vs OPEN (Cliente Respondió)
+
+Ambos tienen `status = 'open'`, pero se diferencian por otros campos:
+
+| Campo | OPEN Nuevo | OPEN (Cliente Respondió) |
+|-------|------------|--------------------------|
+| `owner_agent_id` | `NULL` | `{agente-uuid}` (asignado) |
+| `last_response_author_type` | `'none'` | `'user'` |
+| `first_response_at` | `NULL` | `{timestamp}` |
+| **Significado** | Ticket sin asignar en cola de entrada | Ticket asignado esperando respuesta del agente |
+| **Visible para** | Todos los agentes | El agente asignado específicamente |
+
+**Consultas para diferenciarlos**:
+
+```sql
+-- OPEN Nuevo (cola de entrada)
+WHERE status = 'open' AND owner_agent_id IS NULL
+
+-- OPEN Cliente respondió (requiere atención del agente)
+WHERE status = 'open'
+  AND owner_agent_id IS NOT NULL
+  AND last_response_author_type = 'user'
+
+-- OPEN Ticket asignado pero sin respuestas aún (raro, posible con asignación manual)
+WHERE status = 'open'
+  AND owner_agent_id IS NOT NULL
+  AND last_response_author_type = 'none'
+```
+
+---
+
 ### Auto-Close (Cron Job)
 
+**Ejecutar diariamente** a las 00:00 UTC:
+
 ```php
-// Ejecutar diariamente
+// Cerrar automáticamente tickets resueltos después de 7 días
+
 Ticket::where('status', 'resolved')
     ->where('resolved_at', '<', now()->subDays(7))
     ->update([
@@ -1250,6 +1870,191 @@ Ticket::where('status', 'resolved')
         'closed_at' => now()
     ]);
 ```
+
+**Lógica**:
+- Solo afecta tickets en estado `resolved`
+- Si `resolved_at` tiene más de 7 días
+- Cambia automáticamente a `closed`
+- Marca `closed_at` con timestamp actual
+
+---
+
+### Notas Importantes sobre Transiciones
+
+1. **owner_agent_id NUNCA se remueve automáticamente**:
+   - Una vez asignado, permanece hasta que se reasigne manualmente
+   - Incluso cuando el ticket vuelve a OPEN (cliente respondió)
+
+2. **last_response_author_type es crítico para la UI**:
+   - Permite distinguir quién debe actuar
+   - Combinado con `status` determina prioridad
+   - Actualizado automáticamente por triggers
+
+3. **first_response_at solo se marca UNA vez**:
+   - Cuando el primer agente responde
+   - No se actualiza en respuestas posteriores
+   - Útil para calcular tiempo de primera respuesta (SLA)
+
+4. **Transiciones permitidas**:
+   ```
+   open → pending (trigger automático: agente responde)
+   pending → open (trigger automático: cliente responde)
+   pending → resolved (manual: agente marca como resuelto)
+   open → resolved (manual: agente marca como resuelto)
+   resolved → closed (manual o auto-close 7 días)
+   resolved → open (manual: cliente/agente reabre)
+   closed → open (manual: cliente/agente reabre dentro de 30 días)
+   ```
+
+---
+
+## ✅ RESUMEN CRÍTICO - ALINEACIÓN CON BASE DE DATOS
+
+Esta sección documenta la alineación completa con el **Modelado final de base de datos.txt v10.0**.
+
+### Campos de la Tabla `tickets`
+
+| Campo BD | Tipo | Descripción | Valores Posibles | Actualización |
+|----------|------|-------------|------------------|---------------|
+| `id` | uuid | ID único del ticket | UUID v4 | Al crear |
+| `ticket_code` | varchar(20) | Código legible (TKT-2025-00001) | Formato: TKT-YYYY-NNNNN | Auto-generado |
+| `company_id` | uuid | ID de la empresa | UUID válido | Al crear |
+| `created_by_user_id` | uuid | ID del usuario que creó el ticket | UUID válido | Al crear |
+| `category_id` | uuid | ID de la categoría | UUID válido | Editable |
+| `title` | varchar(255) | Título del ticket | 5-255 caracteres | Editable (si open) |
+| `initial_description` | text | Descripción inicial | 10-5000 caracteres | Al crear |
+| `status` | varchar(20) | Estado actual | `'open'`, `'pending'`, `'resolved'`, `'closed'` | Automático + Manual |
+| `owner_agent_id` | uuid \| null | ID del agente asignado | UUID válido o NULL | Automático (trigger) + Reasignación |
+| `last_response_author_type` | varchar(20) | Quién respondió último | `'none'`, `'user'`, `'agent'` | Automático (trigger) |
+| `created_at` | timestamp | Fecha de creación | ISO 8601 | Al crear |
+| `updated_at` | timestamp | Última actualización | ISO 8601 | Cada cambio |
+| `first_response_at` | timestamp \| null | Primera respuesta de agente | ISO 8601 o NULL | Automático (trigger, una sola vez) |
+| `resolved_at` | timestamp \| null | Fecha de resolución | ISO 8601 o NULL | Manual (agente) |
+| `closed_at` | timestamp \| null | Fecha de cierre | ISO 8601 o NULL | Manual + Auto-close |
+
+### Estados del Ticket (Enum: TicketStatus)
+
+```php
+enum TicketStatus: string
+{
+    case OPEN = 'open';          // Ticket nuevo O cliente respondió
+    case PENDING = 'pending';    // Agente respondió, esperando cliente
+    case RESOLVED = 'resolved';  // Problema resuelto
+    case CLOSED = 'closed';      // Ticket cerrado
+}
+```
+
+### Campo Crítico: last_response_author_type
+
+**Tipo BD**: `VARCHAR(20) NOT NULL DEFAULT 'none'`
+
+**Valores permitidos**:
+- `'none'` → Ticket recién creado, sin respuestas
+- `'user'` → Cliente respondió último
+- `'agent'` → Agente respondió último
+
+**Actualización**: Automática vía trigger PostgreSQL (cada vez que se agrega una respuesta)
+
+**Uso en API**:
+- Filtro query param: `?last_response_author_type=user`
+- Campo en response JSON: `"last_response_author_type": "agent"`
+- Combinado con `status` para determinar prioridad en UI
+
+### Reglas de Integridad Referencial
+
+1. **company_id** → FOREIGN KEY a `companies.id`
+   - ON DELETE: No permitido si hay tickets activos
+   - Validación: Empresa debe existir
+
+2. **created_by_user_id** → FOREIGN KEY a `users.id`
+   - ON DELETE: No permitido
+   - Validación: Usuario debe existir
+
+3. **category_id** → FOREIGN KEY a `ticket_categories.id`
+   - ON DELETE: No permitido si hay tickets usando la categoría
+   - Validación: Categoría debe existir y estar activa
+
+4. **owner_agent_id** → FOREIGN KEY a `users.id` (WHERE role = 'AGENT')
+   - ON DELETE: SET NULL (si agente se elimina, ticket queda sin asignar)
+   - Validación: Usuario debe tener rol AGENT
+
+### Índices Críticos para Performance
+
+```sql
+-- Índice compuesto para query más común (agente: mis tickets)
+CREATE INDEX idx_tickets_agent_status ON tickets(owner_agent_id, status);
+
+-- Índice compuesto para cola de entrada
+CREATE INDEX idx_tickets_unassigned ON tickets(company_id, status)
+WHERE owner_agent_id IS NULL;
+
+-- Índice para filtros de cliente
+CREATE INDEX idx_tickets_creator ON tickets(created_by_user_id, status);
+
+-- Índice para last_response_author_type (nuevo campo)
+CREATE INDEX idx_tickets_last_response ON tickets(last_response_author_type, status);
+
+-- Índice para auto-close (cron job)
+CREATE INDEX idx_tickets_resolved ON tickets(status, resolved_at)
+WHERE status = 'resolved';
+```
+
+### Validaciones Críticas Backend
+
+1. **Al crear ticket**:
+   - `status` DEBE iniciar en `'open'`
+   - `owner_agent_id` DEBE ser `NULL`
+   - `last_response_author_type` DEBE ser `'none'`
+
+2. **Trigger auto-assignment**:
+   - Solo se ejecuta si `owner_agent_id IS NULL`
+   - Solo se ejecuta si `author_type = 'agent'`
+   - Actualiza 4 campos: `owner_agent_id`, `status`, `first_response_at`, `last_response_author_type`
+
+3. **Trigger status change**:
+   - Solo se ejecuta si `status = 'pending'`
+   - Solo se ejecuta si `author_type = 'user'`
+   - `owner_agent_id` NO se modifica (se mantiene)
+
+4. **Query param `owner_agent_id=null`**:
+   - Backend debe interpretar literal string `"null"` como condición SQL `IS NULL`
+   - NO confundir con valor NULL de JSON
+
+### Consultas SQL Equivalentes a Query Params
+
+**Ejemplo 1**: `?status=open&owner_agent_id=null`
+```sql
+SELECT * FROM tickets
+WHERE status = 'open'
+  AND owner_agent_id IS NULL;
+```
+
+**Ejemplo 2**: `?status=open&owner_agent_id=me&last_response_author_type=user`
+```sql
+SELECT * FROM tickets
+WHERE status = 'open'
+  AND owner_agent_id = :current_agent_id
+  AND last_response_author_type = 'user';
+```
+
+**Ejemplo 3**: `?created_by=me&status=pending,resolved`
+```sql
+SELECT * FROM tickets
+WHERE created_by_user_id = :current_user_id
+  AND status IN ('pending', 'resolved');
+```
+
+### Diferencias Clave con Versiones Anteriores
+
+| Aspecto | Versión Anterior | Versión Actual (v10.0) |
+|---------|------------------|------------------------|
+| **Estados** | 3 estados (open, in_progress, closed) | 4 estados (open, pending, resolved, closed) |
+| **Campo tracking** | NO existía | `last_response_author_type` (nuevo) |
+| **Auto-asignación** | Manual | Automática vía trigger |
+| **Transición PENDING→OPEN** | NO existía | Automática cuando cliente responde |
+| **owner_agent_id** | Se removía al reabrir | SE MANTIENE siempre |
+| **Query param owner_agent_id** | Solo UUIDs | Soporta `null`, `me`, UUID |
+| **Query param created_by** | `created_by_user_id` | Simplificado a `created_by` |
 
 ---
 
