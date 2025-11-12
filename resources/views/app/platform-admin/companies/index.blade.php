@@ -323,7 +323,10 @@
                                 <select id="form-industry-id" class="form-control" required disabled>
                                     <option value="">Cargando industrias...</option>
                                 </select>
-                                <small class="form-text text-muted">Se cargarán automáticamente</small>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Requerida en creación. Editable en actualización.
+                                </small>
                             </div>
                         </div>
 
@@ -395,10 +398,13 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="form-admin-id">Usuario Admin <span class="text-danger">*</span></label>
-                                <select id="form-admin-id" class="form-control" required>
-                                    <option value="">Seleccionar usuario...</option>
+                                <select id="form-admin-id" class="form-control" required disabled>
+                                    <option value="">Cargando usuarios...</option>
                                 </select>
-                                <small class="form-text text-muted">Se asignará rol COMPANY_ADMIN</small>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Requerido en creación. No editable en actualización.
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -480,6 +486,8 @@
         let currentMode = 'view'; // view, create, edit
         let industries = [];
         let adminUsers = [];
+        let industriesLoaded = false;
+        let adminUsersLoaded = false;
 
         // =====================================================================
         // UTILITY: Format Status Badge
@@ -521,6 +529,7 @@
                 .then(data => {
                     if (data.data && Array.isArray(data.data)) {
                         industries = data.data;
+                        industriesLoaded = true;
                         populateIndustrySelects();
                     }
                 })
@@ -560,8 +569,42 @@
         // =====================================================================
 
         function loadAdminUsers() {
-            // TODO: Cargar desde endpoint de usuarios cuando sea disponible
-            // Por ahora se cargan vacías pero se puede agregar cuando exista el endpoint
+            // Load active users for admin selector
+            fetch(`${apiUrl}/users?status=ACTIVE&per_page=100`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.data && Array.isArray(data.data)) {
+                    adminUsers = data.data;
+                    adminUsersLoaded = true;
+                    populateAdminUserSelects();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading admin users:', error);
+            });
+        }
+
+        function populateAdminUserSelects() {
+            const formSelect = document.getElementById('form-admin-id');
+
+            // Clear existing options (except the first one)
+            formSelect.querySelectorAll('option:not(:first-child)').forEach(opt => opt.remove());
+
+            adminUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                // Display user code and email
+                option.textContent = `${user.userCode} - ${user.email}`;
+                formSelect.appendChild(option);
+            });
+
+            // Enable form select
+            formSelect.disabled = false;
         }
 
         // =====================================================================
@@ -733,6 +776,39 @@
                 document.getElementById('modalFormLabel').closest('.modal-header').classList.remove('bg-info');
                 document.getElementById('modalFormLabel').closest('.modal-header').classList.add('bg-success');
                 document.getElementById('form-company-id').value = '';
+
+                // ENABLE selects for create mode (requerido en creación)
+                const formIndustrySelect = document.getElementById('form-industry-id');
+                const formAdminSelect = document.getElementById('form-admin-id');
+
+                // Industries
+                if (industriesLoaded) {
+                    formIndustrySelect.disabled = false;
+                    // Update placeholder text
+                    const firstOption = formIndustrySelect.querySelector('option');
+                    if (firstOption) {
+                        firstOption.textContent = 'Seleccionar industria...';
+                    }
+                }
+
+                // Admin users
+                if (adminUsersLoaded) {
+                    formAdminSelect.disabled = false;
+                    // Update placeholder text
+                    const firstOption = formAdminSelect.querySelector('option');
+                    if (firstOption) {
+                        firstOption.textContent = 'Seleccionar usuario...';
+                    }
+                }
+
+                // Solo mostrar alerta si AMBOS aún no han cargado
+                if (!industriesLoaded && !adminUsersLoaded) {
+                    showAlert('warning', 'Cargando industrias y usuarios...');
+                } else if (!industriesLoaded) {
+                    showAlert('warning', 'Cargando industrias...');
+                } else if (!adminUsersLoaded) {
+                    showAlert('warning', 'Cargando usuarios...');
+                }
             } else if (mode === 'edit') {
                 currentCompany = allCompanies.find(c => c.id === companyId);
                 if (!currentCompany) {
@@ -760,8 +836,19 @@
                 document.getElementById('form-timezone').value = currentCompany.timezone || 'UTC';
                 document.getElementById('form-company-id').value = currentCompany.id;
 
-                // Note: industry_id y admin_id no son editables en actualización
-                document.getElementById('form-industry-id').disabled = true;
+                // Set industry value (EDITABLE)
+                if (industriesLoaded && currentCompany.industryId) {
+                    document.getElementById('form-industry-id').value = currentCompany.industryId;
+                    document.getElementById('form-industry-id').disabled = false;
+                }
+
+                // Set admin value (READ-ONLY - no se puede editar)
+                if (adminUsersLoaded && currentCompany.adminId) {
+                    document.getElementById('form-admin-id').value = currentCompany.adminId;
+                }
+
+                // IMPORTANTE: admin_user_id NO es editable en PATCH
+                // Pero industry_id SÍ es editable (es opcional en PATCH)
                 document.getElementById('form-admin-id').disabled = true;
             }
 
@@ -793,10 +880,17 @@
                 timezone: document.getElementById('form-timezone').value,
             };
 
-            // For create only
+            // For create: industry_id y admin_user_id son requeridos
             if (isCreate) {
                 payload.industry_id = document.getElementById('form-industry-id').value;
                 payload.admin_user_id = document.getElementById('form-admin-id').value;
+            } else {
+                // For edit: industry_id se puede cambiar (es opcional en PATCH)
+                const industryId = document.getElementById('form-industry-id').value;
+                if (industryId) {
+                    payload.industry_id = industryId;
+                }
+                // admin_user_id NO se envía en PATCH (no se puede editar)
             }
 
             const method = isCreate ? 'POST' : 'PATCH';

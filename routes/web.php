@@ -71,8 +71,13 @@ Route::get('/confirm-password', function () {
 Route::middleware('jwt.require')->group(function () {
     // Legacy dashboard route (kept for backward compatibility)
     Route::get('/profile', function () {
-        return view('app.profile');
+        return view('app.profile.index');
     })->name('profile');
+
+    // User Profile Page
+    Route::get('/app/profile', function () {
+        return view('app.profile.index');
+    })->name('app.profile');
 });
 
 // ========== AUTH-FLOW ROUTES (Role Selection, Onboarding) ==========
@@ -126,6 +131,11 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         Route::get('/companies', function () {
             return view('app.platform-admin.companies.index');
         })->name('admin.companies.index');
+
+        // Users Management
+        Route::get('/users', function () {
+            return view('app.platform-admin.users.index');
+        })->name('admin.users.index');
     });
 
     // Company Admin Dashboard (COMPANY_ADMIN role)

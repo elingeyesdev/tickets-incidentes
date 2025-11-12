@@ -1,4 +1,4 @@
-Quier# Reporte de Endpoints API - Helpdesk
+Quiere# Reporte de Endpoints API - Helpdesk
 
 **Versión**: 1.0.0
 **Descripción**: API REST del Sistema Helpdesk. Migración de GraphQL a REST con autenticación JWT.

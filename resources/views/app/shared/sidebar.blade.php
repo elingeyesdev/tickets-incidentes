@@ -50,14 +50,8 @@
                                 <i class="nav-icon fas fa-file-invoice"></i>
                                 <p>
                                     Company Requests
-                                    <span class="badge badge-warning right">8</span>
+                                    <span class="badge badge-warning right" id="companyRequestsBadge">0</span>
                                 </p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/app/admin/settings" class="nav-link">
-                                <i class="nav-icon fas fa-cogs"></i>
-                                <p>System Settings</p>
                             </a>
                         </li>
                     </div>
@@ -190,6 +184,7 @@
             init() {
                 this.loadUserData();
                 this.detectActiveRole();
+                this.loadCompanyRequestsCount();
             },
 
             loadUserData() {
@@ -222,6 +217,42 @@
                     localStorage.clear();
                     window.location.href = '/login';
                 }
+            },
+
+            loadCompanyRequestsCount() {
+                // Load company requests count from API - only PENDING requests
+                const token = localStorage.getItem('access_token');
+                if (!token) return;
+
+                fetch('/api/company-requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch');
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle both { data: [...] } and { items: [...] } formats
+                    const requests = data.data || data.items || [];
+
+                    // Count only PENDING requests (case-insensitive)
+                    const pendingCount = Array.isArray(requests)
+                        ? requests.filter(req => (req.status || '').toUpperCase() === 'PENDING').length
+                        : 0;
+
+                    const badge = document.getElementById('companyRequestsBadge');
+                    if (badge) {
+                        badge.textContent = pendingCount;
+                    }
+                    console.log('Pending company requests count updated:', pendingCount);
+                })
+                .catch(error => {
+                    console.error('Error loading company requests count:', error);
+                    // Keep default 0 value on error
+                });
             }
         };
     }
