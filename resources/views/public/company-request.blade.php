@@ -425,29 +425,29 @@
                                 id="contactCountry"
                             >
                                 <option value="">Selecciona un país...</option>
-                                <option value="Argentina">Argentina</option>
-                                <option value="Bolivia">Bolivia</option>
-                                <option value="Brasil">Brasil</option>
-                                <option value="Chile">Chile</option>
-                                <option value="Colombia">Colombia</option>
-                                <option value="Costa Rica">Costa Rica</option>
-                                <option value="Cuba">Cuba</option>
-                                <option value="Ecuador">Ecuador</option>
-                                <option value="El Salvador">El Salvador</option>
-                                <option value="España">España</option>
-                                <option value="Estados Unidos">Estados Unidos</option>
-                                <option value="Guatemala">Guatemala</option>
-                                <option value="Honduras">Honduras</option>
-                                <option value="México">México</option>
-                                <option value="Nicaragua">Nicaragua</option>
-                                <option value="Panamá">Panamá</option>
-                                <option value="Paraguay">Paraguay</option>
-                                <option value="Perú">Perú</option>
-                                <option value="Puerto Rico">Puerto Rico</option>
-                                <option value="República Dominicana">República Dominicana</option>
-                                <option value="Uruguay">Uruguay</option>
-                                <option value="Venezuela">Venezuela</option>
-                                <option value="Otro">Otro</option>
+                                <option value="Argentina">🇦🇷 Argentina</option>
+                                <option value="Bolivia">🇧🇴 Bolivia</option>
+                                <option value="Brasil">🇧🇷 Brasil</option>
+                                <option value="Chile">🇨🇱 Chile</option>
+                                <option value="Colombia">🇨🇴 Colombia</option>
+                                <option value="Costa Rica">🇨🇷 Costa Rica</option>
+                                <option value="Cuba">🇨🇺 Cuba</option>
+                                <option value="Ecuador">🇪🇨 Ecuador</option>
+                                <option value="El Salvador">🇸🇻 El Salvador</option>
+                                <option value="España">🇪🇸 España</option>
+                                <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+                                <option value="Guatemala">🇬🇹 Guatemala</option>
+                                <option value="Honduras">🇭🇳 Honduras</option>
+                                <option value="México">🇲🇽 México</option>
+                                <option value="Nicaragua">🇳🇮 Nicaragua</option>
+                                <option value="Panamá">🇵🇦 Panamá</option>
+                                <option value="Paraguay">🇵🇾 Paraguay</option>
+                                <option value="Perú">🇵🇪 Perú</option>
+                                <option value="Puerto Rico">🇵🇷 Puerto Rico</option>
+                                <option value="República Dominicana">🇩🇴 República Dominicana</option>
+                                <option value="Uruguay">🇺🇾 Uruguay</option>
+                                <option value="Venezuela">🇻🇪 Venezuela</option>
+                                <option value="Otro">🌍 Otro</option>
                             </select>
                         </div>
 
@@ -487,49 +487,40 @@
                     <!-- ========== STEP 4: Confirmación ========== -->
                     <div id="step4-content" class="content" role="tabpanel" aria-labelledby="step4-trigger">
 
-                        <!-- AdminLTE v3 Card Component (Patrón Compuesto Recomendado) -->
-                        <div class="card card-primary">
-                            <div class="card-header">
-                                <h3 class="card-title">
-                                    <i class="fas fa-check-circle"></i> Paso 4: Revisar y Confirmar Solicitud
-                                </h3>
-                            </div>
+                        <h5 class="mb-4">
+                            <i class="fas fa-check-circle"></i> Paso 4: Revisar y Confirmar Solicitud
+                        </h5>
 
-                            <div class="card-body">
+                        <!-- Callout: Instrucciones Contextuales -->
+                        <div class="callout callout-info">
+                            <h5><i class="fas fa-info"></i> Revise su solicitud</h5>
+                            <p class="mb-0">
+                                Por favor, verifique que toda la información a continuación sea correcta antes de enviarla.
+                                Una vez enviada, nos pondremos en contacto para procesar su solicitud.
+                            </p>
+                        </div>
 
-                                <!-- Callout: Instrucciones Contextuales -->
-                                <div class="callout callout-info">
-                                    <h5><i class="fas fa-info"></i> Revise su solicitud</h5>
-                                    <p class="mb-0">
-                                        Por favor, verifique que toda la información a continuación sea correcta antes de enviarla.
-                                        Una vez enviada, nos pondremos en contacto para procesar su solicitud.
-                                    </p>
-                                </div>
+                        <!-- Summary Content (Dinámicamente poblado con Description Lists) -->
+                        <div id="summaryContent"></div>
 
-                                <!-- Summary Content (Dinámicamente poblado con Description Lists) -->
-                                <div id="summaryContent"></div>
+                        <!-- Aviso Legal -->
+                        <hr>
+                        <div class="callout callout-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Aviso Legal</h5>
+                            <p class="mb-0">
+                                Al enviar esta solicitud, usted acepta nuestros términos de servicio y política de privacidad.
+                                Su información será procesada de acuerdo con la ley de protección de datos vigente.
+                            </p>
+                        </div>
 
-                                <!-- Aviso Legal -->
-                                <hr>
-                                <div class="callout callout-warning">
-                                    <h5><i class="fas fa-exclamation-triangle"></i> Aviso Legal</h5>
-                                    <p class="mb-0">
-                                        Al enviar esta solicitud, usted acepta nuestros términos de servicio y política de privacidad.
-                                        Su información será procesada de acuerdo con la ley de protección de datos vigente.
-                                    </p>
-                                </div>
-
-                            </div>
-
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
-                                    <i class="fas fa-arrow-left mr-2"></i> Anterior
-                                </button>
-                                <button type="submit" class="btn btn-success float-right" id="submitBtn">
-                                    <i class="fas fa-paper-plane mr-2"></i> Confirmar y Enviar
-                                </button>
-                            </div>
-
+                        <!-- Navigation Buttons -->
+                        <div class="btn-container">
+                            <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
+                                <i class="fas fa-arrow-left mr-2"></i> Anterior
+                            </button>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-paper-plane mr-2"></i> Confirmar y Enviar
+                            </button>
                         </div>
 
                     </div>
