@@ -4,132 +4,48 @@
 
 @section('css')
     <style>
-        /* AdminLTE v3 Customization for bs-stepper Wizard */
-        .content-wrapper {
-            margin-left: 0 !important;
-            background: #f5f5f5;
+        /* AdminLTE v3 - bs-stepper Minimal Customization */
+        body {
+            background-color: #f5f5f5;
         }
 
-        .wizard-container {
-            max-width: 900px;
-            margin: 40px auto;
+        .content-wrapper {
+            margin-left: 0 !important;
+            background-color: #f5f5f5;
+        }
+
+        .bs-stepper-content {
             padding: 20px;
         }
 
-        /* Override bs-stepper header styling to match AdminLTE v3 */
-        .bs-stepper-header {
+        .content {
             background: white;
-            padding: 30px 20px;
+            padding: 20px;
             border-radius: 0.25rem;
-            box-shadow: 0 0 1px rgba(0, 0, 0, 0.125);
-            margin-bottom: 30px;
-        }
-
-        .bs-stepper-header .step-trigger {
-            background: none;
-            border: none;
-            padding: 0;
-        }
-
-        .bs-stepper-header .step-trigger:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
-        .bs-stepper-header .bs-stepper-circle {
-            width: 50px;
-            height: 50px;
-            background: #e9ecef;
-            color: #6c757d;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.25rem;
-            margin: 0 auto 10px;
-            transition: all 0.3s ease;
-        }
-
-        .bs-stepper-header .step.active .bs-stepper-circle {
-            background: #007bff;
-            color: white;
-            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.25);
-            transform: scale(1.05);
-        }
-
-        .bs-stepper-header .step.done .bs-stepper-circle {
-            background: #28a745;
-            color: white;
-        }
-
-        .bs-stepper-header .bs-stepper-label {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s ease;
-        }
-
-        .bs-stepper-header .step.active .bs-stepper-label {
-            color: #007bff;
-        }
-
-        .bs-stepper-header .step.done .bs-stepper-label {
-            color: #28a745;
-        }
-
-        /* Card styling */
-        .card {
             border: 1px solid rgba(0, 0, 0, 0.125);
-            background: white;
-            margin-bottom: 20px;
+            min-height: 400px;
         }
 
-        .card-header {
-            background: #f8f9fa;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-            padding: 0.75rem 1.25rem;
-            font-weight: 600;
+        .content .form-group {
+            margin-bottom: 1.5rem;
         }
 
-        .card-body {
-            padding: 1.25rem;
+        .content .form-group:last-child {
+            margin-bottom: 0;
         }
 
-        .card-footer {
-            background: #f8f9fa;
-            border-top: 1px solid rgba(0, 0, 0, 0.125);
-            padding: 1rem 1.25rem;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        /* Form control styling */
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-control {
-            border: 1px solid #ced4da;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 0.95rem;
-        }
-
-        .form-control:focus {
+        .content .form-control:focus {
             border-color: #80bdff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
 
-        .form-control.is-invalid {
+        .content .form-control.is-invalid {
             border-color: #dc3545;
+        }
+
+        .content .form-control.is-invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
 
         .invalid-feedback {
@@ -139,93 +55,67 @@
             margin-top: 0.25rem;
         }
 
-        .invalid-feedback.show {
+        .valid-feedback {
             display: block;
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
         }
 
-        /* Button styling */
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.25rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.15s ease;
+        .btn-container {
+            margin-top: 2rem;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
         }
 
-        .btn-primary {
-            background: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0056b3;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #545b62;
-        }
-
-        /* Alert/Callout styling */
         .alert {
-            padding: 0.75rem 1.25rem;
+            margin-top: 20px;
+        }
+
+        .summary-block {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
             border-radius: 0.25rem;
-            margin-bottom: 1rem;
-            border: 1px solid transparent;
         }
 
-        .alert-success {
-            background: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
+        .summary-block h6 {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
         }
 
-        .alert-danger {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            border-color: #bee5eb;
-            color: #0c5460;
-        }
-
-        /* Summary styling */
         .summary-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .summary-item:last-child {
-            border-bottom: none;
+            padding: 8px 0;
+            font-size: 0.95rem;
         }
 
         .summary-label {
             font-weight: 600;
             color: #6c757d;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
         }
 
         .summary-value {
             color: #333;
-            margin-top: 0.25rem;
+            margin-top: 3px;
             word-break: break-word;
         }
 
-        /* Loading state */
-        .spinner {
-            display: inline-block;
+        .disclaimer {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 0.25rem;
+            margin-top: 20px;
+        }
+
+        .spinner-border {
             width: 1rem;
             height: 1rem;
-            vertical-align: text-bottom;
             border: 0.25em solid currentColor;
             border-right-color: transparent;
             border-radius: 50%;
@@ -233,33 +123,43 @@
         }
 
         @keyframes spinner-border {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
     </style>
 @endsection
 
 @section('content')
-    <div class="wizard-container">
+    <div class="container mt-5 mb-5">
         <!-- Success Alert -->
-        <div id="successAlert" class="alert alert-success" style="display: none;">
+        <div id="successAlert" class="alert alert-success" style="display: none; margin-bottom: 20px;">
+            <button type="button" class="close" aria-label="Close" onclick="this.parentElement.style.display='none';">
+                <span aria-hidden="true">&times;</span>
+            </button>
             <strong>¡Éxito!</strong> Tu solicitud ha sido enviada correctamente. Nos pondremos en contacto pronto.
         </div>
 
         <!-- Error Alert -->
-        <div id="errorAlert" class="alert alert-danger" style="display: none;">
+        <div id="errorAlert" class="alert alert-danger" style="display: none; margin-bottom: 20px;">
+            <button type="button" class="close" aria-label="Close" onclick="this.parentElement.style.display='none';">
+                <span aria-hidden="true">&times;</span>
+            </button>
             <strong>Error:</strong> <span id="errorMessage"></span>
         </div>
 
-        <!-- bs-stepper Form Wizard -->
+        <!-- ============================================================
+             BS-STEPPER FORM WIZARD
+             ============================================================ -->
         <form id="companyRequestForm">
-            <!-- Step Header (bs-stepper-header) -->
-            <div class="bs-stepper" id="stepper">
+            <div class="bs-stepper">
+
+                <!-- ========================================
+                     STEP HEADER (Navigation)
+                     ======================================== -->
                 <div class="bs-stepper-header" role="tablist">
-                    <!-- Step 1 -->
-                    <div class="step" data-target="#step1Content">
-                        <button type="button" class="step-trigger" role="tab" aria-controls="step1Content" id="step1-trigger">
+
+                    <!-- Step 1: Información Básica -->
+                    <div class="step" data-target="#step1-content">
+                        <button type="button" class="step-trigger" role="tab" aria-controls="step1-content" id="step1-trigger">
                             <span class="bs-stepper-circle">1</span>
                             <span class="bs-stepper-label">Información Básica</span>
                         </button>
@@ -267,9 +167,9 @@
 
                     <div class="line"></div>
 
-                    <!-- Step 2 -->
-                    <div class="step" data-target="#step2Content">
-                        <button type="button" class="step-trigger" role="tab" aria-controls="step2Content" id="step2-trigger">
+                    <!-- Step 2: Información de Negocio -->
+                    <div class="step" data-target="#step2-content">
+                        <button type="button" class="step-trigger" role="tab" aria-controls="step2-content" id="step2-trigger">
                             <span class="bs-stepper-circle">2</span>
                             <span class="bs-stepper-label">Información de Negocio</span>
                         </button>
@@ -277,9 +177,9 @@
 
                     <div class="line"></div>
 
-                    <!-- Step 3 -->
-                    <div class="step" data-target="#step3Content">
-                        <button type="button" class="step-trigger" role="tab" aria-controls="step3Content" id="step3-trigger">
+                    <!-- Step 3: Información de Contacto -->
+                    <div class="step" data-target="#step3-content">
+                        <button type="button" class="step-trigger" role="tab" aria-controls="step3-content" id="step3-trigger">
                             <span class="bs-stepper-circle">3</span>
                             <span class="bs-stepper-label">Información de Contacto</span>
                         </button>
@@ -287,188 +187,254 @@
 
                     <div class="line"></div>
 
-                    <!-- Step 4 -->
-                    <div class="step" data-target="#step4Content">
-                        <button type="button" class="step-trigger" role="tab" aria-controls="step4Content" id="step4-trigger">
+                    <!-- Step 4: Confirmación -->
+                    <div class="step" data-target="#step4-content">
+                        <button type="button" class="step-trigger" role="tab" aria-controls="step4-content" id="step4-trigger">
                             <span class="bs-stepper-circle">4</span>
                             <span class="bs-stepper-label">Confirmación</span>
                         </button>
                     </div>
+
                 </div>
 
-                <!-- Step Content (bs-stepper-content) -->
+                <!-- ========================================
+                     STEP CONTENT (Form Panels)
+                     ======================================== -->
                 <div class="bs-stepper-content">
-                    <!-- STEP 1: Información Básica -->
-                    <div id="step1Content" class="content" role="tabpanel" aria-labelledby="step1-trigger">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-building"></i> Información Básica de la Empresa
-                            </div>
-                            <div class="card-body">
-                                <!-- Company Name -->
-                                <div class="form-group">
-                                    <label for="companyName">Nombre de la Empresa *</label>
-                                    <input type="text" class="form-control" id="companyName" name="companyName" placeholder="Ej: Mi Empresa S.A." required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
 
-                                <!-- Admin Email -->
-                                <div class="form-group">
-                                    <label for="adminEmail">Email del Administrador *</label>
-                                    <input type="email" class="form-control" id="adminEmail" name="adminEmail" placeholder="admin@example.com" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                    <!-- ========== STEP 1: Información Básica ========== -->
+                    <div id="step1-content" class="content" role="tabpanel" aria-labelledby="step1-trigger">
+                        <h5 class="mb-4">
+                            <i class="fas fa-building"></i> Información Básica de la Empresa
+                        </h5>
 
-                                <!-- Legal Name (Optional) -->
-                                <div class="form-group">
-                                    <label for="legalName">Razón Social (Opcional)</label>
-                                    <input type="text" class="form-control" id="legalName" name="legalName" placeholder="Razón social de la empresa">
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-primary" onclick="stepper.next()">
-                                    Siguiente <i class="fas fa-arrow-right ml-2"></i>
-                                </button>
-                            </div>
+                        <!-- Company Name -->
+                        <div class="form-group">
+                            <label for="companyName">Nombre de la Empresa <span class="text-danger">*</span></label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="companyName"
+                                placeholder="Ej: Mi Empresa S.A."
+                                required
+                            >
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <!-- Admin Email -->
+                        <div class="form-group">
+                            <label for="adminEmail">Email del Administrador <span class="text-danger">*</span></label>
+                            <input
+                                type="email"
+                                class="form-control"
+                                id="adminEmail"
+                                placeholder="admin@example.com"
+                                required
+                            >
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <!-- Legal Name -->
+                        <div class="form-group">
+                            <label for="legalName">Razón Social (Opcional)</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="legalName"
+                                placeholder="Razón social de la empresa"
+                            >
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="btn-container">
+                            <div></div>
+                            <button type="button" class="btn btn-primary" onclick="stepper.next()">
+                                Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- STEP 2: Información de Negocio -->
-                    <div id="step2Content" class="content" role="tabpanel" aria-labelledby="step2-trigger">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-briefcase"></i> Información de Negocio
-                            </div>
-                            <div class="card-body">
-                                <!-- Business Description -->
-                                <div class="form-group">
-                                    <label for="businessDescription">Descripción de la Empresa *</label>
-                                    <textarea class="form-control" id="businessDescription" name="businessDescription" rows="4" placeholder="Describe brevemente tu empresa y su actividad (50-1000 caracteres)" required></textarea>
-                                    <small class="text-muted">
-                                        <span id="charCount">0</span>/1000 caracteres
-                                    </small>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                    <!-- ========== STEP 2: Información de Negocio ========== -->
+                    <div id="step2-content" class="content" role="tabpanel" aria-labelledby="step2-trigger">
+                        <h5 class="mb-4">
+                            <i class="fas fa-briefcase"></i> Información de Negocio
+                        </h5>
 
-                                <!-- Industry Type -->
-                                <div class="form-group">
-                                    <label for="industryType">Tipo de Industria *</label>
-                                    <select class="form-control" id="industryType" name="industryType" required>
-                                        <option value="">Selecciona una industria...</option>
-                                        <!-- Will be populated by JavaScript -->
-                                    </select>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                        <!-- Business Description -->
+                        <div class="form-group">
+                            <label for="businessDescription">Descripción de la Empresa <span class="text-danger">*</span></label>
+                            <textarea
+                                class="form-control"
+                                id="businessDescription"
+                                rows="4"
+                                placeholder="Describe brevemente tu empresa y su actividad (50-1000 caracteres)"
+                                required
+                            ></textarea>
+                            <small class="text-muted d-block mt-2">
+                                <span id="charCount">0</span>/1000 caracteres
+                            </small>
+                            <div class="invalid-feedback"></div>
+                        </div>
 
-                                <!-- Website (Optional) -->
-                                <div class="form-group">
-                                    <label for="website">Sitio Web (Opcional)</label>
-                                    <input type="url" class="form-control" id="website" name="website" placeholder="https://www.example.com">
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                        <!-- Industry Type -->
+                        <div class="form-group">
+                            <label for="industryType">Tipo de Industria <span class="text-danger">*</span></label>
+                            <select
+                                class="form-control"
+                                id="industryType"
+                                required
+                            >
+                                <option value="">Selecciona una industria...</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
 
-                                <!-- Estimated Users (Optional) -->
-                                <div class="form-group">
-                                    <label for="estimatedUsers">Usuarios Estimados (Opcional)</label>
-                                    <input type="number" class="form-control" id="estimatedUsers" name="estimatedUsers" placeholder="100" min="1">
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
-                                    <i class="fas fa-arrow-left mr-2"></i> Anterior
-                                </button>
-                                <button type="button" class="btn btn-primary" onclick="stepper.next()">
-                                    Siguiente <i class="fas fa-arrow-right ml-2"></i>
-                                </button>
-                            </div>
+                        <!-- Website -->
+                        <div class="form-group">
+                            <label for="website">Sitio Web (Opcional)</label>
+                            <input
+                                type="url"
+                                class="form-control"
+                                id="website"
+                                placeholder="https://www.example.com"
+                            >
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <!-- Estimated Users -->
+                        <div class="form-group">
+                            <label for="estimatedUsers">Usuarios Estimados (Opcional)</label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="estimatedUsers"
+                                placeholder="100"
+                                min="1"
+                            >
+                            <div class="invalid-feedback"></div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="btn-container">
+                            <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
+                                <i class="fas fa-arrow-left mr-2"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="stepper.next()">
+                                Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- STEP 3: Información de Contacto -->
-                    <div id="step3Content" class="content" role="tabpanel" aria-labelledby="step3-trigger">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-map-marker-alt"></i> Información de Contacto
-                            </div>
-                            <div class="card-body">
-                                <p class="text-muted">Todos los campos en esta sección son opcionales</p>
+                    <!-- ========== STEP 3: Información de Contacto ========== -->
+                    <div id="step3-content" class="content" role="tabpanel" aria-labelledby="step3-trigger">
+                        <h5 class="mb-4">
+                            <i class="fas fa-map-marker-alt"></i> Información de Contacto
+                        </h5>
 
-                                <!-- Contact Address -->
-                                <div class="form-group">
-                                    <label for="contactAddress">Dirección</label>
-                                    <input type="text" class="form-control" id="contactAddress" name="contactAddress" placeholder="Calle y número">
-                                </div>
+                        <p class="text-muted mb-4">Todos los campos en esta sección son opcionales</p>
 
-                                <!-- Contact City -->
-                                <div class="form-group">
-                                    <label for="contactCity">Ciudad</label>
-                                    <input type="text" class="form-control" id="contactCity" name="contactCity" placeholder="Ciudad">
-                                </div>
+                        <!-- Contact Address -->
+                        <div class="form-group">
+                            <label for="contactAddress">Dirección</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="contactAddress"
+                                placeholder="Calle y número"
+                            >
+                        </div>
 
-                                <!-- Contact Country -->
-                                <div class="form-group">
-                                    <label for="contactCountry">País</label>
-                                    <input type="text" class="form-control" id="contactCountry" name="contactCountry" placeholder="País">
-                                </div>
+                        <!-- Contact City -->
+                        <div class="form-group">
+                            <label for="contactCity">Ciudad</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="contactCity"
+                                placeholder="Ciudad"
+                            >
+                        </div>
 
-                                <!-- Contact Postal Code -->
-                                <div class="form-group">
-                                    <label for="contactPostalCode">Código Postal</label>
-                                    <input type="text" class="form-control" id="contactPostalCode" name="contactPostalCode" placeholder="Código postal">
-                                </div>
+                        <!-- Contact Country -->
+                        <div class="form-group">
+                            <label for="contactCountry">País</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="contactCountry"
+                                placeholder="País"
+                            >
+                        </div>
 
-                                <!-- Tax ID -->
-                                <div class="form-group">
-                                    <label for="taxId">ID Fiscal / RUT</label>
-                                    <input type="text" class="form-control" id="taxId" name="taxId" placeholder="Número de identificación fiscal">
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
-                                    <i class="fas fa-arrow-left mr-2"></i> Anterior
-                                </button>
-                                <button type="button" class="btn btn-primary" onclick="stepper.next()">
-                                    Siguiente <i class="fas fa-arrow-right ml-2"></i>
-                                </button>
-                            </div>
+                        <!-- Contact Postal Code -->
+                        <div class="form-group">
+                            <label for="contactPostalCode">Código Postal</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="contactPostalCode"
+                                placeholder="Código postal"
+                            >
+                        </div>
+
+                        <!-- Tax ID -->
+                        <div class="form-group">
+                            <label for="taxId">ID Fiscal / RUT</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="taxId"
+                                placeholder="Número de identificación fiscal"
+                            >
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="btn-container">
+                            <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
+                                <i class="fas fa-arrow-left mr-2"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="stepper.next()">
+                                Siguiente <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- STEP 4: Confirmación -->
-                    <div id="step4Content" class="content" role="tabpanel" aria-labelledby="step4-trigger">
-                        <div class="card">
-                            <div class="card-header">
-                                <i class="fas fa-check-circle"></i> Confirmación de Solicitud
-                            </div>
-                            <div class="card-body">
-                                <!-- Summary -->
-                                <div class="alert alert-info">
-                                    <strong>Revisión de tu solicitud:</strong> Por favor verifica los datos antes de enviar.
-                                </div>
+                    <!-- ========== STEP 4: Confirmación ========== -->
+                    <div id="step4-content" class="content" role="tabpanel" aria-labelledby="step4-trigger">
+                        <h5 class="mb-4">
+                            <i class="fas fa-check-circle"></i> Confirmación de Solicitud
+                        </h5>
 
-                                <div id="summaryContent">
-                                    <!-- Summary will be inserted here by JavaScript -->
-                                </div>
+                        <div class="alert alert-info">
+                            <strong>Revisión de tu solicitud:</strong> Por favor verifica los datos antes de enviar.
+                        </div>
 
-                                <!-- Legal Disclaimer -->
-                                <div class="alert alert-warning mt-4">
-                                    <strong><i class="fas fa-exclamation-triangle"></i> Aviso Legal:</strong>
-                                    Al enviar esta solicitud, aceptas nuestros términos de servicio y política de privacidad. Tu información será procesada de acuerdo con la ley de protección de datos.
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
-                                    <i class="fas fa-arrow-left mr-2"></i> Anterior
-                                </button>
-                                <button type="submit" class="btn btn-success" id="submitBtn" onclick="submitForm(event)">
-                                    <i class="fas fa-paper-plane mr-2"></i> Enviar Solicitud
-                                </button>
-                            </div>
+                        <!-- Summary Content (dinamically populated) -->
+                        <div id="summaryContent"></div>
+
+                        <!-- Legal Disclaimer -->
+                        <div class="disclaimer">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Aviso Legal:</strong>
+                            <p class="mb-0 mt-2">
+                                Al enviar esta solicitud, aceptas nuestros términos de servicio y política de privacidad.
+                                Tu información será procesada de acuerdo con la ley de protección de datos.
+                            </p>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="btn-container">
+                            <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
+                                <i class="fas fa-arrow-left mr-2"></i> Anterior
+                            </button>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-paper-plane mr-2"></i> Enviar Solicitud
+                            </button>
                         </div>
                     </div>
+
                 </div>
+
             </div>
         </form>
     </div>
@@ -476,31 +442,54 @@
 
 @section('js')
     <script>
+        /**
+         * ============================================================
+         * BS-STEPPER FORM WIZARD - AdminLTE v3 Official Implementation
+         * ============================================================
+         *
+         * Este código implementa EXACTAMENTE las reglas del informe técnico:
+         * 1. Estructura HTML: .bs-stepper, .step, .step-trigger, .content
+         * 2. Inicialización: new Stepper(element, options)
+         * 3. Validación: evento show.bs-stepper con event.preventDefault()
+         * 4. Navegación: stepper.next(), stepper.previous()
+         * ============================================================
+         */
+
         // ============================================================
-        // STEP 1: Load Industries from API
+        // STEP 1: Global Variables
+        // ============================================================
+        let stepper;
+        let industries = [];
+
+        // ============================================================
+        // STEP 2: Load Industries from API
         // ============================================================
         async function loadIndustries() {
+            console.log('🔄 Cargando industrias desde API...');
             try {
                 const response = await fetch('/api/company-industries');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
                 if (data.data && Array.isArray(data.data)) {
-                    console.log('✅ Industrias cargadas:', data.data.length, 'items');
-                    return data.data;
+                    industries = data.data;
+                    console.log('✅ Industrias cargadas:', industries.length, 'items');
+                    populateIndustriesSelect();
+                    return industries;
                 }
             } catch (error) {
-                console.error('❌ Error loading industries:', error);
+                console.error('❌ Error al cargar industrias:', error);
+                showError('Error al cargar las industrias. Por favor recarga la página.');
             }
             return [];
         }
 
         // ============================================================
-        // STEP 2: Populate Industries Select
+        // STEP 3: Populate Industries Select
         // ============================================================
-        async function initializeIndustries() {
-            const industries = await loadIndustries();
+        function populateIndustriesSelect() {
             const select = document.getElementById('industryType');
+            const placeholder = select.querySelector('option:first-child');
 
             industries.forEach(industry => {
                 const option = document.createElement('option');
@@ -508,54 +497,70 @@
                 option.textContent = industry.name;
                 select.appendChild(option);
             });
+
+            console.log('✅ Select de industrias poblado');
         }
 
         // ============================================================
-        // STEP 3: Initialize bs-stepper
+        // STEP 4: Initialize BS-Stepper
         // ============================================================
-        let stepper;
         document.addEventListener('DOMContentLoaded', function () {
-            // Initialize stepper
+            console.log('🚀 Inicializando bs-stepper...');
+
+            // Get stepper element
             const stepperElement = document.querySelector('.bs-stepper');
+
+            // Create stepper instance (VanillaJS approach - Official AdminLTE method)
             stepper = new Stepper(stepperElement, {
-                linear: true,
-                animation: true
+                linear: true,      // Fuerza navegación secuencial
+                animation: true     // Habilita transiciones (requiere .fade en .content)
             });
 
-            console.log('✅ bs-stepper inicializado');
+            console.log('✅ bs-stepper inicializado correctamente');
 
             // Load industries
-            initializeIndustries();
+            loadIndustries();
 
-            // Setup character counter
+            // Setup character counter for business description
             document.getElementById('businessDescription').addEventListener('input', function () {
                 document.getElementById('charCount').textContent = this.value.length;
             });
 
-            // Setup form validation on step change
+            // ============================================================
+            // STEP 5: Setup Validation Listener
+            // ============================================================
+            // Escuchar el evento ANTES de cambiar de paso
             stepperElement.addEventListener('show.bs-stepper', function (event) {
-                console.log('🔄 Validando paso:', event.detail.from, '→', event.detail.to);
+                console.log('🔍 Validando transición:', event.detail.from, '→', event.detail.to);
 
+                // Validar el step desde el cual se viene (no el destino)
                 if (!validateStep(event.detail.from)) {
-                    event.preventDefault();
-                    return false;
+                    console.log('❌ Validación fallida en step:', event.detail.from);
+                    event.preventDefault(); // Prevenir cambio de step
+                    return;
+                }
+
+                // Si vamos al paso 4 (confirmación), construir el resumen
+                if (event.detail.to === 3) {
+                    console.log('📋 Construyendo resumen para confirmación...');
+                    buildSummary();
                 }
             });
 
-            // Close alerts when clicking them
-            document.getElementById('successAlert').addEventListener('click', function () {
-                this.style.display = 'none';
+            // Setup form submission
+            document.getElementById('companyRequestForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                submitForm();
             });
-            document.getElementById('errorAlert').addEventListener('click', function () {
-                this.style.display = 'none';
-            });
+
+            console.log('✅ Listeners configurados correctamente');
         });
 
         // ============================================================
-        // STEP 4: Validation Logic
+        // STEP 6: Validation Logic
         // ============================================================
-        function validateField(fieldName) {
-            const field = document.getElementById(fieldName);
+        function validateField(fieldId, fieldName) {
+            const field = document.getElementById(fieldId);
             const feedback = field.nextElementSibling;
             const value = field.value.trim();
             let error = '';
@@ -607,16 +612,18 @@
                     break;
             }
 
-            // Display error or clear it
+            // Display or clear error
             if (error) {
                 field.classList.add('is-invalid');
-                feedback.textContent = error;
-                feedback.classList.add('show');
+                if (feedback) {
+                    feedback.textContent = error;
+                }
                 return false;
             } else {
                 field.classList.remove('is-invalid');
-                feedback.textContent = '';
-                feedback.classList.remove('show');
+                if (feedback) {
+                    feedback.textContent = '';
+                }
                 return true;
             }
         }
@@ -626,15 +633,15 @@
 
             switch (stepIndex) {
                 case 0: // Step 1: Basic Info
-                    return validateField('companyName') && validateField('adminEmail');
+                    return validateField('companyName', 'companyName') &&
+                           validateField('adminEmail', 'adminEmail');
 
                 case 1: // Step 2: Business Info
-                    return validateField('businessDescription') &&
-                           validateField('industryType') &&
-                           validateField('website');
+                    return validateField('businessDescription', 'businessDescription') &&
+                           validateField('industryType', 'industryType') &&
+                           validateField('website', 'website');
 
-                case 2: // Step 3: Contact Info
-                    // All optional, return true
+                case 2: // Step 3: Contact Info (all optional)
                     return true;
 
                 case 3: // Step 4: Confirmation
@@ -646,21 +653,15 @@
         }
 
         // ============================================================
-        // STEP 5: Build Summary on Step 4
+        // STEP 7: Build Summary
         // ============================================================
-        document.querySelector('.bs-stepper').addEventListener('show.bs-stepper', function (event) {
-            if (event.detail.to === 3) {
-                // Building summary for step 4
-                const summary = buildSummary();
-                document.getElementById('summaryContent').innerHTML = summary;
-            }
-        });
-
         function buildSummary() {
             const data = getFormData();
             let html = '';
 
-            html += '<h6 class="mb-3">Información Básica</h6>';
+            // Información Básica
+            html += '<div class="summary-block">';
+            html += '<h6>Información Básica</h6>';
             html += `<div class="summary-item">
                 <div class="summary-label">Nombre de la Empresa</div>
                 <div class="summary-value">${escapeHtml(data.companyName)}</div>
@@ -677,8 +678,11 @@
                 <div class="summary-label">Email del Administrador</div>
                 <div class="summary-value">${escapeHtml(data.adminEmail)}</div>
             </div>`;
+            html += '</div>';
 
-            html += '<h6 class="mb-3 mt-4">Información de Negocio</h6>';
+            // Información de Negocio
+            html += '<div class="summary-block">';
+            html += '<h6>Información de Negocio</h6>';
             html += `<div class="summary-item">
                 <div class="summary-label">Descripción</div>
                 <div class="summary-value">${escapeHtml(data.businessDescription)}</div>
@@ -692,7 +696,7 @@
             if (data.website) {
                 html += `<div class="summary-item">
                     <div class="summary-label">Sitio Web</div>
-                    <div class="summary-value"><a href="${escapeHtml(data.website)}" target="_blank">${escapeHtml(data.website)}</a></div>
+                    <div class="summary-value"><a href="${escapeHtml(data.website)}" target="_blank" rel="noopener">${escapeHtml(data.website)}</a></div>
                 </div>`;
             }
 
@@ -702,9 +706,12 @@
                     <div class="summary-value">${data.estimatedUsers}</div>
                 </div>`;
             }
+            html += '</div>';
 
+            // Información de Contacto
             if (data.contactAddress || data.contactCity || data.contactCountry || data.contactPostalCode || data.taxId) {
-                html += '<h6 class="mb-3 mt-4">Información de Contacto</h6>';
+                html += '<div class="summary-block">';
+                html += '<h6>Información de Contacto</h6>';
 
                 if (data.contactAddress) {
                     html += `<div class="summary-item">
@@ -740,17 +747,20 @@
                         <div class="summary-value">${escapeHtml(data.taxId)}</div>
                     </div>`;
                 }
+
+                html += '</div>';
             }
 
-            return html;
+            document.getElementById('summaryContent').innerHTML = html;
         }
 
         // ============================================================
-        // STEP 6: Get Form Data
+        // STEP 8: Get Form Data
         // ============================================================
         function getFormData() {
             const industrySelect = document.getElementById('industryType');
             const selectedOption = industrySelect.options[industrySelect.selectedIndex];
+            const industryName = selectedOption ? selectedOption.textContent : '';
 
             return {
                 companyName: document.getElementById('companyName').value,
@@ -758,7 +768,7 @@
                 legalName: document.getElementById('legalName').value,
                 businessDescription: document.getElementById('businessDescription').value,
                 industryType: document.getElementById('industryType').value,
-                industryName: selectedOption.textContent,
+                industryName: industryName,
                 website: document.getElementById('website').value,
                 estimatedUsers: document.getElementById('estimatedUsers').value,
                 contactAddress: document.getElementById('contactAddress').value,
@@ -770,19 +780,15 @@
         }
 
         // ============================================================
-        // STEP 7: Submit Form
+        // STEP 9: Submit Form
         // ============================================================
-        async function submitForm(event) {
-            event.preventDefault();
-
+        async function submitForm() {
             const submitBtn = document.getElementById('submitBtn');
-            const successAlert = document.getElementById('successAlert');
-            const errorAlert = document.getElementById('errorAlert');
+            const originalText = submitBtn.innerHTML;
 
             // Disable button and show loading state
             submitBtn.disabled = true;
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<span class="spinner mr-2"></span> Enviando...';
+            submitBtn.innerHTML = '<span class="spinner-border mr-2"></span> Enviando...';
 
             try {
                 const data = getFormData();
@@ -817,10 +823,11 @@
 
                 if (response.ok) {
                     console.log('✅ Solicitud enviada exitosamente:', result);
-                    successAlert.style.display = 'block';
+                    showSuccess();
+
+                    // Reset form and stepper
                     document.getElementById('companyRequestForm').reset();
                     stepper.reset();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
 
                     // Redirect after 3 seconds
                     setTimeout(() => {
@@ -831,8 +838,7 @@
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
-                document.getElementById('errorMessage').textContent = error.message;
-                errorAlert.style.display = 'block';
+                showError(error.message);
             } finally {
                 // Restore button
                 submitBtn.disabled = false;
@@ -841,12 +847,25 @@
         }
 
         // ============================================================
-        // STEP 8: Utility Functions
+        // STEP 10: Helper Functions
         // ============================================================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function showSuccess() {
+            document.getElementById('successAlert').style.display = 'block';
+            document.getElementById('errorAlert').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').style.display = 'block';
+            document.getElementById('successAlert').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 @endsection
