@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\PlatformAdminController;
 use App\Http\Controllers\Dashboard\CompanyAdminController;
 use App\Http\Controllers\Dashboard\AgentController;
 use App\Http\Controllers\Dashboard\UserController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 
 // ========== TESTING ROUTES (Development Only) ==========
 // Remove these routes in production
@@ -116,6 +117,15 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     Route::middleware('role:PLATFORM_ADMIN')->prefix('admin')->group(function () {
         Route::get('/dashboard', [PlatformAdminController::class, 'dashboard'])
             ->name('dashboard.platform-admin');
+
+        // Company Requests Management
+        Route::get('/company-requests', [CompanyRequestAdminController::class, 'index'])
+            ->name('admin.requests.index');
+
+        // Companies Management
+        Route::get('/companies', function () {
+            return view('app.platform-admin.companies.index');
+        })->name('admin.companies.index');
     });
 
     // Company Admin Dashboard (COMPANY_ADMIN role)

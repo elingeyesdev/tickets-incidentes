@@ -89,14 +89,27 @@
     function roleDisplay() {
         return {
             roleDisplay: 'Loading...',
+            _initialized: false,
 
             init() {
-                this.updateRoleDisplay();
+                // Only initialize once to avoid duplicate updates
+                if (this._initialized) return;
+                this._initialized = true;
+
+                // Wait for Alpine and DOM to be fully ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        setTimeout(() => this.updateRoleDisplay(), 100);
+                    });
+                } else {
+                    setTimeout(() => this.updateRoleDisplay(), 100);
+                }
             },
 
             updateRoleDisplay() {
                 if (typeof getUserFromJWT === 'function') {
                     const userData = getUserFromJWT();
+
                     if (userData && userData.activeRole) {
                         const role = userData.activeRole;
                         const roleNames = {
@@ -132,9 +145,21 @@
         return {
             userName: 'User',
             userEmail: '',
+            _initialized: false,
 
             init() {
-                this.loadUserData();
+                // Only initialize once to avoid duplicate updates
+                if (this._initialized) return;
+                this._initialized = true;
+
+                // Wait for Alpine and DOM to be fully ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        setTimeout(() => this.loadUserData(), 100);
+                    });
+                } else {
+                    setTimeout(() => this.loadUserData(), 100);
+                }
             },
 
             loadUserData() {

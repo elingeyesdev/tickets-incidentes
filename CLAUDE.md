@@ -1,0 +1,1 @@
+- usar siempre docker nunca php herd

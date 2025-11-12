@@ -24,6 +24,9 @@
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/select2/css/select2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
 
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 
@@ -134,20 +137,84 @@
     <script src="{{ asset('vendor/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- Select2 -->
     <script src="{{ asset('vendor/adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
     <!-- AdminLTE App -->
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- JWT Token Manager Setup (synchronous) -->
+    <script>
+        // IMPORTANT: Handle token from login.blade.php that was saved directly to localStorage
+        // without expiry metadata. This ensures TokenManager can properly track and refresh the token.
+        (function setupTokenInitial() {
+            const rawAccessToken = localStorage.getItem('access_token');
+            const tokenExpiry = localStorage.getItem('helpdesk_token_expiry');
+
+            if (rawAccessToken && !tokenExpiry) {
+                // Token exists but without expiry info - compute and store expiry now
+                // This handles the case where login.blade.php saves the token directly
+                const now = Date.now();
+                const defaultTTL = 3600; // 1 hour in seconds
+                const expiryTimestamp = now + (defaultTTL * 1000);
+
+                localStorage.setItem('helpdesk_token_expiry', expiryTimestamp.toString());
+                localStorage.setItem('helpdesk_token_issued_at', now.toString());
+                console.log('[TokenManager Setup] Initialized token metadata with default TTL (3600s)');
+            }
+        })();
+
+        // IMPORTANT: Define getUserFromJWT globally BEFORE navbar tries to use it
+        // This is needed because navbar.blade.php is rendered synchronously
+        window.getUserFromJWT = function() {
+            const token = localStorage.getItem('access_token');
+            const expiryTimestamp = localStorage.getItem('helpdesk_token_expiry');
+
+            if (!token || !expiryTimestamp) return null;
+
+            // Check if token is expired
+            const now = Date.now();
+            const expiry = parseInt(expiryTimestamp, 10);
+            if (now >= expiry) {
+                console.log('[getUserFromJWT] Token expired');
+                return null;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+
+                // Get active role from localStorage (set during login)
+                let activeRole = null;
+                const activeRoleStr = localStorage.getItem('active_role');
+                if (activeRoleStr) {
+                    try {
+                        activeRole = JSON.parse(activeRoleStr);
+                    } catch (e) {
+                        console.error('[getUserFromJWT] Error parsing active_role:', e);
+                    }
+                }
+
+                return {
+                    name: payload.name || 'User',
+                    email: payload.email || '',
+                    activeRole: activeRole,
+                };
+            } catch (error) {
+                console.error('[getUserFromJWT] Error parsing JWT:', error);
+                return null;
+            }
+        };
+    </script>
+
     <!-- JWT Token Manager -->
     <script type="module">
-        import TokenManager from '/js/lib/auth/TokenManager.js';
+        import tokenManager from '/js/lib/auth/TokenManager.js';
 
-        // Make TokenManager available globally
-        window.TokenManager = TokenManager;
-
-        // Initialize token manager
-        const tokenManager = new TokenManager();
+        // Make tokenManager available globally (already instantiated in module)
         window.tokenManager = tokenManager;
 
         // Add global logout function
@@ -178,28 +245,12 @@
             }
         };
 
-        // Add global function to get user data from JWT
-        window.getUserFromJWT = function() {
-            const token = tokenManager.getAccessToken();
-            if (!token) return null;
-
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return {
-                    name: payload.name || 'User',
-                    email: payload.email || '',
-                    activeRole: payload.active_role || null,
-                };
-            } catch (error) {
-                console.error('Error parsing JWT:', error);
-                return null;
-            }
-        };
-
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
             const token = tokenManager.getAccessToken();
+            console.log('[Auth Check] Token available:', !!token);
             if (!token) {
+                console.log('[Auth Check] No valid token found, redirecting to login');
                 window.location.href = '/login?reason=session_expired';
             }
         });

@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\View\View;
 use App\Shared\Helpers\JWTHelper;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Services\CompanyRequestService;
@@ -20,6 +21,7 @@ use OpenApi\Attributes as OA;
  * Solo accesible por PLATFORM_ADMIN.
  *
  * Métodos implementados:
+ * - index() - GET /app/admin/requests (Vista Blade)
  * - approve() - POST /api/v1/company-requests/{companyRequest}/approve
  * - reject() - POST /api/v1/company-requests/{companyRequest}/reject
  *
@@ -27,6 +29,21 @@ use OpenApi\Attributes as OA;
  */
 class CompanyRequestAdminController extends Controller
 {
+    /**
+     * Display the company requests management view
+     *
+     * Renders the view for managing company requests. All data is loaded
+     * dynamically via AJAX from the frontend following SPA pattern.
+     * The controller only renders the view with authenticated user data.
+     *
+     * @return View
+     */
+    public function index(): View
+    {
+        // Middleware already validated JWT and role (jwt.require + role:PLATFORM_ADMIN)
+        // No need to fetch user from backend - JWT defines everything
+        return view('app.platform-admin.requests.index');
+    }
     /**
      * Aprobar solicitud de empresa
      *
