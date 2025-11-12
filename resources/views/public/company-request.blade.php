@@ -186,6 +186,19 @@
         .float-right {
             float: right;
         }
+
+        /* Toast Container Padding (Evitar pegado a esquina) */
+        .toasts-container {
+            top: 20px !important;
+            right: 20px !important;
+            bottom: 20px !important;
+            left: 20px !important;
+        }
+
+        /* Toast individual styling */
+        .toast {
+            margin-bottom: 10px;
+        }
     </style>
 @endsection
 
@@ -900,7 +913,7 @@
                         body: 'Tu solicitud ha sido procesada y registrada correctamente. Nos pondremos en contacto pronto.',
                         icon: 'fas fa-check-circle',
                         autohide: true,
-                        delay: 5000,
+                        delay: 6000,
                         position: 'topRight'
                     });
 
@@ -908,10 +921,10 @@
                     document.getElementById('companyRequestForm').reset();
                     stepper.reset();
 
-                    // Redirect after 3 seconds
+                    // Redirect after 4 seconds
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 3000);
+                    }, 4000);
                 } else {
                     throw new Error(result.message || 'Error al enviar la solicitud');
                 }
