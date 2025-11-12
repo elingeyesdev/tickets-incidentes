@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('logo.png') }}">
+
     <title>@yield('title', 'Helpdesk')</title>
 
     <!-- AdminLTE CSS -->
@@ -29,6 +33,17 @@
         main {
             flex: 1;
         }
+
+        /* Fijar altura del navbar */
+        .navbar {
+            height: 65px;
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand img {
+            max-height: 50px;
+            width: auto;
+        }
     </style>
 </head>
 <body class="guest-page">
@@ -36,8 +51,8 @@
         <!-- Navbar - Zona Pública -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
-                <a class="navbar-brand" href="/">
-                    <img src="{{ asset('logo.png') }}" alt="Helpdesk" height="40" onerror="this.style.display='none'">
+                <a class="navbar-brand" href="/" style="display: flex; align-items: center; gap: 8px;">
+                    <img src="{{ asset('logo.png') }}" alt="Helpdesk" height="50" style="width: auto;">
                     <strong>HELPDESK</strong>
                 </a>
 
@@ -50,6 +65,11 @@
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('/') ? 'active' : '' }}" href="/">
                                 <i class="fas fa-home mr-1"></i> Inicio
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ Request::is('solicitud-empresa*') ? 'active' : '' }}" href="{{ route('company.request') }}">
+                                <i class="fas fa-building mr-1"></i> Solicitud de Empresa
                             </a>
                         </li>
                         <li class="nav-item">
@@ -106,12 +126,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="{{ asset('vendor/adminlte/plugins/jquery/jquery.min.js') }}"></script>
-    <script src="{{ asset('vendor/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
 
-    <!-- Alpine.js from CDN (development) -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js from CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
     @yield('js')
 </body>

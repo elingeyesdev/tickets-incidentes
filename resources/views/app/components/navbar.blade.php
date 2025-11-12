@@ -1,8 +1,8 @@
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <div class="container-fluid">
         <!-- Brand -->
-        <a href="/" class="navbar-brand">
-            <img src="{{ asset('logo.png') }}" alt="Helpdesk" class="brand-image" height="33" onerror="this.style.display='none'">
+        <a href="/" class="navbar-brand" style="display: flex; align-items: center; gap: 8px;">
+            <img src="{{ asset('logo.png') }}" alt="Helpdesk" class="brand-image" height="50" style="width: auto;">
             <span class="brand-text font-weight-light">Helpdesk</span>
         </a>
 

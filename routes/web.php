@@ -35,6 +35,11 @@ Route::get('/welcome', function () {
     return view('public.welcome');
 });
 
+// Company Request / Solicitud de Empresa
+Route::get('/solicitud-empresa', function () {
+    return view('public.company-request');
+})->name('company.request');
+
 // ========== AUTHENTICATION ROUTES (Blade) ==========
 
 // Public auth pages

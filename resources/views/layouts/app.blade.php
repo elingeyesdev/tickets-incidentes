@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('logo.png') }}">
+
     <title>@yield('title', 'Dashboard') - Helpdesk</title>
 
     <!-- AdminLTE CSS -->
@@ -25,6 +29,19 @@
 
     <!-- Custom CSS -->
     @yield('css')
+
+    <style>
+        /* Fijar altura del navbar */
+        .main-header.navbar {
+            height: 65px;
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand img {
+            max-height: 50px;
+            width: auto;
+        }
+    </style>
 </head>
 <body class="hold-transition layout-top-nav" x-data="authStore()" x-init="init()">
     <div class="wrapper">
