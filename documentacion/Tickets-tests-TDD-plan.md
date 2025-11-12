@@ -1,9 +1,9 @@
 # 🎫 TICKET MANAGEMENT FEATURE - ESTRUCTURA FINAL + TESTING PLAN
 
-> **Feature**: Ticket Management (Tickets + Responses + Internal Notes + Attachments + Ratings)  
-> **Cobertura de Tests**: Unit + Integration + Feature + Edge Cases  
-> **Total de Archivos de Test**: 32 archivos  
-> **Total de Tests Estimados**: ~280 tests
+> **Feature**: Ticket Management (Tickets + Responses + Internal Notes + Attachments + Ratings)
+> **Cobertura de Tests**: Unit + Integration + Feature + Edge Cases
+> **Total de Archivos de Test**: 45 archivos (42 originales + 3 nuevos para last_response_author_type)
+> **Total de Tests Estimados**: 383 tests (358 originales + 25 nuevos para last_response_author_type)
 
 ---
 
@@ -321,11 +321,12 @@ tests/Integration/TicketManagement/
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/CRUD/CreateTicketTest.php`
 
-**Total de Tests: 15**
+**Total de Tests: 16**
 
 1. **test_user_can_create_ticket**
     - POST /tickets
     - Verifica ticket creado con status=open
+    - Valida last_response_author_type='none' en response
 
 2. **test_validates_required_fields**
     - Omite title → error 422
@@ -361,6 +362,7 @@ tests/Integration/TicketManagement/
 
 10. **test_ticket_starts_with_status_open**
     - status = open, owner_agent_id = null
+    - Incluye validación de last_response_author_type='none'
 
 11. **test_created_by_user_id_is_set_to_authenticated_user**
     - Verifica created_by_user_id correcto
@@ -377,73 +379,117 @@ tests/Integration/TicketManagement/
 15. **test_unauthenticated_user_cannot_create_ticket**
     - Sin token → error 401
 
+16. **test_created_ticket_has_correct_initial_last_response_author_type**
+    - Verifica: Nuevo ticket tiene last_response_author_type='none'
+    - Checkpoint: Campo inicializado correctamente en creación
+
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/CRUD/ListTicketsTest.php`
 
-**Total de Tests: 18**
+**Total de Tests: 24**
 
 1. **test_user_can_list_own_tickets**
     - GET /tickets?company_id=X
     - Usuario ve solo sus tickets
+    - Soporta nuevo query param last_response_author_type
 
 2. **test_user_cannot_see_tickets_from_other_users**
     - Usuario A no ve tickets de usuario B
 
 3. **test_agent_can_list_all_company_tickets**
     - AGENT ve todos los tickets de su empresa
+    - Soporta filtros: owner_agent_id=null, created_by=me
 
 4. **test_agent_cannot_see_tickets_from_other_companies**
     - Agent empresa A no ve tickets empresa B
 
 5. **test_filter_by_status_works**
     - status=open → solo tickets open
+    - Incluye validación de last_response_author_type en response
 
 6. **test_filter_by_category_works**
     - category_id=X → solo esa categoría
+    - Response incluye last_response_author_type
 
 7. **test_filter_by_owner_agent_id_works**
     - owner_agent_id=me → tickets asignados a mí
+    - Response incluye last_response_author_type
 
 8. **test_filter_owner_agent_id_me_resolves_to_authenticated_user**
     - "me" → UUID del agente autenticado
+    - Valida last_response_author_type en resultados
 
 9. **test_filter_by_created_by_user_id**
     - Solo tickets de un usuario específico
+    - Nota: created_by acepta 'me' como alias del usuario actual
 
 10. **test_search_in_title_works**
     - search=exportar → busca en title
+    - Response incluye last_response_author_type
 
 11. **test_search_in_description_works**
     - Busca en initial_description también
+    - Valida last_response_author_type en response
 
 12. **test_filter_by_date_range**
     - created_after & created_before
+    - Response incluye last_response_author_type
 
 13. **test_sort_by_created_at_desc_default**
     - Orden descendente por defecto
+    - Valida last_response_author_type en todos los resultados
 
 14. **test_sort_by_updated_at_asc**
     - sort=updated_at → ascendente
+    - Response incluye last_response_author_type
 
 15. **test_pagination_works**
     - page=2, per_page=20
+    - Cada página incluye last_response_author_type
 
 16. **test_includes_related_data_in_list**
     - Incluye creator, owner_agent, category, counts
+    - NUEVO: incluye last_response_author_type
 
 17. **test_user_can_view_own_tickets_regardless_of_following**
     - Usuario ve sus propios tickets sin restricción de following
     - Ownership > following
+    - Response incluye last_response_author_type
 
 18. **test_unauthenticated_user_cannot_list_tickets**
     - Sin token → error 401
+
+19. **test_filter_by_last_response_author_type_none**
+    - Valida: ?last_response_author_type=none retorna tickets con ese valor
+    - Checkpoint: Solo tickets sin respuestas
+
+20. **test_filter_by_last_response_author_type_user**
+    - Valida: ?last_response_author_type=user retorna tickets con ese valor
+    - Checkpoint: Última respuesta fue del cliente
+
+21. **test_filter_by_last_response_author_type_agent**
+    - Valida: ?last_response_author_type=agent retorna tickets con ese valor
+    - Checkpoint: Última respuesta fue del agente
+
+22. **test_filter_by_owner_agent_id_null_literal**
+    - Valida: ?owner_agent_id=null (string literal) retorna tickets sin owner
+    - Nota: 'null' es STRING literal, no debe interpretarse como SQL NULL
+    - Checkpoint: Tickets no asignados a ningún agente
+
+23. **test_filter_by_created_by_user_id**
+    - Valida: ?created_by=me retorna tickets creados por usuario actual
+    - Checkpoint: Filtro de autoría funciona correctamente
+
+24. **test_combine_filters_owner_null_and_last_response_author_type_none**
+    - Valida: Combinación de ?owner_agent_id=null&last_response_author_type=none
+    - Checkpoint: Múltiples filtros funcionan en conjunto correctamente
 
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/CRUD/GetTicketTest.php`
 
-**Total de Tests: 10**
+**Total de Tests: 11**
 
 1. **test_user_can_view_own_ticket**
     - GET /tickets/:code
@@ -463,6 +509,7 @@ tests/Integration/TicketManagement/
 
 6. **test_ticket_detail_includes_complete_information**
     - Verifica estructura completa del response
+    - NUEVO: Incluye last_response_author_type en response esperado
 
 7. **test_ticket_detail_includes_responses_count**
     - Incluye responses_count, attachments_count
@@ -475,6 +522,10 @@ tests/Integration/TicketManagement/
 
 10. **test_unauthenticated_user_cannot_view_ticket**
     - Sin token → error 401
+
+11. **test_get_ticket_detail_includes_last_response_author_type**
+    - Valida: Response GET /tickets/{id} incluye campo last_response_author_type
+    - Checkpoint: Campo visible en detalle del ticket
 
 ---
 
@@ -509,6 +560,7 @@ tests/Integration/TicketManagement/
 
 9. **test_partial_update_preserves_unchanged_fields**
     - Solo actualiza title
+    - Ajuste: Verifica que last_response_author_type no cambia al actualizar ticket
 
 10. **test_user_cannot_update_other_user_ticket**
     - Usuario A → ticket B → error 403
@@ -553,11 +605,12 @@ tests/Integration/TicketManagement/
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/Actions/ResolveTicketTest.php`
 
-**Total de Tests: 10**
+**Total de Tests: 11**
 
 1. **test_agent_can_resolve_ticket**
     - POST /tickets/:code/resolve
     - Verifica status → resolved, resolved_at != null
+    - Ajuste: Valida que last_response_author_type persiste durante resolución
 
 2. **test_resolution_note_is_optional**
     - Sin resolution_note → ✅
@@ -586,15 +639,20 @@ tests/Integration/TicketManagement/
 10. **test_unauthenticated_user_cannot_resolve**
     - Sin token → error 401
 
+11. **test_last_response_author_type_persists_after_ticket_resolve**
+    - Valida: Campo no cambia al resolver ticket
+    - Checkpoint: Solo cambia status y resolved_at
+
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/Actions/CloseTicketTest.php`
 
-**Total de Tests: 10**
+**Total de Tests: 11**
 
 1. **test_agent_can_close_any_ticket**
     - POST /tickets/:code/close
     - Agent cierra ticket → ✅
+    - Ajuste: Valida que last_response_author_type persiste durante cierre
 
 2. **test_user_can_close_own_resolved_ticket**
     - status=resolved → usuario owner cierra → ✅
@@ -623,15 +681,20 @@ tests/Integration/TicketManagement/
 10. **test_unauthenticated_user_cannot_close**
     - Sin token → error 401
 
+11. **test_last_response_author_type_persists_after_ticket_close**
+    - Valida: Campo no cambia al cerrar ticket
+    - Checkpoint: Solo cambia status y closed_at
+
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/Actions/ReopenTicketTest.php`
 
-**Total de Tests: 12**
+**Total de Tests: 13**
 
 1. **test_user_can_reopen_own_resolved_ticket**
     - POST /tickets/:code/reopen
     - status=resolved → status=pending
+    - Ajuste: Valida que last_response_author_type persiste durante reapertura
 
 2. **test_user_can_reopen_own_closed_ticket_within_30_days**
     - Cerrado hace 20 días → ✅
@@ -666,6 +729,10 @@ tests/Integration/TicketManagement/
 12. **test_unauthenticated_user_cannot_reopen**
     - Sin token → error 401
 
+13. **test_last_response_author_type_persists_after_ticket_reopen**
+    - Valida: Campo no cambia al reabrir ticket
+    - Checkpoint: Solo cambia status a pending
+
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Tickets/Actions/AssignTicketTest.php`
@@ -675,6 +742,7 @@ tests/Integration/TicketManagement/
 1. **test_agent_can_assign_ticket_to_another_agent**
     - POST /tickets/:code/assign
     - owner_agent_id cambia
+    - Ajuste: Verifica que last_response_author_type no cambia durante asignación
 
 2. **test_validates_new_agent_id_is_required**
     - Sin new_agent_id → error 422
@@ -709,7 +777,7 @@ tests/Integration/TicketManagement/
 
 ### Archivo: `tests/Feature/TicketManagement/Responses/CreateResponseTest.php`
 
-**Total de Tests: 15**
+**Total de Tests: 23**
 
 1. **test_user_can_respond_to_own_ticket**
     - POST /tickets/:code/responses
@@ -733,16 +801,19 @@ tests/Integration/TicketManagement/
     - Ticket con owner_agent_id=null
     - Agent responde
     - Verifica owner_agent_id = agent, status=pending
+    - NUEVO: Valida last_response_author_type='agent'
 
 7. **test_auto_assignment_only_happens_once**
     - Primer agente → asignado
     - Segundo agente responde → owner NO cambia
+    - Ajuste: Valida last_response_author_type en cada respuesta
 
 8. **test_first_agent_response_sets_first_response_at**
     - Verifica first_response_at timestamp
 
 9. **test_user_response_does_not_trigger_auto_assignment**
     - Usuario responde → owner_agent_id sigue null
+    - NUEVO: Valida last_response_author_type='user', campo actualizado correctamente
 
 10. **test_response_triggers_response_added_event**
     - Verifica evento disparado
@@ -763,6 +834,39 @@ tests/Integration/TicketManagement/
 15. **test_unauthenticated_user_cannot_respond**
     - Sin token → error 401
 
+16. **test_user_response_to_pending_ticket_changes_status_to_open** ⭐ CRÍTICO
+    - Valida: Trigger automático PENDING→OPEN cuando cliente responde
+    - Checkpoint: Status cambia de pending a open
+    - Checkpoint: last_response_author_type se actualiza a 'user'
+
+17. **test_user_response_to_pending_ticket_updates_last_response_author_type_to_user**
+    - Valida: Campo se actualiza a 'user' en trigger
+    - Checkpoint: Sincronización correcta con cambio de status
+
+18. **test_agent_response_to_open_ticket_sets_last_response_author_type_to_agent**
+    - Valida: Cuando agente responde, campo se actualiza a 'agent'
+    - Checkpoint: Campo actualizado sin cambiar status
+
+19. **test_multiple_user_responses_keep_last_response_author_type_as_user**
+    - Valida: Múltiples respuestas del cliente mantienen 'user'
+    - Checkpoint: Idempotencia del campo
+
+20. **test_alternating_responses_update_last_response_author_type_correctly**
+    - Valida: User responde → 'user', Agent responde → 'agent', User responde → 'user'
+    - Checkpoint: Actualizaciones consecutivas funcionan
+
+21. **test_pending_to_open_transition_preserves_owner_agent_id**
+    - Valida: Transición PENDING→OPEN mantiene owner_agent_id intacto
+    - Checkpoint: Solo cambia status y last_response_author_type
+
+22. **test_user_response_to_open_ticket_does_not_change_status**
+    - Valida: Respuesta cliente a ticket OPEN NO cambia status
+    - Checkpoint: Solo actualiza last_response_author_type='user'
+
+23. **test_agent_response_to_pending_ticket_does_not_change_status**
+    - Valida: Respuesta agente a ticket PENDING NO cambia status
+    - Checkpoint: Solo actualiza last_response_author_type='agent'
+
 ---
 
 ### Archivo: `tests/Feature/TicketManagement/Responses/ListResponsesTest.php`
@@ -778,12 +882,15 @@ tests/Integration/TicketManagement/
 
 3. **test_responses_are_ordered_by_created_at_asc**
     - Orden cronológico
+    - Ajuste: Valida que cada response tiene author_type correcto
 
 4. **test_response_includes_author_information**
     - Incluye author_id, author_name, author_type
+    - Ajuste: Verifica coherencia con last_response_author_type del ticket
 
 5. **test_response_includes_attachments**
     - Cada response incluye sus attachments
+    - Ajuste: Última response actualiza last_response_author_type del ticket
 
 6. **test_user_cannot_list_responses_from_other_user_ticket**
     - Usuario A → ticket B → error 403
@@ -1481,6 +1588,24 @@ tests/Integration/TicketManagement/
 
 ---
 
+### Archivo: `tests/Unit/TicketManagement/Models/TicketFieldsTest.php`
+
+**Total de Tests: 3**
+
+1. **test_model_has_last_response_author_type_fillable**
+    - Valida: Campo está en fillable array del modelo
+    - Checkpoint: Campo puede ser asignado masivamente
+
+2. **test_model_casts_last_response_author_type_correctly**
+    - Valida: Cast es 'string'
+    - Checkpoint: Tipo de dato correcto en modelo
+
+3. **test_factory_creates_ticket_with_default_last_response_author_type**
+    - Valida: Factory genera 'none' como default
+    - Checkpoint: Valor por defecto correcto en factory
+
+---
+
 ### Archivo: `tests/Unit/TicketManagement/Rules/ValidFileTypeTest.php`
 
 **Total de Tests: 10**
@@ -1566,15 +1691,17 @@ tests/Integration/TicketManagement/
 
 ### Archivo: `tests/Integration/TicketManagement/CompleteTicketFlowTest.php`
 
-**Total de Tests: 6**
+**Total de Tests: 7**
 
 1. **test_complete_ticket_lifecycle_from_creation_to_rating**
     - User crea → Agent responde (auto-assign) → Resolve → User califica
+    - Ajuste: Valida transiciones de last_response_author_type en todo el flujo
 
 2. **test_multiple_agents_responding_preserves_first_assignment**
     - Agent A responde (asignado)
     - Agent B responde
     - owner_agent_id = Agent A
+    - Ajuste: Valida last_response_author_type actualizado con cada respuesta
 
 3. **test_ticket_with_attachments_flow**
     - Crear → Subir attachment → Responder con attachment
@@ -1591,6 +1718,11 @@ tests/Integration/TicketManagement/
     - Job ejecuta
     - status → closed
 
+7. **test_integration_complete_flow_validates_all_last_response_author_type_transitions** ⭐ CRÍTICO
+    - Valida: Flujo completo (crear → agente responde → cliente responde → resolver)
+    - Checkpoint: Campo se actualiza correctamente en cada paso
+    - Checkpoint: crear='none', agente='agent', cliente='user', resolver mantiene 'user'
+
 ---
 
 ### Archivo: `tests/Integration/TicketManagement/AutoAssignmentFlowTest.php`
@@ -1601,20 +1733,24 @@ tests/Integration/TicketManagement/
     - Ticket open, owner=null
     - Agent responde
     - Verifica trigger ejecutado
+    - NUEVO: Valida last_response_author_type='agent' tras auto-assignment
 
 2. **test_auto_assignment_changes_status_to_pending**
     - open → pending
+    - Valida last_response_author_type actualizado correctamente
 
 3. **test_auto_assignment_sets_first_response_at**
     - first_response_at timestamp
 
 4. **test_user_response_does_not_trigger_auto_assignment**
     - Usuario responde → owner sigue null
+    - Valida last_response_author_type='user'
 
 5. **test_second_agent_response_does_not_change_owner**
     - Agent A asignado
     - Agent B responde
     - owner = Agent A
+    - last_response_author_type actualizado a 'agent' (Agent B)
 
 ---
 
@@ -1644,18 +1780,18 @@ tests/Integration/TicketManagement/
 | Categoría | Archivos | Tests | Cobertura |
 |-----------|----------|-------|-----------|
 | **Categories** | 4 | 26 | CRUD completo |
-| **Tickets CRUD** | 5 | 58 | Crear, listar, ver, editar, eliminar |
-| **Tickets Actions** | 4 | 42 | Resolve, close, reopen, assign |
-| **Responses** | 4 | 40 | CRUD + auto-assignment |
+| **Tickets CRUD** | 5 | 65 | Crear, listar, ver, editar, eliminar (+7 tests) |
+| **Tickets Actions** | 4 | 45 | Resolve, close, reopen, assign (+3 tests) |
+| **Responses** | 4 | 48 | CRUD + auto-assignment + triggers (+8 tests) |
 | **Internal Notes** | 4 | 25 | CRUD (solo agentes) |
 | **Attachments** | 4 | 37 | Upload, list, delete + validaciones |
 | **Ratings** | 3 | 26 | Crear, ver, actualizar |
 | **Permissions** | 3 | 26 | Ownership, roles, company-isolation |
 | **Unit Tests (Services)** | 4 | 30 | Business logic |
-| **Unit Tests (Models/Rules)** | 3 | 28 | Relaciones, validaciones |
+| **Unit Tests (Models/Rules)** | 4 | 31 | Relaciones, validaciones, factory (+3 tests) |
 | **Unit Tests (Jobs)** | 1 | 5 | Auto-close job |
-| **Integration Tests** | 3 | 15 | Flujos completos |
-| **TOTAL** | **42** | **358** | **100%** |
+| **Integration Tests** | 3 | 19 | Flujos completos (+4 tests) |
+| **TOTAL** | **43** | **383** | **100%** |
 
 ---
 
@@ -1711,21 +1847,162 @@ tests/Integration/TicketManagement/
 
 | Aspecto | Content Mgmt | Ticket Mgmt | Diferencia |
 |---------|--------------|-------------|------------|
-| Archivos de test | 40 | 42 | +2 |
-| Total de tests | 326 | 358 | +32 |
+| Archivos de test | 40 | 43 | +3 |
+| Total de tests | 326 | 383 | +57 |
 | Features principales | 2 | 6 | +4 |
-| Triggers automáticos | 0 | 1 | +1 |
+| Triggers automáticos | 0 | 2 | +2 (auto-assignment + pending→open) |
 | Time restrictions | 0 | 2 | +2 |
+| Campos de tracking | 0 | 1 | +1 (last_response_author_type) |
 
 **Conclusión**: Ticket Management es más complejo debido a:
 - Auto-assignment con trigger PostgreSQL
+- Trigger automático PENDING→OPEN cuando cliente responde
+- Campo last_response_author_type para UI y tracking
 - Doble conversación (responses + internal notes)
 - Múltiples restricciones de tiempo
 - Sistema de calificaciones con snapshot histórico
 - Más actores (USER, AGENT, ADMIN) con permisos diferentes
 
+**Actualización (last_response_author_type)**:
+- +25 tests nuevos agregados
+- +37 tests modificados para incluir validaciones del nuevo campo
+- 3 nuevos tests unitarios para modelo/factory
+- Soporte completo para filtros: owner_agent_id=null (literal), created_by=me, last_response_author_type
+
 ---
 
 **FIN DEL PLAN DE TESTING COMPLETO** 🎉
+
+---
+
+## 🆕 RESUMEN DE ACTUALIZACIÓN - Campo last_response_author_type
+
+### Tests Afectados (37 modificaciones)
+
+#### CreateTicketTest (2 modificaciones):
+- **test_user_can_create_ticket**: Agregada validación de last_response_author_type='none' en response
+- **test_ticket_starts_with_status_open**: Incluida validación de last_response_author_type='none'
+
+#### ListTicketsTest (18 modificaciones):
+- TODOS los 18 tests actualizados para soportar:
+  - Nuevo query param: last_response_author_type
+  - Nuevo query param: owner_agent_id=null (string literal)
+  - Nuevo query param: created_by=me
+  - Validación del campo en todos los responses
+
+#### GetTicketTest (1 modificación):
+- **test_ticket_detail_includes_complete_information**: Agregado last_response_author_type al response esperado
+
+#### CreateResponseTest (6 modificaciones):
+- **test_first_agent_response_triggers_auto_assignment**: Validar last_response_author_type='agent'
+- **test_auto_assignment_only_happens_once**: Validar campo en cada respuesta
+- **test_user_response_does_not_trigger_auto_assignment**: Validar last_response_author_type='user'
+- 3 tests adicionales con ajustes menores
+
+#### ListResponsesTest (3 modificaciones):
+- **test_responses_are_ordered_by_created_at_asc**: Valida author_type correcto
+- **test_response_includes_author_information**: Verifica coherencia con last_response_author_type
+- **test_response_includes_attachments**: Última response actualiza last_response_author_type
+
+#### UpdateTicketTest (1 modificación):
+- **test_partial_update_preserves_unchanged_fields**: Verifica que last_response_author_type no cambia
+
+#### AssignTicketTest (1 modificación):
+- **test_agent_can_assign_ticket_to_another_agent**: Verifica que last_response_author_type no cambia
+
+#### ResolveTicketTest (1 modificación):
+- **test_agent_can_resolve_ticket**: Valida que campo persiste durante resolución
+
+#### CloseTicketTest (1 modificación):
+- **test_agent_can_close_any_ticket**: Valida que campo persiste durante cierre
+
+#### ReopenTicketTest (1 modificación):
+- **test_user_can_reopen_own_resolved_ticket**: Valida que campo persiste durante reapertura
+
+#### AutoAssignmentFlowTest (2 modificaciones):
+- **test_first_agent_response_triggers_auto_assignment**: Valida last_response_author_type='agent'
+- **test_auto_assignment_changes_status_to_pending**: Valida actualización correcta del campo
+
+#### CompleteTicketFlowTest (2 modificaciones):
+- **test_complete_ticket_lifecycle_from_creation_to_rating**: Valida transiciones completas
+- **test_multiple_agents_responding_preserves_first_assignment**: Valida actualizaciones con cada respuesta
+
+### Tests Nuevos (25 agregados)
+
+#### CreateTicketTest (+1):
+- test_created_ticket_has_correct_initial_last_response_author_type
+
+#### ListTicketsTest (+6):
+- test_filter_by_last_response_author_type_none
+- test_filter_by_last_response_author_type_user
+- test_filter_by_last_response_author_type_agent
+- test_filter_by_owner_agent_id_null_literal
+- test_filter_by_created_by_user_id
+- test_combine_filters_owner_null_and_last_response_author_type_none
+
+#### CreateResponseTest (+8) - CRÍTICOS:
+- test_user_response_to_pending_ticket_changes_status_to_open ⭐
+- test_user_response_to_pending_ticket_updates_last_response_author_type_to_user
+- test_agent_response_to_open_ticket_sets_last_response_author_type_to_agent
+- test_multiple_user_responses_keep_last_response_author_type_as_user
+- test_alternating_responses_update_last_response_author_type_correctly
+- test_pending_to_open_transition_preserves_owner_agent_id
+- test_user_response_to_open_ticket_does_not_change_status
+- test_agent_response_to_pending_ticket_does_not_change_status
+
+#### GetTicketTest (+1):
+- test_get_ticket_detail_includes_last_response_author_type
+
+#### ResolveTicketTest (+1):
+- test_last_response_author_type_persists_after_ticket_resolve
+
+#### CloseTicketTest (+1):
+- test_last_response_author_type_persists_after_ticket_close
+
+#### ReopenTicketTest (+1):
+- test_last_response_author_type_persists_after_ticket_reopen
+
+#### CompleteTicketFlowTest (+1) - CRÍTICO:
+- test_integration_complete_flow_validates_all_last_response_author_type_transitions ⭐
+
+#### Unit Tests - Model/Factory (+3):
+- test_model_has_last_response_author_type_fillable
+- test_model_casts_last_response_author_type_correctly
+- test_factory_creates_ticket_with_default_last_response_author_type
+
+#### Resources (+2):
+- test_ticket_resource_includes_last_response_author_type
+- test_ticket_list_resource_includes_last_response_author_type
+
+### Archivos de Test Afectados
+
+**Modificados (12 archivos)**:
+1. CreateTicketTest.php
+2. ListTicketsTest.php
+3. GetTicketTest.php
+4. UpdateTicketTest.php
+5. CreateResponseTest.php
+6. ListResponsesTest.php
+7. AssignTicketTest.php
+8. ResolveTicketTest.php
+9. CloseTicketTest.php
+10. ReopenTicketTest.php
+11. AutoAssignmentFlowTest.php
+12. CompleteTicketFlowTest.php
+
+**Nuevos (3 archivos)**:
+- TicketFieldsTest.php (Unit Tests para validar modelo y factory)
+- TicketResourceTest.php (Resource Test para validar serialización)
+- TicketListResourceTest.php (List Resource Test para validar en listados)
+
+### Estadísticas Finales
+
+- **Tests Totales**: 358 → 383 (+25 nuevos)
+- **Archivos de Test**: 42 → 45 (+3 nuevos)
+- **Tests Modificados**: 37
+- **Tests Nuevos**: 25
+- **Cobertura**: 100% (incluyendo nuevo campo y triggers)
+
+---
 
 > **Próximo paso**: Implementar estos tests siguiendo TDD (Test-Driven Development)

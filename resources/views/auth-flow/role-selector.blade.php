@@ -59,14 +59,14 @@
 </div>
 
 <style>
-    /* Ensanchar el card del auth */
-    body .card {
-        max-width: 900px !important;
-        width: 90vw !important;
+    /* Default AdminLTE v3 login card sizing */
+    body .login-page .card {
+        max-width: 400px !important;
+        width: 100% !important;
     }
 
     body .card-body {
-        padding: 2.5rem !important;
+        padding: 2rem !important;
     }
 
     body .login-page {
@@ -75,7 +75,13 @@
 
     body .login-box {
         width: 100%;
-        max-width: 900px !important;
+        max-width: 400px !important;
+    }
+
+    #rolesContainer {
+        display: flex !important;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     .role-card {
@@ -83,7 +89,12 @@
         transition: all 0.3s ease;
         border: 2px solid #e9ecef;
         border-radius: 8px;
-        min-height: 140px;
+        min-height: auto;
+        padding: 1.25rem !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
     }
 
     .role-card:hover {
@@ -97,15 +108,19 @@
         background-color: #f0f7ff !important;
     }
 
+    .role-card .row {
+        width: 100%;
+        align-items: center;
+    }
+
     .role-icon {
-        font-size: 3rem;
-        width: 100px;
-        height: 100px;
+        font-size: 2rem;
+        width: 60px;
+        height: 60px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 10px;
-        margin: 0 auto;
+        border-radius: 8px;
     }
 
     .role-icon.platform_admin {
@@ -129,15 +144,34 @@
     }
 
     .role-title {
-        font-size: 1.25rem;
+        font-size: 1rem;
         font-weight: 600;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
 
     .role-description {
-        font-size: 1rem;
+        font-size: 0.875rem;
         color: #6c757d;
-        line-height: 1.5;
+        line-height: 1.4;
+    }
+
+    .role-card .col-md-2,
+    .role-card .col-md-7,
+    .role-card .col-md-3 {
+        flex: none !important;
+    }
+
+    .role-card .col-md-2 {
+        width: auto !important;
+    }
+
+    .role-card .col-md-7 {
+        flex: 1 !important;
+        min-width: 0;
+    }
+
+    .role-card .col-md-3 {
+        width: auto !important;
     }
 </style>
 @stop

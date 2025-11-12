@@ -956,20 +956,37 @@ Content-Type: application/json
   "success": true,
   "message": "Ticket creado exitosamente",
   "data": {
-    "id": "tkt-uuid-new",
-    "ticket_code": "TKT-2025-00456",
+    "id": "550e8400-e29b-41d4-a716-446655440099",
+    "ticket_code": "TKT-2025-00001",
     "company_id": "550e8400-e29b-41d4-a716-446655440001",
-    "created_by_user_id": "user-uuid-1",
+    "company_name": "Tech Solutions Inc.",
+    "created_by_user_id": "user-uuid-123",
+    "created_by_name": "Juan Pérez",
     "category_id": "cat-uuid-1",
+    "category_name": "Soporte Técnico",
     "title": "No puedo resetear mi contraseña",
+    "initial_description": "Hola, cuando intento resetear...",
     "status": "open",
     "owner_agent_id": null,
+    "owner_agent_name": null,
     "last_response_author_type": "none",
-    "created_at": "2025-11-09T14:30:00Z",
-    "updated_at": "2025-11-09T14:30:00Z"
+    "created_at": "2025-11-11T10:00:00Z",
+    "updated_at": "2025-11-11T10:00:00Z",
+    "first_response_at": null,
+    "resolved_at": null,
+    "closed_at": null,
+    "responses_count": 0,
+    "attachments_count": 0
   }
 }
 ```
+
+**Notas importantes**:
+- `status` SIEMPRE inicia en `"open"`
+- `owner_agent_id` SIEMPRE es `null` al crear
+- `last_response_author_type` SIEMPRE es `"none"` al crear
+- `first_response_at`, `resolved_at`, `closed_at` SIEMPRE son `null` al crear
+- `responses_count` y `attachments_count` SIEMPRE son 0 al crear
 
 ---
 
@@ -1981,22 +1998,18 @@ enum TicketStatus: string
 ### Índices Críticos para Performance
 
 ```sql
--- Índice compuesto para query más común (agente: mis tickets)
-CREATE INDEX idx_tickets_agent_status ON tickets(owner_agent_id, status);
+-- Índice compuesto para queries que filtran por status + owner_agent_id
+-- Caso: Agente ve sus tickets abiertos que necesitan respuesta
+CREATE INDEX idx_tickets_status_owner ON ticketing.tickets(status, owner_agent_id);
 
--- Índice compuesto para cola de entrada
-CREATE INDEX idx_tickets_unassigned ON tickets(company_id, status)
-WHERE owner_agent_id IS NULL;
+-- Índice para filtrar tickets sin asignar (cola de entrada)
+-- Caso: Todos los agentes ven tickets nuevos que pueden tomar
+CREATE INDEX idx_tickets_owner_agent_id ON ticketing.tickets(owner_agent_id)
+WHERE owner_agent_id IS NOT NULL;
 
--- Índice para filtros de cliente
-CREATE INDEX idx_tickets_creator ON tickets(created_by_user_id, status);
-
--- Índice para last_response_author_type (nuevo campo)
-CREATE INDEX idx_tickets_last_response ON tickets(last_response_author_type, status);
-
--- Índice para auto-close (cron job)
-CREATE INDEX idx_tickets_resolved ON tickets(status, resolved_at)
-WHERE status = 'resolved';
+-- Índice para filtrar por quién respondió último (campo UI)
+-- Caso: Priorizar tickets donde cliente acaba de responder
+CREATE INDEX idx_tickets_last_response_author ON ticketing.tickets(last_response_author_type);
 ```
 
 ### Validaciones Críticas Backend
@@ -2016,9 +2029,28 @@ WHERE status = 'resolved';
    - Solo se ejecuta si `author_type = 'user'`
    - `owner_agent_id` NO se modifica (se mantiene)
 
-4. **Query param `owner_agent_id=null`**:
-   - Backend debe interpretar literal string `"null"` como condición SQL `IS NULL`
-   - NO confundir con valor NULL de JSON
+4. **Query param `owner_agent_id=null`** (Implementación en Laravel):
+   - El frontend envía: `?owner_agent_id=null` (literal string "null")
+   - El backend debe interpretar como: `whereNull('owner_agent_id')`
+   - NO confundir con valor NULL de JSON response
+   - **Ejemplo de implementación**:
+     ```php
+     // En TicketController::index()
+     if ($request->has('owner_agent_id')) {
+         if ($request->owner_agent_id === 'null') {
+             $query->whereNull('owner_agent_id');  // Literal "null"
+         } elseif ($request->owner_agent_id === 'me') {
+             $query->where('owner_agent_id', auth()->id());
+         } else {
+             // UUID específico
+             $query->where('owner_agent_id', $request->owner_agent_id);
+         }
+     }
+     ```
+   - **Casos de uso**:
+     - `?owner_agent_id=null` → Tickets nuevos (sin agente asignado)
+     - `?owner_agent_id=me` → Mis tickets asignados
+     - `?owner_agent_id=550e...` → Tickets de un agente específico
 
 ### Consultas SQL Equivalentes a Query Params
 

@@ -146,19 +146,19 @@
 
 @section('adminlte_css')
     <style>
-        /* Ensanchar los cards de auth */
-        body .card {
-            max-width: 900px !important;
-            width: 90vw !important;
+        /* Default AdminLTE v3 login card sizing */
+        body .login-page .card {
+            max-width: 400px !important;
+            width: 100% !important;
         }
 
         body .card-body {
-            padding: 2.5rem !important;
+            padding: 2rem !important;
         }
 
         body .login-box {
             width: 100%;
-            max-width: 900px !important;
+            max-width: 400px !important;
         }
 
         .btn-danger {

@@ -16,7 +16,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Listing Tickets
  *
- * Tests the endpoint GET /api/v1/tickets
+ * Tests the endpoint GET /api/tickets
  *
  * Coverage:
  * - Authentication (unauthenticated)
@@ -71,7 +71,7 @@ class ListTicketsTest extends TestCase
         $company = Company::factory()->create();
 
         // Act - No authenticateWithJWT() call
-        $response = $this->getJson("/api/v1/tickets?company_id={$company->id}");
+        $response = $this->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(401);
@@ -107,12 +107,13 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(3, 'data');
         $response->assertJsonPath('data.0.created_by_user_id', $user->id);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -145,7 +146,7 @@ class ListTicketsTest extends TestCase
 
         // Act - User B tries to list tickets
         $response = $this->authenticateWithJWT($userB)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
@@ -154,6 +155,9 @@ class ListTicketsTest extends TestCase
         // Verify User A's ticket is NOT in the response
         $titles = collect($response->json('data'))->pluck('title')->toArray();
         $this->assertNotContains('Ticket de Usuario A', $titles);
+
+        // If there were tickets, we would check last_response_author_type
+        // But since count is 0, we skip that assertion here
     }
 
     /**
@@ -204,11 +208,12 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(3, 'data'); // Agent should see all 3 tickets
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -245,11 +250,14 @@ class ListTicketsTest extends TestCase
 
         // Act - Agent from Company A tries to list Company B tickets
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets?company_id={$companyB->id}");
+            ->getJson("/api/tickets?company_id={$companyB->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(0, 'data'); // Should not see Company B's ticket
+
+        // If there were tickets, we would check last_response_author_type
+        // But since count is 0, we skip that assertion here
     }
 
     // ==================== GROUP 3: Filtros por Status (Tests 6-9) ====================
@@ -294,12 +302,13 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&status=open");
+            ->getJson("/api/tickets?company_id={$company->id}&status=open");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.status', 'open');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -336,12 +345,13 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&status=pending");
+            ->getJson("/api/tickets?company_id={$company->id}&status=pending");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.status', 'pending');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -378,12 +388,13 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&status=resolved");
+            ->getJson("/api/tickets?company_id={$company->id}&status=resolved");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.status', 'resolved');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -420,12 +431,13 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&status=closed");
+            ->getJson("/api/tickets?company_id={$company->id}&status=closed");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.status', 'closed');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -474,13 +486,14 @@ class ListTicketsTest extends TestCase
 
         // Act - Filter by Category A
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&category_id={$categoryA->id}");
+            ->getJson("/api/tickets?company_id={$company->id}&category_id={$categoryA->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // 2 tickets in Category A
         $response->assertJsonPath('data.0.category_id', $categoryA->id);
         $response->assertJsonPath('data.1.category_id', $categoryA->id);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 4: Filtros por Agent (Tests 11-12) ====================
@@ -533,13 +546,14 @@ class ListTicketsTest extends TestCase
 
         // Act - Filter by Agent A
         $response = $this->authenticateWithJWT($agentA)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&owner_agent_id={$agentA->id}");
+            ->getJson("/api/tickets?company_id={$company->id}&owner_agent_id={$agentA->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // 2 tickets assigned to Agent A
         $response->assertJsonPath('data.0.owner_agent_id', $agentA->id);
         $response->assertJsonPath('data.1.owner_agent_id', $agentA->id);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -581,12 +595,13 @@ class ListTicketsTest extends TestCase
 
         // Act - Use "me" instead of agent ID
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&owner_agent_id=me");
+            ->getJson("/api/tickets?company_id={$company->id}&owner_agent_id=me");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data'); // Only tickets assigned to this agent
         $response->assertJsonPath('data.0.owner_agent_id', $agent->id);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -634,13 +649,14 @@ class ListTicketsTest extends TestCase
 
         // Act - Filter by User A (as agent)
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&created_by_user_id={$userA->id}");
+            ->getJson("/api/tickets?company_id={$company->id}&created_by_user_id={$userA->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // 2 tickets created by User A
         $response->assertJsonPath('data.0.created_by_user_id', $userA->id);
         $response->assertJsonPath('data.1.created_by_user_id', $userA->id);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 5: Búsqueda (Tests 14-15) ====================
@@ -691,11 +707,12 @@ class ListTicketsTest extends TestCase
 
         // Act - Search for "exportar"
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&search=exportar");
+            ->getJson("/api/tickets?company_id={$company->id}&search=exportar");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // 2 tickets with "exportar" in title
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -744,11 +761,12 @@ class ListTicketsTest extends TestCase
 
         // Act - Search for "error"
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&search=error");
+            ->getJson("/api/tickets?company_id={$company->id}&search=error");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // 2 tickets with "error" in description
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 6: Filtros de Fecha (Test 16) ====================
@@ -796,11 +814,12 @@ class ListTicketsTest extends TestCase
 
         // Act - Filter for November 1-10
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&created_after=2025-11-01&created_before=2025-11-10");
+            ->getJson("/api/tickets?company_id={$company->id}&created_after=2025-11-01&created_before=2025-11-10");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data'); // Only the November 5 ticket
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 7: Ordenamiento (Tests 17-18) ====================
@@ -851,7 +870,7 @@ class ListTicketsTest extends TestCase
 
         // Act - No sort parameter (should default to created_at desc)
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
@@ -861,6 +880,7 @@ class ListTicketsTest extends TestCase
         $response->assertJsonPath('data.0.title', 'Tercer ticket');
         $response->assertJsonPath('data.1.title', 'Segundo ticket');
         $response->assertJsonPath('data.2.title', 'Primer ticket');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     /**
@@ -909,7 +929,7 @@ class ListTicketsTest extends TestCase
 
         // Act - Sort by updated_at ascending
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&sort=updated_at");
+            ->getJson("/api/tickets?company_id={$company->id}&sort=updated_at");
 
         // Assert
         $response->assertStatus(200);
@@ -919,6 +939,7 @@ class ListTicketsTest extends TestCase
         $response->assertJsonPath('data.0.title', 'Ticket actualizado hace 3 días');
         $response->assertJsonPath('data.1.title', 'Ticket actualizado hace 1 día');
         $response->assertJsonPath('data.2.title', 'Ticket actualizado hoy');
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 8: Paginación (Test 19) ====================
@@ -951,7 +972,7 @@ class ListTicketsTest extends TestCase
 
         // Act - Request page 2 with 20 per page
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}&page=2&per_page=20");
+            ->getJson("/api/tickets?company_id={$company->id}&page=2&per_page=20");
 
         // Assert
         $response->assertStatus(200);
@@ -959,6 +980,7 @@ class ListTicketsTest extends TestCase
         $response->assertJsonPath('meta.current_page', 2);
         $response->assertJsonPath('meta.per_page', 20);
         $response->assertJsonPath('meta.total', 25);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 
     // ==================== GROUP 9: Datos Relacionados (Test 20) ====================
@@ -999,7 +1021,7 @@ class ListTicketsTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
@@ -1010,6 +1032,7 @@ class ListTicketsTest extends TestCase
                     'ticket_code',
                     'title',
                     'status',
+                    'last_response_author_type',
                     'created_by_user' => ['id', 'name', 'email'],
                     'owner_agent' => ['id', 'name', 'email'],
                     'category' => ['id', 'name'],
@@ -1052,10 +1075,156 @@ class ListTicketsTest extends TestCase
 
         // Act - User requests their tickets (no following restriction)
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets?company_id={$company->id}");
+            ->getJson("/api/tickets?company_id={$company->id}");
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'data'); // Should see both tickets
+    }
+
+    // ==================== GROUP 11: Filtros Avanzados (Tests 22-26) ====================
+
+    /**
+     * Test #22: Filter by last_response_author_type 'none'
+     *
+     * Verifies filtering tickets where no responses have been made yet.
+     *
+     * Expected: Only tickets with last_response_author_type='none' are returned
+     */
+    #[Test]
+    public function filter_by_last_response_author_type_none(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $company = Company::factory()->create();
+
+        // Create tickets con last_response_author_type = 'none'
+        Ticket::factory(2)->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'none']);
+
+        // Create tickets con otros valores
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
+
+        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=none');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
+    }
+
+    /**
+     * Test #23: Filter by last_response_author_type 'user'
+     *
+     * Verifies filtering tickets where the last response was made by a user.
+     *
+     * Expected: Only tickets with last_response_author_type='user' are returned
+     */
+    #[Test]
+    public function filter_by_last_response_author_type_user(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $company = Company::factory()->create();
+
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'none']);
+        Ticket::factory(2)->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
+
+        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=user');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+        $response->assertJsonPath('data.0.last_response_author_type', 'user');
+    }
+
+    /**
+     * Test #24: Filter by last_response_author_type 'agent'
+     *
+     * Verifies filtering tickets where the last response was made by an agent.
+     *
+     * Expected: Only tickets with last_response_author_type='agent' are returned
+     */
+    #[Test]
+    public function filter_by_last_response_author_type_agent(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $company = Company::factory()->create();
+
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'none']);
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
+        Ticket::factory(2)->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
+
+        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=agent');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+        $response->assertJsonPath('data.0.last_response_author_type', 'agent');
+    }
+
+    /**
+     * Test #25: Filter by owner_agent_id 'null' literal
+     *
+     * Verifies filtering tickets that have no assigned owner agent using the literal string 'null'.
+     *
+     * Expected: Only tickets with owner_agent_id=null are returned
+     */
+    #[Test]
+    public function filter_by_owner_agent_id_null_literal(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $agent = User::factory()->create(['role' => 'agent']);
+        $company = Company::factory()->create();
+
+        // Create tickets sin owner
+        Ticket::factory(2)->for($company)->for($user, 'creator')->create(['owner_agent_id' => null]);
+
+        // Create tickets con owner
+        Ticket::factory()->for($company)->for($user, 'creator')->create(['owner_agent_id' => $agent->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&owner_agent_id=null');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+        $response->assertJsonPath('data.0.owner_agent_id', null);
+    }
+
+    /**
+     * Test #26: Combine filters owner_null and last_response_author_type_none
+     *
+     * Verifies combining multiple filters: owner_agent_id=null AND last_response_author_type=none.
+     *
+     * Expected: Only tickets matching BOTH conditions are returned
+     */
+    #[Test]
+    public function combine_filters_owner_null_and_last_response_author_type_none(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $agent = User::factory()->create(['role' => 'agent']);
+        $company = Company::factory()->create();
+
+        // Tickets que coinciden con AMBOS filtros
+        Ticket::factory(2)->for($company)->for($user, 'creator')->create([
+            'owner_agent_id' => null,
+            'last_response_author_type' => 'none'
+        ]);
+
+        // Tickets con owner pero last_response_author_type=none
+        Ticket::factory()->for($company)->for($user, 'creator')->create([
+            'owner_agent_id' => $agent->id,
+            'last_response_author_type' => 'none'
+        ]);
+
+        // Tickets sin owner pero last_response_author_type=user
+        Ticket::factory()->for($company)->for($user, 'creator')->create([
+            'owner_agent_id' => null,
+            'last_response_author_type' => 'user'
+        ]);
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/tickets?company_id='.$company->id.'&owner_agent_id=null&last_response_author_type=none'
+        );
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+        $response->assertJsonPath('data.0.owner_agent_id', null);
+        $response->assertJsonPath('data.0.last_response_author_type', 'none');
     }
 }

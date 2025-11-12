@@ -15,7 +15,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Getting Ticket Detail
  *
- * Tests the endpoint GET /api/v1/tickets/:code
+ * Tests the endpoint GET /api/tickets/:code
  *
  * Coverage:
  * - Authentication (unauthenticated)
@@ -76,7 +76,7 @@ class GetTicketTest extends TestCase
         ]);
 
         // Act - No authenticateWithJWT() call
-        $response = $this->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+        $response = $this->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(401);
@@ -113,7 +113,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -154,7 +154,7 @@ class GetTicketTest extends TestCase
 
         // Act - User B tries to view User A's ticket
         $response = $this->authenticateWithJWT($userB)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -193,7 +193,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -233,7 +233,7 @@ class GetTicketTest extends TestCase
 
         // Act - Agent from Company A tries to view Company B ticket
         $response = $this->authenticateWithJWT($agent)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -272,7 +272,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -312,7 +312,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -324,6 +324,7 @@ class GetTicketTest extends TestCase
                 'initial_description',
                 'status',
                 'owner_agent_id',
+                'last_response_author_type',
                 'company_id',
                 'category_id',
                 'created_at',
@@ -367,7 +368,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -407,7 +408,7 @@ class GetTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -440,9 +441,27 @@ class GetTicketTest extends TestCase
 
         // Act - Request non-existent ticket code
         $response = $this->authenticateWithJWT($user)
-            ->getJson('/api/v1/tickets/TKT-9999-99999');
+            ->getJson('/api/tickets/TKT-9999-99999');
 
         // Assert
         $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function test_get_ticket_detail_includes_last_response_author_type()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $company = Company::factory()->create();
+        $category = Category::factory()->create(['company_id' => $company->id]);
+        $ticket = Ticket::factory()
+            ->for($company)
+            ->for($user, 'creator')
+            ->for($category)
+            ->create(['last_response_author_type' => 'none']);
+
+        $response = $this->actingAs($user)->getJson("/api/tickets/{$ticket->ticket_code}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.last_response_author_type', 'none');
     }
 }

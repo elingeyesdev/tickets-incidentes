@@ -17,7 +17,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Creating Tickets
  *
- * Tests the endpoint POST /api/v1/tickets
+ * Tests the endpoint POST /api/tickets
  *
  * Coverage:
  * - Authentication (unauthenticated, USER, AGENT, COMPANY_ADMIN)
@@ -86,7 +86,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -95,6 +95,7 @@ class CreateTicketTest extends TestCase
         $response->assertJsonPath('data.category_id', $category->id);
         $response->assertJsonPath('data.created_by_user_id', $user->id);
         $response->assertJsonPath('data.status', 'open');
+        $response->assertJsonPath('data.last_response_author_type', 'none');
         $response->assertJsonStructure([
             'data' => [
                 'id',
@@ -147,7 +148,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -186,7 +187,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -222,7 +223,7 @@ class CreateTicketTest extends TestCase
         ];
 
         // Act - No authenticateWithJWT() call
-        $response = $this->postJson('/api/v1/tickets', $payload);
+        $response = $this->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(401);
@@ -253,7 +254,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -290,7 +291,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Description with enough characters to pass validation.',
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('title');
 
@@ -302,7 +303,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Description with enough characters to pass validation.',
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('title');
     }
@@ -335,7 +336,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Short',
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('initial_description');
 
@@ -347,7 +348,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => str_repeat('A', 6000),
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('initial_description');
     }
@@ -379,7 +380,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -410,7 +411,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Esta categoría no existe en la base de datos.',
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['category_id']);
 
@@ -426,7 +427,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Esta categoría existe pero está inactiva.',
         ];
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['category_id']);
     }
@@ -465,7 +466,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Este ticket es para la empresa A.',
         ];
         $responseA = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payloadA);
+            ->postJson('/api/tickets', $payloadA);
 
         // Act - Create ticket in Company B
         $payloadB = [
@@ -475,7 +476,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Este ticket es para la empresa B.',
         ];
         $responseB = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payloadB);
+            ->postJson('/api/tickets', $payloadB);
 
         // Assert - Both should succeed
         $responseA->assertStatus(201);
@@ -524,7 +525,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -569,7 +570,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Este debería ser TKT-2025-00001.',
         ];
         $response1 = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload1);
+            ->postJson('/api/tickets', $payload1);
 
         // Act - Create second ticket
         $payload2 = [
@@ -579,7 +580,7 @@ class CreateTicketTest extends TestCase
             'initial_description' => 'Este debería ser TKT-2025-00002.',
         ];
         $response2 = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload2);
+            ->postJson('/api/tickets', $payload2);
 
         // Assert
         $response1->assertStatus(201);
@@ -624,7 +625,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -633,6 +634,7 @@ class CreateTicketTest extends TestCase
         $this->assertDatabaseHas('ticketing.tickets', [
             'title' => 'Ticket con status inicial open',
             'status' => 'open',
+            'last_response_author_type' => 'none',
         ]);
     }
 
@@ -664,7 +666,7 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(201);
@@ -707,12 +709,34 @@ class CreateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->postJson('/api/v1/tickets', $payload);
+            ->postJson('/api/tickets', $payload);
 
         // Assert
         $response->assertStatus(201);
 
         // Verify event was dispatched
         Event::assertDispatched(\App\Features\TicketManagement\Events\TicketCreated::class);
+    }
+
+    #[Test]
+    public function test_created_ticket_has_correct_initial_last_response_author_type()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $company = Company::factory()->create();
+        $category = Category::factory()->create(['company_id' => $company->id, 'is_active' => true]);
+
+        $response = $this->actingAs($user)->postJson('/api/tickets', [
+            'title' => 'Test Ticket for Field Initialization',
+            'initial_description' => 'Testing that last_response_author_type is initialized to none',
+            'company_id' => $company->id,
+            'category_id' => $category->id,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.last_response_author_type', 'none');
+        $this->assertDatabaseHas('ticketing.tickets', [
+            'id' => $response->json('data.id'),
+            'last_response_author_type' => 'none',
+        ]);
     }
 }

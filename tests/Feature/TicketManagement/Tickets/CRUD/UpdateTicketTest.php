@@ -16,7 +16,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Updating Tickets
  *
- * Tests the endpoint PUT /api/v1/tickets/:code
+ * Tests the endpoint PUT /api/tickets/:code
  *
  * Coverage:
  * - Authentication (unauthenticated)
@@ -82,7 +82,7 @@ class UpdateTicketTest extends TestCase
         ];
 
         // Act - No authenticateWithJWT() call
-        $response = $this->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+        $response = $this->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(401);
@@ -129,7 +129,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(200);
@@ -176,7 +176,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -220,7 +220,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -266,7 +266,7 @@ class UpdateTicketTest extends TestCase
 
         // Act - User B tries to update User A's ticket
         $response = $this->authenticateWithJWT($userB)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -323,7 +323,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(200);
@@ -375,7 +375,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($agent)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(200);
@@ -422,7 +422,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -462,7 +462,7 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(422);
@@ -504,12 +504,13 @@ class UpdateTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($user)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(200);
         $response->assertJsonPath('data.title', 'Solo actualizo el título');
         $response->assertJsonPath('data.category_id', $category->id); // Should remain unchanged
+        $response->assertJsonPath('data.last_response_author_type', $ticket->last_response_author_type);
 
         $this->assertDatabaseHas('ticketing.tickets', [
             'id' => $ticket->id,
@@ -556,7 +557,7 @@ class UpdateTicketTest extends TestCase
 
         // Act - Agent from Company A tries to update Company B ticket
         $response = $this->authenticateWithJWT($agent)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(403);
@@ -604,7 +605,7 @@ class UpdateTicketTest extends TestCase
 
         // Act - Admin from Company A tries to update Company B ticket
         $response = $this->authenticateWithJWT($admin)
-            ->putJson("/api/v1/tickets/{$ticket->ticket_code}", $payload);
+            ->putJson("/api/tickets/{$ticket->ticket_code}", $payload);
 
         // Assert
         $response->assertStatus(403);

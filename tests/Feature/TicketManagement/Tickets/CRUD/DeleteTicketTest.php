@@ -15,7 +15,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
 /**
  * Feature Tests for Deleting Tickets
  *
- * Tests the endpoint DELETE /api/v1/tickets/:code
+ * Tests the endpoint DELETE /api/tickets/:code
  *
  * Coverage:
  * - Authentication (unauthenticated)
@@ -73,7 +73,7 @@ class DeleteTicketTest extends TestCase
         ]);
 
         // Act - No authenticateWithJWT() call
-        $response = $this->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+        $response = $this->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(401);
@@ -109,7 +109,7 @@ class DeleteTicketTest extends TestCase
 
         // Act - User tries to delete their own ticket
         $response = $this->authenticateWithJWT($user)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -153,7 +153,7 @@ class DeleteTicketTest extends TestCase
 
         // Act - Agent tries to delete ticket
         $response = $this->authenticateWithJWT($agent)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -199,7 +199,7 @@ class DeleteTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -245,7 +245,7 @@ class DeleteTicketTest extends TestCase
 
         // Act - Admin tries to delete open ticket
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -291,7 +291,7 @@ class DeleteTicketTest extends TestCase
 
         // Act - Admin tries to delete pending ticket
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -337,7 +337,7 @@ class DeleteTicketTest extends TestCase
 
         // Act - Admin tries to delete resolved ticket
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(403);
@@ -397,7 +397,7 @@ class DeleteTicketTest extends TestCase
 
         // Act
         $response = $this->authenticateWithJWT($admin)
-            ->deleteJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
         $response->assertStatus(200);
@@ -409,7 +409,7 @@ class DeleteTicketTest extends TestCase
 
         // Verify that subsequent GET returns 404
         $getResponse = $this->authenticateWithJWT($admin)
-            ->getJson("/api/v1/tickets/{$ticket->ticket_code}");
+            ->getJson("/api/tickets/{$ticket->ticket_code}");
         $getResponse->assertStatus(404);
 
         // Future assertion (will be enabled in GREEN phase when relations exist):
