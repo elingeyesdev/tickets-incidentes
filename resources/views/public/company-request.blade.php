@@ -125,6 +125,67 @@
         @keyframes spinner-border {
             to { transform: rotate(360deg); }
         }
+
+        /* Description List Styling (AdminLTE Pattern) */
+        dl.row {
+            margin-bottom: 0;
+        }
+
+        dl.row dt {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        dl.row dd {
+            color: #333;
+            margin-bottom: 0.75rem;
+            word-break: break-word;
+        }
+
+        dl.row dd:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Callout Styling (AdminLTE v3) */
+        .callout {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            border-radius: 0.25rem;
+        }
+
+        .callout h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .callout-info {
+            border-left: 4px solid #17a2b8;
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .callout-warning {
+            border-left: 4px solid #ffc107;
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .card-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .float-right {
+            float: right;
+        }
     </style>
 @endsection
 
@@ -356,15 +417,38 @@
                             >
                         </div>
 
-                        <!-- Contact Country -->
+                        <!-- Contact Country (Pre-select to avoid false data) -->
                         <div class="form-group">
                             <label for="contactCountry">País</label>
-                            <input
-                                type="text"
+                            <select
                                 class="form-control"
                                 id="contactCountry"
-                                placeholder="País"
                             >
+                                <option value="">Selecciona un país...</option>
+                                <option value="Argentina">Argentina</option>
+                                <option value="Bolivia">Bolivia</option>
+                                <option value="Brasil">Brasil</option>
+                                <option value="Chile">Chile</option>
+                                <option value="Colombia">Colombia</option>
+                                <option value="Costa Rica">Costa Rica</option>
+                                <option value="Cuba">Cuba</option>
+                                <option value="Ecuador">Ecuador</option>
+                                <option value="El Salvador">El Salvador</option>
+                                <option value="España">España</option>
+                                <option value="Estados Unidos">Estados Unidos</option>
+                                <option value="Guatemala">Guatemala</option>
+                                <option value="Honduras">Honduras</option>
+                                <option value="México">México</option>
+                                <option value="Nicaragua">Nicaragua</option>
+                                <option value="Panamá">Panamá</option>
+                                <option value="Paraguay">Paraguay</option>
+                                <option value="Perú">Perú</option>
+                                <option value="Puerto Rico">Puerto Rico</option>
+                                <option value="República Dominicana">República Dominicana</option>
+                                <option value="Uruguay">Uruguay</option>
+                                <option value="Venezuela">Venezuela</option>
+                                <option value="Otro">Otro</option>
+                            </select>
                         </div>
 
                         <!-- Contact Postal Code -->
@@ -402,35 +486,52 @@
 
                     <!-- ========== STEP 4: Confirmación ========== -->
                     <div id="step4-content" class="content" role="tabpanel" aria-labelledby="step4-trigger">
-                        <h5 class="mb-4">
-                            <i class="fas fa-check-circle"></i> Confirmación de Solicitud
-                        </h5>
 
-                        <div class="alert alert-info">
-                            <strong>Revisión de tu solicitud:</strong> Por favor verifica los datos antes de enviar.
+                        <!-- AdminLTE v3 Card Component (Patrón Compuesto Recomendado) -->
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-check-circle"></i> Paso 4: Revisar y Confirmar Solicitud
+                                </h3>
+                            </div>
+
+                            <div class="card-body">
+
+                                <!-- Callout: Instrucciones Contextuales -->
+                                <div class="callout callout-info">
+                                    <h5><i class="fas fa-info"></i> Revise su solicitud</h5>
+                                    <p class="mb-0">
+                                        Por favor, verifique que toda la información a continuación sea correcta antes de enviarla.
+                                        Una vez enviada, nos pondremos en contacto para procesar su solicitud.
+                                    </p>
+                                </div>
+
+                                <!-- Summary Content (Dinámicamente poblado con Description Lists) -->
+                                <div id="summaryContent"></div>
+
+                                <!-- Aviso Legal -->
+                                <hr>
+                                <div class="callout callout-warning">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> Aviso Legal</h5>
+                                    <p class="mb-0">
+                                        Al enviar esta solicitud, usted acepta nuestros términos de servicio y política de privacidad.
+                                        Su información será procesada de acuerdo con la ley de protección de datos vigente.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
+                                    <i class="fas fa-arrow-left mr-2"></i> Anterior
+                                </button>
+                                <button type="submit" class="btn btn-success float-right" id="submitBtn">
+                                    <i class="fas fa-paper-plane mr-2"></i> Confirmar y Enviar
+                                </button>
+                            </div>
+
                         </div>
 
-                        <!-- Summary Content (dinamically populated) -->
-                        <div id="summaryContent"></div>
-
-                        <!-- Legal Disclaimer -->
-                        <div class="disclaimer">
-                            <strong><i class="fas fa-exclamation-triangle"></i> Aviso Legal:</strong>
-                            <p class="mb-0 mt-2">
-                                Al enviar esta solicitud, aceptas nuestros términos de servicio y política de privacidad.
-                                Tu información será procesada de acuerdo con la ley de protección de datos.
-                            </p>
-                        </div>
-
-                        <!-- Navigation Buttons -->
-                        <div class="btn-container">
-                            <button type="button" class="btn btn-secondary" onclick="stepper.previous()">
-                                <i class="fas fa-arrow-left mr-2"></i> Anterior
-                            </button>
-                            <button type="submit" class="btn btn-success" id="submitBtn">
-                                <i class="fas fa-paper-plane mr-2"></i> Enviar Solicitud
-                            </button>
-                        </div>
                     </div>
 
                 </div>
@@ -659,96 +760,72 @@
             const data = getFormData();
             let html = '';
 
-            // Información Básica
-            html += '<div class="summary-block">';
-            html += '<h6>Información Básica</h6>';
-            html += `<div class="summary-item">
-                <div class="summary-label">Nombre de la Empresa</div>
-                <div class="summary-value">${escapeHtml(data.companyName)}</div>
-            </div>`;
+            // ============ Información Básica (Description List Pattern) ============
+            html += '<h5 class="mb-3"><i class="fas fa-user-tie"></i> Información Básica</h5>';
+            html += '<dl class="row" style="margin-bottom: 2rem;">';
+            html += `<dt class="col-sm-4">Nombre de la Empresa</dt>
+                <dd class="col-sm-8">${escapeHtml(data.companyName)}</dd>`;
 
             if (data.legalName) {
-                html += `<div class="summary-item">
-                    <div class="summary-label">Razón Social</div>
-                    <div class="summary-value">${escapeHtml(data.legalName)}</div>
-                </div>`;
+                html += `<dt class="col-sm-4">Razón Social</dt>
+                    <dd class="col-sm-8">${escapeHtml(data.legalName)}</dd>`;
             }
 
-            html += `<div class="summary-item">
-                <div class="summary-label">Email del Administrador</div>
-                <div class="summary-value">${escapeHtml(data.adminEmail)}</div>
-            </div>`;
-            html += '</div>';
+            html += `<dt class="col-sm-4">Email Administrador</dt>
+                <dd class="col-sm-8">${escapeHtml(data.adminEmail)}</dd>`;
+            html += '</dl>';
 
-            // Información de Negocio
-            html += '<div class="summary-block">';
-            html += '<h6>Información de Negocio</h6>';
-            html += `<div class="summary-item">
-                <div class="summary-label">Descripción</div>
-                <div class="summary-value">${escapeHtml(data.businessDescription)}</div>
-            </div>`;
+            // ============ Información de Negocio (Description List Pattern) ============
+            html += '<h5 class="mb-3"><i class="fas fa-briefcase"></i> Información de Negocio</h5>';
+            html += '<dl class="row" style="margin-bottom: 2rem;">';
+            html += `<dt class="col-sm-4">Descripción</dt>
+                <dd class="col-sm-8">${escapeHtml(data.businessDescription)}</dd>`;
 
-            html += `<div class="summary-item">
-                <div class="summary-label">Industria</div>
-                <div class="summary-value">${escapeHtml(data.industryName)}</div>
-            </div>`;
+            html += `<dt class="col-sm-4">Industria</dt>
+                <dd class="col-sm-8">${escapeHtml(data.industryName)}</dd>`;
 
             if (data.website) {
-                html += `<div class="summary-item">
-                    <div class="summary-label">Sitio Web</div>
-                    <div class="summary-value"><a href="${escapeHtml(data.website)}" target="_blank" rel="noopener">${escapeHtml(data.website)}</a></div>
-                </div>`;
+                html += `<dt class="col-sm-4">Sitio Web</dt>
+                    <dd class="col-sm-8"><a href="${escapeHtml(data.website)}" target="_blank" rel="noopener">${escapeHtml(data.website)}</a></dd>`;
             }
 
             if (data.estimatedUsers) {
-                html += `<div class="summary-item">
-                    <div class="summary-label">Usuarios Estimados</div>
-                    <div class="summary-value">${data.estimatedUsers}</div>
-                </div>`;
+                html += `<dt class="col-sm-4">Usuarios Estimados</dt>
+                    <dd class="col-sm-8">${escapeHtml(data.estimatedUsers)}</dd>`;
             }
-            html += '</div>';
+            html += '</dl>';
 
-            // Información de Contacto
+            // ============ Información de Contacto (Description List Pattern) ============
             if (data.contactAddress || data.contactCity || data.contactCountry || data.contactPostalCode || data.taxId) {
-                html += '<div class="summary-block">';
-                html += '<h6>Información de Contacto</h6>';
+                html += '<h5 class="mb-3"><i class="fas fa-map-marker-alt"></i> Información de Contacto</h5>';
+                html += '<dl class="row">';
 
                 if (data.contactAddress) {
-                    html += `<div class="summary-item">
-                        <div class="summary-label">Dirección</div>
-                        <div class="summary-value">${escapeHtml(data.contactAddress)}</div>
-                    </div>`;
+                    html += `<dt class="col-sm-4">Dirección</dt>
+                        <dd class="col-sm-8">${escapeHtml(data.contactAddress)}</dd>`;
                 }
 
                 if (data.contactCity) {
-                    html += `<div class="summary-item">
-                        <div class="summary-label">Ciudad</div>
-                        <div class="summary-value">${escapeHtml(data.contactCity)}</div>
-                    </div>`;
+                    html += `<dt class="col-sm-4">Ciudad</dt>
+                        <dd class="col-sm-8">${escapeHtml(data.contactCity)}</dd>`;
                 }
 
                 if (data.contactCountry) {
-                    html += `<div class="summary-item">
-                        <div class="summary-label">País</div>
-                        <div class="summary-value">${escapeHtml(data.contactCountry)}</div>
-                    </div>`;
+                    html += `<dt class="col-sm-4">País</dt>
+                        <dd class="col-sm-8">${escapeHtml(data.contactCountry)}</dd>`;
                 }
 
                 if (data.contactPostalCode) {
-                    html += `<div class="summary-item">
-                        <div class="summary-label">Código Postal</div>
-                        <div class="summary-value">${escapeHtml(data.contactPostalCode)}</div>
-                    </div>`;
+                    html += `<dt class="col-sm-4">Código Postal</dt>
+                        <dd class="col-sm-8">${escapeHtml(data.contactPostalCode)}</dd>`;
                 }
 
                 if (data.taxId) {
-                    html += `<div class="summary-item">
-                        <div class="summary-label">ID Fiscal</div>
-                        <div class="summary-value">${escapeHtml(data.taxId)}</div>
-                    </div>`;
+                    html += `<dt class="col-sm-4">ID Fiscal</dt>
+                        <dd class="col-sm-8">${escapeHtml(data.taxId)}</dd>`;
                 }
 
-                html += '</div>';
+                html += '</dl>';
             }
 
             document.getElementById('summaryContent').innerHTML = html;
@@ -823,7 +900,18 @@
 
                 if (response.ok) {
                     console.log('✅ Solicitud enviada exitosamente:', result);
-                    showSuccess();
+
+                    // Show AdminLTE Native Toasts (Non-blocking notification)
+                    $(document).Toasts('create', {
+                        class: 'bg-success',
+                        title: 'Envío Exitoso',
+                        subtitle: 'Justo ahora',
+                        body: 'Tu solicitud ha sido procesada y registrada correctamente. Nos pondremos en contacto pronto.',
+                        icon: 'fas fa-check-circle',
+                        autohide: true,
+                        delay: 5000,
+                        position: 'topRight'
+                    });
 
                     // Reset form and stepper
                     document.getElementById('companyRequestForm').reset();
@@ -838,7 +926,18 @@
                 }
             } catch (error) {
                 console.error('❌ Error:', error);
-                showError(error.message);
+
+                // Show AdminLTE Native Toasts for Error (Critical notification)
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error al Enviar',
+                    subtitle: 'Intenta nuevamente',
+                    body: error.message || 'Ocurrió un error inesperado al procesar tu solicitud.',
+                    icon: 'fas fa-exclamation-circle',
+                    autohide: true,
+                    delay: 7000,
+                    position: 'topRight'
+                });
             } finally {
                 // Restore button
                 submitBtn.disabled = false;
@@ -853,19 +952,6 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        function showSuccess() {
-            document.getElementById('successAlert').style.display = 'block';
-            document.getElementById('errorAlert').style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function showError(message) {
-            document.getElementById('errorMessage').textContent = message;
-            document.getElementById('errorAlert').style.display = 'block';
-            document.getElementById('successAlert').style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 @endsection
