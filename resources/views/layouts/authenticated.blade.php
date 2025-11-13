@@ -137,7 +137,7 @@
     <script src="{{ asset('vendor/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- Select2 -->
     <script src="{{ asset('vendor/adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
-    <!-- jQuery Validation (AdminLTE v3 Official Plugin - Composer) -->
+    <!-- jQuery Validation -->
     <script src="{{ asset('vendor/adminlte/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
     <script src="{{ asset('vendor/adminlte/plugins/jquery-validation/additional-methods.min.js') }}"></script>
     <!-- Chart.js -->

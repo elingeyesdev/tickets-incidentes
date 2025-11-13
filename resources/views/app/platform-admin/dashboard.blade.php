@@ -65,7 +65,6 @@
             <div class="inner">
                 <h3>-</h3>
                 <p>Total Tickets</p>
-                <small style="font-size: 10px;">(No disponible)</small>
             </div>
             <div class="icon">
                 <i class="fas fa-ticket-alt"></i>
