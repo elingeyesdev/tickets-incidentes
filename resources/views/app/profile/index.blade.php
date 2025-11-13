@@ -186,7 +186,6 @@
                                                 <option value="light">Claro</option>
                                                 <option value="dark">Oscuro</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
@@ -203,7 +202,6 @@
                                                 <option value="en">English</option>
                                                 <option value="es">Español</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
@@ -250,7 +248,6 @@
                                                 <option value="Australia/Sydney">Australia/Sydney</option>
                                                 <option value="Australia/Melbourne">Australia/Melbourne</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
@@ -263,7 +260,6 @@
                                                        name="pref_push_notifications">
                                                 <label class="custom-control-label" for="pref-push-notifications">
                                                     <strong>Habilitar Notificaciones Push</strong>
-                                                    <small class="d-block text-muted">Se guardará automáticamente</small>
                                                 </label>
                                             </div>
                                         </div>
@@ -278,7 +274,6 @@
                                                        name="pref_ticket_notifications">
                                                 <label class="custom-control-label" for="pref-ticket-notifications">
                                                     <strong>Habilitar Notificaciones de Tickets</strong>
-                                                    <small class="d-block text-muted">Se guardará automáticamente</small>
                                                 </label>
                                             </div>
                                         </div>
@@ -642,6 +637,9 @@ $(function() {
 // LÓGICA DE AUTO-GUARDADO INTELIGENTE (PREFERENCIAS)
 // =====================================
 
+// Flag para rastrear si estamos cargando datos iniciales
+let isLoadingInitialPreferences = true;
+
 document.addEventListener('DOMContentLoaded', function() {
     const formPreferencias = document.getElementById('form-preferencias');
     const statusDisplay = document.getElementById('preferencias-save-status');
@@ -723,9 +721,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Para Select2, necesitamos usar su evento específico
-        $('#pref-tema').on('change.select2', debouncedSave);
-        $('#pref-idioma').on('change.select2', debouncedSave);
-        $('#pref-timezone').on('change.select2', debouncedSave);
+        // IMPORTANTE: Solo guardar si NO estamos en la carga inicial
+        $('#pref-tema').on('change.select2', function() {
+            if (!isLoadingInitialPreferences) {
+                debouncedSave();
+            }
+        });
+        $('#pref-idioma').on('change.select2', function() {
+            if (!isLoadingInitialPreferences) {
+                debouncedSave();
+            }
+        });
+        $('#pref-timezone').on('change.select2', function() {
+            if (!isLoadingInitialPreferences) {
+                debouncedSave();
+            }
+        });
     }
 });
 
@@ -891,6 +902,10 @@ async function loadUserProfile(token) {
 
         // Guardar estado original para el botón Deshacer
         saveProfileDataAsOriginal();
+
+        // MARCAR FIN DE CARGA INICIAL - Ahora los cambios se guardarán automáticamente
+        isLoadingInitialPreferences = false;
+        console.log('[Preferences] Carga inicial completada. Auto-guardado habilitado.');
 
         // Cargar actividad simulada (demo)
         loadActivityData();
