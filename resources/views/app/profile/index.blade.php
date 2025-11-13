@@ -56,11 +56,6 @@
                                 <span class="float-right text-muted" id="memberSince">--</span>
                             </li>
                         </ul>
-
-                        <!-- Botón para acceder a configuración -->
-                        <button class="btn btn-primary btn-block" type="button" id="goToSettingsBtn">
-                            <i class="fas fa-cog mr-2"></i> Configuración
-                        </button>
                     </div>
                 </div>
                 <!-- /.card -->
@@ -73,7 +68,7 @@
                         </h3>
                     </div>
                     <div class="card-body">
-                        <!-- Datos de contacto e información básica (ESTADÍSTICA, NO EDITABLE DESDE LA TARJETA) -->
+                        <!-- Datos de contacto e información básica (ESTADÍSTICA, NO EDITABLE) -->
                         <strong><i class="fas fa-envelope mr-2"></i>Email</strong>
                         <p class="text-muted mb-3" id="aboutEmail">--</p>
 
@@ -96,18 +91,30 @@
             </div>
             <!-- /.col-md-3 -->
 
-            <!-- COLUMNA DERECHA: Tarjeta Tabbed (col-md-9) -->
+            <!-- COLUMNA DERECHA: Tarjeta Tabbed con .nav-pills (col-md-9) -->
             <div class="col-md-9">
                 <div class="card">
 
-                    <!-- NAV TABS en Card Header (Utilidad Official: .card-header-tabs) -->
-                    <!-- IMPORTANTE: p-0 + border-bottom-0 para que las pestañas queden al ras -->
-                    <div class="card-header p-0 border-bottom-0">
-                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <!-- NAV PILLS en Card Header (Patrón Canónico AdminLTE v3) -->
+                    <!-- IMPORTANTE: .nav-pills (no .nav-tabs) para estilo de botones -->
+                    <div class="card-header p-2">
+                        <ul class="nav nav-pills" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" id="settingsTab" data-toggle="tab" href="#settingsPane"
-                                   role="tab" aria-controls="settingsPane" aria-selected="true">
-                                    <i class="fas fa-sliders-h mr-2"></i>Configuración
+                                <a class="nav-link active" id="activityTab" data-toggle="tab" href="#activityPane"
+                                   role="tab" aria-controls="activityPane" aria-selected="true">
+                                    <i class="fas fa-history mr-2"></i>Actividad
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="preferencesTab" data-toggle="tab" href="#preferencesPane"
+                                   role="tab" aria-controls="preferencesPane" aria-selected="false">
+                                    <i class="fas fa-sliders-h mr-2"></i>Preferencias
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="profileDataTab" data-toggle="tab" href="#profileDataPane"
+                                   role="tab" aria-controls="profileDataPane" aria-selected="false">
+                                    <i class="fas fa-user-circle mr-2"></i>Datos de Perfil
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -124,178 +131,91 @@
                     <div class="card-body">
                         <div class="tab-content">
 
-                            <!-- ========== PESTAÑA 1: SETTINGS (CONFIGURACIÓN) ========== -->
-                            <!-- Esta es la única pestaña de edición (patrón canónico de AdminLTE) -->
-                            <div class="tab-pane fade show active" id="settingsPane" role="tabpanel"
-                                 aria-labelledby="settingsTab">
+                            <!-- ========== PESTAÑA 1: ACTIVITY ========== -->
+                            <div class="tab-pane fade show active" id="activityPane" role="tabpanel"
+                                 aria-labelledby="activityTab">
 
-                                <!-- Loading State -->
-                                <div id="settingsLoading" class="alert alert-info alert-dismissible">
+                                <div id="activityLoading" class="alert alert-info alert-dismissible">
                                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                                     <h5><i class="icon fas fa-info"></i> Información</h5>
-                                    Cargando datos...
+                                    Cargando historial de actividad...
                                 </div>
 
-                                <!-- Unified Settings Form -->
-                                <!-- ESTRUCTURA CANÓNICA: .form-group.row para cada campo -->
-                                <form id="settingsForm" style="display: none;">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-user-circle mr-2"></i>Información Personal
-                                    </h5>
+                                <!-- Tabla de Auditoría (Responsiva) -->
+                                <div id="activityContent" style="display: none;" class="table-responsive">
+                                    <table class="table table-hover table-striped table-sm">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="width: 15%;">Evento ID</th>
+                                                <th style="width: 25%;">Acción</th>
+                                                <th style="width: 35%;">Detalles</th>
+                                                <th style="width: 25%;">Fecha</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="activityList">
+                                            <!-- Populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- /.tab-pane #activityPane -->
 
-                                    <!-- Nombre -->
-                                    <div class="form-group row">
-                                        <label for="firstName" class="col-sm-2 col-form-label">
-                                            <strong>Nombre</strong>
-                                        </label>
-                                        <div class="col-sm-10">
-                                            <input type="text" class="form-control" id="firstName"
-                                                   name="firstName" placeholder="Ej: Juan"
-                                                   minlength="2" maxlength="100" required>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                Mínimo 2 caracteres, máximo 100
-                                            </small>
-                                        </div>
-                                    </div>
+                            <!-- ========== PESTAÑA 2: PREFERENCIAS (Auto-Guardado) ========== -->
+                            <div class="tab-pane fade" id="preferencesPane" role="tabpanel"
+                                 aria-labelledby="preferencesTab">
 
-                                    <!-- Apellido -->
-                                    <div class="form-group row">
-                                        <label for="lastName" class="col-sm-2 col-form-label">
-                                            <strong>Apellido</strong>
-                                        </label>
-                                        <div class="col-sm-10">
-                                            <input type="text" class="form-control" id="lastName"
-                                                   name="lastName" placeholder="Ej: Pérez"
-                                                   minlength="2" maxlength="100" required>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                Mínimo 2 caracteres, máximo 100
-                                            </small>
-                                        </div>
-                                    </div>
+                                <div id="preferencesLoading" class="alert alert-info alert-dismissible">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                    <h5><i class="icon fas fa-info"></i> Información</h5>
+                                    Cargando preferencias...
+                                </div>
 
-                                    <!-- Teléfono -->
-                                    <div class="form-group row">
-                                        <label for="phoneNumber" class="col-sm-2 col-form-label">
-                                            <strong>Teléfono</strong>
-                                        </label>
-                                        <div class="col-sm-10">
-                                            <!-- Input Group con Country Code -->
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <select class="custom-select" id="phoneCountryCode"
-                                                            title="Código de país" style="max-width: 120px;">
-                                                        <option value="+1">🇺🇸 +1 (EE.UU.)</option>
-                                                        <option value="+52">🇲🇽 +52 (México)</option>
-                                                        <option value="+56">🇨🇱 +56 (Chile)</option>
-                                                        <option value="+54">🇦🇷 +54 (Argentina)</option>
-                                                        <option value="+57">🇨🇴 +57 (Colombia)</option>
-                                                        <option value="+51">🇵🇪 +51 (Perú)</option>
-                                                        <option value="+55">🇧🇷 +55 (Brasil)</option>
-                                                        <option value="+34">🇪🇸 +34 (España)</option>
-                                                        <option value="+44">🇬🇧 +44 (UK)</option>
-                                                        <option value="+33">🇫🇷 +33 (Francia)</option>
-                                                        <option value="+49">🇩🇪 +49 (Alemania)</option>
-                                                        <option value="+39">🇮🇹 +39 (Italia)</option>
-                                                        <option value="+64">🇳🇿 +64 (Nueva Zelanda)</option>
-                                                        <option value="+61">🇦🇺 +61 (Australia)</option>
-                                                        <option value="+81">🇯🇵 +81 (Japón)</option>
-                                                        <option value="+86">🇨🇳 +86 (China)</option>
-                                                        <option value="+91">🇮🇳 +91 (India)</option>
-                                                    </select>
-                                                </div>
-                                                <input type="tel" class="form-control" id="phoneNumber"
-                                                       name="phoneNumber" placeholder="555123456"
-                                                       minlength="10" maxlength="20">
-                                            </div>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                10-20 dígitos: números, espacios, +, -, ()
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <!-- Avatar URL -->
-                                    <div class="form-group row">
-                                        <label for="avatarUrl" class="col-sm-2 col-form-label">
-                                            <strong>Avatar</strong>
-                                        </label>
-                                        <div class="col-sm-10">
-                                            <input type="url" class="form-control" id="avatarUrl"
-                                                   name="avatarUrl"
-                                                   placeholder="https://ejemplo.com/avatar.jpg"
-                                                   maxlength="2048">
-                                            <small class="form-text text-muted d-block mt-1">
-                                                URL válida (HTTP/HTTPS). Máximo 2048 caracteres.
-                                                <button type="button" class="btn btn-link btn-sm p-0 ml-2"
-                                                        id="previewAvatarBtn">
-                                                    <i class="fas fa-eye mr-1"></i>Previsualizar
-                                                </button>
-                                            </small>
-
-                                            <!-- Avatar Preview -->
-                                            <div id="avatarPreview" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                                                <div class="text-center">
-                                                    <img id="avatarPreviewImg" src="" alt="Preview"
-                                                         style="max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover;">
-                                                    <div class="mt-2">
-                                                        <span class="badge badge-success">
-                                                            <i class="fas fa-check mr-1"></i>Imagen cargada correctamente
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Separador visual -->
-                                    <hr>
-
-                                    <!-- Sección de Preferencias -->
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-cog mr-2"></i>Preferencias
-                                    </h5>
+                                <!-- Formulario INDEPENDIENTE para auto-guardado -->
+                                <form class="form-horizontal" id="form-preferencias" style="display: none;">
 
                                     <!-- Tema -->
                                     <div class="form-group row">
-                                        <label for="theme" class="col-sm-2 col-form-label">
+                                        <label for="pref-tema" class="col-sm-2 col-form-label">
                                             <strong>Tema</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <select class="form-control" id="theme" name="theme" required>
+                                            <select class="form-control form-control-auto-save select2"
+                                                    name="pref_tema"
+                                                    id="pref-tema"
+                                                    style="width: 100%;">
                                                 <option value="light">Claro</option>
                                                 <option value="dark">Oscuro</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                Selecciona el tema de la interfaz
-                                            </small>
+                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
-                                    <!-- Idioma (Select2) -->
+                                    <!-- Idioma -->
                                     <div class="form-group row">
-                                        <label for="language" class="col-sm-2 col-form-label">
+                                        <label for="pref-idioma" class="col-sm-2 col-form-label">
                                             <strong>Idioma</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <!-- PLUGIN OFFICIAL: Select2 -->
-                                            <select class="form-control select2" id="language" name="language" required
+                                            <select class="form-control form-control-auto-save select2"
+                                                    name="pref_idioma"
+                                                    id="pref-idioma"
                                                     style="width: 100%;">
                                                 <option value="en">English</option>
                                                 <option value="es">Español</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                Selecciona tu idioma preferido
-                                            </small>
+                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
-                                    <!-- Zona Horaria (Select2) -->
+                                    <!-- Zona Horaria -->
                                     <div class="form-group row">
-                                        <label for="timezone" class="col-sm-2 col-form-label">
+                                        <label for="pref-timezone" class="col-sm-2 col-form-label">
                                             <strong>Zona Horaria</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <!-- PLUGIN OFFICIAL: Select2 -->
-                                            <select class="form-control select2" id="timezone" name="timezone" required
+                                            <select class="form-control form-control-auto-save select2"
+                                                    name="pref_timezone"
+                                                    id="pref-timezone"
                                                     style="width: 100%;">
                                                 <option value="UTC">UTC</option>
                                                 <option value="America/New_York">America/New_York</option>
@@ -305,6 +225,7 @@
                                                 <option value="America/Toronto">America/Toronto</option>
                                                 <option value="America/Mexico_City">America/Mexico_City</option>
                                                 <option value="America/Bogota">America/Bogota</option>
+                                                <option value="America/La_Paz">America/La_Paz</option>
                                                 <option value="America/Lima">America/Lima</option>
                                                 <option value="America/Santiago">America/Santiago</option>
                                                 <option value="America/Buenos_Aires">America/Buenos_Aires</option>
@@ -329,9 +250,7 @@
                                                 <option value="Australia/Sydney">Australia/Sydney</option>
                                                 <option value="Australia/Melbourne">Australia/Melbourne</option>
                                             </select>
-                                            <small class="form-text text-muted d-block mt-1">
-                                                Selecciona tu zona horaria IANA
-                                            </small>
+                                            <small class="form-text text-muted d-block mt-1">Se guardará automáticamente</small>
                                         </div>
                                     </div>
 
@@ -339,11 +258,12 @@
                                     <div class="form-group row">
                                         <div class="offset-sm-2 col-sm-10">
                                             <div class="custom-control custom-switch">
-                                                <input type="checkbox" class="custom-control-input"
-                                                       id="pushWebNotifications" name="pushWebNotifications">
-                                                <label class="custom-control-label" for="pushWebNotifications">
+                                                <input type="checkbox" class="custom-control-input form-control-auto-save"
+                                                       id="pref-push-notifications"
+                                                       name="pref_push_notifications">
+                                                <label class="custom-control-label" for="pref-push-notifications">
                                                     <strong>Habilitar Notificaciones Push</strong>
-                                                    <small class="d-block text-muted">Recibe notificaciones en tu navegador</small>
+                                                    <small class="d-block text-muted">Se guardará automáticamente</small>
                                                 </label>
                                             </div>
                                         </div>
@@ -353,12 +273,108 @@
                                     <div class="form-group row">
                                         <div class="offset-sm-2 col-sm-10">
                                             <div class="custom-control custom-switch">
-                                                <input type="checkbox" class="custom-control-input"
-                                                       id="notificationsTickets" name="notificationsTickets">
-                                                <label class="custom-control-label" for="notificationsTickets">
+                                                <input type="checkbox" class="custom-control-input form-control-auto-save"
+                                                       id="pref-ticket-notifications"
+                                                       name="pref_ticket_notifications">
+                                                <label class="custom-control-label" for="pref-ticket-notifications">
                                                     <strong>Habilitar Notificaciones de Tickets</strong>
-                                                    <small class="d-block text-muted">Recibe alertas sobre cambios en tus tickets</small>
+                                                    <small class="d-block text-muted">Se guardará automáticamente</small>
                                                 </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </form>
+
+                                <!-- Estado de Auto-Guardado (Máquina de Estados) -->
+                                <div id="preferencias-save-status" class="mt-3" style="display: none;"></div>
+                            </div>
+                            <!-- /.tab-pane #preferencesPane -->
+
+                            <!-- ========== PESTAÑA 3: DATOS DE PERFIL (Guardado Manual) ========== -->
+                            <div class="tab-pane fade" id="profileDataPane" role="tabpanel"
+                                 aria-labelledby="profileDataTab">
+
+                                <div id="profileDataLoading" class="alert alert-info alert-dismissible">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                                    <h5><i class="icon fas fa-info"></i> Información</h5>
+                                    Cargando datos del perfil...
+                                </div>
+
+                                <!-- Formulario INDEPENDIENTE para guardado manual -->
+                                <form class="form-horizontal" id="form-profile-data" style="display: none;">
+
+                                    <!-- Nombre -->
+                                    <div class="form-group row">
+                                        <label for="profile-nombre" class="col-sm-2 col-form-label">
+                                            <strong>Nombre</strong>
+                                        </label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" id="profile-nombre"
+                                                   name="profile_nombre" placeholder="Ej: Juan"
+                                                   minlength="2" maxlength="100" required>
+                                            <small class="form-text text-muted d-block mt-1">Mínimo 2 caracteres</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Apellido -->
+                                    <div class="form-group row">
+                                        <label for="profile-apellido" class="col-sm-2 col-form-label">
+                                            <strong>Apellido</strong>
+                                        </label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" id="profile-apellido"
+                                                   name="profile_apellido" placeholder="Ej: Pérez"
+                                                   minlength="2" maxlength="100" required>
+                                            <small class="form-text text-muted d-block mt-1">Mínimo 2 caracteres</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Teléfono -->
+                                    <div class="form-group row">
+                                        <label for="profile-telefono" class="col-sm-2 col-form-label">
+                                            <strong>Teléfono</strong>
+                                        </label>
+                                        <div class="col-sm-10">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <select class="custom-select" id="profile-country-code" style="max-width: 120px;">
+                                                        <option value="+1">🇺🇸 +1</option>
+                                                        <option value="+52">🇲🇽 +52</option>
+                                                        <option value="+56">🇨🇱 +56</option>
+                                                        <option value="+54">🇦🇷 +54</option>
+                                                        <option value="+57">🇨🇴 +57</option>
+                                                        <option value="+591">🇧🇴 +591</option>
+                                                    </select>
+                                                </div>
+                                                <input type="tel" class="form-control" id="profile-telefono"
+                                                       name="profile_telefono" placeholder="555123456"
+                                                       minlength="8" maxlength="20">
+                                            </div>
+                                            <small class="form-text text-muted d-block mt-1">8-20 dígitos</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Avatar URL -->
+                                    <div class="form-group row">
+                                        <label for="profile-avatar" class="col-sm-2 col-form-label">
+                                            <strong>Avatar</strong>
+                                        </label>
+                                        <div class="col-sm-10">
+                                            <input type="url" class="form-control" id="profile-avatar"
+                                                   name="profile_avatar" placeholder="https://ejemplo.com/avatar.jpg"
+                                                   maxlength="2048">
+                                            <small class="form-text text-muted d-block mt-1">
+                                                URL válida (HTTP/HTTPS)
+                                                <button type="button" class="btn btn-link btn-sm p-0 ml-2" id="preview-avatar-btn">
+                                                    <i class="fas fa-eye mr-1"></i>Previsualizar
+                                                </button>
+                                            </small>
+                                            <div id="avatar-preview" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                                <div class="text-center">
+                                                    <img id="avatar-preview-img" src="" alt="Preview"
+                                                         style="max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover;">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -366,59 +382,54 @@
                                     <!-- Botones de Acción -->
                                     <div class="form-group row">
                                         <div class="offset-sm-2 col-sm-10">
-                                            <button type="submit" class="btn btn-primary" id="settingsSubmitBtn">
+                                            <button type="submit" class="btn btn-primary" id="profile-submit-btn">
                                                 <i class="fas fa-save mr-2"></i>Guardar Cambios
                                             </button>
-                                            <button type="reset" class="btn btn-secondary ml-2">
+                                            <button type="button" class="btn btn-secondary ml-2" id="profile-undo-btn">
                                                 <i class="fas fa-undo mr-2"></i>Deshacer
                                             </button>
                                         </div>
                                     </div>
+
                                 </form>
                             </div>
-                            <!-- /.tab-pane -->
+                            <!-- /.tab-pane #profileDataPane -->
 
-                            <!-- ========== PESTAÑA 2: SESSIONS ========== -->
+                            <!-- ========== PESTAÑA 4: SESIONES ========== -->
                             <div class="tab-pane fade" id="sessionsPane" role="tabpanel"
                                  aria-labelledby="sessionsTab">
 
-                                <!-- Loading State -->
                                 <div id="sessionsLoading" class="alert alert-info alert-dismissible">
                                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                                     <h5><i class="icon fas fa-info"></i> Información</h5>
                                     Cargando sesiones activas...
                                 </div>
 
-                                <!-- Sessions Content -->
                                 <div id="sessionsContent" style="display: none;">
-                                    <!-- Botón para cerrar todas las sesiones -->
                                     <div class="mb-3">
-                                        <button class="btn btn-danger btn-sm" id="logoutAllBtn" type="button">
+                                        <button class="btn btn-danger btn-sm" id="logout-all-btn" type="button">
                                             <i class="fas fa-sign-out-alt mr-2"></i>Cerrar todas las sesiones
                                         </button>
                                     </div>
 
-                                    <!-- Tabla Responsiva (Utilidad Official: .table-responsive) -->
-                                    <!-- IMPORTANTE: El contenedor .table-responsive habilita scroll horizontal en mobile -->
                                     <div class="table-responsive">
                                         <table class="table table-hover table-striped table-sm">
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th style="width: 30%;">Dispositivo</th>
-                                                    <th style="width: 25%;">Dirección IP</th>
+                                                    <th style="width: 25%;">IP</th>
                                                     <th style="width: 25%;">Último Uso</th>
                                                     <th style="width: 10%;">Estado</th>
                                                     <th style="width: 10%;">Acción</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="sessionsList">
-                                                <!-- Populated by JavaScript -->
+                                            <tbody id="sessions-list">
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                            <!-- /.tab-pane -->
+                            <!-- /.tab-pane #sessionsPane -->
 
                         </div>
                         <!-- /.tab-content -->
@@ -451,23 +462,20 @@ const API_ENDPOINTS = {
 };
 
 const VALIDATION_MESSAGES = {
-    firstName: {
+    profile_nombre: {
         required: 'El nombre es obligatorio',
         minlength: 'El nombre debe tener al menos 2 caracteres',
         maxlength: 'El nombre no puede exceder 100 caracteres'
     },
-    lastName: {
+    profile_apellido: {
         required: 'El apellido es obligatorio',
         minlength: 'El apellido debe tener al menos 2 caracteres',
         maxlength: 'El apellido no puede exceder 100 caracteres'
     },
-    phoneNumber: {
-        minlength: 'El teléfono debe tener al menos 10 caracteres',
+    profile_telefono: {
+        minlength: 'El teléfono debe tener al menos 8 caracteres',
         maxlength: 'El teléfono no puede exceder 20 caracteres'
-    },
-    theme: { required: 'Debes seleccionar un tema' },
-    language: { required: 'Debes seleccionar un idioma' },
-    timezone: { required: 'Debes seleccionar una zona horaria' }
+    }
 };
 
 // =====================================
@@ -475,8 +483,24 @@ const VALIDATION_MESSAGES = {
 // =====================================
 
 /**
- * Muestra un toast (notificación no intrusiva) usando AdminLTE oficial
- * Utilidad Official de AdminLTE: $(document).Toasts('create', {...})
+ * Función Debounce de Grado Producción
+ * Retrasa la ejecución de 'func' hasta que 'wait' milisegundos
+ * hayan pasado desde la última vez que esta función fue invocada.
+ */
+function debounce(func, wait) {
+    let timeoutId = null;
+
+    return function(...args) {
+        const context = this;
+        window.clearTimeout(timeoutId);
+        timeoutId = window.setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
+
+/**
+ * Muestra un toast (notificación no intrusiva)
  */
 function showToast(title, message, type = 'info') {
     $(document).Toasts('create', {
@@ -489,7 +513,7 @@ function showToast(title, message, type = 'info') {
 }
 
 /**
- * Valida si una URL es válida (sintaxis básica)
+ * Valida si una URL es válida
  */
 function isValidUrl(url) {
     try {
@@ -502,7 +526,6 @@ function isValidUrl(url) {
 
 /**
  * Valida que una URL apunte a una imagen real cargable
- * Esta es la validación crítica que falta en muchas implementaciones
  */
 async function validateImageUrl(url) {
     if (!url) return { valid: false, reason: 'La URL es obligatoria' };
@@ -515,7 +538,7 @@ async function validateImageUrl(url) {
         const timeout = setTimeout(() => {
             resolve({
                 valid: false,
-                reason: 'La imagen tardó demasiado en cargar. El servidor puede no ser accesible.'
+                reason: 'La imagen tardó demasiado en cargar.'
             });
         }, 5000);
 
@@ -527,17 +550,15 @@ async function validateImageUrl(url) {
         img.onerror = () => {
             clearTimeout(timeout);
             const domain = new URL(url).hostname;
-
-            // Detección específica de dominios problemáticos
             if (domain.includes('wikia') || domain.includes('fandom')) {
                 resolve({
                     valid: false,
-                    reason: 'Los servidores de Wikia/Fandom bloquean acceso externo (CORS). Usa Imgur u otro CDN.'
+                    reason: 'Los servidores de Wikia/Fandom bloquean acceso externo. Usa Imgur u otro CDN.'
                 });
             } else {
                 resolve({
                     valid: false,
-                    reason: `No se puede cargar la imagen desde ${domain}. El servidor puede bloquear acceso externo.`
+                    reason: `No se puede cargar la imagen desde ${domain}.`
                 });
             }
         };
@@ -574,66 +595,142 @@ function getDeviceIcon(deviceName) {
 // JQUERY VALIDATION + PLUGINS INITIALIZATION
 // =====================================
 
-/**
- * Inicialización de jQuery Validation Plugin + Select2
- * Integración oficial con Bootstrap 4
- */
 $(function() {
-    // ===== JQUERY VALIDATION =====
-    $('#settingsForm').validate({
+    // Inicializar jQuery Validation para Datos de Perfil
+    $('#form-profile-data').validate({
         rules: {
-            firstName: {
+            profile_nombre: {
                 required: true,
                 minlength: 2,
                 maxlength: 100
             },
-            lastName: {
+            profile_apellido: {
                 required: true,
                 minlength: 2,
                 maxlength: 100
             },
-            phoneNumber: {
+            profile_telefono: {
                 minlength: 10,
                 maxlength: 20
             },
-            avatarUrl: {
+            profile_avatar: {
                 maxlength: 2048,
                 url: true
-            },
-            theme: { required: true },
-            language: { required: true },
-            timezone: { required: true }
+            }
         },
         messages: VALIDATION_MESSAGES,
-        // Integración con Bootstrap 4 - Utilidades Oficiales
         errorElement: 'span',
         errorPlacement: function(error, element) {
             error.addClass('invalid-feedback d-block');
             element.closest('.form-group').append(error);
         },
-        highlight: function(element, errorClass, validClass) {
+        highlight: function(element) {
             $(element).addClass('is-invalid').removeClass('is-valid');
         },
-        unhighlight: function(element, errorClass, validClass) {
+        unhighlight: function(element) {
             $(element).addClass('is-valid').removeClass('is-invalid');
         }
     });
 
-    // ===== SELECT2 INITIALIZATION (PLUGIN OFFICIAL DE ADMINLTE) =====
-    // Estos select son perfectos para Select2 porque tienen muchas opciones
-    $('#language').select2({
-        theme: 'bootstrap4',
-        minimumResultsForSearch: Infinity // Sin búsqueda (solo 2 opciones)
-    });
-
-    $('#timezone').select2({
-        theme: 'bootstrap4',
-        placeholder: 'Selecciona una zona horaria'
-    });
+    // Inicializar Select2 en Preferencias
+    $('#pref-tema').select2({ theme: 'bootstrap4' });
+    $('#pref-idioma').select2({ theme: 'bootstrap4' });
+    $('#pref-timezone').select2({ theme: 'bootstrap4', placeholder: 'Selecciona una zona horaria' });
 });
 
 // =====================================
-// DOCUMENT READY - INITIALIZATION
+// LÓGICA DE AUTO-GUARDADO INTELIGENTE (PREFERENCIAS)
+// =====================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const formPreferencias = document.getElementById('form-preferencias');
+    const statusDisplay = document.getElementById('preferencias-save-status');
+
+    if (formPreferencias && statusDisplay) {
+        const inputs = formPreferencias.querySelectorAll('.form-control-auto-save');
+        const WAIT_TIME = 3000; // 3 segundos
+
+        // Funciones de Estado de UX
+        function setStatusSaving() {
+            statusDisplay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando cambios...';
+            statusDisplay.className = 'alert alert-info mt-3';
+            statusDisplay.style.display = 'block';
+        }
+
+        function setStatusSaved() {
+            statusDisplay.innerHTML = '<i class="fas fa-check"></i> ¡Cambios guardados!';
+            statusDisplay.className = 'alert alert-success mt-3';
+            statusDisplay.style.display = 'block';
+            setTimeout(() => {
+                statusDisplay.style.display = 'none';
+            }, 2000);
+        }
+
+        function setStatusError(message = 'Error al guardar. Intente de nuevo.') {
+            statusDisplay.innerHTML = `<i class="fas fa-times"></i> ${message}`;
+            statusDisplay.className = 'alert alert-danger mt-3';
+            statusDisplay.style.display = 'block';
+        }
+
+        // Función de Guardado
+        async function guardarPreferencias() {
+            setStatusSaving();
+
+            const token = localStorage.getItem('access_token');
+
+            const data = {
+                theme: document.getElementById('pref-tema').value || 'light',
+                language: document.getElementById('pref-idioma').value || 'en',
+                timezone: document.getElementById('pref-timezone').value || 'UTC',
+                pushWebNotifications: document.getElementById('pref-push-notifications').checked,
+                notificationsTickets: document.getElementById('pref-ticket-notifications').checked
+            };
+
+            try {
+                const response = await fetch(API_ENDPOINTS.updatePreferences, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                setStatusSaved();
+            } catch (error) {
+                console.error('Error en auto-guardado:', error);
+                setStatusError(error.message);
+            }
+        }
+
+        // Instanciar debounced
+        const debouncedSave = debounce(guardarPreferencias, WAIT_TIME);
+
+        // Adjuntar listeners
+        inputs.forEach(input => {
+            const nodeName = input.nodeName.toLowerCase();
+
+            if (nodeName === 'input' && (input.type === 'text' || input.type === 'email')) {
+                input.addEventListener('keyup', debouncedSave);
+            } else {
+                input.addEventListener('change', debouncedSave);
+            }
+        });
+
+        // Para Select2, necesitamos usar su evento específico
+        $('#pref-tema').on('change.select2', debouncedSave);
+        $('#pref-idioma').on('change.select2', debouncedSave);
+        $('#pref-timezone').on('change.select2', debouncedSave);
+    }
+});
+
+// =====================================
+// INICIALIZACIÓN GENERAL
 // =====================================
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -648,51 +745,61 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadUserProfile(token);
     await loadSessions(token);
 
-    // Event Listeners para form
-    document.getElementById('settingsForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        if ($('#settingsForm').valid()) {
-            saveSettings(token);
-        }
-    });
-
-    // Botón para ir a settings
-    document.getElementById('goToSettingsBtn').addEventListener('click', () => {
-        document.getElementById('settingsTab').click();
-    });
-
-    // Botón de preview para avatar
-    document.getElementById('previewAvatarBtn').addEventListener('click', async (e) => {
-        e.preventDefault();
-        const url = document.getElementById('avatarUrl').value.trim();
-        if (url) {
-            const validation = await validateImageUrl(url);
-            if (validation.valid) {
-                document.getElementById('avatarPreviewImg').src = validation.url;
-                document.getElementById('avatarPreview').style.display = 'block';
-                showToast('Éxito', 'Imagen cargada correctamente', 'success');
-            } else {
-                document.getElementById('avatarPreview').style.display = 'none';
-                showToast('Error', validation.reason, 'danger');
+    // Manejador para Datos de Perfil (Guardado Manual)
+    const formProfileData = document.getElementById('form-profile-data');
+    if (formProfileData) {
+        formProfileData.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if ($('#form-profile-data').valid()) {
+                saveProfileData(token);
             }
-        } else {
-            showToast('Error', 'Ingresa una URL antes de previsualizar', 'warning');
-        }
-    });
+        });
+    }
 
-    // Logout All Sessions button
-    document.getElementById('logoutAllBtn').addEventListener('click', () => {
-        logoutAllSessions(token);
-    });
+    // Botón Deshacer - Restaura al estado original guardado
+    const undoBtn = document.getElementById('profile-undo-btn');
+    if (undoBtn) {
+        undoBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            restoreProfileDataToOriginal();
+        });
+    }
+
+    // Botón Preview Avatar
+    const previewBtn = document.getElementById('preview-avatar-btn');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('profile-avatar').value.trim();
+            if (url) {
+                const validation = await validateImageUrl(url);
+                if (validation.valid) {
+                    document.getElementById('avatar-preview-img').src = validation.url;
+                    document.getElementById('avatar-preview').style.display = 'block';
+                    showToast('Éxito', 'Imagen cargada correctamente', 'success');
+                } else {
+                    document.getElementById('avatar-preview').style.display = 'none';
+                    showToast('Error', validation.reason, 'danger');
+                }
+            } else {
+                showToast('Error', 'Ingresa una URL antes de previsualizar', 'warning');
+            }
+        });
+    }
+
+    // Botón Logout All
+    const logoutAllBtn = document.getElementById('logout-all-btn');
+    if (logoutAllBtn) {
+        logoutAllBtn.addEventListener('click', () => {
+            logoutAllSessions(token);
+        });
+    }
 });
 
 // =====================================
 // DATA LOADING FUNCTIONS
 // =====================================
 
-/**
- * Carga el perfil del usuario desde la API y actualiza la UI
- */
 async function loadUserProfile(token) {
     try {
         const response = await fetch(API_ENDPOINTS.profile, {
@@ -708,9 +815,7 @@ async function loadUserProfile(token) {
         const user = data.data || data;
         const profile = user.profile || {};
 
-        // ===== LEFT COLUMN: Profile Card =====
-
-        // Avatar
+        // Actualizar tarjeta de perfil
         const displayName = profile.displayName ||
             `${profile.firstName || ''} ${profile.lastName || ''}`.trim() ||
             user.email || 'Usuario';
@@ -724,79 +829,78 @@ async function loadUserProfile(token) {
             img.crossOrigin = 'anonymous';
             img.onload = () => { avatarImg.src = avatarUrl; };
             img.onerror = () => { avatarImg.src = fallbackUrl; };
-            setTimeout(() => { if (avatarImg.src.includes('data:') === false) avatarImg.src = fallbackUrl; }, 5000);
+            setTimeout(() => { if (!avatarImg.src.includes(avatarUrl)) avatarImg.src = fallbackUrl; }, 5000);
             img.src = avatarUrl;
         } else {
             avatarImg.src = fallbackUrl;
         }
 
-        // Profile name & email
-        const profileNameSpinner = document.getElementById('profileNameSpinner');
-        if (profileNameSpinner) profileNameSpinner.remove();
+        const spinner = document.getElementById('profileNameSpinner');
+        if (spinner) spinner.remove();
         document.getElementById('profileName').textContent = displayName;
         document.getElementById('profileEmail').textContent = user.email || '--';
 
-        // Status badge
         document.getElementById('statusBadge').textContent = user.status || '--';
         document.getElementById('statusBadge').className = 'badge badge-' + getStatusColor(user.status);
-
-        // Email verified badge
         document.getElementById('emailVerifiedBadge').textContent = user.emailVerified ? 'Sí' : 'No';
-        document.getElementById('emailVerifiedBadge').className =
-            'badge badge-' + (user.emailVerified ? 'success' : 'warning');
+        document.getElementById('emailVerifiedBadge').className = 'badge badge-' + (user.emailVerified ? 'success' : 'warning');
 
-        // Member since
         if (user.createdAt) {
             document.getElementById('memberSince').textContent = new Date(user.createdAt).toLocaleDateString();
         }
 
-        // ===== ABOUT ME CARD (información estadística, NO editable) =====
+        // Actualizar About Me
         document.getElementById('aboutEmail').textContent = user.email || '--';
         document.getElementById('aboutPhone').textContent = profile.phoneNumber || 'No proporcionado';
         document.getElementById('aboutTheme').textContent = (profile.theme || 'light').charAt(0).toUpperCase() + (profile.theme || 'light').slice(1);
         document.getElementById('aboutLanguage').textContent = (profile.language === 'es' ? 'Español' : 'English');
         document.getElementById('aboutTimezone').textContent = profile.timezone || 'UTC';
 
-        // ===== SETTINGS FORM POPULATION =====
-        document.getElementById('firstName').value = profile.firstName || '';
-        document.getElementById('lastName').value = profile.lastName || '';
-        document.getElementById('avatarUrl').value = profile.avatarUrl || '';
-        document.getElementById('settingsLoading').style.display = 'none';
-        document.getElementById('settingsForm').style.display = 'block';
+        // Llenar formulario de Datos de Perfil
+        document.getElementById('profile-nombre').value = profile.firstName || '';
+        document.getElementById('profile-apellido').value = profile.lastName || '';
+        document.getElementById('profile-avatar').value = profile.avatarUrl || '';
 
-        // Phone number handling
         if (profile.phoneNumber) {
             const phoneMatch = profile.phoneNumber.match(/^\+?(\d{1,3})?[\s-]?(\d+)$/);
             if (phoneMatch) {
-                document.getElementById('phoneCountryCode').value = '+' + (phoneMatch[1] || '1');
-                document.getElementById('phoneNumber').value = phoneMatch[2];
+                document.getElementById('profile-country-code').value = '+' + (phoneMatch[1] || '1');
+                document.getElementById('profile-telefono').value = phoneMatch[2];
             } else {
-                document.getElementById('phoneNumber').value = profile.phoneNumber;
+                document.getElementById('profile-telefono').value = profile.phoneNumber;
             }
         }
 
-        // Theme, Language, Timezone
-        document.getElementById('theme').value = profile.theme || 'light';
-        document.getElementById('language').value = profile.language || 'en';
-        document.getElementById('timezone').value = profile.timezone || 'UTC';
+        // Llenar Preferencias
+        document.getElementById('pref-tema').value = profile.theme || 'light';
+        document.getElementById('pref-idioma').value = profile.language || 'en';
+        document.getElementById('pref-timezone').value = profile.timezone || 'UTC';
+        document.getElementById('pref-push-notifications').checked = profile.pushWebNotifications || false;
+        document.getElementById('pref-ticket-notifications').checked = profile.notificationsTickets || false;
 
-        // Refresh Select2 to reflect the selected values
-        $('#language').val(profile.language || 'en').trigger('change');
-        $('#timezone').val(profile.timezone || 'UTC').trigger('change');
+        // Refrescar Select2
+        $('#pref-tema').trigger('change');
+        $('#pref-idioma').trigger('change');
+        $('#pref-timezone').trigger('change');
 
-        // Notifications
-        document.getElementById('pushWebNotifications').checked = profile.pushWebNotifications || false;
-        document.getElementById('notificationsTickets').checked = profile.notificationsTickets || false;
+        // Mostrar formularios
+        document.getElementById('profileDataLoading').style.display = 'none';
+        document.getElementById('form-profile-data').style.display = 'block';
+        document.getElementById('preferencesLoading').style.display = 'none';
+        document.getElementById('form-preferencias').style.display = 'block';
+
+        // Guardar estado original para el botón Deshacer
+        saveProfileDataAsOriginal();
+
+        // Cargar actividad simulada (demo)
+        loadActivityData();
 
     } catch (error) {
         console.error('Error loading profile:', error);
-        showToast('Error', 'No se pudo cargar la información del perfil', 'danger');
+        showToast('Error', 'No se pudo cargar el perfil', 'danger');
     }
 }
 
-/**
- * Carga las sesiones activas del usuario
- */
 async function loadSessions(token) {
     try {
         const response = await fetch(API_ENDPOINTS.sessions, {
@@ -811,7 +915,7 @@ async function loadSessions(token) {
         const data = await response.json();
         const sessions = data.sessions || [];
 
-        const tbody = document.getElementById('sessionsList');
+        const tbody = document.getElementById('sessions-list');
         tbody.innerHTML = '';
 
         if (sessions.length === 0) {
@@ -831,7 +935,7 @@ async function loadSessions(token) {
 
                 tr.innerHTML = `
                     <td><i class="fas fa-${getDeviceIcon(session.deviceName)} mr-2"></i>${session.deviceName}</td>
-                    <td><code class="text-monospace">${session.ipAddress}</code></td>
+                    <td><code>${session.ipAddress}</code></td>
                     <td>${lastUsed}</td>
                     <td>${currentBadge}</td>
                     <td>${revokeBtn}</td>
@@ -845,9 +949,36 @@ async function loadSessions(token) {
 
     } catch (error) {
         console.error('Error loading sessions:', error);
-        document.getElementById('sessionsLoading').innerHTML =
-            '<div class="alert alert-danger">No se pudieron cargar las sesiones</div>';
+        document.getElementById('sessionsLoading').innerHTML = '<div class="alert alert-danger">No se pudieron cargar las sesiones</div>';
     }
+}
+
+/**
+ * Carga datos de actividad simulados (demo)
+ * En producción, estos vendrían de una API
+ */
+function loadActivityData() {
+    const activityList = document.getElementById('activityList');
+    const activities = [
+        { id: 1001, action: 'Perfil Actualizado', details: 'Nombre, Apellido', date: new Date().toLocaleString() },
+        { id: 1002, action: 'Sesión Iniciada', details: 'IP: 192.168.1.1', date: new Date(Date.now() - 3600000).toLocaleString() },
+        { id: 1003, action: 'Preferencias Guardadas', details: 'Tema, Idioma', date: new Date(Date.now() - 7200000).toLocaleString() }
+    ];
+
+    activityList.innerHTML = '';
+    activities.forEach(activity => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${activity.id}</td>
+            <td>${activity.action}</td>
+            <td>${activity.details}</td>
+            <td>${activity.date}</td>
+        `;
+        activityList.appendChild(tr);
+    });
+
+    document.getElementById('activityLoading').style.display = 'none';
+    document.getElementById('activityContent').style.display = 'block';
 }
 
 // =====================================
@@ -855,16 +986,15 @@ async function loadSessions(token) {
 // =====================================
 
 /**
- * Guarda TODOS los cambios en un único formulario
- * Tanto perfil como preferencias
+ * Guarda los datos del perfil (Guardado Manual)
  */
-async function saveSettings(token) {
+async function saveProfileData(token) {
     try {
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
-        const avatarUrl = document.getElementById('avatarUrl').value.trim();
+        const firstName = document.getElementById('profile-nombre').value.trim();
+        const lastName = document.getElementById('profile-apellido').value.trim();
+        const avatarUrl = document.getElementById('profile-avatar').value.trim();
 
-        // Validar avatar URL si se proporciona
+        // Validar avatar si se proporciona
         if (avatarUrl) {
             const validation = await validateImageUrl(avatarUrl);
             if (!validation.valid) {
@@ -873,77 +1003,50 @@ async function saveSettings(token) {
             }
         }
 
-        const countryCode = document.getElementById('phoneCountryCode').value;
-        const phoneNumberOnly = document.getElementById('phoneNumber').value.trim().replace(/\D/g, '');
+        const countryCode = document.getElementById('profile-country-code').value;
+        const phoneNumberOnly = document.getElementById('profile-telefono').value.trim().replace(/\D/g, '');
         const phoneNumber = phoneNumberOnly ? countryCode + phoneNumberOnly : '';
 
-        // Datos del perfil
-        const profileData = {};
-        if (firstName) profileData.firstName = firstName;
-        if (lastName) profileData.lastName = lastName;
-        if (phoneNumber) profileData.phoneNumber = phoneNumber;
-        if (avatarUrl) profileData.avatarUrl = avatarUrl;
+        const data = {};
+        if (firstName) data.firstName = firstName;
+        if (lastName) data.lastName = lastName;
+        if (phoneNumber) data.phoneNumber = phoneNumber;
+        if (avatarUrl) data.avatarUrl = avatarUrl;
 
-        // Datos de preferencias
-        const preferencesData = {
-            theme: document.getElementById('theme').value || 'light',
-            language: document.getElementById('language').value || 'en',
-            timezone: document.getElementById('timezone').value || 'UTC',
-            pushWebNotifications: document.getElementById('pushWebNotifications').checked,
-            notificationsTickets: document.getElementById('notificationsTickets').checked
-        };
-
-        const btn = document.getElementById('settingsSubmitBtn');
+        const btn = document.getElementById('profile-submit-btn');
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
 
-        // Hacer dos requests: uno para perfil, otro para preferencias
-        const profileResponse = await fetch(API_ENDPOINTS.updateProfile, {
+        const response = await fetch(API_ENDPOINTS.updateProfile, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(profileData)
-        });
-
-        const preferencesResponse = await fetch(API_ENDPOINTS.updatePreferences, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(preferencesData)
+            body: JSON.stringify(data)
         });
 
         btn.disabled = false;
         btn.innerHTML = originalHtml;
 
-        if (!profileResponse.ok) {
-            const errorData = await profileResponse.json();
+        if (!response.ok) {
+            const errorData = await response.json();
             throw new Error(errorData.message || 'No se pudo guardar el perfil');
         }
 
-        if (!preferencesResponse.ok) {
-            const errorData = await preferencesResponse.json();
-            throw new Error(errorData.message || 'No se pudieron guardar las preferencias');
-        }
-
-        showToast('Éxito', 'Todos los cambios han sido guardados correctamente', 'success');
+        showToast('Éxito', 'Perfil actualizado correctamente', 'success');
         await loadUserProfile(token);
 
     } catch (error) {
-        console.error('Error saving settings:', error);
-        showToast('Error', error.message || 'No se pudieron guardar los cambios', 'danger');
+        console.error('Error saving profile:', error);
+        showToast('Error', error.message || 'No se pudo guardar el perfil', 'danger');
     }
 }
 
 /**
- * Revoca una sesión específica
- * Utiliza SweetAlert2 para confirmación (Utilidad Official de AdminLTE)
+ * Revoca una sesión
  */
 async function revokeSession(sessionId, token) {
     const confirmed = await Swal.fire({
@@ -986,7 +1089,6 @@ async function revokeSession(sessionId, token) {
 
 /**
  * Cierra todas las sesiones
- * Utiliza SweetAlert2 para confirmación
  */
 async function logoutAllSessions(token) {
     const confirmed = await Swal.fire({
@@ -1028,6 +1130,52 @@ async function logoutAllSessions(token) {
         console.error('Error logging out:', error);
         showToast('Error', error.message || 'No se pudieron cerrar las sesiones', 'danger');
     }
+}
+
+/**
+ * Variable global para almacenar el estado original del formulario de perfil
+ */
+let originalProfileData = {
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    countryCode: '+1',
+    avatar: ''
+};
+
+/**
+ * Guarda el estado actual del formulario de perfil como el estado original
+ * Se llama automáticamente después de cargar los datos del usuario
+ */
+function saveProfileDataAsOriginal() {
+    originalProfileData = {
+        nombre: document.getElementById('profile-nombre').value,
+        apellido: document.getElementById('profile-apellido').value,
+        telefono: document.getElementById('profile-telefono').value,
+        countryCode: document.getElementById('profile-country-code').value,
+        avatar: document.getElementById('profile-avatar').value
+    };
+    console.log('[Profile] Estado original guardado:', originalProfileData);
+}
+
+/**
+ * Restaura el formulario de perfil al estado original guardado
+ */
+function restoreProfileDataToOriginal() {
+    document.getElementById('profile-nombre').value = originalProfileData.nombre;
+    document.getElementById('profile-apellido').value = originalProfileData.apellido;
+    document.getElementById('profile-telefono').value = originalProfileData.telefono;
+    document.getElementById('profile-country-code').value = originalProfileData.countryCode;
+    document.getElementById('profile-avatar').value = originalProfileData.avatar;
+
+    // Limpiar preview de avatar
+    document.getElementById('avatar-preview').style.display = 'none';
+
+    // Limpiar errores de validación
+    $('#form-profile-data').validate().resetForm();
+
+    console.log('[Profile] Datos restaurados al estado original');
+    showToast('Información', 'Cambios descartados', 'info');
 }
 </script>
 @endsection
