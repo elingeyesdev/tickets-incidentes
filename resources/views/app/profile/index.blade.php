@@ -640,6 +640,15 @@ $(function() {
 // Flag para rastrear si estamos cargando datos iniciales
 let isLoadingInitialPreferences = true;
 
+// Almacenar estado anterior de preferencias para comparacion inteligente
+let previousPreferencesState = {
+    theme: 'light',
+    language: 'en',
+    timezone: 'UTC',
+    pushWebNotifications: false,
+    notificationsTickets: false
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const formPreferencias = document.getElementById('form-preferencias');
     const statusDisplay = document.getElementById('preferencias-save-status');
@@ -670,19 +679,36 @@ document.addEventListener('DOMContentLoaded', function() {
             statusDisplay.style.display = 'block';
         }
 
-        // Función de Guardado
+        // Función de Guardado Inteligente
         async function guardarPreferencias() {
-            setStatusSaving();
-
             const token = localStorage.getItem('access_token');
 
-            const data = {
+            // Obtener estado actual
+            const currentState = {
                 theme: document.getElementById('pref-tema').value || 'light',
                 language: document.getElementById('pref-idioma').value || 'en',
                 timezone: document.getElementById('pref-timezone').value || 'UTC',
                 pushWebNotifications: document.getElementById('pref-push-notifications').checked,
                 notificationsTickets: document.getElementById('pref-ticket-notifications').checked
             };
+
+            // Comparar con estado anterior
+            const hasChanges = Object.keys(currentState).some(key => {
+                return currentState[key] !== previousPreferencesState[key];
+            });
+
+            // Si no hay cambios reales, no hacer nada
+            if (!hasChanges) {
+                console.log('[Preferences] Sin cambios detectados. No se envía PATCH.');
+                return;
+            }
+
+            console.log('[Preferences] Cambios detectados. Guardando...', {
+                anterior: previousPreferencesState,
+                actual: currentState
+            });
+
+            setStatusSaving();
 
             try {
                 const response = await fetch(API_ENDPOINTS.updatePreferences, {
@@ -692,14 +718,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(currentState)
                 });
 
                 if (!response.ok) {
                     throw new Error(`Error: ${response.status}`);
                 }
 
+                // Actualizar estado anterior con el estado guardado
+                previousPreferencesState = { ...currentState };
                 setStatusSaved();
+                console.log('[Preferences] Guardado exitoso.');
             } catch (error) {
                 console.error('Error en auto-guardado:', error);
                 setStatusError(error.message);
@@ -888,6 +917,16 @@ async function loadUserProfile(token) {
         document.getElementById('pref-timezone').value = profile.timezone || 'UTC';
         document.getElementById('pref-push-notifications').checked = profile.pushWebNotifications || false;
         document.getElementById('pref-ticket-notifications').checked = profile.notificationsTickets || false;
+
+        // Actualizar estado anterior de preferencias con los valores cargados
+        // Esto se usa para la comparacion inteligente de cambios
+        previousPreferencesState = {
+            theme: profile.theme || 'light',
+            language: profile.language || 'en',
+            timezone: profile.timezone || 'UTC',
+            pushWebNotifications: profile.pushWebNotifications || false,
+            notificationsTickets: profile.notificationsTickets || false
+        };
 
         // Refrescar Select2
         $('#pref-tema').trigger('change');
