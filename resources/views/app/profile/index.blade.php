@@ -57,41 +57,39 @@
                             </li>
                         </ul>
 
-                        <!-- Botón para acceder a edición -->
-                        <button class="btn btn-primary btn-block" type="button" id="editProfileBtn">
-                            <i class="fas fa-edit mr-2"></i> Editar Perfil
+                        <!-- Botón para acceder a configuración -->
+                        <button class="btn btn-primary btn-block" type="button" id="goToSettingsBtn">
+                            <i class="fas fa-cog mr-2"></i> Configuración
                         </button>
                     </div>
                 </div>
                 <!-- /.card -->
 
-                <!-- TARJETA 2: About Me (Utilidad Official: .card.card-primary) -->
+                <!-- TARJETA 2: About Me (Información Descriptiva) -->
                 <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-book mr-2"></i>Información Personal
+                            <i class="fas fa-book mr-2"></i>Acerca de Mí
                         </h3>
                     </div>
                     <div class="card-body">
-                        <!-- Email (Utilidad Official: .text-muted) -->
+                        <!-- Datos de contacto e información básica (ESTADÍSTICA, NO EDITABLE DESDE LA TARJETA) -->
                         <strong><i class="fas fa-envelope mr-2"></i>Email</strong>
                         <p class="text-muted mb-3" id="aboutEmail">--</p>
 
-                        <!-- Teléfono -->
                         <strong><i class="fas fa-phone mr-2"></i>Teléfono</strong>
                         <p class="text-muted mb-3" id="aboutPhone">No proporcionado</p>
 
-                        <!-- Tema -->
-                        <strong><i class="fas fa-palette mr-2"></i>Tema</strong>
-                        <p class="text-muted mb-3" id="aboutTheme">--</p>
+                        <hr>
 
-                        <!-- Idioma -->
+                        <strong><i class="fas fa-globe mr-2"></i>Zona Horaria</strong>
+                        <p class="text-muted mb-3" id="aboutTimezone">--</p>
+
                         <strong><i class="fas fa-language mr-2"></i>Idioma</strong>
                         <p class="text-muted mb-3" id="aboutLanguage">--</p>
 
-                        <!-- Zona Horaria -->
-                        <strong><i class="fas fa-globe mr-2"></i>Zona Horaria</strong>
-                        <p class="text-muted" id="aboutTimezone">--</p>
+                        <strong><i class="fas fa-palette mr-2"></i>Tema</strong>
+                        <p class="text-muted" id="aboutTheme">--</p>
                     </div>
                 </div>
                 <!-- /.card -->
@@ -107,15 +105,9 @@
                     <div class="card-header p-0 border-bottom-0">
                         <ul class="nav nav-tabs card-header-tabs" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" id="profileTab" data-toggle="tab" href="#profilePane"
-                                   role="tab" aria-controls="profilePane" aria-selected="true">
-                                    <i class="fas fa-user mr-2"></i>Perfil
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="preferencesTab" data-toggle="tab" href="#preferencesPane"
-                                   role="tab" aria-controls="preferencesPane" aria-selected="false">
-                                    <i class="fas fa-cog mr-2"></i>Preferencias
+                                <a class="nav-link active" id="settingsTab" data-toggle="tab" href="#settingsPane"
+                                   role="tab" aria-controls="settingsPane" aria-selected="true">
+                                    <i class="fas fa-sliders-h mr-2"></i>Configuración
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -132,23 +124,26 @@
                     <div class="card-body">
                         <div class="tab-content">
 
-                            <!-- ========== PESTAÑA 1: PROFILE ========== -->
-                            <div class="tab-pane fade show active" id="profilePane" role="tabpanel"
-                                 aria-labelledby="profileTab">
+                            <!-- ========== PESTAÑA 1: SETTINGS (CONFIGURACIÓN) ========== -->
+                            <!-- Esta es la única pestaña de edición (patrón canónico de AdminLTE) -->
+                            <div class="tab-pane fade show active" id="settingsPane" role="tabpanel"
+                                 aria-labelledby="settingsTab">
 
                                 <!-- Loading State -->
-                                <div id="profileLoading" class="alert alert-info alert-dismissible">
+                                <div id="settingsLoading" class="alert alert-info alert-dismissible">
                                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                                     <h5><i class="icon fas fa-info"></i> Información</h5>
-                                    Cargando datos del perfil...
+                                    Cargando datos...
                                 </div>
 
-                                <!-- Profile Form (Estructura Canónica) -->
-                                <form id="profileForm" style="display: none;">
-                                    <div id="profileFormAlert"></div>
+                                <!-- Unified Settings Form -->
+                                <!-- ESTRUCTURA CANÓNICA: .form-group.row para cada campo -->
+                                <form id="settingsForm" style="display: none;">
+                                    <h5 class="mb-3">
+                                        <i class="fas fa-user-circle mr-2"></i>Información Personal
+                                    </h5>
 
-                                    <!-- Nombre (Primera Parte) -->
-                                    <!-- Utilidad Official: .form-group.row > .col-sm-2.col-form-label + .col-sm-10 -->
+                                    <!-- Nombre -->
                                     <div class="form-group row">
                                         <label for="firstName" class="col-sm-2 col-form-label">
                                             <strong>Nombre</strong>
@@ -160,7 +155,6 @@
                                             <small class="form-text text-muted d-block mt-1">
                                                 Mínimo 2 caracteres, máximo 100
                                             </small>
-                                            <div class="invalid-feedback" style="display: none;"></div>
                                         </div>
                                     </div>
 
@@ -176,7 +170,6 @@
                                             <small class="form-text text-muted d-block mt-1">
                                                 Mínimo 2 caracteres, máximo 100
                                             </small>
-                                            <div class="invalid-feedback" style="display: none;"></div>
                                         </div>
                                     </div>
 
@@ -217,7 +210,6 @@
                                             <small class="form-text text-muted d-block mt-1">
                                                 10-20 dígitos: números, espacios, +, -, ()
                                             </small>
-                                            <div class="invalid-feedback" style="display: none;"></div>
                                         </div>
                                     </div>
 
@@ -251,41 +243,16 @@
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <div class="invalid-feedback" style="display: none;"></div>
                                         </div>
                                     </div>
 
-                                    <!-- Botones de Acción -->
-                                    <!-- Utilidad Official: .offset-sm-2 para alineación -->
-                                    <div class="form-group row">
-                                        <div class="offset-sm-2 col-sm-10">
-                                            <button type="submit" class="btn btn-primary" id="profileSubmitBtn">
-                                                <i class="fas fa-save mr-2"></i>Guardar Cambios
-                                            </button>
-                                            <button type="reset" class="btn btn-secondary ml-2">
-                                                <i class="fas fa-undo mr-2"></i>Deshacer
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            <!-- /.tab-pane -->
+                                    <!-- Separador visual -->
+                                    <hr>
 
-                            <!-- ========== PESTAÑA 2: PREFERENCES ========== -->
-                            <div class="tab-pane fade" id="preferencesPane" role="tabpanel"
-                                 aria-labelledby="preferencesTab">
-
-                                <!-- Loading State -->
-                                <div id="preferencesLoading" class="alert alert-info alert-dismissible">
-                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                    <h5><i class="icon fas fa-info"></i> Información</h5>
-                                    Cargando preferencias...
-                                </div>
-
-                                <!-- Preferences Form -->
-                                <form id="preferencesForm" style="display: none;">
-                                    <div id="preferencesFormAlert"></div>
+                                    <!-- Sección de Preferencias -->
+                                    <h5 class="mb-3">
+                                        <i class="fas fa-cog mr-2"></i>Preferencias
+                                    </h5>
 
                                     <!-- Tema -->
                                     <div class="form-group row">
@@ -303,13 +270,15 @@
                                         </div>
                                     </div>
 
-                                    <!-- Idioma -->
+                                    <!-- Idioma (Select2) -->
                                     <div class="form-group row">
                                         <label for="language" class="col-sm-2 col-form-label">
                                             <strong>Idioma</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <select class="form-control" id="language" name="language" required>
+                                            <!-- PLUGIN OFFICIAL: Select2 -->
+                                            <select class="form-control select2" id="language" name="language" required
+                                                    style="width: 100%;">
                                                 <option value="en">English</option>
                                                 <option value="es">Español</option>
                                             </select>
@@ -319,13 +288,15 @@
                                         </div>
                                     </div>
 
-                                    <!-- Zona Horaria -->
+                                    <!-- Zona Horaria (Select2) -->
                                     <div class="form-group row">
                                         <label for="timezone" class="col-sm-2 col-form-label">
                                             <strong>Zona Horaria</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <select class="form-control" id="timezone" name="timezone" required>
+                                            <!-- PLUGIN OFFICIAL: Select2 -->
+                                            <select class="form-control select2" id="timezone" name="timezone" required
+                                                    style="width: 100%;">
                                                 <option value="UTC">UTC</option>
                                                 <option value="America/New_York">America/New_York</option>
                                                 <option value="America/Chicago">America/Chicago</option>
@@ -395,8 +366,8 @@
                                     <!-- Botones de Acción -->
                                     <div class="form-group row">
                                         <div class="offset-sm-2 col-sm-10">
-                                            <button type="submit" class="btn btn-primary" id="preferencesSubmitBtn">
-                                                <i class="fas fa-save mr-2"></i>Guardar Preferencias
+                                            <button type="submit" class="btn btn-primary" id="settingsSubmitBtn">
+                                                <i class="fas fa-save mr-2"></i>Guardar Cambios
                                             </button>
                                             <button type="reset" class="btn btn-secondary ml-2">
                                                 <i class="fas fa-undo mr-2"></i>Deshacer
@@ -407,7 +378,7 @@
                             </div>
                             <!-- /.tab-pane -->
 
-                            <!-- ========== PESTAÑA 3: SESSIONS ========== -->
+                            <!-- ========== PESTAÑA 2: SESSIONS ========== -->
                             <div class="tab-pane fade" id="sessionsPane" role="tabpanel"
                                  aria-labelledby="sessionsTab">
 
@@ -600,15 +571,16 @@ function getDeviceIcon(deviceName) {
 }
 
 // =====================================
-// JQUERY VALIDATION INITIALIZATION
+// JQUERY VALIDATION + PLUGINS INITIALIZATION
 // =====================================
 
 /**
- * Inicialización de jQuery Validation Plugin para el formulario de perfil
+ * Inicialización de jQuery Validation Plugin + Select2
  * Integración oficial con Bootstrap 4
  */
 $(function() {
-    $('#profileForm').validate({
+    // ===== JQUERY VALIDATION =====
+    $('#settingsForm').validate({
         rules: {
             firstName: {
                 required: true,
@@ -627,7 +599,10 @@ $(function() {
             avatarUrl: {
                 maxlength: 2048,
                 url: true
-            }
+            },
+            theme: { required: true },
+            language: { required: true },
+            timezone: { required: true }
         },
         messages: VALIDATION_MESSAGES,
         // Integración con Bootstrap 4 - Utilidades Oficiales
@@ -644,25 +619,16 @@ $(function() {
         }
     });
 
-    // Inicialización de jQuery Validation para formulario de preferencias
-    $('#preferencesForm').validate({
-        rules: {
-            theme: { required: true },
-            language: { required: true },
-            timezone: { required: true }
-        },
-        messages: VALIDATION_MESSAGES,
-        errorElement: 'span',
-        errorPlacement: function(error, element) {
-            error.addClass('invalid-feedback d-block');
-            element.closest('.form-group').append(error);
-        },
-        highlight: function(element, errorClass, validClass) {
-            $(element).addClass('is-invalid').removeClass('is-valid');
-        },
-        unhighlight: function(element, errorClass, validClass) {
-            $(element).addClass('is-valid').removeClass('is-invalid');
-        }
+    // ===== SELECT2 INITIALIZATION (PLUGIN OFFICIAL DE ADMINLTE) =====
+    // Estos select son perfectos para Select2 porque tienen muchas opciones
+    $('#language').select2({
+        theme: 'bootstrap4',
+        minimumResultsForSearch: Infinity // Sin búsqueda (solo 2 opciones)
+    });
+
+    $('#timezone').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Selecciona una zona horaria'
     });
 });
 
@@ -682,24 +648,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadUserProfile(token);
     await loadSessions(token);
 
-    // Event Listeners para forms
-    document.getElementById('profileForm').addEventListener('submit', (e) => {
+    // Event Listeners para form
+    document.getElementById('settingsForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        if ($('#profileForm').valid()) {
-            saveProfile(token);
+        if ($('#settingsForm').valid()) {
+            saveSettings(token);
         }
     });
 
-    document.getElementById('preferencesForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        if ($('#preferencesForm').valid()) {
-            savePreferences(token);
-        }
-    });
-
-    // Botón para editar perfil
-    document.getElementById('editProfileBtn').addEventListener('click', () => {
-        document.getElementById('profileTab').click();
+    // Botón para ir a settings
+    document.getElementById('goToSettingsBtn').addEventListener('click', () => {
+        document.getElementById('settingsTab').click();
     });
 
     // Botón de preview para avatar
@@ -791,19 +750,19 @@ async function loadUserProfile(token) {
             document.getElementById('memberSince').textContent = new Date(user.createdAt).toLocaleDateString();
         }
 
-        // ===== ABOUT ME CARD =====
+        // ===== ABOUT ME CARD (información estadística, NO editable) =====
         document.getElementById('aboutEmail').textContent = user.email || '--';
         document.getElementById('aboutPhone').textContent = profile.phoneNumber || 'No proporcionado';
         document.getElementById('aboutTheme').textContent = (profile.theme || 'light').charAt(0).toUpperCase() + (profile.theme || 'light').slice(1);
         document.getElementById('aboutLanguage').textContent = (profile.language === 'es' ? 'Español' : 'English');
         document.getElementById('aboutTimezone').textContent = profile.timezone || 'UTC';
 
-        // ===== PROFILE FORM POPULATION =====
+        // ===== SETTINGS FORM POPULATION =====
         document.getElementById('firstName').value = profile.firstName || '';
         document.getElementById('lastName').value = profile.lastName || '';
         document.getElementById('avatarUrl').value = profile.avatarUrl || '';
-        document.getElementById('profileLoading').style.display = 'none';
-        document.getElementById('profileForm').style.display = 'block';
+        document.getElementById('settingsLoading').style.display = 'none';
+        document.getElementById('settingsForm').style.display = 'block';
 
         // Phone number handling
         if (profile.phoneNumber) {
@@ -816,14 +775,18 @@ async function loadUserProfile(token) {
             }
         }
 
-        // ===== PREFERENCES FORM POPULATION =====
+        // Theme, Language, Timezone
         document.getElementById('theme').value = profile.theme || 'light';
         document.getElementById('language').value = profile.language || 'en';
         document.getElementById('timezone').value = profile.timezone || 'UTC';
+
+        // Refresh Select2 to reflect the selected values
+        $('#language').val(profile.language || 'en').trigger('change');
+        $('#timezone').val(profile.timezone || 'UTC').trigger('change');
+
+        // Notifications
         document.getElementById('pushWebNotifications').checked = profile.pushWebNotifications || false;
         document.getElementById('notificationsTickets').checked = profile.notificationsTickets || false;
-        document.getElementById('preferencesLoading').style.display = 'none';
-        document.getElementById('preferencesForm').style.display = 'block';
 
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -892,9 +855,10 @@ async function loadSessions(token) {
 // =====================================
 
 /**
- * Guarda cambios del perfil
+ * Guarda TODOS los cambios en un único formulario
+ * Tanto perfil como preferencias
  */
-async function saveProfile(token) {
+async function saveSettings(token) {
     try {
         const firstName = document.getElementById('firstName').value.trim();
         const lastName = document.getElementById('lastName').value.trim();
@@ -913,50 +877,15 @@ async function saveProfile(token) {
         const phoneNumberOnly = document.getElementById('phoneNumber').value.trim().replace(/\D/g, '');
         const phoneNumber = phoneNumberOnly ? countryCode + phoneNumberOnly : '';
 
-        const data = {};
-        if (firstName) data.firstName = firstName;
-        if (lastName) data.lastName = lastName;
-        if (phoneNumber) data.phoneNumber = phoneNumber;
-        if (avatarUrl) data.avatarUrl = avatarUrl;
+        // Datos del perfil
+        const profileData = {};
+        if (firstName) profileData.firstName = firstName;
+        if (lastName) profileData.lastName = lastName;
+        if (phoneNumber) profileData.phoneNumber = phoneNumber;
+        if (avatarUrl) profileData.avatarUrl = avatarUrl;
 
-        const btn = document.getElementById('profileSubmitBtn');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
-
-        const response = await fetch(API_ENDPOINTS.updateProfile, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'No se pudo guardar el perfil');
-        }
-
-        showToast('Éxito', 'Perfil actualizado correctamente', 'success');
-        await loadUserProfile(token);
-
-    } catch (error) {
-        console.error('Error saving profile:', error);
-        showToast('Error', error.message || 'No se pudo guardar el perfil', 'danger');
-    }
-}
-
-/**
- * Guarda cambios de preferencias
- */
-async function savePreferences(token) {
-    try {
-        const data = {
+        // Datos de preferencias
+        const preferencesData = {
             theme: document.getElementById('theme').value || 'light',
             language: document.getElementById('language').value || 'en',
             timezone: document.getElementById('timezone').value || 'UTC',
@@ -964,35 +893,51 @@ async function savePreferences(token) {
             notificationsTickets: document.getElementById('notificationsTickets').checked
         };
 
-        const btn = document.getElementById('preferencesSubmitBtn');
+        const btn = document.getElementById('settingsSubmitBtn');
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
 
-        const response = await fetch(API_ENDPOINTS.updatePreferences, {
+        // Hacer dos requests: uno para perfil, otro para preferencias
+        const profileResponse = await fetch(API_ENDPOINTS.updateProfile, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(profileData)
+        });
+
+        const preferencesResponse = await fetch(API_ENDPOINTS.updatePreferences, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(preferencesData)
         });
 
         btn.disabled = false;
         btn.innerHTML = originalHtml;
 
-        if (!response.ok) {
-            const errorData = await response.json();
+        if (!profileResponse.ok) {
+            const errorData = await profileResponse.json();
+            throw new Error(errorData.message || 'No se pudo guardar el perfil');
+        }
+
+        if (!preferencesResponse.ok) {
+            const errorData = await preferencesResponse.json();
             throw new Error(errorData.message || 'No se pudieron guardar las preferencias');
         }
 
-        showToast('Éxito', 'Preferencias actualizadas correctamente', 'success');
+        showToast('Éxito', 'Todos los cambios han sido guardados correctamente', 'success');
         await loadUserProfile(token);
 
     } catch (error) {
-        console.error('Error saving preferences:', error);
-        showToast('Error', error.message || 'No se pudieron guardar las preferencias', 'danger');
+        console.error('Error saving settings:', error);
+        showToast('Error', error.message || 'No se pudieron guardar los cambios', 'danger');
     }
 }
 
