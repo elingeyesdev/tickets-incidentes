@@ -82,7 +82,7 @@ class TicketService
         $this->applyVisibilityFilters($query, $user->id, $userRole);
 
         // Aplicar filtros adicionales
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $user->id);
 
         // Aplicar ordenamiento
         $sortBy = $filters['sort_by'] ?? 'created_at';
@@ -221,8 +221,9 @@ class TicketService
      *
      * @param Builder $query
      * @param array $filters
+     * @param string $userId
      */
-    private function applyFilters(Builder $query, array $filters): void
+    private function applyFilters(Builder $query, array $filters, string $userId): void
     {
         // Filtrar por estado
         if (!empty($filters['status'])) {
@@ -239,6 +240,9 @@ class TicketService
             if ($filters['owner_agent_id'] === 'null') {
                 // String literal 'null' = sin asignar
                 $query->whereNull('owner_agent_id');
+            } elseif ($filters['owner_agent_id'] === 'me') {
+                // String literal 'me' = usuario autenticado
+                $query->where('owner_agent_id', $userId);
             } else {
                 // UUID específico
                 $query->where('owner_agent_id', $filters['owner_agent_id']);
