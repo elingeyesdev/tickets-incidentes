@@ -10,7 +10,7 @@ use App\Features\TicketManagement\Models\Ticket;
 use App\Features\UserManagement\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-use Tests\Traits\RefreshDatabaseWithoutTransactions;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 /**
  * Feature Tests for Getting Ticket Detail
@@ -46,7 +46,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  */
 class GetTicketTest extends TestCase
 {
-    use RefreshDatabaseWithoutTransactions;
+    use DatabaseMigrations;
 
     // ==================== GROUP 1: Autenticación (Test 1) ====================
 
@@ -109,6 +109,15 @@ class GetTicketTest extends TestCase
             'title' => 'Error al exportar reporte',
             'description' => 'Cuando intento exportar el reporte mensual, el sistema muestra un error 500.',
             'status' => 'open',
+        ]);
+
+        // DEBUG: Verificar datos antes de request
+        $this->assertDatabaseHas('ticketing.tickets', ['id' => $ticket->id]);
+        $found = \App\Features\TicketManagement\Models\Ticket::where('ticket_code', $ticket->ticket_code)->first();
+        dump([
+            'ticket_code' => $ticket->ticket_code,
+            'found_before_request' => $found ? 'YES' : 'NO',
+            'found_id' => $found?->id,
         ]);
 
         // Act

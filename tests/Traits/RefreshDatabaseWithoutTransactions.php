@@ -43,13 +43,18 @@ trait RefreshDatabaseWithoutTransactions
      * Instead, we use migrate:fresh which clears and rebuilds the database
      * without transaction wrapping.
      *
-     * @return bool Always returns false (no transactions)
+     * CRITICAL: This method must be COMPLETELY EMPTY.
+     * Laravel's RefreshDatabase::refreshTestDatabase() calls this method but
+     * doesn't check the return value. If we have ANY code here (even return false),
+     * Laravel will still execute its transaction logic in the parent trait.
+     *
+     * @return void
      */
     public function beginDatabaseTransaction()
     {
-        // Don't start a database transaction
-        // This allows multiple HTTP requests in the same test to see each other's data
-        return false;
+        // INTENTIONALLY EMPTY
+        // Do NOT add any code here, not even "return false"
+        // This prevents Laravel from starting database transactions
     }
 
     /**
@@ -64,17 +69,5 @@ trait RefreshDatabaseWithoutTransactions
         // Run migrate:fresh to clear and rebuild database
         // This is NOT wrapped in a transaction
         Artisan::call('migrate:fresh', ['--seed' => true, '--quiet' => true]);
-    }
-
-    /**
-     * Disable transaction rollback
-     *
-     * Since we're not using transactions, there's nothing to rollback
-     *
-     * @return void
-     */
-    protected function rollbackTransaction()
-    {
-        // Nothing to rollback - we're using migrate:fresh, not transactions
     }
 }
