@@ -11,6 +11,7 @@ use App\Features\TicketManagement\Models\Ticket;
 use App\Features\TicketManagement\Rules\CanReopenTicket;
 use App\Features\UserManagement\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Tests\Traits\RefreshDatabaseWithoutTransactions;
@@ -67,14 +68,21 @@ class CanReopenTicketTest extends TestCase
             'closed_at' => Carbon::now()->subDays(20), // Closed 20 days ago (within 30 days)
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($ticket);
 
         // Act
-        $result = $rule->passes('ticket_id', $ticket->id);
+        $validator = Validator::make(['ticket' => $ticket->id], ['ticket' => $rule]);
 
         // Assert
         $this->assertTrue(
-            $result,
+            $validator->passes(),
             'User should be able to reopen ticket closed 20 days ago (within 30-day limit)'
         );
     }
@@ -107,14 +115,21 @@ class CanReopenTicketTest extends TestCase
             'closed_at' => Carbon::now()->subDays(40), // Closed 40 days ago (exceeds 30 days)
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($ticket);
 
         // Act
-        $result = $rule->passes('ticket_id', $ticket->id);
+        $validator = Validator::make(['ticket' => $ticket->id], ['ticket' => $rule]);
 
         // Assert
         $this->assertFalse(
-            $result,
+            $validator->passes(),
             'User should NOT be able to reopen ticket closed 40 days ago (exceeds 30-day limit)'
         );
     }
@@ -151,14 +166,21 @@ class CanReopenTicketTest extends TestCase
             'closed_at' => Carbon::now()->subDays(365), // Closed 365 days ago (1 year)
         ]);
 
-        $rule = new CanReopenTicket($agent);
+        // Mock JWT payload para AGENT
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $agent->id,
+            'email' => $agent->email,
+            'roles' => [['code' => 'AGENT', 'company_id' => $company->id]]
+        ]);
+
+        $rule = new CanReopenTicket($ticket);
 
         // Act
-        $result = $rule->passes('ticket_id', $ticket->id);
+        $validator = Validator::make(['ticket' => $ticket->id], ['ticket' => $rule]);
 
         // Assert
         $this->assertTrue(
-            $result,
+            $validator->passes(),
             'Agent should be able to reopen ticket closed 365 days ago (no time limit for agents)'
         );
     }
@@ -190,9 +212,17 @@ class CanReopenTicketTest extends TestCase
             'status' => TicketStatus::OPEN,
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($openTicket);
+        $validator = Validator::make(['ticket' => $openTicket->id], ['ticket' => $rule]);
         $this->assertFalse(
-            $rule->passes('ticket_id', $openTicket->id),
+            $validator->passes(),
             'Open ticket should NOT be reopenable'
         );
 
@@ -204,9 +234,17 @@ class CanReopenTicketTest extends TestCase
             'status' => TicketStatus::PENDING,
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($pendingTicket);
+        $validator = Validator::make(['ticket' => $pendingTicket->id], ['ticket' => $rule]);
         $this->assertFalse(
-            $rule->passes('ticket_id', $pendingTicket->id),
+            $validator->passes(),
             'Pending ticket should NOT be reopenable'
         );
 
@@ -219,9 +257,17 @@ class CanReopenTicketTest extends TestCase
             'resolved_at' => Carbon::now()->subDays(3),
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($resolvedTicket);
+        $validator = Validator::make(['ticket' => $resolvedTicket->id], ['ticket' => $rule]);
         $this->assertTrue(
-            $rule->passes('ticket_id', $resolvedTicket->id),
+            $validator->passes(),
             'Resolved ticket should be reopenable'
         );
 
@@ -235,9 +281,17 @@ class CanReopenTicketTest extends TestCase
             'closed_at' => Carbon::now()->subDays(5),
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($closedTicket);
+        $validator = Validator::make(['ticket' => $closedTicket->id], ['ticket' => $rule]);
         $this->assertTrue(
-            $rule->passes('ticket_id', $closedTicket->id),
+            $validator->passes(),
             'Closed ticket (within 30 days) should be reopenable'
         );
     }
@@ -270,11 +324,19 @@ class CanReopenTicketTest extends TestCase
             'closed_at' => Carbon::now()->subDays(40), // Closed 40 days ago
         ]);
 
-        $rule = new CanReopenTicket($user);
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
+        $rule = new CanReopenTicket($ticket);
 
         // Act - Trigger validation failure
-        $rule->passes('ticket_id', $ticket->id);
-        $message = $rule->message();
+        $validator = Validator::make(['ticket' => $ticket->id], ['ticket' => $rule]);
+        $validator->fails(); // Execute validation to generate error messages
+        $message = $validator->errors()->first('ticket');
 
         // Assert - Message should explain the 30-day limit
         $this->assertIsString($message, 'Error message should be a string');
