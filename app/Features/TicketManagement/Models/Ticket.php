@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property string $company_id
  * @property string|null $category_id
  * @property string $title
- * @property string $initial_description
+ * @property string $description
  * @property TicketStatus $status
  * @property string|null $owner_agent_id
  * @property string $last_response_author_type
@@ -79,7 +79,7 @@ class Ticket extends Model
         'company_id',
         'category_id',
         'title',
-        'initial_description',
+        'description',
         'status',
         'owner_agent_id',
         'last_response_author_type',

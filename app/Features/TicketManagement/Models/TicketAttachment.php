@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string|null $response_id
  * @property string $uploaded_by_user_id
  * @property string $file_name
- * @property string $file_url
+ * @property string $file_path
  * @property string|null $file_type
  * @property int|null $file_size_bytes
  * @property \DateTime $created_at
@@ -68,7 +68,7 @@ class TicketAttachment extends Model
         'response_id',
         'uploaded_by_user_id',
         'file_name',
-        'file_url',
+        'file_path',
         'file_type',
         'file_size_bytes',
     ];

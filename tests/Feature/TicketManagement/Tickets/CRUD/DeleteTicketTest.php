@@ -36,7 +36,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - created_by_user_id: UUID
  * - owner_agent_id: UUID (nullable)
  * - title: VARCHAR(255)
- * - initial_description: TEXT
+ * - description: TEXT
  * - status: ENUM (open, pending, resolved, closed)
  * - created_at: TIMESTAMPTZ
  * - updated_at: TIMESTAMPTZ

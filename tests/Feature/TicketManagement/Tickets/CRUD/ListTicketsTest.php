@@ -46,7 +46,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - created_by_user_id: UUID
  * - owner_agent_id: UUID (nullable)
  * - title: VARCHAR(255)
- * - initial_description: TEXT
+ * - description: TEXT
  * - status: ENUM (open, pending, resolved, closed)
  * - created_at: TIMESTAMPTZ
  * - updated_at: TIMESTAMPTZ
@@ -685,7 +685,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Error al exportar reporte mensual',
-            'initial_description' => 'Descripción genérica del problema',
+            'description' => 'Descripción genérica del problema',
             'status' => 'open',
         ]);
         Ticket::factory()->create([
@@ -693,7 +693,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Problema con login de usuario',
-            'initial_description' => 'Descripción genérica del problema',
+            'description' => 'Descripción genérica del problema',
             'status' => 'open',
         ]);
         Ticket::factory()->create([
@@ -701,7 +701,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'No se puede exportar datos de clientes',
-            'initial_description' => 'Descripción genérica del problema',
+            'description' => 'Descripción genérica del problema',
             'status' => 'open',
         ]);
 
@@ -718,7 +718,7 @@ class ListTicketsTest extends TestCase
     /**
      * Test #15: Search in description works
      *
-     * Verifies searching tickets by text in initial_description.
+     * Verifies searching tickets by text in description.
      *
      * Expected: Returns tickets with matching description
      */
@@ -739,7 +739,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Problema 1',
-            'initial_description' => 'El sistema muestra error 500 cuando intento guardar',
+            'description' => 'El sistema muestra error 500 cuando intento guardar',
             'status' => 'open',
         ]);
         Ticket::factory()->create([
@@ -747,7 +747,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Problema 2',
-            'initial_description' => 'No puedo acceder a la página de configuración',
+            'description' => 'No puedo acceder a la página de configuración',
             'status' => 'open',
         ]);
         Ticket::factory()->create([
@@ -755,7 +755,7 @@ class ListTicketsTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Problema 3',
-            'initial_description' => 'Recibo error 404 al intentar ver mis reportes',
+            'description' => 'Recibo error 404 al intentar ver mis reportes',
             'status' => 'open',
         ]);
 

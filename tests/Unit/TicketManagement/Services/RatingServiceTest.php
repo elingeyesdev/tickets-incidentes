@@ -144,9 +144,8 @@ class RatingServiceTest extends TestCase
         $this->service = app(RatingService::class);
         $userA = User::factory()->withRole('USER')->create();
         $userB = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
-        $agent->assignRole('AGENT', $company->id);
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
 
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -223,11 +222,9 @@ class RatingServiceTest extends TestCase
         // Arrange
         $this->service = app(RatingService::class);
         $user = User::factory()->withRole('USER')->create();
-        $agentA = User::factory()->withRole('AGENT')->create();
-        $agentB = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
-        $agentA->assignRole('AGENT', $company->id);
-        $agentB->assignRole('AGENT', $company->id);
+        $agentA = User::factory()->withRole('AGENT', $company->id)->create();
+        $agentB = User::factory()->withRole('AGENT', $company->id)->create();
 
         $category = Category::factory()->create([
             'company_id' => $company->id,

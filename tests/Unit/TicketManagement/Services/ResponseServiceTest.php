@@ -10,6 +10,7 @@ use App\Features\TicketManagement\Models\Ticket;
 use App\Features\TicketManagement\Models\TicketResponse;
 use App\Features\TicketManagement\Services\ResponseService;
 use App\Features\UserManagement\Models\User;
+use App\Features\TicketManagement\Enums\TicketStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -57,8 +58,8 @@ class ResponseServiceTest extends TestCase
     {
         // Arrange
         $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
@@ -71,11 +72,25 @@ class ResponseServiceTest extends TestCase
             'status' => 'open',
         ]);
 
+        // Mock JWT payload para USER
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'roles' => [['code' => 'USER', 'company_id' => null]]
+        ]);
+
         // Act - User creates response
         $userResponse = $this->service->create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'response_content' => 'Response from user',
+        ]);
+
+        // Mock JWT payload para AGENT
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $agent->id,
+            'email' => $agent->email,
+            'roles' => [['code' => 'AGENT', 'company_id' => $company->id]]
         ]);
 
         // Act - Agent creates response
@@ -86,7 +101,7 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Assert - User should have author_type='user'
-        $this->assertEquals('user', $userResponse->author_type);
+        $this->assertEquals('user', $userResponse->author_type->value);
         $this->assertDatabaseHas('ticketing.ticket_responses', [
             'id' => $userResponse->id,
             'author_id' => $user->id,
@@ -94,7 +109,7 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Assert - Agent should have author_type='agent'
-        $this->assertEquals('agent', $agentResponse->author_type);
+        $this->assertEquals('agent', $agentResponse->author_type->value);
         $this->assertDatabaseHas('ticketing.ticket_responses', [
             'id' => $agentResponse->id,
             'author_id' => $agent->id,
@@ -124,9 +139,9 @@ class ResponseServiceTest extends TestCase
     {
         // Arrange
         $user = User::factory()->withRole('USER')->create();
-        $agent1 = User::factory()->withRole('AGENT')->create();
-        $agent2 = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent1 = User::factory()->withRole('AGENT', $company->id)->create();
+        $agent2 = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
@@ -143,8 +158,15 @@ class ResponseServiceTest extends TestCase
 
         // Verify initial state
         $this->assertNull($ticket->owner_agent_id);
-        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals(TicketStatus::OPEN, $ticket->status);
         $this->assertEquals('none', $ticket->last_response_author_type);
+
+        // Mock JWT payload para AGENT 1
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $agent1->id,
+            'email' => $agent1->email,
+            'roles' => [['code' => 'AGENT', 'company_id' => $company->id]]
+        ]);
 
         // Act - Agent 1 responds (FIRST agent response)
         $response1 = $this->service->create([
@@ -158,7 +180,7 @@ class ResponseServiceTest extends TestCase
 
         // Assert - Trigger should assign ticket to Agent 1
         $this->assertEquals($agent1->id, $ticket->owner_agent_id, 'Ticket should be assigned to Agent 1');
-        $this->assertEquals('pending', $ticket->status, 'Status should change to pending');
+        $this->assertEquals('pending', $ticket->status->value, 'Status should change to pending');
         $this->assertEquals('agent', $ticket->last_response_author_type, 'last_response_author_type should be agent');
         $this->assertNotNull($ticket->first_response_at, 'first_response_at should be set');
 
@@ -168,6 +190,13 @@ class ResponseServiceTest extends TestCase
             'owner_agent_id' => $agent1->id,
             'status' => 'pending',
             'last_response_author_type' => 'agent',
+        ]);
+
+        // Mock JWT payload para AGENT 2
+        request()->attributes->set('jwt_payload', [
+            'user_id' => $agent2->id,
+            'email' => $agent2->email,
+            'roles' => [['code' => 'AGENT', 'company_id' => $company->id]]
         ]);
 
         // Act - Agent 2 responds (SECOND agent response, trigger should NOT fire)
@@ -188,7 +217,7 @@ class ResponseServiceTest extends TestCase
         );
 
         // Assert - Status should STILL be pending (no change)
-        $this->assertEquals('pending', $ticket->status, 'Status should remain pending');
+        $this->assertEquals('pending', $ticket->status->value, 'Status should remain pending');
 
         // Assert - last_response_author_type should be 'agent' (updated, but ownership unchanged)
         $this->assertEquals('agent', $ticket->last_response_author_type);

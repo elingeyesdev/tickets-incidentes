@@ -22,7 +22,7 @@ return new class extends Migration
                 uploaded_by_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
 
                 file_name VARCHAR(255) NOT NULL,
-                file_url VARCHAR(500) NOT NULL,
+                file_path VARCHAR(500) NOT NULL,
                 file_type VARCHAR(100),
                 file_size_bytes BIGINT,
 
@@ -35,7 +35,7 @@ return new class extends Migration
         DB::statement("COMMENT ON COLUMN ticketing.ticket_attachments.ticket_id IS 'Ticket propietario del archivo'");
         DB::statement("COMMENT ON COLUMN ticketing.ticket_attachments.response_id IS 'Respuesta a la que pertenece el archivo (nullable si es subido sin respuesta)'");
         DB::statement("COMMENT ON COLUMN ticketing.ticket_attachments.uploaded_by_user_id IS 'Usuario que subió el archivo'");
-        DB::statement("COMMENT ON COLUMN ticketing.ticket_attachments.file_url IS 'URL pública del archivo en storage externo'");
+        DB::statement("COMMENT ON COLUMN ticketing.ticket_attachments.file_path IS 'Path del archivo en storage local'");
 
         // Índices
         DB::statement("CREATE INDEX idx_ticket_attachments_ticket_id ON ticketing.ticket_attachments(ticket_id)");

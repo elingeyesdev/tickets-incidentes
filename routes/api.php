@@ -445,3 +445,31 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
     Route::delete('/tickets/categories/{id}', [CategoryController::class, 'destroy'])
         ->name('tickets.categories.destroy');
 });
+
+// ================================================================================
+// REST API ENDPOINTS - Ticket Management (Tickets CRUD)
+// ================================================================================
+
+Route::middleware('jwt.require')->group(function () {
+    // Create ticket (USER only)
+    Route::post('/tickets', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'store'])
+        ->middleware('role:USER')
+        ->name('tickets.store');
+
+    // List tickets (all authenticated users with role-based filtering)
+    Route::get('/tickets', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'index'])
+        ->name('tickets.index');
+
+    // Get single ticket (policy-based authorization)
+    Route::get('/tickets/{ticket}', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'show'])
+        ->name('tickets.show');
+
+    // Update ticket (policy-based authorization)
+    Route::patch('/tickets/{ticket}', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'update'])
+        ->name('tickets.update');
+
+    // Delete ticket (COMPANY_ADMIN only, policy validates CLOSED status)
+    Route::delete('/tickets/{ticket}', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'destroy'])
+        ->middleware('role:COMPANY_ADMIN')
+        ->name('tickets.destroy');
+});

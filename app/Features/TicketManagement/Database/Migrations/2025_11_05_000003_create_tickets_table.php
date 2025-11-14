@@ -25,7 +25,7 @@ return new class extends Migration
 
                 -- Contenido
                 title VARCHAR(255) NOT NULL,
-                initial_description TEXT NOT NULL,
+                description TEXT NOT NULL,
 
                 -- Ciclo de vida
                 status ticketing.ticket_status NOT NULL DEFAULT 'open',

@@ -25,30 +25,25 @@ return new class extends Migration
                     UPDATE ticketing.tickets
                     SET
                         owner_agent_id = NEW.author_id,
-                        last_response_author_type = 'agent',
                         first_response_at = CASE
                             WHEN first_response_at IS NULL THEN NOW()
                             ELSE first_response_at
                         END,
-                        status = CASE
-                            WHEN status = 'open' THEN 'pending'::ticketing.ticket_status
-                            ELSE status
-                        END
+                        status = 'pending'::ticketing.ticket_status,
+                        last_response_author_type = 'agent'
                     WHERE id = NEW.ticket_id
                     AND owner_agent_id IS NULL;
 
                     -- Si el ticket ya tiene owner, solo actualizar last_response_author_type
                     UPDATE ticketing.tickets
-                    SET
-                        last_response_author_type = 'agent'
+                    SET last_response_author_type = 'agent'
                     WHERE id = NEW.ticket_id
                     AND owner_agent_id IS NOT NULL;
 
                 ELSIF NEW.author_type = 'user' THEN
                     -- Si responde un usuario, solo actualizar last_response_author_type
                     UPDATE ticketing.tickets
-                    SET
-                        last_response_author_type = 'user'
+                    SET last_response_author_type = 'user'
                     WHERE id = NEW.ticket_id;
                 END IF;
 

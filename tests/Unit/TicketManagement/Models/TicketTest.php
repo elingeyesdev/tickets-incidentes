@@ -69,9 +69,8 @@ class TicketTest extends TestCase
     public function belongs_to_owner_agent(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
-        $agent->assignRole('AGENT', $company->id);
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
 
         // Act
         $ticket = Ticket::factory()->create([

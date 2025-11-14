@@ -75,5 +75,26 @@ class AppServiceProvider extends ServiceProvider
             \App\Features\TicketManagement\Models\Category::class,
             \App\Features\TicketManagement\Policies\CategoryPolicy::class
         );
+
+        // Ticket Management Policies
+        Gate::policy(
+            \App\Features\TicketManagement\Models\Ticket::class,
+            \App\Features\TicketManagement\Policies\TicketPolicy::class
+        );
+
+        Gate::policy(
+            \App\Features\TicketManagement\Models\TicketResponse::class,
+            \App\Features\TicketManagement\Policies\TicketResponsePolicy::class
+        );
+
+        Gate::policy(
+            \App\Features\TicketManagement\Models\TicketAttachment::class,
+            \App\Features\TicketManagement\Policies\TicketAttachmentPolicy::class
+        );
+
+        Gate::policy(
+            \App\Features\TicketManagement\Models\TicketRating::class,
+            \App\Features\TicketManagement\Policies\TicketRatingPolicy::class
+        );
     }
 }

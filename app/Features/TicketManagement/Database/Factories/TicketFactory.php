@@ -53,7 +53,7 @@ class TicketFactory extends Factory
             'company_id' => Company::factory(),
             'category_id' => Category::factory(),
             'title' => $this->faker->randomElement($titles),
-            'initial_description' => $this->faker->randomElement($descriptions) . ' ' . $this->faker->realText(200),
+            'description' => $this->faker->randomElement($descriptions) . ' ' . $this->faker->realText(200),
             'status' => TicketStatus::OPEN,
             'owner_agent_id' => null,  // NULL inicialmente, se asigna con trigger
             'last_response_author_type' => 'none',  // 'none' por defecto, se actualiza con trigger

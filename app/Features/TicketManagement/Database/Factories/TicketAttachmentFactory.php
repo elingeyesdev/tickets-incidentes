@@ -39,7 +39,7 @@ class TicketAttachmentFactory extends Factory
             'response_id' => null,  // Por defecto, adjunto al ticket directamente
             'uploaded_by_user_id' => User::factory(),
             'file_name' => $fileName,
-            'file_url' => 'storage/tickets/attachments/' . $this->faker->uuid() . '.' . $fileType['extension'],
+            'file_path' => 'storage/tickets/attachments/' . $this->faker->uuid() . '.' . $fileType['extension'],
             'file_type' => $fileType['mime'],
             'file_size_bytes' => $this->faker->numberBetween($fileType['size'][0], $fileType['size'][1]),
             'created_at' => now(),

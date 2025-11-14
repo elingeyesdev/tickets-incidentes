@@ -21,7 +21,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  *
  * Coverage:
  * - Authentication (unauthenticated, USER, AGENT, COMPANY_ADMIN)
- * - Required fields validation (title, initial_description, company_id, category_id)
+ * - Required fields validation (title, description, company_id, category_id)
  * - Title validation (length 5-255)
  * - Description validation (length 10-5000)
  * - Company existence validation
@@ -46,7 +46,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - created_by_user_id: UUID (FK to auth.users)
  * - owner_agent_id: UUID (nullable, FK to auth.users)
  * - title: VARCHAR(255) NOT NULL
- * - initial_description: TEXT NOT NULL
+ * - description: TEXT NOT NULL
  * - status: ENUM (open, pending, resolved, closed) DEFAULT 'open'
  * - created_at: TIMESTAMPTZ
  * - updated_at: TIMESTAMPTZ
@@ -64,7 +64,7 @@ class CreateTicketTest extends TestCase
      *
      * Expected: 201 Created with ticket data
      * Database: Ticket should be persisted
-     * Response: Should include id, ticket_code, company_id, category_id, title, initial_description, status, created_by_user_id
+     * Response: Should include id, ticket_code, company_id, category_id, title, description, status, created_by_user_id
      */
     #[Test]
     public function user_can_create_ticket(): void
@@ -81,7 +81,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Error al exportar reporte mensual',
-            'initial_description' => 'Cuando intento exportar el reporte mensual de ventas, el sistema muestra un error 500.',
+            'description' => 'Cuando intento exportar el reporte mensual de ventas, el sistema muestra un error 500.',
         ];
 
         // Act
@@ -103,7 +103,7 @@ class CreateTicketTest extends TestCase
                 'company_id',
                 'category_id',
                 'title',
-                'initial_description',
+                'description',
                 'status',
                 'created_by_user_id',
                 'created_at',
@@ -143,7 +143,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket creado por agente',
-            'initial_description' => 'Esto no debería permitirse porque el agente no puede crear tickets.',
+            'description' => 'Esto no debería permitirse porque el agente no puede crear tickets.',
         ];
 
         // Act
@@ -182,7 +182,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket creado por admin',
-            'initial_description' => 'Esto no debería permitirse porque el admin no puede crear tickets.',
+            'description' => 'Esto no debería permitirse porque el admin no puede crear tickets.',
         ];
 
         // Act
@@ -219,7 +219,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket sin autenticación',
-            'initial_description' => 'Esto no debería permitirse porque no hay usuario autenticado.',
+            'description' => 'Esto no debería permitirse porque no hay usuario autenticado.',
         ];
 
         // Act - No authenticateWithJWT() call
@@ -238,7 +238,7 @@ class CreateTicketTest extends TestCase
     /**
      * Test #5: Validates required fields
      *
-     * Verifies that title, initial_description, company_id, and category_id are required.
+     * Verifies that title, description, company_id, and category_id are required.
      *
      * Expected: 422 Unprocessable Entity with validation errors
      * Database: No ticket should be created
@@ -258,7 +258,7 @@ class CreateTicketTest extends TestCase
 
         // Assert
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['title', 'initial_description', 'company_id', 'category_id']);
+        $response->assertJsonValidationErrors(['title', 'description', 'company_id', 'category_id']);
     }
 
     // ==================== GROUP 3: Validación Length (Tests 6-7) ====================
@@ -288,7 +288,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Test',
-            'initial_description' => 'Description with enough characters to pass validation.',
+            'description' => 'Description with enough characters to pass validation.',
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
@@ -300,7 +300,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => str_repeat('A', 300),
-            'initial_description' => 'Description with enough characters to pass validation.',
+            'description' => 'Description with enough characters to pass validation.',
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
@@ -311,7 +311,7 @@ class CreateTicketTest extends TestCase
     /**
      * Test #7: Validates description length (min 10, max 5000)
      *
-     * Verifies initial_description validation constraints:
+     * Verifies description validation constraints:
      * - Minimum 10 characters (should fail)
      * - Maximum 5000 characters (should fail)
      *
@@ -333,24 +333,24 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Valid title with enough characters',
-            'initial_description' => 'Short',
+            'description' => 'Short',
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('initial_description');
+            ->assertJsonValidationErrors('description');
 
         // Case 2: Description too long (6000 chars, max is 5000)
         $payload = [
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Valid title with enough characters',
-            'initial_description' => str_repeat('A', 6000),
+            'description' => str_repeat('A', 6000),
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('initial_description');
+            ->assertJsonValidationErrors('description');
     }
 
     // ==================== GROUP 4: Validación Existencia (Tests 8-9) ====================
@@ -375,7 +375,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $fakeCompanyId,
             'category_id' => $category->id,
             'title' => 'Ticket con empresa inexistente',
-            'initial_description' => 'Esta empresa no existe en la base de datos.',
+            'description' => 'Esta empresa no existe en la base de datos.',
         ];
 
         // Act
@@ -408,7 +408,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $fakeCategoryId,
             'title' => 'Ticket con categoría inexistente',
-            'initial_description' => 'Esta categoría no existe en la base de datos.',
+            'description' => 'Esta categoría no existe en la base de datos.',
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
@@ -424,7 +424,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $inactiveCategory->id,
             'title' => 'Ticket con categoría inactiva',
-            'initial_description' => 'Esta categoría existe pero está inactiva.',
+            'description' => 'Esta categoría existe pero está inactiva.',
         ];
         $response = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload);
@@ -463,7 +463,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $companyA->id,
             'category_id' => $categoryA->id,
             'title' => 'Ticket en Empresa A',
-            'initial_description' => 'Este ticket es para la empresa A.',
+            'description' => 'Este ticket es para la empresa A.',
         ];
         $responseA = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payloadA);
@@ -473,7 +473,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $companyB->id,
             'category_id' => $categoryB->id,
             'title' => 'Ticket en Empresa B',
-            'initial_description' => 'Este ticket es para la empresa B.',
+            'description' => 'Este ticket es para la empresa B.',
         ];
         $responseB = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payloadB);
@@ -519,7 +519,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket con código automático',
-            'initial_description' => 'El código del ticket debe generarse automáticamente.',
+            'description' => 'El código del ticket debe generarse automáticamente.',
             // Intentionally NOT including ticket_code
         ];
 
@@ -567,7 +567,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Primer ticket del año',
-            'initial_description' => 'Este debería ser TKT-2025-00001.',
+            'description' => 'Este debería ser TKT-2025-00001.',
         ];
         $response1 = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload1);
@@ -577,7 +577,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Segundo ticket del año',
-            'initial_description' => 'Este debería ser TKT-2025-00002.',
+            'description' => 'Este debería ser TKT-2025-00002.',
         ];
         $response2 = $this->authenticateWithJWT($user)
             ->postJson('/api/tickets', $payload2);
@@ -620,7 +620,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket con status inicial open',
-            'initial_description' => 'El status inicial debe ser "open".',
+            'description' => 'El status inicial debe ser "open".',
         ];
 
         // Act
@@ -661,7 +661,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket con created_by_user_id automático',
-            'initial_description' => 'El created_by_user_id debe ser del usuario autenticado.',
+            'description' => 'El created_by_user_id debe ser del usuario autenticado.',
         ];
 
         // Act
@@ -704,7 +704,7 @@ class CreateTicketTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Ticket que dispara evento',
-            'initial_description' => 'Este ticket debería disparar un evento TicketCreated.',
+            'description' => 'Este ticket debería disparar un evento TicketCreated.',
         ];
 
         // Act
@@ -727,7 +727,7 @@ class CreateTicketTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/api/tickets', [
             'title' => 'Test Ticket for Field Initialization',
-            'initial_description' => 'Testing that last_response_author_type is initialized to none',
+            'description' => 'Testing that last_response_author_type is initialized to none',
             'company_id' => $company->id,
             'category_id' => $category->id,
         ]);

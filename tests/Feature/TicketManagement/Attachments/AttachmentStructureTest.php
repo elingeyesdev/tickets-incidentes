@@ -34,7 +34,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - response_id: UUID NULLABLE (FK to ticketing.ticket_responses)
  * - uploaded_by_user_id: UUID NOT NULL (FK to auth.users)
  * - file_name: VARCHAR(255) NOT NULL
- * - file_url: VARCHAR(500) NOT NULL
+ * - file_path: VARCHAR(500) NOT NULL
  * - file_type: VARCHAR(100) NULLABLE
  * - file_size_bytes: BIGINT NULLABLE
  * - created_at: TIMESTAMPTZ
@@ -67,7 +67,7 @@ class AttachmentStructureTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'test.pdf',
-            'file_url' => 'tickets/attachments/test.pdf',
+            'file_path' => 'tickets/attachments/test.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 12345,
         ]);
@@ -107,7 +107,7 @@ class AttachmentStructureTest extends TestCase
             'response_id' => null, // ← NULLABLE, this is valid
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'direct_attachment.pdf',
-            'file_url' => 'tickets/attachments/direct_attachment.pdf',
+            'file_path' => 'tickets/attachments/direct_attachment.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 54321,
         ]);
@@ -144,9 +144,9 @@ class AttachmentStructureTest extends TestCase
     public function attachment_response_id_must_reference_valid_response(): void
     {
         // Arrange
-        $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $user = User::factory()->withRole('USER')->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
@@ -170,14 +170,14 @@ class AttachmentStructureTest extends TestCase
             'ticket_id' => $ticket1->id,
             'author_id' => $agent->id,
             'author_type' => AuthorType::AGENT,
-            'response_content' => 'Response for ticket 1',
+            'content' => 'Response for ticket 1',
         ]);
 
         $responseTicket2 = TicketResponse::create([
             'ticket_id' => $ticket2->id,
             'author_id' => $agent->id,
             'author_type' => AuthorType::AGENT,
-            'response_content' => 'Response for ticket 2',
+            'content' => 'Response for ticket 2',
         ]);
 
         // Act & Assert
@@ -189,7 +189,7 @@ class AttachmentStructureTest extends TestCase
             'response_id' => $responseTicket2->id, // ← Response belongs to ticket2, not ticket1
             'uploaded_by_user_id' => $agent->id,
             'file_name' => 'mismatched.pdf',
-            'file_url' => 'tickets/attachments/mismatched.pdf',
+            'file_path' => 'tickets/attachments/mismatched.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 11111,
         ]);
@@ -235,7 +235,7 @@ class AttachmentStructureTest extends TestCase
                 'response_id' => null,
                 'uploaded_by_user_id' => $user->id,
                 'file_name' => "file{$i}.pdf",
-                'file_url' => "tickets/attachments/file{$i}.pdf",
+                'file_path' => "tickets/attachments/file{$i}.pdf",
                 'file_type' => 'application/pdf',
                 'file_size_bytes' => 1000 * $i,
             ]);

@@ -68,7 +68,7 @@ class TicketServiceTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'First ticket for code generation',
-            'initial_description' => 'Testing ticket code generation algorithm.',
+            'description' => 'Testing ticket code generation algorithm.',
             'created_by_user_id' => $user->id,
         ];
 
@@ -76,13 +76,13 @@ class TicketServiceTest extends TestCase
             'company_id' => $company->id,
             'category_id' => $category->id,
             'title' => 'Second ticket for code generation',
-            'initial_description' => 'Testing sequential ticket code generation.',
+            'description' => 'Testing sequential ticket code generation.',
             'created_by_user_id' => $user->id,
         ];
 
         // Act
-        $ticket1 = $this->service->create($data1);
-        $ticket2 = $this->service->create($data2);
+        $ticket1 = $this->service->create($data1, $user);
+        $ticket2 = $this->service->create($data2, $user);
 
         // Assert
         $currentYear = now()->year;
@@ -135,7 +135,7 @@ class TicketServiceTest extends TestCase
             'company_id' => $invalidCompanyId,
             'category_id' => $category->id,
             'title' => 'Ticket with invalid company',
-            'initial_description' => 'This should fail because company does not exist.',
+            'description' => 'This should fail because company does not exist.',
             'created_by_user_id' => $user->id,
         ];
 
@@ -143,7 +143,7 @@ class TicketServiceTest extends TestCase
         $this->expectException(TicketNotFoundException::class);
         $this->expectExceptionMessage('Company not found');
 
-        $this->service->create($data);
+        $this->service->create($data, $user);
     }
 
     /**
@@ -199,17 +199,19 @@ class TicketServiceTest extends TestCase
             'status' => 'open',
         ]);
 
-        // Act - List tickets for User A
-        $ticketsForUserA = $this->service->list([
-            'user_id' => $userA->id,
-            'user_role' => 'USER',
+        // Act - List tickets for User A (simulate JWT context)
+        request()->attributes->set('jwt_payload', [
+            'sub' => $userA->id,
+            'roles' => [['code' => 'USER', 'company_id' => null]],
         ]);
+        $ticketsForUserA = $this->service->list([], $userA);
 
-        // Act - List tickets for User B
-        $ticketsForUserB = $this->service->list([
-            'user_id' => $userB->id,
-            'user_role' => 'USER',
+        // Act - List tickets for User B (simulate JWT context)
+        request()->attributes->set('jwt_payload', [
+            'sub' => $userB->id,
+            'roles' => [['code' => 'USER', 'company_id' => null]],
         ]);
+        $ticketsForUserB = $this->service->list([], $userB);
 
         // Assert - User A should see only 2 tickets
         $this->assertCount(2, $ticketsForUserA);

@@ -44,7 +44,7 @@ class TicketResponseFactory extends Factory
         return [
             'ticket_id' => Ticket::factory(),
             'author_id' => User::factory(),
-            'response_content' => $this->faker->randomElement($responses[$authorType->value]),
+            'content' => $this->faker->randomElement($responses[$authorType->value]),
             'author_type' => $authorType,
             'created_at' => now(),
         ];

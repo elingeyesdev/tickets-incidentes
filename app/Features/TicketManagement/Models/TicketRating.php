@@ -19,14 +19,14 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * @property string $id
  * @property string $ticket_id
- * @property string $customer_id
+ * @property string $rated_by_user_id
  * @property string $rated_agent_id
  * @property int $rating
  * @property string|null $comment
  * @property \DateTime $created_at
  *
  * @property-read Ticket $ticket
- * @property-read User $customer
+ * @property-read User $ratedBy
  * @property-read User $ratedAgent
  */
 class TicketRating extends Model
@@ -63,7 +63,7 @@ class TicketRating extends Model
      */
     protected $fillable = [
         'ticket_id',
-        'customer_id',
+        'rated_by_user_id',
         'rated_agent_id',
         'rating',
         'comment',
@@ -75,7 +75,7 @@ class TicketRating extends Model
     protected $casts = [
         'id' => 'string',
         'ticket_id' => 'string',
-        'customer_id' => 'string',
+        'rated_by_user_id' => 'string',
         'rated_agent_id' => 'string',
         'rating' => 'integer',
         'created_at' => 'datetime',

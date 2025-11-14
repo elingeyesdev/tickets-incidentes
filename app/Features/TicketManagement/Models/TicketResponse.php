@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $id
  * @property string $ticket_id
  * @property string $author_id
- * @property string $response_content
+ * @property string $content
  * @property AuthorType $author_type
  * @property \DateTime $created_at
  *
@@ -65,7 +65,7 @@ class TicketResponse extends Model
     protected $fillable = [
         'ticket_id',
         'author_id',
-        'response_content',
+        'content',
         'author_type',
     ];
 

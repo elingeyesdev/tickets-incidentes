@@ -6,6 +6,7 @@ namespace Tests\Unit\TicketManagement\Rules;
 
 use App\Features\TicketManagement\Rules\ValidFileType;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -65,10 +66,10 @@ class ValidFileTypeTest extends TestCase
         // Act & Assert
         foreach ($allowedTypes as $extension => $fileName) {
             $file = UploadedFile::fake()->create($fileName, 100);
-            $result = $rule->passes('file', $file);
+            $validator = Validator::make(['file' => $file], ['file' => $rule]);
 
             $this->assertTrue(
-                $result,
+                $validator->passes(),
                 "File type {$extension} should be allowed but was rejected"
             );
         }
@@ -101,10 +102,10 @@ class ValidFileTypeTest extends TestCase
         // Act & Assert
         foreach ($maliciousTypes as $extension => $fileName) {
             $file = UploadedFile::fake()->create($fileName, 100);
-            $result = $rule->passes('file', $file);
+            $validator = Validator::make(['file' => $file], ['file' => $rule]);
 
             $this->assertFalse(
-                $result,
+                $validator->passes(),
                 "File type {$extension} should be rejected for security but was allowed"
             );
         }
@@ -123,11 +124,12 @@ class ValidFileTypeTest extends TestCase
     {
         // Arrange
         $rule = new ValidFileType();
-        $maliciousFile = UploadedFile::fake()->create('virus.exe', 100);
+        $maliciousFile = UploadedFile::fake()->create('unknown.xyz', 100); // Tipo no permitido pero no prohibido
 
         // Act - Trigger validation failure
-        $rule->passes('file', $maliciousFile);
-        $message = $rule->message();
+        $validator = Validator::make(['file' => $maliciousFile], ['file' => $rule]);
+        $validator->fails(); // Execute validation to generate error messages
+        $message = $validator->errors()->first('file');
 
         // Assert - Message should be descriptive
         $this->assertIsString($message, 'Error message should be a string');

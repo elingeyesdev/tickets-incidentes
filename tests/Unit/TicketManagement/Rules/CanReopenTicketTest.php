@@ -146,9 +146,8 @@ class CanReopenTicketTest extends TestCase
     public function agent_can_reopen_regardless_of_time(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
-        $agent->assignRole('AGENT', $company->id);
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
 
         $category = Category::factory()->create([
             'company_id' => $company->id,

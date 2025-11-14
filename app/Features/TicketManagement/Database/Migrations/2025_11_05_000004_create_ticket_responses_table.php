@@ -19,7 +19,7 @@ return new class extends Migration
                 ticket_id UUID NOT NULL REFERENCES ticketing.tickets(id) ON DELETE CASCADE,
                 author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
 
-                response_content TEXT NOT NULL,
+                content TEXT NOT NULL,
 
                 -- Para diferenciar si responde un 'user' o 'agent'
                 author_type ticketing.author_type NOT NULL,
@@ -32,7 +32,7 @@ return new class extends Migration
         DB::statement("COMMENT ON TABLE ticketing.ticket_responses IS 'Conversación pública en el ticket. Visible tanto para cliente como para agentes.'");
         DB::statement("COMMENT ON COLUMN ticketing.ticket_responses.author_id IS 'Usuario que escribió la respuesta (cliente o agente)'");
         DB::statement("COMMENT ON COLUMN ticketing.ticket_responses.author_type IS 'Tipo de autor: user (cliente) o agent (agente de soporte)'");
-        DB::statement("COMMENT ON COLUMN ticketing.ticket_responses.response_content IS 'Contenido de la respuesta (puede incluir HTML/Markdown)'");
+        DB::statement("COMMENT ON COLUMN ticketing.ticket_responses.content IS 'Contenido de la respuesta (puede incluir HTML/Markdown)'");
 
         // Índices
         DB::statement("CREATE INDEX idx_ticket_responses_ticket_id ON ticketing.ticket_responses(ticket_id)");

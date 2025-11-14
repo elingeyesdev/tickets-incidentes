@@ -4,6 +4,160 @@
 > **Cobertura de Tests**: Unit + Integration + Feature + Edge Cases
 > **Total de Archivos de Test**: 45 archivos (42 originales + 3 nuevos para last_response_author_type)
 > **Total de Tests Estimados**: 383 tests (358 originales + 25 nuevos para last_response_author_type)
+> **ACTUALIZACIÓN**: Sincronización con tests implementados (Nov 2025)
+> **Cambios Críticos Identificados**:
+> - Campo transversal `last_response_author_type` (⭐⭐⭐⭐⭐)
+> - State machine: OPEN → PENDING → OPEN (⭐⭐⭐⭐⭐)
+> - Triggers automáticos PostgreSQL (⭐⭐⭐⭐⭐)
+> - Ventanas de tiempo: 30 min, 30 días (⭐⭐⭐⭐)
+> - Ver CAMBIOS-EN-TESTS.md para detalles completos
+
+---
+
+## 🔄 SISTEMA DE ESTADOS (STATE MACHINE) - CRÍTICO
+
+### Estados del Ticket (4 Estados)
+
+```
+┌─────────────────────────────┐
+│  OPEN (Nuevo)               │
+│  - Sin agente asignado      │
+│  - last_response_author_type: 'none'
+└────────────┬────────────────┘
+             │
+             │ (PRIMER agente responde) [TRIGGER]
+             ▼
+┌─────────────────────────────┐
+│  PENDING (Esperando cliente)│
+│  - Agente asignado          │
+│  - last_response_author_type: 'agent'
+└────────────┬────────────────┘
+             │
+             │ (Cliente responde) [TRIGGER]
+             ▼
+┌─────────────────────────────┐
+│  OPEN (Cliente respondió)   │
+│  - Agente sigue asignado    │
+│  - last_response_author_type: 'user'
+└────────────┬────────────────┘
+             │
+             │ (Agente resuelve) [MANUAL]
+             ▼
+┌─────────────────────────────┐
+│  RESOLVED (Resuelto)        │
+│  - resolved_at = timestamp  │
+└────────────┬────────────────┘
+             │
+             │ (Auto-close 7 días)
+             ▼
+┌─────────────────────────────┐
+│  CLOSED (Cerrado)           │
+│  - closed_at = timestamp    │
+└─────────────────────────────┘
+```
+
+### Campo Transversal: last_response_author_type
+
+| Valor | Significado | Cuándo |
+|-------|-------------|--------|
+| `'none'` | Sin respuestas aún | Ticket recién creado |
+| `'user'` | Cliente respondió último | Después de respuesta del usuario |
+| `'agent'` | Agente respondió último | Después de respuesta del agente |
+
+**CRÍTICO**: Se actualiza SIEMPRE en cada respuesta. NUNCA cambia en acciones como resolve, close, reopen, assign.
+
+---
+
+## ⚙️ TRIGGERS PostgreSQL AUTOMÁTICOS
+
+### Trigger 1: Auto-Assignment (OPEN → PENDING)
+
+**Condición**: `author_type = 'agent'` AND `owner_agent_id IS NULL`
+
+```sql
+UPDATE ticketing.tickets
+SET
+    owner_agent_id = NEW.author_id,
+    status = 'pending',
+    first_response_at = NOW(),
+    last_response_author_type = 'agent',
+    updated_at = NOW()
+WHERE id = NEW.ticket_id
+AND owner_agent_id IS NULL;
+```
+
+**Cuándo**: Cuando el PRIMER agente responde a un ticket nuevo (open sin asignar)
+
+### Trigger 2: Status Change (PENDING → OPEN)
+
+**Condición**: `author_type = 'user'` AND `status = 'pending'`
+
+```sql
+UPDATE ticketing.tickets
+SET
+    status = 'open',
+    last_response_author_type = 'user',
+    updated_at = NOW()
+WHERE id = NEW.ticket_id
+AND status = 'pending';
+```
+
+**CRÍTICO**: `owner_agent_id` NO se modifica (SE MANTIENE)
+
+**Cuándo**: Cuando el CLIENTE responde a un ticket en estado PENDING
+
+### Trigger 3: Update last_response_author_type
+
+**Condición**: SIEMPRE (en cada respuesta)
+
+```sql
+UPDATE ticketing.tickets
+SET
+    last_response_author_type = NEW.author_type,
+    updated_at = NOW()
+WHERE id = NEW.ticket_id;
+```
+
+---
+
+## ⏱️ VENTANAS DE TIEMPO CRÍTICAS
+
+| Restricción | Límite | Aplica a | Validación |
+|------------|--------|----------|-----------|
+| Edit Response | 30 minutos | `UpdateResponseTest` | `created_at + 30 min` |
+| Delete Response | 30 minutos | `DeleteResponseTest` | `created_at + 30 min` |
+| Upload to Response | 30 minutos | `UploadAttachmentToResponseTest` | `response.created_at + 30 min` |
+| Delete Attachment | 30 minutos | `DeleteAttachmentTest` | `created_at + 30 min` |
+| Reopen Closed Ticket | 30 días (USER only) | `ReopenTicketTest` | `closed_at + 30 días` (AGENT: sin límite) |
+| Update Rating | 24 horas | `UpdateRatingTest` | `rating.created_at + 24h` |
+
+**Implementación**: Validaciones en Rules/ y Services/
+
+---
+
+## 🔐 MATRIZ DE PERMISOS ACTUALIZADA
+
+| Operación | USER | AGENT | COMPANY_ADMIN |
+|-----------|:----:|:-----:|:-------------:|
+| Create Ticket | ✅ | ❌ | ❌ |
+| List Tickets | Propios | Company | Company |
+| Get Ticket | Owner | Company | Company |
+| Update Ticket | Si open | Siempre | Siempre |
+| Resolve Ticket | ❌ | ✅ | ✅ |
+| Close Ticket | Si resolved | Siempre | Siempre |
+| Reopen Ticket | Si <30d | Siempre | Siempre |
+| Assign Ticket | ❌ | ✅ | ✅ |
+| Delete Ticket | ❌ | ❌ | Si closed |
+| **RESPONSES** | | | |
+| Create Response | Owner | Company | Company |
+| Edit Response | Autor 30m | Autor 30m | Autor 30m |
+| Delete Response | Autor 30m | Autor 30m | Autor 30m |
+| **ATTACHMENTS** | | | |
+| Upload | Owner | Company | Company |
+| Delete | Uploader 30m | Uploader 30m | Uploader 30m |
+| **INTERNAL NOTES** | | | |
+| View Notes | ❌ | ✅ | ✅ |
+| Create Note | ❌ | ✅ | ✅ |
 
 ---
 
@@ -68,10 +222,6 @@ app/Features/TicketManagement/
 │   │   ├── TicketInternalNoteController.php
 │   │   ├── TicketAttachmentController.php
 │   │   └── TicketRatingController.php
-│   │
-│   ├── Middleware/
-│   │   ├── EnsureTicketOwner.php
-│   │   └── EnsureAgentRole.php
 │   │
 │   ├── Requests/
 │   │   ├── Categories/
@@ -172,6 +322,33 @@ app/Features/TicketManagement/
 │
 └── TicketManagementServiceProvider.php
 ```
+
+---
+
+## 🔑 PRINCIPIOS DE ARQUITECTURA
+
+### Autenticación y Autorización
+- **JWT Stateless Architecture**: Sin sesiones, tokens auto-contenidos
+- **Middlewares Reutilizados**: Solo `AuthenticateJwt` y `EnsureUserHasRole` (existentes)
+- **NO crear middlewares custom** como `EnsureTicketOwner` o `EnsureAgentRole`
+- **Autorización por recurso**: Se maneja vía Policies (Laravel Policy pattern)
+- **Multi-tenancy**: Gestión de company_id vía `JWTHelper` (extrae del token)
+
+### Triggers PostgreSQL
+- **Auto-assignment**: Primer agente que responde se asigna automáticamente
+- **Status transitions**: PENDING→OPEN automático cuando cliente responde
+- **Campo transversal**: `last_response_author_type` actualizado por triggers
+
+### Validaciones Temporales
+- **30 minutos**: Editar/eliminar respuestas y adjuntos
+- **30 días**: Reapertura de tickets cerrados (solo USER)
+- **7 días**: Auto-close de tickets resueltos
+- **24 horas**: Actualización de calificaciones
+
+### Testing
+- **Docker obligatorio**: Todas las pruebas se ejecutan en contenedores
+- **TDD approach**: Tests primero, implementación después
+- **Cobertura completa**: Unit + Integration + Feature tests
 
 ---
 
@@ -330,7 +507,7 @@ tests/Integration/TicketManagement/
 
 2. **test_validates_required_fields**
     - Omite title → error 422
-    - Omite initial_description → error 422
+    - Omite description → error 422
     - Omite company_id → error 422
     - Omite category_id → error 422
 
@@ -429,7 +606,7 @@ tests/Integration/TicketManagement/
     - Response incluye last_response_author_type
 
 11. **test_search_in_description_works**
-    - Busca en initial_description también
+    - Busca en description también
     - Valida last_response_author_type en response
 
 12. **test_filter_by_date_range**

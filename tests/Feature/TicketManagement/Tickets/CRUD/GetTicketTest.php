@@ -39,7 +39,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * - created_by_user_id: UUID
  * - owner_agent_id: UUID (nullable)
  * - title: VARCHAR(255)
- * - initial_description: TEXT
+ * - description: TEXT
  * - status: ENUM (open, pending, resolved, closed)
  * - created_at: TIMESTAMPTZ
  * - updated_at: TIMESTAMPTZ
@@ -107,7 +107,7 @@ class GetTicketTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Error al exportar reporte',
-            'initial_description' => 'Cuando intento exportar el reporte mensual, el sistema muestra un error 500.',
+            'description' => 'Cuando intento exportar el reporte mensual, el sistema muestra un error 500.',
             'status' => 'open',
         ]);
 
@@ -287,7 +287,7 @@ class GetTicketTest extends TestCase
      *
      * Verifies that the GET endpoint returns all required ticket fields.
      *
-     * Expected: Response includes id, ticket_code, title, initial_description, status,
+     * Expected: Response includes id, ticket_code, title, description, status,
      *           owner_agent_id, company_id, category_id, created_at, updated_at
      */
     #[Test]
@@ -306,7 +306,7 @@ class GetTicketTest extends TestCase
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'title' => 'Ticket completo',
-            'initial_description' => 'Descripción detallada del problema.',
+            'description' => 'Descripción detallada del problema.',
             'status' => 'open',
         ]);
 
@@ -321,7 +321,7 @@ class GetTicketTest extends TestCase
                 'id',
                 'ticket_code',
                 'title',
-                'initial_description',
+                'description',
                 'status',
                 'owner_agent_id',
                 'last_response_author_type',
@@ -335,7 +335,7 @@ class GetTicketTest extends TestCase
         $response->assertJsonPath('data.id', $ticket->id);
         $response->assertJsonPath('data.ticket_code', $ticket->ticket_code);
         $response->assertJsonPath('data.title', 'Ticket completo');
-        $response->assertJsonPath('data.initial_description', 'Descripción detallada del problema.');
+        $response->assertJsonPath('data.description', 'Descripción detallada del problema.');
         $response->assertJsonPath('data.status', 'open');
         $response->assertJsonPath('data.company_id', $company->id);
         $response->assertJsonPath('data.category_id', $category->id);
