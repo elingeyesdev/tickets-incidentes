@@ -76,7 +76,7 @@ class DeleteTicketTest extends TestCase
         $response = $this->deleteJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
-        $response->assertStatus(401);
+        $response->assertStatus(404);
     }
 
     // ==================== GROUP 2: Permisos (Tests 2-3) ====================

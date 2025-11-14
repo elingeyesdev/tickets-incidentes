@@ -1078,7 +1078,7 @@ class ListTicketsTest extends TestCase
     #[Test]
     public function filter_by_last_response_author_type_none(): void
     {
-        $user = User::factory()->create(['role' => 'user']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
 
         // Create tickets con last_response_author_type = 'none'
@@ -1088,7 +1088,7 @@ class ListTicketsTest extends TestCase
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
 
-        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=none');
+        $response = $this->authenticateWithJWT($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=none');
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data'));
@@ -1105,14 +1105,14 @@ class ListTicketsTest extends TestCase
     #[Test]
     public function filter_by_last_response_author_type_user(): void
     {
-        $user = User::factory()->create(['role' => 'user']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
 
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'none']);
         Ticket::factory(2)->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
 
-        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=user');
+        $response = $this->authenticateWithJWT($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=user');
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data'));
@@ -1129,14 +1129,14 @@ class ListTicketsTest extends TestCase
     #[Test]
     public function filter_by_last_response_author_type_agent(): void
     {
-        $user = User::factory()->create(['role' => 'user']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
 
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'none']);
         Ticket::factory()->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'user']);
         Ticket::factory(2)->for($company)->for($user, 'creator')->create(['last_response_author_type' => 'agent']);
 
-        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=agent');
+        $response = $this->authenticateWithJWT($user)->getJson('/api/tickets?company_id='.$company->id.'&last_response_author_type=agent');
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data'));
@@ -1153,9 +1153,9 @@ class ListTicketsTest extends TestCase
     #[Test]
     public function filter_by_owner_agent_id_null_literal(): void
     {
-        $user = User::factory()->create(['role' => 'user']);
-        $agent = User::factory()->create(['role' => 'agent']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
 
         // Create tickets sin owner
         Ticket::factory(2)->for($company)->for($user, 'creator')->create(['owner_agent_id' => null]);
@@ -1163,7 +1163,7 @@ class ListTicketsTest extends TestCase
         // Create tickets con owner
         Ticket::factory()->for($company)->for($user, 'creator')->create(['owner_agent_id' => $agent->id]);
 
-        $response = $this->actingAs($user)->getJson('/api/tickets?company_id='.$company->id.'&owner_agent_id=null');
+        $response = $this->authenticateWithJWT($user)->getJson('/api/tickets?company_id='.$company->id.'&owner_agent_id=null');
 
         $response->assertOk();
         $this->assertCount(2, $response->json('data'));
@@ -1180,9 +1180,9 @@ class ListTicketsTest extends TestCase
     #[Test]
     public function combine_filters_owner_null_and_last_response_author_type_none(): void
     {
-        $user = User::factory()->create(['role' => 'user']);
-        $agent = User::factory()->create(['role' => 'agent']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
 
         // Tickets que coinciden con AMBOS filtros
         Ticket::factory(2)->for($company)->for($user, 'creator')->create([
@@ -1202,7 +1202,7 @@ class ListTicketsTest extends TestCase
             'last_response_author_type' => 'user'
         ]);
 
-        $response = $this->actingAs($user)->getJson(
+        $response = $this->authenticateWithJWT($user)->getJson(
             '/api/tickets?company_id='.$company->id.'&owner_agent_id=null&last_response_author_type=none'
         );
 

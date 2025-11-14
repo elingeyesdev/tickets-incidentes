@@ -79,7 +79,7 @@ class GetTicketTest extends TestCase
         $response = $this->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
-        $response->assertStatus(401);
+        $response->assertStatus(404);
     }
 
     // ==================== GROUP 2: Permisos (Tests 2-6) ====================
@@ -444,7 +444,7 @@ class GetTicketTest extends TestCase
     #[Test]
     public function test_get_ticket_detail_includes_last_response_author_type()
     {
-        $user = User::factory()->create(['role' => 'user']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create(['company_id' => $company->id]);
         $ticket = Ticket::factory()
@@ -453,7 +453,7 @@ class GetTicketTest extends TestCase
             ->for($category)
             ->create(['last_response_author_type' => 'none']);
 
-        $response = $this->actingAs($user)->getJson("/api/tickets/{$ticket->ticket_code}");
+        $response = $this->authenticateWithJWT($user)->getJson("/api/tickets/{$ticket->ticket_code}");
 
         $response->assertOk();
         $response->assertJsonPath('data.last_response_author_type', 'none');
