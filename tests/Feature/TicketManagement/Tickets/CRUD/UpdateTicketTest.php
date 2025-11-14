@@ -291,8 +291,8 @@ class UpdateTicketTest extends TestCase
     public function agent_can_update_ticket_title_and_category(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $categoryOld = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
@@ -303,9 +303,6 @@ class UpdateTicketTest extends TestCase
             'is_active' => true,
             'name' => 'Ventas',
         ]);
-
-        // Assign agent to company
-        $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
         $ticket = Ticket::factory()->create([
@@ -349,15 +346,12 @@ class UpdateTicketTest extends TestCase
     public function agent_cannot_manually_change_status_to_pending(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agent to company
-        $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
         $ticket = Ticket::factory()->create([
@@ -532,12 +526,9 @@ class UpdateTicketTest extends TestCase
     public function agent_cannot_update_other_company_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
+        $agent = User::factory()->withRole('AGENT', $companyA->id)->create();
         $companyB = Company::factory()->create(['name' => 'Company B']);
-
-        // Assign agent to Company A
-        $agent->assignRole('AGENT', $companyA->id);
 
         $categoryB = Category::factory()->create(['company_id' => $companyB->id]);
 

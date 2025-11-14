@@ -132,15 +132,12 @@ class DeleteTicketTest extends TestCase
     public function agent_cannot_delete_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agent to company
-        $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
         $ticket = Ticket::factory()->create([

@@ -171,15 +171,12 @@ class GetTicketTest extends TestCase
     public function agent_can_view_any_ticket_from_own_company(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agent to this company
-        $agent->assignRole('AGENT', $company->id);
 
         // Create ticket by another user
         $user = User::factory()->withRole('USER')->create();
@@ -212,12 +209,9 @@ class GetTicketTest extends TestCase
     public function agent_cannot_view_ticket_from_other_company(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
+        $agent = User::factory()->withRole('AGENT', $companyA->id)->create();
         $companyB = Company::factory()->create(['name' => 'Company B']);
-
-        // Assign agent only to Company A
-        $agent->assignRole('AGENT', $companyA->id);
 
         $categoryB = Category::factory()->create(['company_id' => $companyB->id]);
 

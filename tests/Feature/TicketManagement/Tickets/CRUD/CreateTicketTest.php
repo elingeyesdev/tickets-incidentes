@@ -132,8 +132,8 @@ class CreateTicketTest extends TestCase
     public function agent_cannot_create_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
@@ -721,11 +721,11 @@ class CreateTicketTest extends TestCase
     #[Test]
     public function test_created_ticket_has_correct_initial_last_response_author_type()
     {
-        $user = User::factory()->create(['role' => 'user']);
+        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create(['company_id' => $company->id, 'is_active' => true]);
 
-        $response = $this->actingAs($user)->postJson('/api/tickets', [
+        $response = $this->authenticateWithJWT($user)->postJson('/api/tickets', [
             'title' => 'Test Ticket for Field Initialization',
             'description' => 'Testing that last_response_author_type is initialized to none',
             'company_id' => $company->id,

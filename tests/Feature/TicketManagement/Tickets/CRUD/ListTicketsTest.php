@@ -172,15 +172,12 @@ class ListTicketsTest extends TestCase
     public function agent_can_list_all_company_tickets(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agent to this company (via role)
-        $agent->assignRole('AGENT', $company->id);
 
         // Create tickets by different users in the same company
         $userA = User::factory()->withRole('USER')->create();
@@ -228,12 +225,9 @@ class ListTicketsTest extends TestCase
     public function agent_cannot_see_other_company_tickets(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
+        $agent = User::factory()->withRole('AGENT', $companyA->id)->create();
         $companyB = Company::factory()->create(['name' => 'Company B']);
-
-        // Assign agent only to Company A
-        $agent->assignRole('AGENT', $companyA->id);
 
         $categoryA = Category::factory()->create(['company_id' => $companyA->id]);
         $categoryB = Category::factory()->create(['company_id' => $companyB->id]);
@@ -509,17 +503,13 @@ class ListTicketsTest extends TestCase
     public function filter_by_owner_agent_id_works(): void
     {
         // Arrange
-        $agentA = User::factory()->withRole('AGENT')->create();
-        $agentB = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agentA = User::factory()->withRole('AGENT', $company->id)->create();
+        $agentB = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agents to company
-        $agentA->assignRole('AGENT', $company->id);
-        $agentB->assignRole('AGENT', $company->id);
 
         // Create tickets assigned to different agents
         Ticket::factory()->create([
@@ -567,15 +557,12 @@ class ListTicketsTest extends TestCase
     public function filter_owner_agent_id_me_resolves_to_authenticated_user(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        // Assign agent to company
-        $agent->assignRole('AGENT', $company->id);
 
         // Create tickets assigned to this agent and others
         Ticket::factory()->create([
@@ -585,11 +572,12 @@ class ListTicketsTest extends TestCase
             'owner_agent_id' => $agent->id,
             'status' => 'open',
         ]);
+        $differentAgent = User::factory()->withRole('AGENT', $company->id)->create();
         Ticket::factory()->create([
             'company_id' => $company->id,
             'category_id' => $category->id,
             'created_by_user_id' => User::factory()->withRole('USER')->create()->id,
-            'owner_agent_id' => User::factory()->withRole('AGENT')->create()->id, // Different agent
+            'owner_agent_id' => $differentAgent->id, // Different agent
             'status' => 'open',
         ]);
 
@@ -615,14 +603,12 @@ class ListTicketsTest extends TestCase
     public function filter_by_created_by_user_id(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        $agent->assignRole('AGENT', $company->id);
 
         $userA = User::factory()->withRole('USER')->create();
         $userB = User::factory()->withRole('USER')->create();
@@ -1001,14 +987,12 @@ class ListTicketsTest extends TestCase
     {
         // Arrange
         $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
-
-        $agent->assignRole('AGENT', $company->id);
 
         // Create ticket with agent assigned
         Ticket::factory()->create([

@@ -450,6 +450,11 @@ Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->group(function () {
 // REST API ENDPOINTS - Ticket Management (Tickets CRUD)
 // ================================================================================
 
+// Route Model Binding: Use ticket_code instead of UUID primary key
+Route::bind('ticket', function ($value) {
+    return \App\Features\TicketManagement\Models\Ticket::where('ticket_code', $value)->firstOrFail();
+});
+
 Route::middleware('jwt.require')->group(function () {
     // Create ticket (USER only)
     Route::post('/tickets', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'store'])
