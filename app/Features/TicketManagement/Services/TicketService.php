@@ -199,15 +199,19 @@ class TicketService
 
         // Si es AGENT: ve todos los tickets de su empresa
         if ($userRole === 'AGENT') {
-            // Para tests sin JWT, usar company_id si está disponible
-            // En producción usaría JWTHelper::getCompanyIdFromJWT('AGENT')
+            $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+            if ($companyId) {
+                $query->where('company_id', $companyId);
+            }
             return;
         }
 
         // Si es COMPANY_ADMIN: ve todos los tickets de su empresa
         if ($userRole === 'COMPANY_ADMIN') {
-            // Para tests sin JWT, usar company_id si está disponible
-            // En producción usaría JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN')
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            if ($companyId) {
+                $query->where('company_id', $companyId);
+            }
             return;
         }
     }
