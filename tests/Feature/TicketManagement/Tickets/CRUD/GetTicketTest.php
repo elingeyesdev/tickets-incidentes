@@ -10,7 +10,7 @@ use App\Features\TicketManagement\Models\Ticket;
 use App\Features\UserManagement\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Feature Tests for Getting Ticket Detail
@@ -46,7 +46,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
  */
 class GetTicketTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabaseWithoutTransactions;
 
     // ==================== GROUP 1: Autenticación (Test 1) ====================
 
