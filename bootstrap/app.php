@@ -104,12 +104,4 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $handler->handleDatabaseException($e);
             }
         });
-
-        // Manejar todas las demás excepciones para rutas API
-        $exceptions->renderable(function (Throwable $e, \Illuminate\Http\Request $request) {
-            if ($request->is('api/*')) {
-                $handler = new ApiExceptionHandler();
-                return $handler->handleGenericException($e);
-            }
-        });
     })->create();

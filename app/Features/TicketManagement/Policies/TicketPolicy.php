@@ -42,10 +42,15 @@ class TicketPolicy
         }
 
         // Agent/Admin pueden ver tickets de su compañía
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT')
-            ?? JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        if ($user->hasRoleInCompany('AGENT', $ticket->company_id)) {
+            return true;
+        }
 
-        return $companyId && $ticket->company_id === $companyId;
+        if ($user->hasRoleInCompany('COMPANY_ADMIN', $ticket->company_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -59,10 +64,15 @@ class TicketPolicy
         }
 
         // Agent/Admin pueden editar tickets de su compañía
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT')
-            ?? JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        if ($user->hasRoleInCompany('AGENT', $ticket->company_id)) {
+            return true;
+        }
 
-        return $companyId && $ticket->company_id === $companyId;
+        if ($user->hasRoleInCompany('COMPANY_ADMIN', $ticket->company_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -70,10 +80,7 @@ class TicketPolicy
      */
     public function delete(User $user, Ticket $ticket): bool
     {
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-
-        return $companyId
-            && $ticket->company_id === $companyId
+        return $user->hasRoleInCompany('COMPANY_ADMIN', $ticket->company_id)
             && $ticket->status === TicketStatus::CLOSED;
     }
 
@@ -82,9 +89,7 @@ class TicketPolicy
      */
     public function resolve(User $user, Ticket $ticket): bool
     {
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-
-        return $companyId && $ticket->company_id === $companyId;
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
     }
 
     /**
@@ -93,8 +98,7 @@ class TicketPolicy
     public function close(User $user, Ticket $ticket): bool
     {
         // Agent de la compañía puede cerrar cualquiera
-        $agentCompanyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        if ($agentCompanyId && $ticket->company_id === $agentCompanyId) {
+        if ($user->hasRoleInCompany('AGENT', $ticket->company_id)) {
             return true;
         }
 
@@ -115,8 +119,7 @@ class TicketPolicy
         }
 
         // Agent puede reabrir sin restricciones
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        return $companyId && $ticket->company_id === $companyId;
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
     }
 
     /**
@@ -124,8 +127,6 @@ class TicketPolicy
      */
     public function assign(User $user, Ticket $ticket): bool
     {
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-
-        return $companyId && $ticket->company_id === $companyId;
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
     }
 }
