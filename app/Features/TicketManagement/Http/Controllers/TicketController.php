@@ -53,10 +53,19 @@ class TicketController extends Controller
             'search',
             'created_from',
             'created_to',
+            'created_after',
+            'created_before',
             'sort_by',
             'sort_order',
+            'sort',
             'per_page',
         ]);
+
+        // Parse 'sort' parameter if present (format: 'field' defaults to ASC)
+        if (!empty($filters['sort']) && empty($filters['sort_by'])) {
+            $filters['sort_by'] = $filters['sort'];
+            $filters['sort_order'] = 'asc'; // Default to ascending when using 'sort' parameter
+        }
 
         $tickets = $this->ticketService->list($filters, $user);
 
