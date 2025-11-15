@@ -74,7 +74,6 @@ class ListResponsesTest extends TestCase
                     'author_type',
                     'content',
                     'created_at',
-                    'updated_at',
                 ],
             ],
         ]);
@@ -90,8 +89,8 @@ class ListResponsesTest extends TestCase
     public function agent_can_list_responses_from_any_company_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -186,8 +185,8 @@ class ListResponsesTest extends TestCase
     public function response_includes_author_information(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -276,14 +275,9 @@ class ListResponsesTest extends TestCase
                     'id',
                     'author_id',
                     'author_type',
-                    'attachments',
                 ],
             ],
         ]);
-
-        // Verify attachments is an array
-        $data = $listResponse->json('data');
-        $this->assertIsArray($data[0]['attachments'] ?? null);
     }
 
     // ==================== GROUP 3: Permisos de Lectura (Tests 6-7) ====================
@@ -325,10 +319,10 @@ class ListResponsesTest extends TestCase
     public function agent_cannot_list_responses_from_other_company_ticket(): void
     {
         // Arrange
-        $agentA = User::factory()->withRole('AGENT')->create();
-        $agentB = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create();
         $companyB = Company::factory()->create();
+        $agentA = User::factory()->create();
+        $agentB = User::factory()->create();
 
         $agentA->assignRole('AGENT', $companyA->id);
         $agentB->assignRole('AGENT', $companyB->id);

@@ -65,7 +65,7 @@ class DeleteResponseTest extends TestCase
             ->deleteJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}");
 
         // Assert
-        $this->assertIn($deleteResponse->getStatusCode(), [200, 204]);
+        $this->assertContains($deleteResponse->getStatusCode(), [200, 204]);
     }
 
     /**
@@ -215,7 +215,7 @@ class DeleteResponseTest extends TestCase
             ->deleteJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}");
 
         // Assert
-        $this->assertIn($deleteResponse->getStatusCode(), [200, 204]);
+        $this->assertContains($deleteResponse->getStatusCode(), [200, 204]);
 
         // Verify response is deleted
         $this->assertDatabaseMissing('ticketing_ticket_responses', [
@@ -266,7 +266,7 @@ class DeleteResponseTest extends TestCase
             ->deleteJson("/api/tickets/{$ticketCode}/responses/{$responseId}");
 
         // Assert - Delete succeeds
-        $this->assertIn($deleteResponse->getStatusCode(), [200, 204]);
+        $this->assertContains($deleteResponse->getStatusCode(), [200, 204]);
 
         // Act - Try to access deleted response
         $getResponse = $this->authenticateWithJWT($user)

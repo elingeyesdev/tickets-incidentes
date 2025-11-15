@@ -71,8 +71,8 @@ class CreateResponseTest extends TestCase
     public function agent_can_respond_to_any_company_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -212,7 +212,7 @@ class CreateResponseTest extends TestCase
         $userResponse->assertJsonPath('data.author_type', 'user');
 
         // Arrange - Agent response
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         // Act - Agent responds
@@ -240,8 +240,8 @@ class CreateResponseTest extends TestCase
     public function first_agent_response_triggers_auto_assignment(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -270,7 +270,7 @@ class CreateResponseTest extends TestCase
         $this->assertEquals($agent->id, $ticket->owner_agent_id);
 
         // Verify status changed to pending
-        $this->assertEquals('pending', $ticket->status);
+        $this->assertEquals('pending', $ticket->status->value);
 
         // Verify last_response_author_type updated
         $this->assertEquals('agent', $ticket->last_response_author_type);
@@ -288,9 +288,9 @@ class CreateResponseTest extends TestCase
     public function auto_assignment_only_happens_once(): void
     {
         // Arrange
-        $agent1 = User::factory()->withRole('AGENT')->create();
-        $agent2 = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent1 = User::factory()->create();
+        $agent2 = User::factory()->create();
         $agent1->assignRole('AGENT', $company->id);
         $agent2->assignRole('AGENT', $company->id);
 
@@ -341,8 +341,8 @@ class CreateResponseTest extends TestCase
     public function first_agent_response_sets_first_response_at(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -455,8 +455,8 @@ class CreateResponseTest extends TestCase
         // Arrange
         \Notification::fake();
 
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -519,10 +519,10 @@ class CreateResponseTest extends TestCase
     public function agent_cannot_respond_to_other_company_ticket(): void
     {
         // Arrange
-        $agentA = User::factory()->withRole('AGENT')->create();
-        $agentB = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
         $companyB = Company::factory()->create(['name' => 'Company B']);
+        $agentA = User::factory()->create();
+        $agentB = User::factory()->create();
 
         $agentA->assignRole('AGENT', $companyA->id);
         $agentB->assignRole('AGENT', $companyB->id);
@@ -615,8 +615,8 @@ class CreateResponseTest extends TestCase
     public function user_response_to_pending_ticket_changes_status_to_open(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -642,7 +642,7 @@ class CreateResponseTest extends TestCase
         $ticket->refresh();
 
         // Status should change from pending to open (TRIGGER)
-        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals('open', $ticket->status->value);
 
         // last_response_author_type should update to 'user'
         $this->assertEquals('user', $ticket->last_response_author_type);
@@ -657,8 +657,8 @@ class CreateResponseTest extends TestCase
     public function user_response_to_pending_ticket_updates_last_response_author_type_to_user(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -696,8 +696,8 @@ class CreateResponseTest extends TestCase
     public function agent_response_to_open_ticket_sets_last_response_author_type_to_agent(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -723,7 +723,7 @@ class CreateResponseTest extends TestCase
         $ticket->refresh();
 
         // Status should NOT change (still open)
-        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals('open', $ticket->status->value);
 
         // last_response_author_type should update to 'agent'
         $this->assertEquals('agent', $ticket->last_response_author_type);
@@ -781,8 +781,8 @@ class CreateResponseTest extends TestCase
     public function alternating_responses_update_last_response_author_type_correctly(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -833,8 +833,8 @@ class CreateResponseTest extends TestCase
     public function pending_to_open_transition_preserves_owner_agent_id(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -865,7 +865,7 @@ class CreateResponseTest extends TestCase
         $this->assertEquals($agent->id, $ticket->owner_agent_id);
 
         // Only status and last_response_author_type should change
-        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals('open', $ticket->status->value);
         $this->assertEquals('user', $ticket->last_response_author_type);
     }
 
@@ -901,7 +901,7 @@ class CreateResponseTest extends TestCase
         $ticket->refresh();
 
         // Status should remain 'open'
-        $this->assertEquals('open', $ticket->status);
+        $this->assertEquals('open', $ticket->status->value);
 
         // Only last_response_author_type updates
         $this->assertEquals('user', $ticket->last_response_author_type);
@@ -916,8 +916,8 @@ class CreateResponseTest extends TestCase
     public function agent_response_to_pending_ticket_does_not_change_status(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -943,7 +943,7 @@ class CreateResponseTest extends TestCase
         $ticket->refresh();
 
         // Status should remain 'pending'
-        $this->assertEquals('pending', $ticket->status);
+        $this->assertEquals('pending', $ticket->status->value);
 
         // Only last_response_author_type updates
         $this->assertEquals('agent', $ticket->last_response_author_type);

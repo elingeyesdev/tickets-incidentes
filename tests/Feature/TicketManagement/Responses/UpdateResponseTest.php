@@ -66,7 +66,7 @@ class UpdateResponseTest extends TestCase
 
         // Assert
         $updateResponse->assertStatus(200);
-        $updateResponse->assertJsonPath('data.response_content', 'Updated content within time window.');
+        $updateResponse->assertJsonPath('data.content', 'Updated content within time window.');
     }
 
     /**
@@ -227,9 +227,9 @@ class UpdateResponseTest extends TestCase
     public function agent_cannot_update_other_agent_response(): void
     {
         // Arrange
-        $agentA = User::factory()->withRole('AGENT')->create();
-        $agentB = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agentA = User::factory()->create();
+        $agentB = User::factory()->create();
         $agentA->assignRole('AGENT', $company->id);
         $agentB->assignRole('AGENT', $company->id);
 
@@ -333,7 +333,7 @@ class UpdateResponseTest extends TestCase
 
         // Assert
         $updateResponse->assertStatus(200);
-        $updateResponse->assertJsonPath('data.response_content', 'Updated only this field.');
+        $updateResponse->assertJsonPath('data.content', 'Updated only this field.');
     }
 
     // ==================== GROUP 5: Integridad de Timestamps (Tests 8-9) ====================

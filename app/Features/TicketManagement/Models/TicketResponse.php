@@ -55,11 +55,6 @@ class TicketResponse extends Model
     public $incrementing = false;
 
     /**
-     * No hay updated_at en esta tabla
-     */
-    const UPDATED_AT = null;
-
-    /**
      * Campos asignables en masa
      */
     protected $fillable = [
@@ -78,6 +73,7 @@ class TicketResponse extends Model
         'author_id' => 'string',
         'author_type' => AuthorType::class,
         'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
