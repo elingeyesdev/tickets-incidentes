@@ -691,14 +691,15 @@ class CreateTicketTest extends TestCase
     public function ticket_creation_triggers_event(): void
     {
         // Arrange
-        Event::fake();
-
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
+
+        // Fake only TicketCreated event to avoid interfering with factory creation
+        Event::fake([\App\Features\TicketManagement\Events\TicketCreated::class]);
 
         $payload = [
             'company_id' => $company->id,

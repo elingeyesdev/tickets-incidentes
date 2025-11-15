@@ -17,25 +17,21 @@ class ResponseService
     /**
      * Crea una nueva respuesta en un ticket
      *
-     * @param array $data Datos de la respuesta (ticket_id, author_id, response_content)
+     * @param Ticket $ticket Ticket al que se agregará la respuesta
+     * @param array $data Datos de la respuesta (content)
+     * @param User $user Usuario que crea la respuesta
      * @return TicketResponse
      */
-    public function create(array $data): TicketResponse
+    public function create(Ticket $ticket, array $data, User $user): TicketResponse
     {
-        // Buscar el ticket
-        $ticket = Ticket::findOrFail($data['ticket_id']);
-
-        // Buscar el usuario/autor
-        $author = User::findOrFail($data['author_id']);
-
         // Determinar autor_type automáticamente
-        $authorType = $this->determineAuthorType($author);
+        $authorType = $this->determineAuthorType($user);
 
         // Crear la respuesta
         $response = TicketResponse::create([
-            'ticket_id' => $data['ticket_id'],
-            'author_id' => $data['author_id'],
-            'content' => $data['response_content'],
+            'ticket_id' => $ticket->id,
+            'author_id' => $user->id,
+            'content' => $data['content'],
             'author_type' => $authorType->value,
         ]);
 
@@ -59,15 +55,15 @@ class ResponseService
      * Actualiza una respuesta
      *
      * @param TicketResponse $response Respuesta a actualizar
-     * @param array $data Datos a actualizar (response_content)
+     * @param array $data Datos a actualizar (content)
      * @return TicketResponse
      */
     public function update(TicketResponse $response, array $data): TicketResponse
     {
         $updateData = [];
 
-        if (isset($data['response_content'])) {
-            $updateData['content'] = $data['response_content'];
+        if (isset($data['content'])) {
+            $updateData['content'] = $data['content'];
         }
 
         $response->update($updateData);

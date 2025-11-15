@@ -53,7 +53,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'This is a test response from user.',
+                'content' => 'This is a test response from user.',
             ]);
 
         // Assert
@@ -87,7 +87,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Response from agent.',
+                'content' => 'Response from agent.',
             ]);
 
         // Assert
@@ -123,7 +123,7 @@ class CreateResponseTest extends TestCase
 
         // Assert
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors('response_content');
+        $response->assertJsonValidationErrors('content');
     }
 
     /**
@@ -148,7 +148,7 @@ class CreateResponseTest extends TestCase
         // Act - Empty content
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => '',
+                'content' => '',
             ]);
 
         // Assert - Empty fails
@@ -157,7 +157,7 @@ class CreateResponseTest extends TestCase
         // Act - Content too long (6001 chars)
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => str_repeat('a', 6001),
+                'content' => str_repeat('a', 6001),
             ]);
 
         // Assert - Too long fails
@@ -166,7 +166,7 @@ class CreateResponseTest extends TestCase
         // Act - Valid content (1 char)
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'a',
+                'content' => 'a',
             ]);
 
         // Assert - Valid passes
@@ -175,7 +175,7 @@ class CreateResponseTest extends TestCase
         // Act - Valid content (5000 chars)
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => str_repeat('b', 5000),
+                'content' => str_repeat('b', 5000),
             ]);
 
         // Assert - Valid passes
@@ -204,7 +204,7 @@ class CreateResponseTest extends TestCase
         // Act - User responds
         $userResponse = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response.',
+                'content' => 'User response.',
             ]);
 
         // Assert
@@ -218,7 +218,7 @@ class CreateResponseTest extends TestCase
         // Act - Agent responds
         $agentResponse = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Agent response.',
+                'content' => 'Agent response.',
             ]);
 
         // Assert
@@ -257,7 +257,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'First agent response to assign ticket.',
+                'content' => 'First agent response to assign ticket.',
             ]);
 
         // Assert
@@ -307,7 +307,7 @@ class CreateResponseTest extends TestCase
         // First agent response - triggers assignment
         $this->authenticateWithJWT($agent1)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'First agent response.',
+                'content' => 'First agent response.',
             ]);
 
         $ticket->refresh();
@@ -316,7 +316,7 @@ class CreateResponseTest extends TestCase
         // Second agent response - should NOT change owner
         $response = $this->authenticateWithJWT($agent2)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Second agent response.',
+                'content' => 'Second agent response.',
             ]);
 
         // Assert
@@ -358,7 +358,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'First response sets timestamp.',
+                'content' => 'First response sets timestamp.',
             ]);
 
         // Assert
@@ -394,7 +394,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response.',
+                'content' => 'User response.',
             ]);
 
         // Assert
@@ -433,7 +433,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Trigger event.',
+                'content' => 'Trigger event.',
             ]);
 
         // Assert
@@ -472,7 +472,7 @@ class CreateResponseTest extends TestCase
         // Act - User responds to agent
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User notification test.',
+                'content' => 'User notification test.',
             ]);
 
         // Assert - Notification sent to agent
@@ -503,7 +503,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($userB)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User B tries to respond to A ticket.',
+                'content' => 'User B tries to respond to A ticket.',
             ]);
 
         // Assert
@@ -539,7 +539,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agentA)
             ->postJson("/api/tickets/{$ticketB->ticket_code}/responses", [
-                'response_content' => 'Agent from A tries Company B ticket.',
+                'content' => 'Agent from A tries Company B ticket.',
             ]);
 
         // Assert
@@ -568,7 +568,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Cannot respond to closed ticket.',
+                'content' => 'Cannot respond to closed ticket.',
             ]);
 
         // Assert
@@ -596,7 +596,7 @@ class CreateResponseTest extends TestCase
 
         // Act - No JWT authentication
         $response = $this->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-            'response_content' => 'No auth attempt.',
+            'content' => 'No auth attempt.',
         ]);
 
         // Assert
@@ -633,7 +633,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response to pending ticket.',
+                'content' => 'User response to pending ticket.',
             ]);
 
         // Assert
@@ -675,7 +675,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Sync test.',
+                'content' => 'Sync test.',
             ]);
 
         // Assert
@@ -714,7 +714,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Agent response to open.',
+                'content' => 'Agent response to open.',
             ]);
 
         // Assert
@@ -752,7 +752,7 @@ class CreateResponseTest extends TestCase
         // Act - First user response
         $response1 = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response 1.',
+                'content' => 'User response 1.',
             ]);
 
         // Assert
@@ -763,7 +763,7 @@ class CreateResponseTest extends TestCase
         // Act - Second user response
         $response2 = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response 2.',
+                'content' => 'User response 2.',
             ]);
 
         // Assert
@@ -799,7 +799,7 @@ class CreateResponseTest extends TestCase
         // User responds
         $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response.',
+                'content' => 'User response.',
             ]);
         $ticket->refresh();
         $this->assertEquals('user', $ticket->last_response_author_type);
@@ -807,7 +807,7 @@ class CreateResponseTest extends TestCase
         // Agent responds
         $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Agent response.',
+                'content' => 'Agent response.',
             ]);
         $ticket->refresh();
         $this->assertEquals('agent', $ticket->last_response_author_type);
@@ -815,7 +815,7 @@ class CreateResponseTest extends TestCase
         // User responds again
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'User response again.',
+                'content' => 'User response again.',
             ]);
 
         // Assert
@@ -852,7 +852,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Preserve owner test.',
+                'content' => 'Preserve owner test.',
             ]);
 
         // Assert
@@ -892,7 +892,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'No status change.',
+                'content' => 'No status change.',
             ]);
 
         // Assert
@@ -934,7 +934,7 @@ class CreateResponseTest extends TestCase
         // Act
         $response = $this->authenticateWithJWT($agent)
             ->postJson("/api/tickets/{$ticket->ticket_code}/responses", [
-                'response_content' => 'Agent no status change.',
+                'content' => 'Agent no status change.',
             ]);
 
         // Assert

@@ -79,7 +79,7 @@ class GetTicketTest extends TestCase
         $response = $this->getJson("/api/tickets/{$ticket->ticket_code}");
 
         // Assert
-        $response->assertStatus(404);
+        $response->assertStatus(401);
     }
 
     // ==================== GROUP 2: Permisos (Tests 2-6) ====================

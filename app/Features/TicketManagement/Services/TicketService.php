@@ -6,6 +6,7 @@ namespace App\Features\TicketManagement\Services;
 
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\TicketManagement\Enums\TicketStatus;
+use App\Features\TicketManagement\Events\TicketCreated;
 use App\Features\TicketManagement\Exceptions\TicketCannotBeDeletedException;
 use App\Features\TicketManagement\Exceptions\TicketNotFoundException;
 use App\Features\TicketManagement\Models\Category;
@@ -55,6 +56,9 @@ class TicketService
             'owner_agent_id' => null,
             'last_response_author_type' => 'none',
         ]);
+
+        // Disparar evento de creación
+        event(new TicketCreated($ticket));
 
         return $ticket;
     }

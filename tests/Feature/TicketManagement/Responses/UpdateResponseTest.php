@@ -60,8 +60,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Updated content within time window.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Updated content within time window.',
             ]);
 
         // Assert
@@ -97,8 +97,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Too late to update.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Too late to update.',
             ]);
 
         // Assert
@@ -135,8 +135,8 @@ class UpdateResponseTest extends TestCase
 
         // Act - Empty content
         $emptyResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => '',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => '',
             ]);
 
         // Assert - Empty fails
@@ -144,8 +144,8 @@ class UpdateResponseTest extends TestCase
 
         // Act - 1 character (minimum valid)
         $minResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'a',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'a',
             ]);
 
         // Assert - 1 char passes
@@ -153,8 +153,8 @@ class UpdateResponseTest extends TestCase
 
         // Act - Content too long (5001 chars)
         $longResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => str_repeat('a', 5001),
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => str_repeat('a', 5001),
             ]);
 
         // Assert - Too long fails
@@ -162,8 +162,8 @@ class UpdateResponseTest extends TestCase
 
         // Act - 5000 characters (maximum valid)
         $maxResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => str_repeat('b', 5000),
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => str_repeat('b', 5000),
             ]);
 
         // Assert - 5000 chars passes
@@ -171,8 +171,8 @@ class UpdateResponseTest extends TestCase
 
         // Act - Valid content (normal length)
         $validResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Valid updated content.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Valid updated content.',
             ]);
 
         // Assert - Valid passes
@@ -210,8 +210,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($userA)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Trying to update other user response.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Trying to update other user response.',
             ]);
 
         // Assert
@@ -251,8 +251,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($agentA)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Trying to update other agent response.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Trying to update other agent response.',
             ]);
 
         // Assert
@@ -287,8 +287,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Cannot update closed ticket response.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Cannot update closed ticket response.',
             ]);
 
         // Assert
@@ -321,14 +321,14 @@ class UpdateResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => $originalContent,
+            'content' => $originalContent,
             'created_at' => now()->subMinutes(15),
         ]);
 
         // Act
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Updated only this field.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Updated only this field.',
             ]);
 
         // Assert
@@ -367,8 +367,8 @@ class UpdateResponseTest extends TestCase
 
         // Act
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Updated content.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Updated content.',
             ]);
 
         // Assert
@@ -416,8 +416,8 @@ class UpdateResponseTest extends TestCase
         sleep(1); // Ensure time passes
 
         $updateResponse = $this->authenticateWithJWT($user)
-            ->putJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
-                'response_content' => 'Updated content.',
+            ->patchJson("/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}", [
+                'content' => 'Updated content.',
             ]);
 
         // Assert
@@ -458,9 +458,9 @@ class UpdateResponseTest extends TestCase
         ]);
 
         // Act - No JWT
-        $updateResponse = $this->putJson(
+        $updateResponse = $this->patchJson(
             "/api/tickets/{$ticket->ticket_code}/responses/{$ticketResponse->id}",
-            ['response_content' => 'No auth attempt.']
+            ['content' => 'No auth attempt.']
         );
 
         // Assert

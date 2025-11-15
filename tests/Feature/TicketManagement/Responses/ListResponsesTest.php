@@ -72,7 +72,7 @@ class ListResponsesTest extends TestCase
                     'ticket_id',
                     'author_id',
                     'author_type',
-                    'response_content',
+                    'content',
                     'created_at',
                     'updated_at',
                 ],

@@ -12,6 +12,7 @@ class TicketResponseResource extends JsonResource
         return [
             'id' => $this->id,
             'ticket_id' => $this->ticket_id,
+            'author_id' => $this->author_id,
             'content' => $this->content,
             'author_type' => $this->author_type->value,
 
@@ -26,7 +27,6 @@ class TicketResponseResource extends JsonResource
             'attachments' => TicketAttachmentResource::collection($this->whenLoaded('attachments')),
 
             'created_at' => $this->created_at->toIso8601String(),
-            'updated_at' => $this->updated_at->toIso8601String(),
         ];
     }
 }

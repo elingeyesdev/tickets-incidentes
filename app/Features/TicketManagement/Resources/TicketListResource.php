@@ -31,15 +31,15 @@ class TicketListResource extends JsonResource
             'created_by_user' => $this->whenLoaded('creator', function () {
                 return [
                     'id' => $this->creator->id,
+                    'name' => $this->creator->profile->full_name ?? $this->creator->email,
                     'email' => $this->creator->email,
-                    'full_name' => $this->creator->profile->full_name ?? null,
                 ];
             }),
             'owner_agent' => $this->whenLoaded('ownerAgent', function () {
                 return $this->ownerAgent ? [
                     'id' => $this->ownerAgent->id,
+                    'name' => $this->ownerAgent->profile->full_name ?? $this->ownerAgent->email,
                     'email' => $this->ownerAgent->email,
-                    'full_name' => $this->ownerAgent->profile->full_name ?? null,
                 ] : null;
             }),
             'category' => $this->whenLoaded('category', function () {

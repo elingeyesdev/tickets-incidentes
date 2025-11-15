@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Features\TicketManagement\Policies;
 
 use App\Features\TicketManagement\Models\Ticket;
@@ -10,15 +8,6 @@ use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\JWTHelper;
 use Carbon\Carbon;
 
-/**
- * TicketResponsePolicy - Autorización para gestión de respuestas en tickets
- *
- * Reglas:
- * - Crear respuesta: creador del ticket o agent de la compañía
- * - Ver respuestas: creador del ticket o agent de la compañía
- * - Actualizar respuesta: solo autor dentro de 30 minutos
- * - Eliminar respuesta: solo autor dentro de 30 minutos
- */
 class TicketResponsePolicy
 {
     /**

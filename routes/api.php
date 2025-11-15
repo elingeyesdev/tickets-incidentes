@@ -477,4 +477,24 @@ Route::middleware('jwt.require')->group(function () {
     Route::delete('/tickets/{ticket}', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'destroy'])
         ->middleware('role:COMPANY_ADMIN')
         ->name('tickets.destroy');
+
+    // ================================================================================
+    // REST API ENDPOINTS - Ticket Management (Responses)
+    // ================================================================================
+
+    // Create response (authenticated users with ticket access)
+    Route::post('/tickets/{ticket}/responses', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'store'])
+        ->name('tickets.responses.store');
+
+    // List responses (authenticated users with ticket access)
+    Route::get('/tickets/{ticket}/responses', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'index'])
+        ->name('tickets.responses.index');
+
+    // Update response (policy-based authorization)
+    Route::patch('/tickets/{ticket}/responses/{response}', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'update'])
+        ->name('tickets.responses.update');
+
+    // Delete response (policy-based authorization)
+    Route::delete('/tickets/{ticket}/responses/{response}', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'destroy'])
+        ->name('tickets.responses.destroy');
 });
