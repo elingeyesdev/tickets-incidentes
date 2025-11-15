@@ -53,8 +53,13 @@ class TicketResource extends JsonResource
             'responses_count' => $this->when(isset($this->responses_count), $this->responses_count),
             'attachments_count' => $this->when(isset($this->attachments_count), $this->attachments_count),
 
-            'first_response_at' => $this->first_response_at?->toIso8601String(),
-            'closed_at' => $this->closed_at?->toIso8601String(),
+            'timeline' => [
+                'created_at' => $this->created_at->toIso8601String(),
+                'first_response_at' => $this->first_response_at?->toIso8601String(),
+                'resolved_at' => $this->resolved_at?->toIso8601String(),
+                'closed_at' => $this->closed_at?->toIso8601String(),
+            ],
+
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
         ];
