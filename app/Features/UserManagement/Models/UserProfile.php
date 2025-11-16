@@ -101,6 +101,14 @@ class UserProfile extends Model
         return trim("{$this->first_name} {$this->last_name}");
     }
 
+    /**
+     * Accessor: full_name (alias for display_name)
+     */
+    public function getFullNameAttribute(): string
+    {
+        return $this->display_name;
+    }
+
     // ==================== MÉTODOS HELPER ====================
 
     /**
