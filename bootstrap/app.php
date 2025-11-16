@@ -6,6 +6,26 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\ApiExceptionHandler;
 use App\Http\Middleware\AuthenticateJwt;
 
+// Detect if we're running tests and load .env.testing
+// phpunit.xml is loaded AFTER .env, so we must explicitly load .env.testing here
+// Check multiple indicators: PHPUNIT env var, argv contains phpunit, or APP_ENV from phpunit.xml
+$isRunningTests = (
+    defined('PHPUNIT_COMPOSER_INSTALL') ||
+    (isset($_SERVER['argv']) && str_contains(implode(' ', $_SERVER['argv']), 'phpunit')) ||
+    (isset($_SERVER['argv']) && str_contains(implode(' ', $_SERVER['argv']), 'artisan test')) ||
+    isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing' ||
+    isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'testing'
+);
+
+// If tests detected, load .env.testing to override .env with test-specific values
+if ($isRunningTests) {
+    $envTestingPath = dirname(__DIR__) . '/.env.testing';
+    if (file_exists($envTestingPath)) {
+        $dotenv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__), '.env.testing');
+        $dotenv->safeLoad();
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',           // ← Web routes with Blade templates

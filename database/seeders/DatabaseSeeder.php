@@ -43,8 +43,20 @@ class DatabaseSeeder extends Seeder
         // Seed default platform admin user (for development/testing)
         $this->call(DefaultUserSeeder::class);
 
-        // Seed real Bolivian companies with demo data
-        // DISABLED FOR TESTING: Tests create their own company data
+        // ⚠️ IMPORTANT: RealBolivianCompaniesSeeder is DISABLED in DatabaseSeeder
+        //
+        // REASON: This seeder is executed automatically by RefreshDatabase trait in tests.
+        // It creates 5 companies with demo data, which breaks test assertions that expect
+        // specific company counts (tests expect 3, but get 8 after seeding).
+        //
+        // Tests that need production-like companies should:
+        // 1. Create their own test companies using factories
+        // 2. NOT rely on DatabaseSeeder to create them
+        //
+        // TO RUN MANUALLY IN PRODUCTION/DEVELOPMENT:
+        // php artisan db:seed --class=App\\Features\\CompanyManagement\\Database\\Seeders\\RealBolivianCompaniesSeeder
+        //
+        // DO NOT uncomment unless you want to break all company-related tests!
         // $this->call(RealBolivianCompaniesSeeder::class);
 
         // Future: Add other essential seeders here

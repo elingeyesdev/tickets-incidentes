@@ -16,7 +16,10 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    // Detect if running tests (phpunit) and use 'testing' connection
+    // phpunit sets PHPUNIT_COMPOSER_INSTALL constant before loading bootstrap/app.php
+    // This ensures tests use helpdesk_test database, not production database
+    'default' => (defined('PHPUNIT_COMPOSER_INSTALL') ? 'testing' : env('DB_CONNECTION', 'sqlite')),
 
     /*
     |--------------------------------------------------------------------------
@@ -92,6 +95,20 @@ return [
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public,auth,business,ticketing,audit',
+            'sslmode' => 'prefer',
+        ],
+
+        'testing' => [
+            'driver' => 'pgsql',
+            'host' => 'postgres',
+            'port' => 5432,
+            'database' => 'helpdesk_test',
+            'username' => 'helpdesk',
+            'password' => 'helpdesk_password',
+            'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public,auth,business,ticketing,audit',
