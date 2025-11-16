@@ -344,8 +344,6 @@ class AssignTicketTest extends TestCase
     public function assign_triggers_ticket_assigned_event(): void
     {
         // Arrange
-        Event::fake();
-
         $company = Company::factory()->create();
         $agent1 = User::factory()->withRole('AGENT', $company->id)->create();
         $agent2 = User::factory()->withRole('AGENT', $company->id)->create();
@@ -360,6 +358,8 @@ class AssignTicketTest extends TestCase
         $payload = [
             'new_agent_id' => $agent2->id,
         ];
+
+        Event::fake();
 
         // Act
         $response = $this->authenticateWithJWT($agent1)

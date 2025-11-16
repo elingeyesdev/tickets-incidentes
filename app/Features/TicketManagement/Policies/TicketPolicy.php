@@ -8,6 +8,7 @@ use App\Features\TicketManagement\Enums\TicketStatus;
 use App\Features\TicketManagement\Models\Ticket;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\JWTHelper;
+use Carbon\Carbon;
 
 /**
  * TicketPolicy - Autorización para gestión de tickets
@@ -109,12 +110,19 @@ class TicketPolicy
 
     /**
      * Reabrir ticket: creador o agent de la compañía.
-     * La Rule CanReopenTicket maneja la validación de 30 días.
+     * Creador solo puede reabrir en los primeros 30 días después del cierre.
      */
     public function reopen(User $user, Ticket $ticket): bool
     {
-        // Creador puede reabrir (con restricción de 30 días en Rule)
+        // Creador puede reabrir (con restricción de 30 días)
         if ($ticket->created_by_user_id === $user->id) {
+            // Si ticket está CLOSED, verificar la restricción de 30 días
+            if ($ticket->status === TicketStatus::CLOSED && $ticket->closed_at) {
+                $daysSinceClosed = Carbon::parse($ticket->closed_at)->diffInDays(Carbon::now());
+                if ($daysSinceClosed > 30) {
+                    return false; // No puede reabrir después de 30 días
+                }
+            }
             return true;
         }
 

@@ -70,7 +70,7 @@ class ResolveTicketTest extends TestCase
     public function agent_can_resolve_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -120,7 +120,7 @@ class ResolveTicketTest extends TestCase
     public function resolution_note_is_optional(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -165,7 +165,7 @@ class ResolveTicketTest extends TestCase
     public function resolution_note_is_saved_when_provided(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -216,9 +216,7 @@ class ResolveTicketTest extends TestCase
     public function resolve_triggers_ticket_resolved_event(): void
     {
         // Arrange
-        Event::fake();
-
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -236,6 +234,8 @@ class ResolveTicketTest extends TestCase
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
         ]);
+
+        Event::fake();
 
         // Act
         $response = $this->authenticateWithJWT($agent)
@@ -262,7 +262,7 @@ class ResolveTicketTest extends TestCase
         // Arrange
         Notification::fake();
 
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -308,7 +308,7 @@ class ResolveTicketTest extends TestCase
     public function cannot_resolve_already_resolved_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -352,7 +352,7 @@ class ResolveTicketTest extends TestCase
     public function cannot_resolve_closed_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
@@ -441,7 +441,7 @@ class ResolveTicketTest extends TestCase
     public function agent_from_different_company_cannot_resolve(): void
     {
         // Arrange
-        $agentCompanyA = User::factory()->withRole('AGENT')->create();
+        $agentCompanyA = User::factory()->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
         $agentCompanyA->assignRole('AGENT', $companyA->id);
 
@@ -530,7 +530,7 @@ class ResolveTicketTest extends TestCase
     public function last_response_author_type_persists_after_ticket_resolve(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 

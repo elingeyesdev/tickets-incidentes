@@ -64,7 +64,7 @@ class CloseTicketTest extends TestCase
     public function agent_can_close_any_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -263,7 +263,7 @@ class CloseTicketTest extends TestCase
     public function close_sets_closed_at_timestamp(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -312,9 +312,7 @@ class CloseTicketTest extends TestCase
     public function close_triggers_ticket_closed_event(): void
     {
         // Arrange
-        Event::fake();
-
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -331,6 +329,8 @@ class CloseTicketTest extends TestCase
             'created_by_user_id' => $user->id,
             'status' => 'pending',
         ]);
+
+        Event::fake();
 
         // Act
         $response = $this->authenticateWithJWT($agent)
@@ -357,7 +357,7 @@ class CloseTicketTest extends TestCase
     public function cannot_close_already_closed_ticket(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -460,7 +460,7 @@ class CloseTicketTest extends TestCase
     public function agent_from_different_company_cannot_close(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
         $companyB = Company::factory()->create(['name' => 'Company B']);
 
@@ -554,7 +554,7 @@ class CloseTicketTest extends TestCase
     public function last_response_author_type_persists_after_ticket_close(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,

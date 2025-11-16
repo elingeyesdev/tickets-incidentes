@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features\TicketManagement\Http\Controllers;
 
+use App\Features\TicketManagement\Http\Requests\TicketActionRequest;
 use App\Features\TicketManagement\Models\Ticket;
-use App\Features\TicketManagement\Requests\AssignTicketRequest;
-use App\Features\TicketManagement\Requests\CloseTicketRequest;
-use App\Features\TicketManagement\Requests\ReopenTicketRequest;
-use App\Features\TicketManagement\Requests\ResolveTicketRequest;
+use App\Features\TicketManagement\Resources\TicketResource;
 use App\Features\TicketManagement\Services\TicketService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -17,42 +17,133 @@ class TicketActionController extends Controller
     use AuthorizesRequests;
 
     public function __construct(
-        private TicketService $ticketService
-    ) {}
-
-    /**
-     * POST /api/tickets/{ticket}/resolve
-     */
-    public function resolve(ResolveTicketRequest $request, Ticket $ticket): JsonResponse
-    {
-        // TODO: Implementar en siguiente agente
-        return response()->json(['message' => 'Not implemented'], 501);
+        private readonly TicketService $ticketService
+    ) {
     }
 
     /**
-     * POST /api/tickets/{ticket}/close
+     * Resuelve un ticket (cambia status a resolved)
+     *
+     * @param Ticket $ticket
+     * @param TicketActionRequest $request
+     * @return JsonResponse
      */
-    public function close(CloseTicketRequest $request, Ticket $ticket): JsonResponse
+    public function resolve(Ticket $ticket, TicketActionRequest $request): JsonResponse
     {
-        // TODO: Implementar en siguiente agente
-        return response()->json(['message' => 'Not implemented'], 501);
+        $this->authorize('resolve', $ticket);
+
+        try {
+            $validated = $request->validated();
+            $updatedTicket = $this->ticketService->resolve($ticket, $validated);
+
+            return response()->json([
+                'message' => 'Ticket marcado como resuelto exitosamente',
+                'data' => new TicketResource($updatedTicket),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'ALREADY_RESOLVED') {
+                return response()->json([
+                    'message' => 'El ticket ya está resuelto',
+                ], 400);
+            }
+
+            if ($e->getMessage() === 'ALREADY_CLOSED') {
+                return response()->json([
+                    'message' => 'El ticket ya está cerrado',
+                ], 400);
+            }
+
+            throw $e;
+        }
     }
 
     /**
-     * POST /api/tickets/{ticket}/reopen
+     * Cierra un ticket (cambia status a closed)
+     *
+     * @param Ticket $ticket
+     * @param TicketActionRequest $request
+     * @return JsonResponse
      */
-    public function reopen(ReopenTicketRequest $request, Ticket $ticket): JsonResponse
+    public function close(Ticket $ticket, TicketActionRequest $request): JsonResponse
     {
-        // TODO: Implementar en siguiente agente
-        return response()->json(['message' => 'Not implemented'], 501);
+        $this->authorize('close', $ticket);
+
+        try {
+            $validated = $request->validated();
+            $updatedTicket = $this->ticketService->close($ticket, $validated);
+
+            return response()->json([
+                'message' => 'Ticket cerrado exitosamente',
+                'data' => new TicketResource($updatedTicket),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'ALREADY_CLOSED') {
+                return response()->json([
+                    'message' => 'El ticket ya está cerrado',
+                ], 400);
+            }
+
+            throw $e;
+        }
     }
 
     /**
-     * POST /api/tickets/{ticket}/assign
+     * Reabre un ticket (cambia status a pending)
+     *
+     * @param Ticket $ticket
+     * @param TicketActionRequest $request
+     * @return JsonResponse
      */
-    public function assign(AssignTicketRequest $request, Ticket $ticket): JsonResponse
+    public function reopen(Ticket $ticket, TicketActionRequest $request): JsonResponse
     {
-        // TODO: Implementar en siguiente agente
-        return response()->json(['message' => 'Not implemented'], 501);
+        $this->authorize('reopen', $ticket);
+
+        try {
+            $validated = $request->validated();
+            $updatedTicket = $this->ticketService->reopen($ticket, $validated);
+
+            return response()->json([
+                'message' => 'Ticket reabierto exitosamente',
+                'data' => new TicketResource($updatedTicket),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'CANNOT_REOPEN') {
+                return response()->json([
+                    'message' => 'El ticket no puede ser reabierto',
+                ], 400);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Asigna un ticket a un agente
+     *
+     * @param Ticket $ticket
+     * @param TicketActionRequest $request
+     * @return JsonResponse
+     */
+    public function assign(Ticket $ticket, TicketActionRequest $request): JsonResponse
+    {
+        $this->authorize('assign', $ticket);
+
+        try {
+            $validated = $request->validated();
+            $updatedTicket = $this->ticketService->assign($ticket, $validated);
+
+            return response()->json([
+                'message' => 'Ticket asignado exitosamente',
+                'data' => new TicketResource($updatedTicket),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'INVALID_AGENT_ROLE') {
+                return response()->json([
+                    'message' => 'El usuario no tiene rol de agente o pertenece a otra empresa',
+                ], 400);
+            }
+
+            throw $e;
+        }
     }
 }

@@ -204,13 +204,16 @@ class ReopenTicketTest extends TestCase
     public function agent_can_reopen_any_ticket_regardless_of_time(): void
     {
         // Arrange
-        $agent = User::factory()->withRole('AGENT')->create();
+        $agent = User::factory()->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,
         ]);
         $user = User::factory()->withRole('USER')->create();
+
+        // Assign agent to company
+        $agent->assignRole('AGENT', $company->id);
 
         $ticket = Ticket::factory()->create([
             'company_id' => $company->id,
@@ -376,8 +379,6 @@ class ReopenTicketTest extends TestCase
     public function reopen_triggers_ticket_reopened_event(): void
     {
         // Arrange
-        Event::fake();
-
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
         $category = Category::factory()->create([
@@ -393,6 +394,8 @@ class ReopenTicketTest extends TestCase
             'last_response_author_type' => 'agent',
             'resolved_at' => Carbon::now()->subDays(3),
         ]);
+
+        Event::fake();
 
         // Act
         $response = $this->authenticateWithJWT($user)

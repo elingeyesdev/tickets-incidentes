@@ -20,6 +20,8 @@ class TicketResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status->value,
             'last_response_author_type' => $this->last_response_author_type,
+            'resolved_at' => $this->resolved_at?->toIso8601String(),
+            'closed_at' => $this->closed_at?->toIso8601String(),
 
             'created_by_user' => $this->whenLoaded('creator', function () {
                 return [

@@ -525,4 +525,24 @@ Route::middleware('jwt.require')->group(function () {
     // Download attachment (policy-based authorization)
     Route::get('/tickets/attachments/{attachment}/download', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'download'])
         ->name('tickets.attachments.download');
+
+    // ================================================================================
+    // REST API ENDPOINTS - Ticket Management (Actions)
+    // ================================================================================
+
+    // Resolve ticket (AGENT only, policy-based authorization)
+    Route::post('/tickets/{ticket}/resolve', [\App\Features\TicketManagement\Http\Controllers\TicketActionController::class, 'resolve'])
+        ->name('tickets.resolve');
+
+    // Close ticket (policy-based authorization)
+    Route::post('/tickets/{ticket}/close', [\App\Features\TicketManagement\Http\Controllers\TicketActionController::class, 'close'])
+        ->name('tickets.close');
+
+    // Reopen ticket (policy-based authorization)
+    Route::post('/tickets/{ticket}/reopen', [\App\Features\TicketManagement\Http\Controllers\TicketActionController::class, 'reopen'])
+        ->name('tickets.reopen');
+
+    // Assign ticket to agent (AGENT only, policy-based authorization)
+    Route::post('/tickets/{ticket}/assign', [\App\Features\TicketManagement\Http\Controllers\TicketActionController::class, 'assign'])
+        ->name('tickets.assign');
 });

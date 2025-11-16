@@ -283,4 +283,118 @@ class TicketService
             $query->where('created_at', '<=', $date);
         }
     }
+
+    /**
+     * Resuelve un ticket (cambia status a resolved)
+     *
+     * @param Ticket $ticket Ticket a resolver
+     * @param array $data Datos opcionales (resolution_note)
+     * @return Ticket Ticket resuelto
+     */
+    public function resolve(Ticket $ticket, array $data): Ticket
+    {
+        // Validar que el ticket no esté ya resuelto o cerrado
+        if ($ticket->status === TicketStatus::RESOLVED) {
+            throw new \RuntimeException('ALREADY_RESOLVED');
+        }
+
+        if ($ticket->status === TicketStatus::CLOSED) {
+            throw new \RuntimeException('ALREADY_CLOSED');
+        }
+
+        // Actualizar el ticket
+        $ticket->update([
+            'status' => TicketStatus::RESOLVED,
+            'resolved_at' => now(),
+        ]);
+
+        // Disparar evento
+        event(new \App\Features\TicketManagement\Events\TicketResolved($ticket));
+
+        return $ticket->fresh();
+    }
+
+    /**
+     * Cierra un ticket (cambia status a closed)
+     *
+     * @param Ticket $ticket Ticket a cerrar
+     * @param array $data Datos opcionales (close_note)
+     * @return Ticket Ticket cerrado
+     */
+    public function close(Ticket $ticket, array $data): Ticket
+    {
+        // Validar que el ticket no esté ya cerrado
+        if ($ticket->status === TicketStatus::CLOSED) {
+            throw new \RuntimeException('ALREADY_CLOSED');
+        }
+
+        // Actualizar el ticket
+        $ticket->update([
+            'status' => TicketStatus::CLOSED,
+            'closed_at' => now(),
+        ]);
+
+        // Disparar evento
+        event(new \App\Features\TicketManagement\Events\TicketClosed($ticket));
+
+        return $ticket->fresh();
+    }
+
+    /**
+     * Reabre un ticket (cambia status a pending)
+     *
+     * @param Ticket $ticket Ticket a reabrir
+     * @param array $data Datos opcionales (reopen_reason)
+     * @return Ticket Ticket reabierto
+     */
+    public function reopen(Ticket $ticket, array $data): Ticket
+    {
+        // Validar que el ticket esté resolved o closed
+        if (!in_array($ticket->status, [TicketStatus::RESOLVED, TicketStatus::CLOSED])) {
+            throw new \RuntimeException('CANNOT_REOPEN');
+        }
+
+        // Actualizar el ticket
+        $ticket->update([
+            'status' => TicketStatus::PENDING,
+            'resolved_at' => null,
+            'closed_at' => null,
+        ]);
+
+        // Disparar evento
+        event(new \App\Features\TicketManagement\Events\TicketReopened($ticket));
+
+        return $ticket->fresh();
+    }
+
+    /**
+     * Asigna un ticket a un agente
+     *
+     * @param Ticket $ticket Ticket a asignar
+     * @param array $data Datos requeridos (new_agent_id) y opcionales (assignment_note)
+     * @return Ticket Ticket asignado
+     */
+    public function assign(Ticket $ticket, array $data): Ticket
+    {
+        // Validar que new_agent_id existe
+        $newAgent = User::findOrFail($data['new_agent_id']);
+
+        // Validar que el nuevo agente tiene rol AGENT
+        if (!$newAgent->hasRoleInCompany('AGENT', $ticket->company_id)) {
+            throw new \RuntimeException('INVALID_AGENT_ROLE');
+        }
+
+        // Actualizar el ticket
+        $ticket->update([
+            'owner_agent_id' => $data['new_agent_id'],
+        ]);
+
+        // Disparar evento
+        event(new \App\Features\TicketManagement\Events\TicketAssigned($ticket));
+
+        // Enviar notificación al nuevo agente usando Notification facade
+        \Notification::send($newAgent, new \App\Features\TicketManagement\Notifications\TicketAssignedNotification($ticket));
+
+        return $ticket->fresh();
+    }
 }
