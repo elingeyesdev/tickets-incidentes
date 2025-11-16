@@ -80,11 +80,11 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Act - User creates response
-        $userResponse = $this->service->create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'response_content' => 'Response from user',
-        ]);
+        $userResponse = $this->service->create(
+            $ticket,
+            ['content' => 'Response from user'],
+            $user
+        );
 
         // Mock JWT payload para AGENT
         request()->attributes->set('jwt_payload', [
@@ -94,11 +94,11 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Act - Agent creates response
-        $agentResponse = $this->service->create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent->id,
-            'response_content' => 'Response from agent',
-        ]);
+        $agentResponse = $this->service->create(
+            $ticket,
+            ['content' => 'Response from agent'],
+            $agent
+        );
 
         // Assert - User should have author_type='user'
         $this->assertEquals('user', $userResponse->author_type->value);
@@ -169,11 +169,11 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Act - Agent 1 responds (FIRST agent response)
-        $response1 = $this->service->create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent1->id,
-            'response_content' => 'Hello, I will help you with this issue.',
-        ]);
+        $response1 = $this->service->create(
+            $ticket,
+            ['content' => 'Hello, I will help you with this issue.'],
+            $agent1
+        );
 
         // Refresh ticket from database (trigger has executed)
         $ticket->refresh();
@@ -200,11 +200,11 @@ class ResponseServiceTest extends TestCase
         ]);
 
         // Act - Agent 2 responds (SECOND agent response, trigger should NOT fire)
-        $response2 = $this->service->create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent2->id,
-            'response_content' => 'I can also help if needed.',
-        ]);
+        $response2 = $this->service->create(
+            $ticket,
+            ['content' => 'I can also help if needed.'],
+            $agent2
+        );
 
         // Refresh ticket from database
         $ticket->refresh();

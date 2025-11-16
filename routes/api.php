@@ -525,7 +525,6 @@ Route::middleware('jwt.require')->group(function () {
     // Download attachment (policy-based authorization)
     Route::get('/tickets/attachments/{attachment}/download', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'download'])
         ->name('tickets.attachments.download');
-
     // ================================================================================
     // REST API ENDPOINTS - Ticket Management (Actions)
     // ================================================================================

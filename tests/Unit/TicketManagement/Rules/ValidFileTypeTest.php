@@ -8,7 +8,7 @@ use App\Features\TicketManagement\Rules\ValidFileType;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 /**
  * Unit Tests for ValidFileType Rule
@@ -18,15 +18,14 @@ use PHPUnit\Framework\TestCase;
  * potentially dangerous executable files.
  *
  * Coverage:
- * - Validates all allowed file types (PDF, JPG, PNG, GIF, DOC, DOCX, XLS, XLSX, TXT, ZIP)
+ * - Validates all allowed file types (16 total: PDF, TXT, LOG, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, GIF, BMP, WEBP, SVG, MP4)
  * - Rejects executable and script files (.exe, .sh, .bat, .com, .scr)
  * - Provides descriptive error messages listing allowed types
  *
- * Allowed Types:
- * - Documents: PDF, DOC, DOCX, TXT
- * - Images: JPG, PNG, GIF
- * - Spreadsheets: XLS, XLSX
- * - Archives: ZIP
+ * Allowed Types (16 total):
+ * - Documents (8): PDF, TXT, LOG, DOC, DOCX, XLS, XLSX, CSV
+ * - Images (7): JPG, JPEG, PNG, GIF, BMP, WEBP, SVG
+ * - Videos (1): MP4
  *
  * Rejected Types (Security):
  * - Executables: EXE, COM, SCR
@@ -40,7 +39,8 @@ class ValidFileTypeTest extends TestCase
      * Verifies that the ValidFileType rule accepts all permitted file types.
      * This consolidates testing all allowed types in a single comprehensive test.
      *
-     * Allowed types: PDF, JPG, PNG, GIF, DOC, DOCX, XLS, XLSX, TXT, ZIP
+     * Allowed types (16 total): PDF, TXT, LOG, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, GIF, BMP, WEBP, SVG, MP4
+     * NOTE: ZIP is NOT allowed (security risk - vector of attack)
      *
      * Expected: true for all allowed types
      */
@@ -50,17 +50,29 @@ class ValidFileTypeTest extends TestCase
         // Arrange
         $rule = new ValidFileType();
 
+        // 16 allowed types matching UploadAttachmentTest Feature Test
         $allowedTypes = [
+            // Documentos (8)
             'pdf' => 'document.pdf',
-            'jpg' => 'image.jpg',
-            'png' => 'photo.png',
-            'gif' => 'animation.gif',
+            'txt' => 'notes.txt',
+            'log' => 'application.log',
             'doc' => 'report.doc',
             'docx' => 'report.docx',
             'xls' => 'spreadsheet.xls',
             'xlsx' => 'spreadsheet.xlsx',
-            'txt' => 'notes.txt',
-            'zip' => 'archive.zip',
+            'csv' => 'data.csv',
+
+            // Imágenes (7)
+            'jpg' => 'image.jpg',
+            'jpeg' => 'photo.jpeg',
+            'png' => 'screenshot.png',
+            'gif' => 'animation.gif',
+            'bmp' => 'bitmap.bmp',
+            'webp' => 'modern.webp',
+            'svg' => 'icon.svg',
+
+            // Videos (1)
+            'mp4' => 'demo.mp4',
         ];
 
         // Act & Assert
@@ -115,16 +127,16 @@ class ValidFileTypeTest extends TestCase
      * Test #3: Error message lists allowed types
      *
      * Verifies that the error message returned by the rule is descriptive
-     * and includes a list of all allowed file types.
+     * and includes a list of all allowed file types (16 total).
      *
-     * Expected: Message contains list of allowed types
+     * Expected: Message contains list of all 16 allowed types
      */
     #[Test]
     public function error_message_lists_allowed_types(): void
     {
         // Arrange
         $rule = new ValidFileType();
-        $maliciousFile = UploadedFile::fake()->create('unknown.xyz', 100); // Tipo no permitido pero no prohibido
+        $maliciousFile = UploadedFile::fake()->create('unknown.xyz', 100); // Tipo no permitido
 
         // Act - Trigger validation failure
         $validator = Validator::make(['file' => $maliciousFile], ['file' => $rule]);
@@ -134,8 +146,12 @@ class ValidFileTypeTest extends TestCase
         // Assert - Message should be descriptive
         $this->assertIsString($message, 'Error message should be a string');
 
-        // Message should mention key allowed types
-        $expectedTypes = ['PDF', 'JPG', 'PNG', 'GIF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'TXT', 'ZIP'];
+        // Message should mention all 16 allowed types
+        $expectedTypes = [
+            'pdf', 'txt', 'log', 'doc', 'docx', 'xls', 'xlsx', 'csv',  // Documentos
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg',          // Imágenes
+            'mp4'                                                         // Videos
+        ];
 
         foreach ($expectedTypes as $type) {
             $this->assertStringContainsStringIgnoringCase(

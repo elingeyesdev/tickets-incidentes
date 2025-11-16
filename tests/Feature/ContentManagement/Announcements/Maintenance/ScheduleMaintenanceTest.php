@@ -119,7 +119,7 @@ class ScheduleMaintenanceTest extends TestCase
             'urgency' => 'HIGH',
         ], 'draft');
 
-        $scheduledFor = Carbon::parse('2025-11-08 08:00:00');
+        $scheduledFor = Carbon::now()->addHours(6);
 
         // Act
         $response = $this->authenticateWithJWT($admin)
@@ -335,7 +335,7 @@ class ScheduleMaintenanceTest extends TestCase
         Queue::fake();
 
         $admin = $this->createCompanyAdmin();
-        $originalScheduledFor = Carbon::parse('2025-11-08 08:00:00');
+        $originalScheduledFor = Carbon::now()->addHours(10);
 
         // Create and schedule via HTTP
         $announcement = $this->createMaintenanceAnnouncementViaHttp($admin, [
@@ -350,7 +350,7 @@ class ScheduleMaintenanceTest extends TestCase
 
         $announcement->refresh();
 
-        $newScheduledFor = Carbon::parse('2025-11-10 10:00:00');
+        $newScheduledFor = Carbon::now()->addHours(24);
 
         // Act
         $response = $this->authenticateWithJWT($admin)

@@ -132,7 +132,7 @@ class AutoCloseResolvedTicketsJobTest extends TestCase
      * Verifies that when the job closes a ticket, it sets the closed_at
      * timestamp to the current time.
      *
-     * Expected: closed_at is set to approximately now()
+     * Expected: closed_at is set to the timestamp when job executed
      */
     #[Test]
     public function sets_closed_at_timestamp(): void
@@ -145,22 +145,21 @@ class AutoCloseResolvedTicketsJobTest extends TestCase
             'is_active' => true,
         ]);
 
+        // Use a fixed timestamp for deterministic testing
+        $fixedNow = Carbon::parse('2025-01-15 10:00:00');
+
         $ticket = Ticket::factory()->create([
             'company_id' => $company->id,
             'category_id' => $category->id,
             'created_by_user_id' => $user->id,
             'status' => TicketStatus::RESOLVED,
-            'resolved_at' => Carbon::now()->subDays(8), // Resolved 8 days ago
+            'resolved_at' => $fixedNow->clone()->subDays(8), // Resolved 8 days ago
             'closed_at' => null, // Should be set by job
         ]);
 
-        $beforeJobRun = Carbon::now();
-
-        // Act
-        $job = new AutoCloseResolvedTicketsJob();
+        // Act - Inject fixed timestamp (simulates job running at specific time)
+        $job = new AutoCloseResolvedTicketsJob($fixedNow);
         $job->handle();
-
-        $afterJobRun = Carbon::now();
 
         // Assert
         $ticket->refresh();
@@ -169,10 +168,11 @@ class AutoCloseResolvedTicketsJobTest extends TestCase
             'closed_at should be set after job runs'
         );
 
-        // Verify closed_at is approximately now (within 1 second tolerance)
-        $this->assertTrue(
-            $ticket->closed_at->between($beforeJobRun, $afterJobRun),
-            'closed_at should be set to current timestamp'
+        // Verify closed_at matches the injected timestamp (deterministic)
+        $this->assertEquals(
+            $fixedNow->toDateTimeString(),
+            $ticket->closed_at->toDateTimeString(),
+            'closed_at should be set to the job execution timestamp'
         );
     }
 
