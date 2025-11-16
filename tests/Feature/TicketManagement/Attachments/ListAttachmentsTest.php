@@ -46,8 +46,8 @@ class ListAttachmentsTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $category = Category::factory()->create(['company_id' => $company->id]);
@@ -65,7 +65,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'screenshot.png',
-            'file_url' => 'tickets/attachments/screenshot.png',
+            'file_path' => 'tickets/attachments/screenshot.png',
             'file_type' => 'image/png',
             'file_size_bytes' => 1024,
         ]);
@@ -75,7 +75,7 @@ class ListAttachmentsTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'response_content' => 'Please check this solution',
+            'content' => 'Please check this solution',
         ]);
 
         $responseAttachment = TicketAttachment::create([
@@ -83,7 +83,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => $response->id,
             'uploaded_by_user_id' => $agent->id,
             'file_name' => 'solution.pdf',
-            'file_url' => 'tickets/attachments/solution.pdf',
+            'file_path' => 'tickets/attachments/solution.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 2048,
         ]);
@@ -138,10 +138,10 @@ class ListAttachmentsTest extends TestCase
         // Arrange
         Storage::fake('local');
 
-        $agent = User::factory()->withRole('AGENT')->create();
-        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
+        $user = User::factory()->withRole('USER')->create();
 
         $category = Category::factory()->create(['company_id' => $company->id]);
         $ticket = Ticket::factory()->create([
@@ -157,7 +157,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'user-document.pdf',
-            'file_url' => 'tickets/attachments/user-document.pdf',
+            'file_path' => 'tickets/attachments/user-document.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 3072,
         ]);
@@ -208,7 +208,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'test-file.txt',
-            'file_url' => 'tickets/attachments/test-file.txt',
+            'file_path' => 'tickets/attachments/test-file.txt',
             'file_type' => 'text/plain',
             'file_size_bytes' => 512,
         ]);
@@ -236,9 +236,9 @@ class ListAttachmentsTest extends TestCase
         // Arrange
         Storage::fake('local');
 
-        $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $user = User::factory()->withRole('USER')->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $category = Category::factory()->create(['company_id' => $company->id]);
@@ -256,7 +256,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'general-file.txt',
-            'file_url' => 'tickets/attachments/general-file.txt',
+            'file_path' => 'tickets/attachments/general-file.txt',
             'file_type' => 'text/plain',
             'file_size_bytes' => 256,
         ]);
@@ -266,7 +266,7 @@ class ListAttachmentsTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'response_content' => 'Here is the solution',
+            'content' => 'Here is the solution',
         ]);
 
         $responseAttachment = TicketAttachment::create([
@@ -274,7 +274,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => $response->id,
             'uploaded_by_user_id' => $agent->id,
             'file_name' => 'solution-document.pdf',
-            'file_url' => 'tickets/attachments/solution-document.pdf',
+            'file_path' => 'tickets/attachments/solution-document.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 4096,
         ]);
@@ -326,7 +326,7 @@ class ListAttachmentsTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $userB->id,
             'file_name' => 'private-file.txt',
-            'file_url' => 'tickets/attachments/private-file.txt',
+            'file_path' => 'tickets/attachments/private-file.txt',
             'file_type' => 'text/plain',
             'file_size_bytes' => 128,
         ]);

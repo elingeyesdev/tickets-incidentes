@@ -79,7 +79,7 @@ class UploadAttachmentTest extends TestCase
     public function user_can_upload_attachment_to_own_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -95,7 +95,7 @@ class UploadAttachmentTest extends TestCase
             'status' => 'open',
         ]);
 
-        $file = UploadedFile::fake()->image('screenshot.jpg', 800, 600)->size(2048); // 2 MB
+        $file = UploadedFile::fake()->create('screenshot.jpg', 2048); // 2 MB
 
         // Act
         $response = $this->authenticateWithJWT($user)
@@ -133,8 +133,8 @@ class UploadAttachmentTest extends TestCase
         // Verify file exists in storage
         $attachmentId = $response->json('data.id');
         $attachment = TicketAttachment::find($attachmentId);
-        $fileName = basename($attachment->file_url);
-        Storage::disk('public')->assertExists("tickets/attachments/{$fileName}");
+        $fileName = basename($attachment->file_path);
+        Storage::disk('local')->assertExists("tickets/attachments/{$fileName}");
     }
 
     /**
@@ -150,10 +150,10 @@ class UploadAttachmentTest extends TestCase
     public function agent_can_upload_attachment_to_any_company_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
-        $agent = User::factory()->withRole('AGENT')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $user = User::factory()->withRole('USER')->create();
@@ -191,8 +191,8 @@ class UploadAttachmentTest extends TestCase
         // Verify file exists in storage
         $attachmentId = $response->json('data.id');
         $attachment = TicketAttachment::find($attachmentId);
-        $fileName = basename($attachment->file_url);
-        Storage::disk('public')->assertExists("tickets/attachments/{$fileName}");
+        $fileName = basename($attachment->file_path);
+        Storage::disk('local')->assertExists("tickets/attachments/{$fileName}");
     }
 
     // ==================== GROUP 2: Validaciones de Archivo (Tests 3-6) ====================
@@ -239,16 +239,16 @@ class UploadAttachmentTest extends TestCase
     /**
      * Test #4: Validates file size max 10MB
      *
-     * Verifies that files larger than 10 MB are rejected with 413 error.
+     * Verifies that files larger than 10 MB are rejected with 422 error.
      *
-     * Expected: 413 Payload Too Large
+     * Expected: 422 Validation Error
      * Database: No attachment should be created
      */
     #[Test]
     public function validates_file_size_max_10mb(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -274,7 +274,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(413);
+        $response->assertStatus(422);
 
         $this->assertDatabaseMissing('ticketing.ticket_attachments', [
             'ticket_id' => $ticket->id,
@@ -282,20 +282,18 @@ class UploadAttachmentTest extends TestCase
     }
 
     /**
-     * Test #5: Validates file type allowed
+     * Test #5: Validates file type rejected
      *
-     * Verifies that only allowed file types are accepted:
-     * - .exe should be REJECTED (422)
-     * - .pdf should be ACCEPTED (200)
-     * - .jpg should be ACCEPTED (200)
+     * Verifies that dangerous and unknown file types are REJECTED.
+     * Tests 7 common dangerous types + 1 unknown type.
      *
-     * Expected: 422 for disallowed types, 200 for allowed types
+     * Expected: 422 for all forbidden types
      */
     #[Test]
-    public function validates_file_type_allowed(): void
+    public function validates_file_type_rejected(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -311,37 +309,45 @@ class UploadAttachmentTest extends TestCase
             'status' => 'open',
         ]);
 
-        // Case 1: .exe file should be rejected
-        $exeFile = UploadedFile::fake()->create('virus.exe', 100);
-        $response1 = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
-                'file' => $exeFile,
-            ]);
-        $response1->assertStatus(422);
-        $response1->assertJsonValidationErrors(['file']);
+        // Tipos peligrosos que DEBEN ser rechazados
+        $forbiddenTypes = [
+            'virus.exe',      // Ejecutable Windows
+            'malware.bat',    // Script Windows
+            'script.sh',      // Script Unix
+            'archive.zip',    // Comprimido (vector de ataque)
+            'package.rar',    // Comprimido
+            'code.js',        // JavaScript (XSS)
+            'unknown.xyz',    // Tipo desconocido
+        ];
 
-        // Case 2: .pdf file should be accepted
-        $pdfFile = UploadedFile::fake()->create('document.pdf', 100);
-        $response2 = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
-                'file' => $pdfFile,
-            ]);
-        $response2->assertStatus(200);
+        foreach ($forbiddenTypes as $fileName) {
+            $file = UploadedFile::fake()->create($fileName, 100);
 
-        // Case 3: .jpg file should be accepted
-        $jpgFile = UploadedFile::fake()->image('photo.jpg', 200, 200);
-        $response3 = $this->authenticateWithJWT($user)
+            // Act
+            $response = $this->authenticateWithJWT($user)
+                ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
+                    'file' => $file,
+                ]);
+
+            // Assert
+            $response->assertStatus(422, "File type {$fileName} should be REJECTED");
+            $response->assertJsonValidationErrors(['file']);
+        }
+
+        // Verificar que archivos válidos SÍ se aceptan
+        $validFile = UploadedFile::fake()->create('document.pdf', 100);
+        $responseValid = $this->authenticateWithJWT($user)
             ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
-                'file' => $jpgFile,
+                'file' => $validFile,
             ]);
-        $response3->assertStatus(200);
+        $responseValid->assertStatus(200, "PDF should be ACCEPTED");
     }
 
     /**
      * Test #6: Allowed file types list
      *
-     * Verifies that the following file types are allowed:
-     * PDF, JPG, PNG, GIF, DOC, DOCX, XLS, XLSX, TXT, ZIP
+     * Verifies that ALL 16 types in the whitelist are accepted.
+     * Covers 100% of allowed types: documents, images, and videos.
      *
      * Expected: 200 for all allowed types
      */
@@ -349,7 +355,7 @@ class UploadAttachmentTest extends TestCase
     public function allowed_file_types_list(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -358,20 +364,32 @@ class UploadAttachmentTest extends TestCase
             'is_active' => true,
         ]);
 
+        // TODOS los 16 tipos permitidos (100% coverage de whitelist)
         $allowedTypes = [
+            // Documentos (8)
             'document.pdf',
-            'image.jpg',
-            'photo.png',
-            'animation.gif',
+            'notes.txt',
+            'application.log',
             'report.doc',
             'report.docx',
             'spreadsheet.xls',
             'spreadsheet.xlsx',
-            'notes.txt',
-            'archive.zip',
+            'data.csv',
+
+            // Imágenes (7)
+            'image.jpg',
+            'photo.jpeg',
+            'screenshot.png',
+            'animation.gif',
+            'bitmap.bmp',
+            'modern.webp',
+            'icon.svg',
+
+            // Videos (1)
+            'demo.mp4',
         ];
 
-        foreach ($allowedTypes as $index => $fileName) {
+        foreach ($allowedTypes as $fileName) {
             // Create a new ticket for each file type
             $ticket = Ticket::factory()->create([
                 'company_id' => $company->id,
@@ -389,9 +407,10 @@ class UploadAttachmentTest extends TestCase
                 ]);
 
             // Assert
-            $response->assertStatus(200, "File type {$fileName} should be allowed");
+            $response->assertStatus(200, "File type {$fileName} should be ACCEPTED");
             $this->assertDatabaseHas('ticketing.ticket_attachments', [
                 'ticket_id' => $ticket->id,
+                'file_name' => $fileName,
             ]);
         }
     }
@@ -411,7 +430,7 @@ class UploadAttachmentTest extends TestCase
     public function validates_max_5_attachments_per_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -466,7 +485,7 @@ class UploadAttachmentTest extends TestCase
     public function file_is_stored_in_correct_path(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -496,9 +515,9 @@ class UploadAttachmentTest extends TestCase
         // Verify file is stored in correct path
         $attachmentId = $response->json('data.id');
         $attachment = TicketAttachment::find($attachmentId);
-        $fileName = basename($attachment->file_url);
+        $fileName = basename($attachment->file_path);
 
-        Storage::disk('public')->assertExists("tickets/attachments/{$fileName}");
+        Storage::disk('local')->assertExists("tickets/attachments/{$fileName}");
     }
 
     /**
@@ -516,7 +535,7 @@ class UploadAttachmentTest extends TestCase
     public function attachment_record_created_with_metadata(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -573,7 +592,7 @@ class UploadAttachmentTest extends TestCase
     public function uploaded_by_user_id_is_set_correctly(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -619,7 +638,7 @@ class UploadAttachmentTest extends TestCase
     public function attachment_response_id_is_null_when_uploaded_to_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -667,7 +686,7 @@ class UploadAttachmentTest extends TestCase
     public function user_cannot_upload_to_other_user_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $userA = User::factory()->withRole('USER')->create();
         $userB = User::factory()->withRole('USER')->create();
@@ -714,10 +733,10 @@ class UploadAttachmentTest extends TestCase
     public function agent_cannot_upload_to_other_company_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
-        $agentCompanyA = User::factory()->withRole('AGENT')->create();
         $companyA = Company::factory()->create(['name' => 'Company A']);
+        $agentCompanyA = User::factory()->create();
         $agentCompanyA->assignRole('AGENT', $companyA->id);
 
         $companyB = Company::factory()->create(['name' => 'Company B']);
@@ -764,7 +783,7 @@ class UploadAttachmentTest extends TestCase
     public function cannot_upload_to_closed_ticket(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -809,7 +828,7 @@ class UploadAttachmentTest extends TestCase
     public function unauthenticated_user_cannot_upload(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $company = Company::factory()->create();
         $user = User::factory()->withRole('USER')->create();

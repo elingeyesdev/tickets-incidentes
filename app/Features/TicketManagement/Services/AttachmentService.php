@@ -149,12 +149,12 @@ class AttachmentService
         // Generar nombre único: {timestamp}_{nombre_original}
         $fileName = "{$timestamp}_{$originalName}";
 
-        // Ruta: tickets/{ticket_id}/{timestamp}_{nombre}
-        $path = "tickets/{$ticketId}/{$fileName}";
+        // Ruta: tickets/attachments/{timestamp}_{nombre}
+        $path = "tickets/attachments/{$fileName}";
 
         // Guardar en storage local
         Storage::disk('local')->putFileAs(
-            "tickets/{$ticketId}",
+            "tickets/attachments",
             $file,
             $fileName
         );

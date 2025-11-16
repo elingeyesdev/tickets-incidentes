@@ -71,6 +71,7 @@ class TicketAttachment extends Model
         'file_path',
         'file_type',
         'file_size_bytes',
+        'created_at',
     ];
 
     /**
@@ -149,6 +150,14 @@ class TicketAttachment extends Model
     public function isAttachedToResponse(): bool
     {
         return $this->response_id !== null;
+    }
+
+    /**
+     * Accessor for file_url (returns file_path for backward compatibility)
+     */
+    public function getFileUrlAttribute(): string
+    {
+        return $this->file_path;
     }
 
     /**

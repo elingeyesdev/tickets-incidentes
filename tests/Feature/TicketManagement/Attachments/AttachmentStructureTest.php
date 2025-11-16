@@ -146,7 +146,8 @@ class AttachmentStructureTest extends TestCase
         // Arrange
         $company = Company::factory()->create();
         $user = User::factory()->withRole('USER')->create();
-        $agent = User::factory()->withRole('AGENT', $company->id)->create();
+        $agent = User::factory()->create();
+        $agent->assignRole('AGENT', $company->id);
         $category = Category::factory()->create([
             'company_id' => $company->id,
             'is_active' => true,

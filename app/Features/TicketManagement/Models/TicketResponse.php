@@ -62,6 +62,7 @@ class TicketResponse extends Model
         'author_id',
         'content',
         'author_type',
+        'created_at',
     ];
 
     /**

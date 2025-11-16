@@ -461,7 +461,7 @@ Route::middleware('jwt.require')->group(function () {
         ->middleware('role:USER')
         ->name('tickets.store');
 
-    // List tickets (all authenticated users with role-based filtering)
+    // List tickets (all authenticated users with role-based filtering)/l
     Route::get('/tickets', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'index'])
         ->name('tickets.index');
 
@@ -490,6 +490,10 @@ Route::middleware('jwt.require')->group(function () {
     Route::get('/tickets/{ticket}/responses', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'index'])
         ->name('tickets.responses.index');
 
+    // Get individual response (authenticated users with ticket access)
+    Route::get('/tickets/{ticket}/responses/{response}', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'show'])
+        ->name('tickets.responses.show');
+
     // Update response (policy-based authorization)
     Route::patch('/tickets/{ticket}/responses/{response}', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'update'])
         ->name('tickets.responses.update');
@@ -497,4 +501,28 @@ Route::middleware('jwt.require')->group(function () {
     // Delete response (policy-based authorization)
     Route::delete('/tickets/{ticket}/responses/{response}', [\App\Features\TicketManagement\Http\Controllers\TicketResponseController::class, 'destroy'])
         ->name('tickets.responses.destroy');
+
+    // ================================================================================
+    // REST API ENDPOINTS - Ticket Management (Attachments)
+    // ================================================================================
+
+    // Upload attachment to ticket (policy-based authorization)
+    Route::post('/tickets/{ticket}/attachments', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'store'])
+        ->name('tickets.attachments.store');
+
+    // List attachments for ticket (policy-based authorization)
+    Route::get('/tickets/{ticket}/attachments', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'index'])
+        ->name('tickets.attachments.index');
+
+    // Upload attachment to specific response (policy-based authorization)
+    Route::post('/tickets/{ticket}/responses/{response}/attachments', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'storeToResponse'])
+        ->name('tickets.responses.attachments.store');
+
+    // Delete attachment (policy-based authorization)
+    Route::delete('/tickets/{ticket}/attachments/{attachment}', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'destroy'])
+        ->name('tickets.attachments.destroy');
+
+    // Download attachment (policy-based authorization)
+    Route::get('/tickets/attachments/{attachment}/download', [\App\Features\TicketManagement\Http\Controllers\TicketAttachmentController::class, 'download'])
+        ->name('tickets.attachments.download');
 });

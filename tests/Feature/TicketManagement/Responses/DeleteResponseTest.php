@@ -218,13 +218,13 @@ class DeleteResponseTest extends TestCase
         $this->assertContains($deleteResponse->getStatusCode(), [200, 204]);
 
         // Verify response is deleted
-        $this->assertDatabaseMissing('ticketing_ticket_responses', [
+        $this->assertDatabaseMissing('ticketing.ticket_responses', [
             'id' => $response->id,
         ]);
 
         // Verify attachments are also deleted (cascade)
         foreach ($attachments as $attachment) {
-            $this->assertDatabaseMissing('ticketing_ticket_attachments', [
+            $this->assertDatabaseMissing('ticketing.ticket_attachments', [
                 'id' => $attachment->id,
             ]);
         }

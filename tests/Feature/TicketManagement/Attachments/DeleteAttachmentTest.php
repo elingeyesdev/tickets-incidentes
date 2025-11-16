@@ -61,7 +61,7 @@ class DeleteAttachmentTest extends TestCase
     public function uploader_can_delete_attachment_within_30_minutes(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -83,7 +83,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'deletable.pdf',
-            'file_url' => 'tickets/attachments/deletable.pdf',
+            'file_path' => 'tickets/attachments/deletable.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5), // ← Within 30-minute window
@@ -115,7 +115,7 @@ class DeleteAttachmentTest extends TestCase
     public function cannot_delete_attachment_after_30_minutes(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -137,7 +137,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'old-attachment.pdf',
-            'file_url' => 'tickets/attachments/old-attachment.pdf',
+            'file_path' => 'tickets/attachments/old-attachment.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(35), // ← Outside 30-minute window
@@ -169,7 +169,7 @@ class DeleteAttachmentTest extends TestCase
     public function deleting_attachment_removes_file_from_storage(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -191,17 +191,17 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'storage-test.pdf',
-            'file_url' => 'tickets/attachments/storage-test.pdf',
+            'file_path' => 'tickets/attachments/storage-test.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 2048,
             'created_at' => Carbon::now()->subMinutes(10),
         ]);
 
         // Create fake file in storage
-        Storage::disk('public')->put('tickets/attachments/storage-test.pdf', 'fake file content');
+        Storage::disk('local')->put('tickets/attachments/storage-test.pdf', 'fake file content');
 
         // Verify file exists before deletion
-        Storage::disk('public')->assertExists('tickets/attachments/storage-test.pdf');
+        Storage::disk('local')->assertExists('tickets/attachments/storage-test.pdf');
 
         // Act
         $response = $this->authenticateWithJWT($user)
@@ -211,7 +211,7 @@ class DeleteAttachmentTest extends TestCase
         $response->assertStatus(200);
 
         // Verify file is deleted from storage
-        Storage::disk('public')->assertMissing('tickets/attachments/storage-test.pdf');
+        Storage::disk('local')->assertMissing('tickets/attachments/storage-test.pdf');
 
         // Verify attachment is deleted from database
         $this->assertDatabaseMissing('ticketing.ticket_attachments', [
@@ -233,7 +233,7 @@ class DeleteAttachmentTest extends TestCase
     public function user_cannot_delete_other_user_attachment(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $userA = User::factory()->withRole('USER')->create();
         $userB = User::factory()->withRole('USER')->create();
@@ -256,7 +256,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $userB->id, // ← Uploaded by User B
             'file_name' => 'user-b-file.pdf',
-            'file_url' => 'tickets/attachments/user-b-file.pdf',
+            'file_path' => 'tickets/attachments/user-b-file.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5),
@@ -288,12 +288,12 @@ class DeleteAttachmentTest extends TestCase
     public function agent_cannot_delete_user_attachment(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
-        $agent = User::factory()->withRole('AGENT')->create();
-        $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
+        $user = User::factory()->withRole('USER')->create();
 
         $category = Category::factory()->create([
             'company_id' => $company->id,
@@ -314,7 +314,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id, // ← Uploaded by USER
             'file_name' => 'user-attachment.pdf',
-            'file_url' => 'tickets/attachments/user-attachment.pdf',
+            'file_path' => 'tickets/attachments/user-attachment.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5),
@@ -348,7 +348,7 @@ class DeleteAttachmentTest extends TestCase
     public function cannot_delete_attachment_if_ticket_closed(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -372,7 +372,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'closed-ticket-file.pdf',
-            'file_url' => 'tickets/attachments/closed-ticket-file.pdf',
+            'file_path' => 'tickets/attachments/closed-ticket-file.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5), // ← Within 30-minute window
@@ -405,7 +405,7 @@ class DeleteAttachmentTest extends TestCase
     public function deleted_attachment_returns_404(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -426,7 +426,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'to-be-deleted.pdf',
-            'file_url' => 'tickets/attachments/to-be-deleted.pdf',
+            'file_path' => 'tickets/attachments/to-be-deleted.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5),
@@ -461,7 +461,7 @@ class DeleteAttachmentTest extends TestCase
     public function unauthenticated_user_cannot_delete(): void
     {
         // Arrange
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
@@ -482,7 +482,7 @@ class DeleteAttachmentTest extends TestCase
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
             'file_name' => 'protected-file.pdf',
-            'file_url' => 'tickets/attachments/protected-file.pdf',
+            'file_path' => 'tickets/attachments/protected-file.pdf',
             'file_type' => 'application/pdf',
             'file_size_bytes' => 1024,
             'created_at' => Carbon::now()->subMinutes(5),

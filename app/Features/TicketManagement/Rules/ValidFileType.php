@@ -9,21 +9,12 @@ use Illuminate\Http\UploadedFile;
 class ValidFileType implements ValidationRule
 {
     public const ALLOWED_TYPES = [
-        // Documentos
-        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv',
-        // Imágenes
-        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp',
-        // Comprimidos
-        'zip', 'rar', '7z', 'tar', 'gz',
-    ];
-
-    public const FORBIDDEN_TYPES = [
-        // Ejecutables
-        'exe', 'bat', 'cmd', 'com', 'msi', 'app', 'dmg',
-        // Scripts
-        'sh', 'bash', 'ps1', 'vbs', 'js', 'jar',
-        // Otros peligrosos
-        'dll', 'sys', 'scr',
+        // Documentos (8) - Helpdesk común
+        'pdf', 'txt', 'log', 'doc', 'docx', 'xls', 'xlsx', 'csv',
+        // Imágenes (7) - Screenshots/evidencia
+        'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg',
+        // Videos (1) - Demostración de problemas
+        'mp4',
     ];
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -35,15 +26,10 @@ class ValidFileType implements ValidationRule
 
         $extension = strtolower($value->getClientOriginalExtension());
 
-        if (in_array($extension, self::FORBIDDEN_TYPES)) {
-            $fail("El tipo de archivo .{$extension} no está permitido por razones de seguridad.");
-            return;
-        }
-
+        // Solo verificar whitelist - cualquier tipo no permitido es rechazado
         if (!in_array($extension, self::ALLOWED_TYPES)) {
             $allowedList = implode(', ', self::ALLOWED_TYPES);
-            $fail("El tipo de archivo debe ser uno de los siguientes: {$allowedList}.");
-            return;
+            $fail("Tipo de archivo no permitido (.{$extension}). Tipos permitidos: {$allowedList}.");
         }
     }
 }

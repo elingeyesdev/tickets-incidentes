@@ -63,7 +63,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Test response content',
+            'content' => 'Test response content',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -71,8 +71,9 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act
         $uploadResponse = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $response->id,
             ]);
 
         // Assert
@@ -115,15 +116,16 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Response with attachment',
+            'content' => 'Response with attachment',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
         // Upload attachment to response
         $file = UploadedFile::fake()->create('document.pdf', 150);
         $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $response->id,
             ]);
 
         // Act - Get response detail
@@ -135,7 +137,7 @@ class UploadAttachmentToResponseTest extends TestCase
         $detailResponse->assertJsonStructure([
             'data' => [
                 'id',
-                'response_content',
+                'content',
                 'attachments' => [
                     '*' => [
                         'id',
@@ -186,7 +188,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticketB->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Response from ticket B',
+            'content' => 'Response from ticket B',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -194,8 +196,9 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act - Try to upload to response from different ticket
         $uploadResponse = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticketA->ticket_code}/responses/{$responseFromTicketB->id}/attachments", [
+            ->postJson("/api/tickets/{$ticketA->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $responseFromTicketB->id,
             ]);
 
         // Assert
@@ -229,7 +232,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $author->id,
             'author_type' => 'user',
-            'response_content' => 'Author response',
+            'content' => 'Author response',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -237,8 +240,9 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act - Author uploads
         $authorUpload = $this->authenticateWithJWT($author)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $response->id,
             ]);
 
         // Assert - Author succeeds
@@ -247,8 +251,9 @@ class UploadAttachmentToResponseTest extends TestCase
         // Act - Other user tries to upload
         $file2 = UploadedFile::fake()->create('test2.pdf', 100);
         $otherUserUpload = $this->authenticateWithJWT($otherUser)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file2,
+                'response_id' => $response->id,
             ]);
 
         // Assert - Other user fails
@@ -283,7 +288,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Old response',
+            'content' => 'Old response',
             'created_at' => Carbon::now()->subMinutes(35),
         ]);
 
@@ -291,8 +296,9 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act
         $uploadResponse = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$oldResponse->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $oldResponse->id,
             ]);
 
         // Assert
@@ -310,9 +316,9 @@ class UploadAttachmentToResponseTest extends TestCase
         // Arrange
         Storage::fake('local');
 
-        $agent = User::factory()->withRole('AGENT')->create();
         $user = User::factory()->withRole('USER')->create();
         $company = Company::factory()->create();
+        $agent = User::factory()->create();
         $agent->assignRole('AGENT', $company->id);
 
         $category = Category::factory()->create(['company_id' => $company->id]);
@@ -328,7 +334,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'User response',
+            'content' => 'User response',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -336,8 +342,9 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act - Agent tries to upload to user response
         $uploadResponse = $this->authenticateWithJWT($agent)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$userResponse->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file,
+                'response_id' => $userResponse->id,
             ]);
 
         // Assert
@@ -372,7 +379,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Test response',
+            'content' => 'Test response',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -389,8 +396,9 @@ class UploadAttachmentToResponseTest extends TestCase
         for ($i = 1; $i <= 2; $i++) {
             $file = UploadedFile::fake()->create("response_file_{$i}.pdf", 100);
             $uploadResponse = $this->authenticateWithJWT($user)
-                ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+                ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                     'file' => $file,
+                    'response_id' => $response->id,
                 ]);
             $uploadResponse->assertStatus(200);
         }
@@ -398,8 +406,9 @@ class UploadAttachmentToResponseTest extends TestCase
         // Act - Try to upload 6th attachment
         $file6 = UploadedFile::fake()->create("file_6.pdf", 100);
         $sixthUploadResponse = $this->authenticateWithJWT($user)
-            ->postJson("/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments", [
+            ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $file6,
+                'response_id' => $response->id,
             ]);
 
         // Assert - 6th upload fails
@@ -437,7 +446,7 @@ class UploadAttachmentToResponseTest extends TestCase
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'response_content' => 'Test response',
+            'content' => 'Test response',
             'created_at' => Carbon::now()->subMinutes(5),
         ]);
 
@@ -445,8 +454,8 @@ class UploadAttachmentToResponseTest extends TestCase
 
         // Act - No JWT authentication
         $uploadResponse = $this->postJson(
-            "/api/tickets/{$ticket->ticket_code}/responses/{$response->id}/attachments",
-            ['file' => $file]
+            "/api/tickets/{$ticket->ticket_code}/attachments",
+            ['file' => $file, 'response_id' => $response->id]
         );
 
         // Assert
