@@ -62,6 +62,15 @@ trait RefreshDatabaseWithoutTransactions
      *
      * Called by RefreshDatabase before each test
      *
+     * PROFESSIONAL PARALLEL TESTING APPROACH:
+     * - migrate:fresh causes race conditions in parallel because it does DROP CASCADE
+     * - Multiple workers dropping/creating schemas simultaneously = conflicts
+     *
+     * Solution: Use migrate (idempotent) + truncate tables (parallel-safe)
+     * - migrate: Creates tables if missing (no-op if already exists)
+     * - truncate: Clears data safely even with parallel workers
+     * - seed: Populates fresh data
+     *
      * @return void
      */
     protected function refreshDatabase(): void
