@@ -168,7 +168,6 @@ yarn-error.log*
 # -----------------------------------------------------------------------------
 /auth.json
 .phpunit.result.cache
-.env.testing
 
 # Laravel Telescope (if installed)
 storage/telescope/
