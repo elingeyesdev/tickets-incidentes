@@ -60,42 +60,50 @@
                 <!-- Company Admin Menu -->
                 <template x-if="activeRole === 'COMPANY_ADMIN'">
                     <div>
-                        <li class="nav-header">COMPANY MANAGEMENT</li>
+                        <li class="nav-header">TICKETS</li>
                         <li class="nav-item">
-                            <a href="/app/company/settings" class="nav-link">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>Company Settings</p>
+                            <a href="/app/company/tickets" class="nav-link">
+                                <i class="nav-icon fas fa-ticket-alt"></i>
+                                <p>Tickets</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">GESTIÓN</li>
+                        <li class="nav-item">
+                            <a href="/app/company/categories" class="nav-link">
+                                <i class="nav-icon fas fa-tags"></i>
+                                <p>Categorías</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/app/company/agents" class="nav-link">
                                 <i class="nav-icon fas fa-user-tie"></i>
-                                <p>Agents</p>
+                                <p>Agentes</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">CONTENIDO</li>
+                        <li class="nav-item">
+                            <a href="/app/company/announcements" class="nav-link">
+                                <i class="nav-icon fas fa-bullhorn"></i>
+                                <p>Anuncios</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/app/company/categories" class="nav-link">
-                                <i class="nav-icon fas fa-tags"></i>
-                                <p>Categories</p>
+                            <a href="/app/company/articles" class="nav-link">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>Artículos</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">CONFIGURACIÓN</li>
+                        <li class="nav-item">
+                            <a href="/app/company/settings" class="nav-link">
+                                <i class="nav-icon fas fa-cog"></i>
+                                <p>Configuración</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/app/company/macros" class="nav-link">
-                                <i class="nav-icon fas fa-magic"></i>
-                                <p>Macros</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">CONTENT</li>
-                        <li class="nav-item">
-                            <a href="/app/company/help-center" class="nav-link">
-                                <i class="nav-icon fas fa-question-circle"></i>
-                                <p>Help Center</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/app/company/analytics" class="nav-link">
-                                <i class="nav-icon fas fa-chart-line"></i>
-                                <p>Analytics</p>
+                            <a href="/app/company/profile" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>Perfil</p>
                             </a>
                         </li>
                     </div>

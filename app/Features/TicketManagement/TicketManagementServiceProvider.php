@@ -33,11 +33,13 @@ class TicketManagementServiceProvider extends ServiceProvider
      */
     protected function registerEventListeners(): void
     {
-        // $events = $this->app['events'];
-        // Ejemplo:
-        // $events->listen(
-        //     \App\Features\TicketManagement\Events\TicketCreated::class,
-        //     \App\Features\TicketManagement\Listeners\NotifyNewTicket::class
-        // );
+        $events = $this->app['events'];
+
+        // Cuando se agrega una respuesta a un ticket, enviar email al usuario
+        // (solo si la respuesta es de un agente)
+        $events->listen(
+            \App\Features\TicketManagement\Events\ResponseAdded::class,
+            \App\Features\TicketManagement\Listeners\SendTicketResponseEmail::class
+        );
     }
 }

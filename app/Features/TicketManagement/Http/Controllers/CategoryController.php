@@ -14,6 +14,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * CategoryController - Gestión de categorías de tickets
@@ -31,6 +32,94 @@ class CategoryController extends Controller
     ) {
     }
 
+    #[OA\Get(
+        path: '/api/tickets/categories',
+        operationId: 'list_ticket_categories',
+        description: 'Returns a list of ticket categories for a specific company. All authenticated users can list categories. Categories are returned sorted by creation date (newest first). Optionally filter by active status. Each category includes the count of active tickets (open, pending, resolved) assigned to it.',
+        summary: 'List ticket categories for a company',
+        security: [['bearerAuth' => []]],
+        tags: ['Ticket Categories'],
+        parameters: [
+            new OA\Parameter(
+                name: 'company_id',
+                description: 'UUID of the company to list categories for (required)',
+                in: 'query',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
+            ),
+            new OA\Parameter(
+                name: 'is_active',
+                description: 'Filter by active status. Accepts "true", "false", "1", or "0". Omit to return all categories.',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['true', 'false', '1', '0'], example: 'true')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Categories list retrieved successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a'),
+                                    new OA\Property(property: 'company_id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                    new OA\Property(property: 'name', type: 'string', example: 'Soporte Técnico'),
+                                    new OA\Property(property: 'description', type: 'string', example: 'Problemas técnicos con el sistema', nullable: true),
+                                    new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                                    new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2025-11-16T10:30:00.000000Z'),
+                                    new OA\Property(property: 'active_tickets_count', type: 'integer', example: 5),
+                                ],
+                                type: 'object'
+                            )
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error (missing or invalid company_id)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The company id field is required.'),
+                        new OA\Property(
+                            property: 'errors',
+                            properties: [
+                                new OA\Property(
+                                    property: 'company_id',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The company id field is required.')
+                                ),
+                                new OA\Property(
+                                    property: 'is_active',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The selected is active is invalid.')
+                                ),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * GET /api/tickets/categories
      *
@@ -67,6 +156,116 @@ class CategoryController extends Controller
         ], 200);
     }
 
+    #[OA\Post(
+        path: '/api/tickets/categories',
+        operationId: 'create_ticket_category',
+        description: 'Creates a new ticket category for the company associated with the authenticated COMPANY_ADMIN. The company_id is automatically obtained from the JWT token - do not include it in the request body. Category names must be unique within the company. New categories are created with is_active=true by default.',
+        summary: 'Create a new ticket category',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['name'],
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        description: 'Category name (3-100 characters, must be unique within the company)',
+                        type: 'string',
+                        maxLength: 100,
+                        minLength: 3,
+                        example: 'Soporte Técnico'
+                    ),
+                    new OA\Property(
+                        property: 'description',
+                        description: 'Optional description of the category (max 500 characters)',
+                        type: 'string',
+                        maxLength: 500,
+                        example: 'Problemas técnicos con el sistema',
+                        nullable: true
+                    ),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Ticket Categories'],
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Category created successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Category created successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a'),
+                                new OA\Property(property: 'company_id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'name', type: 'string', example: 'Soporte Técnico'),
+                                new OA\Property(property: 'description', type: 'string', example: 'Problemas técnicos con el sistema', nullable: true),
+                                new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                                new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2025-11-16T10:30:00.000000Z'),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (user does not have COMPANY_ADMIN role or invalid company context)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Invalid company context'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The category name is required'),
+                        new OA\Property(
+                            property: 'errors',
+                            properties: [
+                                new OA\Property(
+                                    property: 'name',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'A category with this name already exists in your company')
+                                ),
+                                new OA\Property(
+                                    property: 'description',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The description must not exceed 500 characters')
+                                ),
+                                new OA\Property(
+                                    property: 'company_id',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The company id field is prohibited.')
+                                ),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * POST /api/tickets/categories
      *
@@ -104,6 +303,146 @@ class CategoryController extends Controller
         ], 201);
     }
 
+    #[OA\Put(
+        path: '/api/tickets/categories/{id}',
+        operationId: 'update_ticket_category',
+        description: 'Updates an existing ticket category. Only COMPANY_ADMIN of the same company can update categories. Partial updates are supported - send only the fields you want to update. Category names must remain unique within the company. The company_id cannot be changed (immutable).',
+        summary: 'Update a ticket category',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        description: 'New category name (3-100 characters, must be unique within the company)',
+                        type: 'string',
+                        maxLength: 100,
+                        minLength: 3,
+                        example: 'Soporte Técnico Avanzado'
+                    ),
+                    new OA\Property(
+                        property: 'description',
+                        description: 'New description of the category (max 500 characters)',
+                        type: 'string',
+                        maxLength: 500,
+                        example: 'Problemas técnicos complejos que requieren escalación',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'is_active',
+                        description: 'Whether the category is active and can be used for new tickets',
+                        type: 'boolean',
+                        example: true
+                    ),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Ticket Categories'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'UUID of the category to update',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Category updated successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Category updated successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a'),
+                                new OA\Property(property: 'company_id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
+                                new OA\Property(property: 'name', type: 'string', example: 'Soporte Técnico Avanzado'),
+                                new OA\Property(property: 'description', type: 'string', example: 'Problemas técnicos complejos que requieren escalación', nullable: true),
+                                new OA\Property(property: 'is_active', type: 'boolean', example: true),
+                                new OA\Property(property: 'created_at', type: 'string', format: 'date-time', example: '2025-11-16T10:30:00.000000Z'),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (user does not have COMPANY_ADMIN role or category belongs to different company)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthorized'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Category not found',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Category not found'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The category name must be at least 3 characters'),
+                        new OA\Property(
+                            property: 'errors',
+                            properties: [
+                                new OA\Property(
+                                    property: 'name',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'A category with this name already exists in your company')
+                                ),
+                                new OA\Property(
+                                    property: 'description',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The description must not exceed 500 characters')
+                                ),
+                                new OA\Property(
+                                    property: 'is_active',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The is_active field must be true or false')
+                                ),
+                                new OA\Property(
+                                    property: 'company_id',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The company id field is prohibited.')
+                                ),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * PUT /api/tickets/categories/{id}
      *
@@ -146,6 +485,78 @@ class CategoryController extends Controller
         ], 200);
     }
 
+    #[OA\Delete(
+        path: '/api/tickets/categories/{id}',
+        operationId: 'delete_ticket_category',
+        description: 'Permanently deletes a ticket category. Only COMPANY_ADMIN of the same company can delete categories. Categories with active tickets (open, pending, or resolved status) cannot be deleted. This is a hard delete operation (not soft delete).',
+        summary: 'Delete a ticket category',
+        security: [['bearerAuth' => []]],
+        tags: ['Ticket Categories'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                description: 'UUID of the category to delete',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Category deleted successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Category deleted successfully'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (missing or invalid JWT token)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (user does not have COMPANY_ADMIN role or category belongs to different company)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'This action is unauthorized.'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Category not found',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Category not found'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Cannot delete category (has active tickets)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Cannot delete category with 5 active tickets'),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
     /**
      * DELETE /api/tickets/categories/{id}
      *

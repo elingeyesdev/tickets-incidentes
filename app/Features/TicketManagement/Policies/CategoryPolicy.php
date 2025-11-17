@@ -26,7 +26,7 @@ class CategoryPolicy
     public function create(User $user): bool
     {
         // Debe tener el rol COMPANY_ADMIN
-        return $user->hasRole('COMPANY_ADMIN');
+        return JWTHelper::hasRoleFromJWT('COMPANY_ADMIN');
     }
 
     /**
@@ -37,7 +37,7 @@ class CategoryPolicy
     public function update(User $user, Category $category): bool
     {
         // Debe tener el rol COMPANY_ADMIN
-        if (!$user->hasRole('COMPANY_ADMIN')) {
+        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
             return false;
         }
 
@@ -55,7 +55,7 @@ class CategoryPolicy
     public function delete(User $user, Category $category): bool
     {
         // Debe tener el rol COMPANY_ADMIN
-        if (!$user->hasRole('COMPANY_ADMIN')) {
+        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
             return false;
         }
 
