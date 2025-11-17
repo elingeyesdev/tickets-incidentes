@@ -1,29 +1,28 @@
 <?php
 
-namespace App\Features\TicketManagement\Requests;
+namespace App\Features\TicketManagement\Http\Requests;
 
 use App\Features\TicketManagement\Models\Category;
+use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateTicketRequest extends FormRequest
+class StoreTicketRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Authorization handled by TicketPolicy
-        return true;
+        return JWTHelper::hasRoleFromJWT('USER');
     }
 
     public function rules(): array
     {
-        $ticket = $this->route('ticket');
-
         return [
-            'title' => 'sometimes|required|string|min:5|max:200',
+            'title' => 'required|string|min:5|max:200',
+            'description' => 'required|string|min:10|max:2000',
+            'company_id' => 'required|uuid|exists:companies,id',
             'category_id' => [
-                'sometimes',
                 'required',
                 'uuid',
-                function ($attribute, $value, $fail) use ($ticket) {
+                function ($attribute, $value, $fail) {
                     $category = Category::find($value);
                     if (!$category) {
                         $fail('La categoría seleccionada no existe.');
@@ -33,8 +32,8 @@ class UpdateTicketRequest extends FormRequest
                         $fail('La categoría seleccionada no está activa.');
                         return;
                     }
-                    if ($category->company_id !== $ticket->company_id) {
-                        $fail('La categoría no pertenece a la compañía del ticket.');
+                    if ($category->company_id !== $this->input('company_id')) {
+                        $fail('La categoría no pertenece a la compañía seleccionada.');
                     }
                 },
             ],

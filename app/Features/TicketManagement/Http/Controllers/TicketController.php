@@ -3,10 +3,10 @@
 namespace App\Features\TicketManagement\Http\Controllers;
 
 use App\Features\TicketManagement\Models\Ticket;
-use App\Features\TicketManagement\Requests\StoreTicketRequest;
-use App\Features\TicketManagement\Requests\UpdateTicketRequest;
-use App\Features\TicketManagement\Resources\TicketListResource;
-use App\Features\TicketManagement\Resources\TicketResource;
+use App\Features\TicketManagement\Http\Requests\StoreTicketRequest;
+use App\Features\TicketManagement\Http\Requests\UpdateTicketRequest;
+use App\Features\TicketManagement\Http\Resources\TicketListResource;
+use App\Features\TicketManagement\Http\Resources\TicketResource;
 use App\Features\TicketManagement\Services\TicketService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;

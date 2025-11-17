@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\TicketManagement\Requests;
+namespace App\Features\TicketManagement\Http\Requests;
 
 use App\Features\TicketManagement\Rules\CanReopenTicket;
 use Illuminate\Foundation\Http\FormRequest;

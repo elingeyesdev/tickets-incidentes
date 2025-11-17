@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\TicketManagement\Requests;
+namespace App\Features\TicketManagement\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 

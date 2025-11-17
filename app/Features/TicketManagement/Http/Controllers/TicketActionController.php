@@ -6,7 +6,7 @@ namespace App\Features\TicketManagement\Http\Controllers;
 
 use App\Features\TicketManagement\Http\Requests\TicketActionRequest;
 use App\Features\TicketManagement\Models\Ticket;
-use App\Features\TicketManagement\Resources\TicketResource;
+use App\Features\TicketManagement\Http\Resources\TicketResource;
 use App\Features\TicketManagement\Services\TicketService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
