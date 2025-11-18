@@ -1,55 +1,57 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- Base Meta Tags --}}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- Favicon -->
+    {{-- Custom Meta Tags --}}
+    @yield('meta_tags')
+
+    {{-- Favicon --}}
     <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('logo.png') }}">
 
+    {{-- Title --}}
     <title>@yield('title', 'Dashboard') - HELPDESK</title>
 
-    <!-- AdminLTE CSS -->
+    {{-- Custom stylesheets (pre AdminLTE) --}}
+    @yield('adminlte_css_pre')
+
+    {{-- Base AdminLTE Stylesheets --}}
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/fontawesome-free/css/all.min.css') }}">
+    {{-- Google Font: Source Sans Pro --}}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
 
-    <!-- iCheck Bootstrap -->
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
+    {{-- Extra Configured Plugins Stylesheets --}}
+    @include('adminlte::plugins', ['type' => 'css'])
 
-    <!-- Select2 -->
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/select2/css/select2.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/adminlte/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
-
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-
-    <!-- Custom CSS -->
+    {{-- Custom Stylesheets (post AdminLTE) --}}
     <style>
         [x-cloak] {
             display: none !important;
         }
     </style>
-
+    @stack('css')
     @yield('css')
 </head>
+
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="wrapper">
-        <!-- Navbar -->
+        {{-- Navbar --}}
         @include('app.shared.navbar')
 
-        <!-- Main Sidebar Container -->
+        {{-- Main Sidebar Container --}}
         @include('app.shared.sidebar')
 
-        <!-- Content Wrapper. Contains page content -->
+        {{-- Content Wrapper. Contains page content --}}
         <div class="content-wrapper">
-            <!-- Content Header (Page header) -->
+            {{-- Content Header (Page header) --}}
             <div class="content-header">
                 <div class="container-fluid">
                     <div class="row mb-2">
@@ -66,10 +68,10 @@
                 </div>
             </div>
 
-            <!-- Main content -->
+            {{-- Main content --}}
             <section class="content">
                 <div class="container-fluid">
-                    <!-- Error Messages -->
+                    {{-- Error Messages --}}
                     @if ($errors->any())
                         <div class="alert alert-danger alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -82,7 +84,7 @@
                         </div>
                     @endif
 
-                    <!-- Success Message -->
+                    {{-- Success Message --}}
                     @if (session('success'))
                         <div class="alert alert-success alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -91,7 +93,7 @@
                         </div>
                     @endif
 
-                    <!-- Warning Message -->
+                    {{-- Warning Message --}}
                     @if (session('warning'))
                         <div class="alert alert-warning alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -100,7 +102,7 @@
                         </div>
                     @endif
 
-                    <!-- Info Message -->
+                    {{-- Info Message --}}
                     @if (session('info'))
                         <div class="alert alert-info alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -109,13 +111,13 @@
                         </div>
                     @endif
 
-                    <!-- Page Content -->
+                    {{-- Page Content --}}
                     @yield('content')
                 </div>
             </section>
         </div>
 
-        <!-- Footer -->
+        {{-- Footer --}}
         <footer class="main-footer">
             <strong>Copyright &copy; 2025 <a href="/">HELPDESK</a>.</strong>
             All rights reserved.
@@ -124,35 +126,25 @@
             </div>
         </footer>
 
-        <!-- Control Sidebar -->
+        {{-- Control Sidebar --}}
         <aside class="control-sidebar control-sidebar-dark">
-            <!-- Control sidebar content goes here -->
+            {{-- Control sidebar content goes here --}}
         </aside>
     </div>
 
-    <!-- Scripts -->
-    <!-- jQuery -->
-    <script src="{{ asset('vendor/adminlte/plugins/jquery/jquery.min.js') }}"></script>
-    <!-- Bootstrap 4 -->
-    <script src="{{ asset('vendor/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <!-- Select2 -->
-    <script src="{{ asset('vendor/adminlte/plugins/select2/js/select2.full.min.js') }}"></script>
-    <!-- jQuery Validation -->
-    <script src="{{ asset('vendor/adminlte/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
-    <script src="{{ asset('vendor/adminlte/plugins/jquery-validation/additional-methods.min.js') }}"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    <!-- AdminLTE App -->
+    {{-- Base Scripts --}}
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('vendor/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
-    <!-- Alpine.js -->
+
+    {{-- Extra Configured Plugins Scripts --}}
+    @include('adminlte::plugins', ['type' => 'js'])
+
+    {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <!-- JWT Token Manager Setup (synchronous) -->
+    {{-- JWT Token Manager Setup (synchronous) --}}
     <script>
         // IMPORTANT: Handle token from login.blade.php that was saved directly to localStorage
         // without expiry metadata. This ensures TokenManager can properly track and refresh the token.
@@ -215,7 +207,7 @@
         };
     </script>
 
-    <!-- JWT Token Manager -->
+    {{-- JWT Token Manager --}}
     <script type="module">
         import tokenManager from '/js/lib/auth/TokenManager.js';
 
@@ -261,6 +253,7 @@
         });
     </script>
 
+    {{-- Custom Scripts --}}
     @stack('scripts')
     @yield('js')
 </body>
