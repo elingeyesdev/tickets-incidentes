@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\CompanyAdminController;
 use App\Http\Controllers\Dashboard\AgentController;
 use App\Http\Controllers\Dashboard\UserController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
+use App\Shared\Helpers\JWTHelper;
 
 // ========== TESTING ROUTES (Development Only) ==========
 // Remove these routes in production
@@ -142,6 +143,46 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     Route::middleware('role:COMPANY_ADMIN')->prefix('company')->group(function () {
         Route::get('/dashboard', [CompanyAdminController::class, 'dashboard'])
             ->name('dashboard.company-admin');
+
+        // Categories Management
+        Route::get('/categories', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.categories.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.categories.index');
+
+        // Settings (Company Configuration)
+        Route::get('/settings', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.settings.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.settings.index');
+
+        // Articles Management (Help Center)
+        Route::get('/articles', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.articles.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.articles.index');
+
+        // Announcements Management
+        Route::get('/announcements', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.announcements.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.announcements.index');
     });
 
     // Agent Dashboard (AGENT role)

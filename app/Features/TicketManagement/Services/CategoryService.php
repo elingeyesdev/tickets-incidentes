@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Features\TicketManagement\Services;
 
 use App\Features\TicketManagement\Models\Category;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * CategoryService - Lógica de negocio para categorías de tickets
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
  * - Crear categorías con validaciones de negocio
  * - Actualizar categorías preservando campos no modificados
  * - Eliminar categorías (solo si no tienen tickets activos)
- * - Listar categorías con filtros y conteo de tickets activos
+ * - Listar categorías con filtros y conteo de tickets activos (paginadas)
  */
 class CategoryService
 {
@@ -91,13 +91,14 @@ class CategoryService
     }
 
     /**
-     * Lista categorías de una empresa con filtrado opcional
+     * Lista categorías de una empresa con filtrado opcional y paginación
      *
      * @param string $companyId ID de la empresa
      * @param bool|null $isActive Filtrar por estado activo/inactivo (null = todos)
-     * @return Collection
+     * @param int $perPage Número de items por página (default 15)
+     * @return LengthAwarePaginator
      */
-    public function list(string $companyId, ?bool $isActive = null): Collection
+    public function list(string $companyId, ?bool $isActive = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = Category::query()
             ->where('company_id', $companyId)
@@ -113,6 +114,6 @@ class CategoryService
             $query->where('is_active', $isActive);
         }
 
-        return $query->get();
+        return $query->paginate($perPage);
     }
 }

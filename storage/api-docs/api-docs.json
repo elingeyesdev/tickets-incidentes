@@ -8947,8 +8947,8 @@
                 "tags": [
                     "Ticket Categories"
                 ],
-                "summary": "List ticket categories for a company",
-                "description": "Returns a list of ticket categories for a specific company. All authenticated users can list categories. Categories are returned sorted by creation date (newest first). Optionally filter by active status. Each category includes the count of active tickets (open, pending, resolved) assigned to it.",
+                "summary": "List ticket categories for a company (paginated)",
+                "description": "Returns a paginated list of ticket categories for a specific company. All authenticated users can list categories. Categories are returned sorted by creation date (newest first). Optionally filter by active status. Each category includes the count of active tickets (open, pending, resolved) assigned to it. Pagination is included with links to navigate between pages.",
                 "operationId": "list_ticket_categories",
                 "parameters": [
                     {
@@ -8976,6 +8976,31 @@
                                 "0"
                             ],
                             "example": "true"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of categories per page (default: 15, min: 1, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number (default: 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1,
+                            "example": 1
                         }
                     }
                 ],
@@ -9029,6 +9054,57 @@
                                                 },
                                                 "type": "object"
                                             }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 30
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "example": "http://localhost:8000/api/tickets/categories?page=1"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "example": "http://localhost:8000/api/tickets/categories?page=2"
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "example": "http://localhost:8000/api/tickets/categories?page=2"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -9053,7 +9129,7 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error (missing or invalid company_id)",
+                        "description": "Validation error (missing or invalid company_id, per_page, or page)",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9076,6 +9152,20 @@
                                                     "items": {
                                                         "type": "string",
                                                         "example": "The selected is active is invalid."
+                                                    }
+                                                },
+                                                "per_page": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The per page must be between 1 and 100."
+                                                    }
+                                                },
+                                                "page": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The page must be at least 1."
                                                     }
                                                 }
                                             },

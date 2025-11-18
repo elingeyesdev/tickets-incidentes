@@ -35,8 +35,8 @@ class CategoryController extends Controller
     #[OA\Get(
         path: '/api/tickets/categories',
         operationId: 'list_ticket_categories',
-        description: 'Returns a list of ticket categories for a specific company. All authenticated users can list categories. Categories are returned sorted by creation date (newest first). Optionally filter by active status. Each category includes the count of active tickets (open, pending, resolved) assigned to it.',
-        summary: 'List ticket categories for a company',
+        description: 'Returns a paginated list of ticket categories for a specific company. All authenticated users can list categories. Categories are returned sorted by creation date (newest first). Optionally filter by active status. Each category includes the count of active tickets (open, pending, resolved) assigned to it. Pagination is included with links to navigate between pages.',
+        summary: 'List ticket categories for a company (paginated)',
         security: [['bearerAuth' => []]],
         tags: ['Ticket Categories'],
         parameters: [
@@ -53,6 +53,20 @@ class CategoryController extends Controller
                 in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'string', enum: ['true', 'false', '1', '0'], example: 'true')
+            ),
+            new OA\Parameter(
+                name: 'per_page',
+                description: 'Number of categories per page (default: 15, min: 1, max: 100)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 15, example: 15)
+            ),
+            new OA\Parameter(
+                name: 'page',
+                description: 'Page number (default: 1)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer', minimum: 1, default: 1, example: 1)
             ),
         ],
         responses: [
@@ -78,6 +92,28 @@ class CategoryController extends Controller
                                 type: 'object'
                             )
                         ),
+                        new OA\Property(
+                            property: 'meta',
+                            properties: [
+                                new OA\Property(property: 'current_page', type: 'integer', example: 1),
+                                new OA\Property(property: 'from', type: 'integer', example: 1),
+                                new OA\Property(property: 'to', type: 'integer', example: 15),
+                                new OA\Property(property: 'last_page', type: 'integer', example: 2),
+                                new OA\Property(property: 'per_page', type: 'integer', example: 15),
+                                new OA\Property(property: 'total', type: 'integer', example: 30),
+                            ],
+                            type: 'object'
+                        ),
+                        new OA\Property(
+                            property: 'links',
+                            properties: [
+                                new OA\Property(property: 'first', type: 'string', example: 'http://localhost:8000/api/tickets/categories?page=1'),
+                                new OA\Property(property: 'last', type: 'string', example: 'http://localhost:8000/api/tickets/categories?page=2'),
+                                new OA\Property(property: 'prev', type: 'string', nullable: true, example: null),
+                                new OA\Property(property: 'next', type: 'string', example: 'http://localhost:8000/api/tickets/categories?page=2'),
+                            ],
+                            type: 'object'
+                        ),
                     ],
                     type: 'object'
                 )
@@ -94,7 +130,7 @@ class CategoryController extends Controller
             ),
             new OA\Response(
                 response: 422,
-                description: 'Validation error (missing or invalid company_id)',
+                description: 'Validation error (missing or invalid company_id, per_page, or page)',
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: 'message', type: 'string', example: 'The company id field is required.'),
@@ -111,6 +147,16 @@ class CategoryController extends Controller
                                     type: 'array',
                                     items: new OA\Items(type: 'string', example: 'The selected is active is invalid.')
                                 ),
+                                new OA\Property(
+                                    property: 'per_page',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The per page must be between 1 and 100.')
+                                ),
+                                new OA\Property(
+                                    property: 'page',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The page must be at least 1.')
+                                ),
                             ],
                             type: 'object'
                         ),
@@ -123,36 +169,55 @@ class CategoryController extends Controller
     /**
      * GET /api/tickets/categories
      *
-     * Lista categorías de una empresa con filtrado opcional por is_active.
+     * Lista categorías paginadas de una empresa con filtrado opcional por is_active.
      * Incluye conteo de tickets activos por categoría.
      *
      * Query params:
      * - company_id: UUID (requerido)
      * - is_active: boolean (opcional)
+     * - per_page: integer (opcional, default: 15, max: 100)
+     * - page: integer (opcional, default: 1)
      *
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        // Validar que company_id esté presente
-        $request->validate([
+        // Validar parámetros
+        $validated = $request->validate([
             'company_id' => 'required|uuid',
             'is_active' => 'nullable|in:true,false,1,0',
+            'per_page' => 'nullable|integer|between:1,100',
+            'page' => 'nullable|integer|min:1',
         ]);
 
         $companyId = $request->query('company_id');
         $isActive = $request->query('is_active');
+        $perPage = $request->query('per_page', 15);
 
         // Convertir string "true"/"false"/"1"/"0" a boolean si es necesario
         if ($isActive !== null) {
             $isActive = filter_var($isActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         }
 
-        $categories = $this->categoryService->list($companyId, $isActive);
+        $categories = $this->categoryService->list($companyId, $isActive, (int) $perPage);
 
         return response()->json([
             'success' => true,
             'data' => CategoryResource::collection($categories),
+            'meta' => [
+                'current_page' => $categories->currentPage(),
+                'from' => $categories->firstItem(),
+                'to' => $categories->lastItem(),
+                'last_page' => $categories->lastPage(),
+                'per_page' => $categories->perPage(),
+                'total' => $categories->total(),
+            ],
+            'links' => [
+                'first' => $categories->url(1),
+                'last' => $categories->url($categories->lastPage()),
+                'prev' => $categories->previousPageUrl(),
+                'next' => $categories->nextPageUrl(),
+            ],
         ], 200);
     }
 
