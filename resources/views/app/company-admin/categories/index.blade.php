@@ -10,10 +10,10 @@
 @endsection
 
 @section('content')
-{{-- Fila: Estadísticas Rápidas --}}
+{{-- Fila: Estadísticas Rápidas (Clickeables como filtros) --}}
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="info-box bg-light">
+        <div class="info-box bg-light" style="cursor: pointer;" data-filter="" id="infoBoxAll">
             <span class="info-box-icon bg-primary"><i class="fas fa-folder"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Total de Categorías</span>
@@ -22,7 +22,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="info-box bg-light">
+        <div class="info-box bg-light elevation-2" style="cursor: pointer;" data-filter="active" id="infoBoxActive">
             <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Categorías Activas</span>
@@ -31,7 +31,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="info-box bg-light">
+        <div class="info-box bg-light" style="cursor: pointer;" data-filter="inactive" id="infoBoxInactive">
             <span class="info-box-icon bg-warning"><i class="fas fa-times-circle"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Categorías Inactivas</span>
