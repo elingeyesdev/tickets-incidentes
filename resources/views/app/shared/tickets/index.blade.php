@@ -245,88 +245,158 @@
                         </div>
                     </div>
                     <div class="table-responsive mailbox-messages">
-                        <table class="table table-hover table-striped">
+                        <table class="table table-hover">
                             <tbody>
-                            <tr>
-                                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                            @if($role === 'USER')
+                                {{-- USER VIEW: Sin avatar, sin nombre de creador --}}
+                                <tr style="cursor: pointer;" onclick="window.location='{{ route('user.tickets.manage') }}?ticket=TKT-2025-00001'">
+                                    <td style="width: 40px;" onclick="event.stopPropagation();">
+                                        <a href="#"><i class="fas fa-star text-warning"></i></a>
+                                    </td>
                                     <td>
+                                        <div>
+                                            <span class="badge badge-danger mr-2">Open</span>
+                                            <strong>TKT-2025-00001</strong> - Error al exportar reporte mensual
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-tag"></i> Soporte Técnico
+                                            <i class="fas fa-comments ml-3"></i> 3 respuestas
+                                            <i class="fas fa-paperclip ml-2"></i> 1 adjunto
+                                        </small>
+                                    </td>
+                                    <td style="width: 120px; text-align: right;">
+                                        <small class="text-muted">Hace 2 min</small>
+                                    </td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="window.location='{{ route('user.tickets.manage') }}?ticket=TKT-2025-00002'">
+                                    <td onclick="event.stopPropagation();">
+                                        <a href="#"><i class="far fa-star"></i></a>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span class="badge badge-warning mr-2">Pending</span>
+                                            <strong>TKT-2025-00002</strong> - No puedo acceder al dashboard
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-tag"></i> Accesos
+                                            <i class="fas fa-comments ml-3"></i> 1 respuesta
+                                        </small>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <small class="text-muted">Hace 1 hora</small>
+                                    </td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="window.location='{{ route('user.tickets.manage') }}?ticket=TKT-2025-00003'">
+                                    <td onclick="event.stopPropagation();">
+                                        <a href="#"><i class="far fa-star"></i></a>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span class="badge badge-success mr-2">Resolved</span>
+                                            <strong>TKT-2025-00003</strong> - Consulta sobre facturación
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-tag"></i> Facturación
+                                            <i class="fas fa-comments ml-3"></i> 5 respuestas
+                                            <i class="fas fa-paperclip ml-2"></i> 2 adjuntos
+                                        </small>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <small class="text-muted">Ayer</small>
+                                    </td>
+                                </tr>
+                            @else
+                                {{-- AGENT/COMPANY_ADMIN VIEW: Con checkbox, avatar y nombre de creador --}}
+                                <tr style="cursor: pointer;" onclick="window.location='{{ $role === 'AGENT' ? route('agent.tickets.manage') : route('company.tickets.manage') }}?ticket=TKT-2025-00001'">
+                                    <td style="width: 40px;" onclick="event.stopPropagation();">
                                         <div class="icheck-primary">
                                             <input type="checkbox" value="" id="check1">
                                             <label for="check1"></label>
                                         </div>
                                     </td>
-                                @endif
-                                <td class="mailbox-star"><a href="#"><i class="fas fa-star text-warning"></i></a></td>
-                                <td class="mailbox-name"><a href="read-mail.html">Juan Pérez</a></td>
-                                <td class="mailbox-subject"><span class="badge badge-info">New</span> <b>TKT-2025-00001</b> - Solicitud de acceso al módulo de ventas
-                                </td>
-                                <td class="mailbox-attachment"></td>
-                                <td class="mailbox-date">Hace 2 min</td>
-                            </tr>
-                            <tr>
-                                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                                    <td style="width: 40px;" onclick="event.stopPropagation();">
+                                        <a href="#"><i class="fas fa-star text-warning"></i></a>
+                                    </td>
+                                    <td style="width: 50px;">
+                                        <img src="https://ui-avatars.com/api/?name=Juan+Perez&size=40&background=007bff&color=fff" class="img-circle" alt="User Image">
+                                    </td>
                                     <td>
+                                        <div>
+                                            <span class="badge badge-danger mr-2">Open</span>
+                                            <strong>TKT-2025-00001</strong> - Error al exportar reporte mensual
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>Juan Pérez</strong>
+                                            <i class="fas fa-tag ml-3"></i> Soporte Técnico
+                                            <i class="fas fa-user-check ml-3"></i> Asignado: María G.
+                                            <i class="fas fa-comments ml-3"></i> 3
+                                            <i class="fas fa-paperclip ml-2"></i> 1
+                                        </small>
+                                    </td>
+                                    <td style="width: 120px; text-align: right;">
+                                        <small class="text-muted">Hace 2 min</small>
+                                    </td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="window.location='{{ $role === 'AGENT' ? route('agent.tickets.manage') : route('company.tickets.manage') }}?ticket=TKT-2025-00002'">
+                                    <td onclick="event.stopPropagation();">
                                         <div class="icheck-primary">
                                             <input type="checkbox" value="" id="check2">
                                             <label for="check2"></label>
                                         </div>
                                     </td>
-                                @endif
-                                <td class="mailbox-star"><a href="#"><i class="far fa-star"></i></a></td>
-                                <td class="mailbox-name"><a href="read-mail.html">María González</a></td>
-                                <td class="mailbox-subject"><span class="badge badge-danger">Open</span> <b>TKT-2025-00002</b> - Error crítico en módulo de reportes
-                                </td>
-                                <td class="mailbox-attachment"><i class="fas fa-paperclip"></i></td>
-                                <td class="mailbox-date">Hace 15 min</td>
-                            </tr>
-                            <tr>
-                                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                                    <td onclick="event.stopPropagation();">
+                                        <a href="#"><i class="far fa-star"></i></a>
+                                    </td>
                                     <td>
+                                        <img src="https://ui-avatars.com/api/?name=Maria+Gonzalez&size=40&background=28a745&color=fff" class="img-circle" alt="User Image">
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span class="badge badge-warning mr-2">Pending</span>
+                                            <strong>TKT-2025-00002</strong> - No puedo acceder al dashboard
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>María González</strong>
+                                            <i class="fas fa-tag ml-3"></i> Accesos
+                                            <i class="fas fa-user-slash ml-3 text-danger"></i> Sin asignar
+                                            <i class="fas fa-comments ml-3"></i> 1
+                                        </small>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <small class="text-muted">Hace 1 hora</small>
+                                    </td>
+                                </tr>
+                                <tr style="cursor: pointer;" onclick="window.location='{{ $role === 'AGENT' ? route('agent.tickets.manage') : route('company.tickets.manage') }}?ticket=TKT-2025-00003'">
+                                    <td onclick="event.stopPropagation();">
                                         <div class="icheck-primary">
                                             <input type="checkbox" value="" id="check3">
                                             <label for="check3"></label>
                                         </div>
                                     </td>
-                                @endif
-                                <td class="mailbox-star"><a href="#"><i class="far fa-star"></i></a></td>
-                                <td class="mailbox-name"><a href="read-mail.html">Carlos Rodríguez</a></td>
-                                <td class="mailbox-subject"><span class="badge badge-warning">Pending</span> <b>TKT-2025-00003</b> - No puedo acceder al dashboard
-                                </td>
-                                <td class="mailbox-attachment"></td>
-                                <td class="mailbox-date">Hace 1 hora</td>
-                            </tr>
-                            <tr>
-                                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
-                                    <td>
-                                        <div class="icheck-primary">
-                                            <input type="checkbox" value="" id="check4">
-                                            <label for="check4"></label>
-                                        </div>
+                                    <td onclick="event.stopPropagation();">
+                                        <a href="#"><i class="far fa-star"></i></a>
                                     </td>
-                                @endif
-                                <td class="mailbox-star"><a href="#"><i class="fas fa-star text-warning"></i></a></td>
-                                <td class="mailbox-name"><a href="read-mail.html">Ana Martínez</a></td>
-                                <td class="mailbox-subject"><span class="badge badge-success">Resolved</span> <b>TKT-2025-00004</b> - Consulta sobre facturación
-                                </td>
-                                <td class="mailbox-attachment"><i class="fas fa-paperclip"></i></td>
-                                <td class="mailbox-date">Hace 3 horas</td>
-                            </tr>
-                            <tr>
-                                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
                                     <td>
-                                        <div class="icheck-primary">
-                                            <input type="checkbox" value="" id="check5">
-                                            <label for="check5"></label>
-                                        </div>
+                                        <img src="https://ui-avatars.com/api/?name=Carlos+Rodriguez&size=40&background=dc3545&color=fff" class="img-circle" alt="User Image">
                                     </td>
-                                @endif
-                                <td class="mailbox-star"><a href="#"><i class="fas fa-star text-warning"></i></a></td>
-                                <td class="mailbox-name"><a href="read-mail.html">Luis Fernández</a></td>
-                                <td class="mailbox-subject"><span class="badge badge-secondary">Closed</span> <b>TKT-2025-00005</b> - Configuración de permisos
-                                </td>
-                                <td class="mailbox-attachment"></td>
-                                <td class="mailbox-date">Ayer</td>
-                            </tr>
+                                    <td>
+                                        <div>
+                                            <span class="badge badge-success mr-2">Resolved</span>
+                                            <strong>TKT-2025-00003</strong> - Consulta sobre facturación
+                                        </div>
+                                        <small class="text-muted">
+                                            <strong>Carlos Rodríguez</strong>
+                                            <i class="fas fa-tag ml-3"></i> Facturación
+                                            <i class="fas fa-user-check ml-3"></i> Asignado: Juan L.
+                                            <i class="fas fa-comments ml-3"></i> 5
+                                            <i class="fas fa-paperclip ml-2"></i> 2
+                                        </small>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <small class="text-muted">Ayer</small>
+                                    </td>
+                                </tr>
+                            @endif
                             </tbody>
                         </table>
                     </div>

@@ -1,839 +1,951 @@
 @extends('layouts.authenticated')
 
-@section('title', 'Ticket TKT-2025-00001')
+@section('title')
+Ticket {{ request()->get('ticket', 'TKT-XXXX-XXXXX') }}
+@endsection
 
-@section('content_header', 'Detalle de Ticket')
+@section('content_header')
+Detalle de Ticket
+@endsection
 
 @section('breadcrumbs')
-    <li class="breadcrumb-item"><a href="/tickets">Tickets</a></li>
-    <li class="breadcrumb-item active">TKT-2025-00001</li>
+<li class="breadcrumb-item">
+    <a href="{{ route($role === 'USER' ? 'user.tickets.index' : ($role === 'AGENT' ? 'agent.tickets.index' : 'company.tickets.index')) }}">
+        Tickets
+    </a>
+</li>
+<li class="breadcrumb-item active" id="breadcrumb-ticket-code">{{ request()->get('ticket', 'TKT-XXXX-XXXXX') }}</li>
 @endsection
 
 @section('content')
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-12">
+<div x-data="ticketManage()" x-init="loadTicket()">
 
-                    <!-- Card Principal del Ticket -->
-                    <div class="card card-primary card-outline">
+    <!-- Card Principal: Información del Ticket -->
+    <div class="card card-primary card-outline">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-ticket-alt mr-2"></i>
+                <span x-text="ticket.ticket_code">TKT-XXXX-XXXXX</span>
+            </h3>
 
-                        <!-- Card Header con Navegación -->
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-ticket-alt mr-2"></i>
-                                <span id="ticket-code">TKT-2025-00001</span>
-                            </h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" title="Ticket Anterior">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" title="Ticket Siguiente">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" title="Volver a la Lista">
-                                    <i class="fas fa-list"></i>
-                                </button>
-                            </div>
-                        </div>
+            <div class="card-tools">
+                <a href="{{ route($role === 'USER' ? 'user.tickets.index' : ($role === 'AGENT' ? 'agent.tickets.index' : 'company.tickets.index')) }}"
+                   class="btn btn-tool" title="Volver a la lista">
+                    <i class="fas fa-list"></i>
+                </a>
+            </div>
+        </div>
 
-                        <!-- Card Body -->
-                        <div class="card-body p-0">
+        <div class="card-body p-0">
+            <!-- Mailbox Read Info -->
+            <div class="mailbox-read-info">
+                <h5 x-text="ticket.title">Cargando...</h5>
+                <h6>
+                    <i class="fas fa-user mr-2"></i>Creado por:
+                    <a href="#" x-text="ticket.created_by_user?.name || 'N/A'">N/A</a>
+                    <span class="mailbox-read-time float-right">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span x-text="formatDate(ticket.created_at)">N/A</span>
+                    </span>
+                </h6>
+            </div>
 
-                            <!-- Información Principal del Ticket -->
-                            <div class="mailbox-read-info">
-                                <h3 id="ticket-title">Error crítico en módulo de reportes</h3>
-                                <h6>
-                                    <i class="fas fa-user mr-2"></i>Creado por:
-                                    <a href="#" id="creator-name">Juan Pérez</a>
-                                    <span class="mailbox-read-time float-right">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    <span id="created-at">16 Nov. 2025 10:30 AM</span>
-                                </span>
-                                </h6>
-                            </div>
-
-                            <!-- Badges de Estado y Metadata -->
-                            <div class="p-3 border-bottom">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-info-circle mr-2"></i>Estado:</strong>
-                                            <span class="badge badge-danger ml-2" id="ticket-status">Open</span>
-                                        </p>
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-tag mr-2"></i>Categoría:</strong>
-                                            <span class="text-muted ml-2" id="ticket-category">Soporte Técnico</span>
-                                        </p>
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-building mr-2"></i>Empresa:</strong>
-                                            <span class="text-muted ml-2" id="ticket-company">Acme Corporation</span>
-                                        </p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="mb-2" data-role="AGENT,COMPANY_ADMIN">
-                                            <strong><i class="fas fa-user-tie mr-2"></i>Asignado a:</strong>
-                                            <span class="text-muted ml-2" id="assigned-agent">María García</span>
-                                        </p>
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-comments mr-2"></i>Respuestas:</strong>
-                                            <span class="badge badge-info ml-2" id="responses-count">3</span>
-                                        </p>
-                                        <p class="mb-2">
-                                            <strong><i class="fas fa-paperclip mr-2"></i>Adjuntos:</strong>
-                                            <span class="badge badge-secondary ml-2" id="attachments-count">2</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Botones de Acción según Rol y Estado -->
-                            <div class="mailbox-controls with-border text-center p-3" id="action-buttons">
-
-                                <!-- Botones para AGENT -->
-                                <div class="btn-group" data-role="AGENT" data-status="open,pending">
-                                    <button class="btn btn-success btn-sm" id="btn-resolve">
-                                        <i class="fas fa-check mr-2"></i>Resolver
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" id="btn-assign">
-                                        <i class="fas fa-user-plus mr-2"></i>Asignar
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" id="btn-close">
-                                        <i class="fas fa-times mr-2"></i>Cerrar
-                                    </button>
-                                </div>
-
-                                <!-- Botón para USER (Solo si está resolved) -->
-                                <div class="btn-group" data-role="USER" data-status="resolved">
-                                    <button class="btn btn-info btn-sm" id="btn-reopen">
-                                        <i class="fas fa-redo mr-2"></i>Reabrir Ticket
-                                    </button>
-                                </div>
-
-                                <!-- Botón Imprimir (Todos) -->
-                                <button class="btn btn-default btn-sm ml-2" id="btn-print">
-                                    <i class="fas fa-print mr-2"></i>Imprimir
-                                </button>
-
-                                <!-- Botón Actualizar (AGENT, COMPANY_ADMIN) -->
-                                <button class="btn btn-default btn-sm ml-2" data-role="AGENT,COMPANY_ADMIN" data-toggle="modal" data-target="#editTicketModal">
-                                    <i class="fas fa-edit mr-2"></i>Editar
-                                </button>
-
-                                <!-- Botón Eliminar (Solo COMPANY_ADMIN y si está cerrado) -->
-                                <button class="btn btn-danger btn-sm ml-2" data-role="COMPANY_ADMIN" data-status="closed" id="btn-delete">
-                                    <i class="fas fa-trash mr-2"></i>Eliminar
-                                </button>
-                            </div>
-
-                            <!-- Descripción del Ticket -->
-                            <div class="mailbox-read-message p-4">
-                                <h5><i class="fas fa-align-left mr-2"></i>Descripción</h5>
-                                <p id="ticket-description">
-                                    Cuando intento exportar el reporte mensual de ventas desde el dashboard,
-                                    el sistema muestra un error 500 (Internal Server Error). He intentado desde
-                                    diferentes navegadores (Chrome, Firefox, Edge) con el mismo resultado.
-                                    El problema comenzó esta mañana alrededor de las 9:00 AM.
-                                    <br><br>
-                                    Pasos para reproducir:
-                                    <br>1. Ir a Dashboard > Reportes
-                                    <br>2. Seleccionar "Reporte Mensual de Ventas"
-                                    <br>3. Click en "Exportar a PDF"
-                                    <br>4. El sistema muestra error 500
-                                    <br><br>
-                                    Adjunto capturas de pantalla del error y de la consola del navegador.
-                                </p>
-                            </div>
-
-                        </div>
-                        <!-- /.card-body -->
-
-                        <!-- Attachments Section -->
-                        <div class="card-footer bg-white">
-                            <h5><i class="fas fa-paperclip mr-2"></i>Adjuntos (2)</h5>
-                            <ul class="mailbox-attachments d-flex align-items-stretch clearfix">
-
-                                <!-- Attachment 1: Imagen -->
-                                <li>
-                                <span class="mailbox-attachment-icon has-img">
-                                    <img src="https://via.placeholder.com/150x150/007bff/ffffff?text=Error+Screenshot"
-                                         alt="Captura de error">
-                                </span>
-                                    <div class="mailbox-attachment-info">
-                                        <a href="#" class="mailbox-attachment-name">
-                                            <i class="fas fa-camera"></i> error_screenshot.png
-                                        </a>
-                                        <span class="mailbox-attachment-size clearfix mt-1">
-                                        <span>245 KB</span>
-                                        <a href="#" class="btn btn-default btn-sm float-right">
-                                            <i class="fas fa-cloud-download-alt"></i>
-                                        </a>
-                                    </span>
-                                    </div>
-                                </li>
-
-                                <!-- Attachment 2: PDF -->
-                                <li>
-                                <span class="mailbox-attachment-icon">
-                                    <i class="far fa-file-pdf"></i>
-                                </span>
-                                    <div class="mailbox-attachment-info">
-                                        <a href="#" class="mailbox-attachment-name">
-                                            <i class="fas fa-paperclip"></i> console_log.txt
-                                        </a>
-                                        <span class="mailbox-attachment-size clearfix mt-1">
-                                        <span>12 KB</span>
-                                        <a href="#" class="btn btn-default btn-sm float-right">
-                                            <i class="fas fa-cloud-download-alt"></i>
-                                        </a>
-                                    </span>
-                                    </div>
-                                </li>
-
-                            </ul>
-                        </div>
-                        <!-- /.card-footer -->
-
+            <!-- Metadata Section -->
+            <div class="p-3 border-bottom">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong><i class="fas fa-info-circle mr-2"></i>Estado:</strong>
+                            <span class="badge ml-2"
+                                  :class="{
+                                      'badge-danger': ticket.status === 'open',
+                                      'badge-warning': ticket.status === 'pending',
+                                      'badge-success': ticket.status === 'resolved',
+                                      'badge-secondary': ticket.status === 'closed'
+                                  }"
+                                  x-text="statusText(ticket.status)">
+                            </span>
+                        </p>
+                        <p class="mb-2">
+                            <strong><i class="fas fa-tag mr-2"></i>Categoría:</strong>
+                            <span class="text-muted ml-2" x-text="ticket.category?.name || 'N/A'">N/A</span>
+                        </p>
+                        @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                        <p class="mb-2">
+                            <strong><i class="fas fa-building mr-2"></i>Empresa:</strong>
+                            <span class="text-muted ml-2" x-text="ticket.company?.name || 'N/A'">N/A</span>
+                        </p>
+                        @endif
                     </div>
-                    <!-- /.card (Información Principal) -->
+                    <div class="col-md-6">
+                        @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                        <p class="mb-2">
+                            <strong><i class="fas fa-user-tie mr-2"></i>Asignado a:</strong>
+                            <span class="text-muted ml-2" x-text="ticket.owner_agent?.name || 'Sin asignar'">N/A</span>
+                        </p>
+                        @endif
+                        <p class="mb-2">
+                            <strong><i class="fas fa-comments mr-2"></i>Respuestas:</strong>
+                            <span class="badge badge-info ml-2" x-text="ticket.responses_count || 0">0</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong><i class="fas fa-paperclip mr-2"></i>Adjuntos:</strong>
+                            <span class="badge badge-secondary ml-2" x-text="ticket.attachments_count || 0">0</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Card: Timeline de Actividad -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-history mr-2"></i>Historial de Actividad
-                            </h3>
+            <!-- Action Buttons -->
+            <div class="mailbox-controls with-border text-center p-3">
+                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                    <!-- Resolver (AGENT only, if open/pending) -->
+                    <button type="button"
+                            class="btn btn-success btn-sm"
+                            x-show="(ticket.status === 'open' || ticket.status === 'pending')"
+                            @click="openActionModal('resolve')"
+                            x-cloak>
+                        <i class="fas fa-check mr-2"></i>Resolver
+                    </button>
+
+                    <!-- Asignar (AGENT only) -->
+                    <button type="button"
+                            class="btn btn-warning btn-sm"
+                            @click="openAssignModal()"
+                            x-cloak>
+                        <i class="fas fa-user-plus mr-2"></i>Asignar
+                    </button>
+
+                    <!-- Cerrar (AGENT, any status) -->
+                    <button type="button"
+                            class="btn btn-danger btn-sm"
+                            x-show="ticket.status !== 'closed'"
+                            @click="openActionModal('close')"
+                            x-cloak>
+                        <i class="fas fa-times mr-2"></i>Cerrar
+                    </button>
+
+                    <!-- Editar (AGENT/COMPANY_ADMIN) -->
+                    <button type="button"
+                            class="btn btn-default btn-sm ml-2"
+                            @click="openEditModal()"
+                            x-cloak>
+                        <i class="fas fa-edit mr-2"></i>Editar
+                    </button>
+                @endif
+
+                @if($role === 'USER')
+                    <!-- Reabrir (USER, if resolved/closed within 30 days) -->
+                    <button type="button"
+                            class="btn btn-info btn-sm"
+                            x-show="(ticket.status === 'resolved' || ticket.status === 'closed') && canReopen()"
+                            @click="openActionModal('reopen')"
+                            x-cloak>
+                        <i class="fas fa-redo mr-2"></i>Reabrir Ticket
+                    </button>
+
+                    <!-- Cerrar (USER, only if resolved within 30 days) -->
+                    <button type="button"
+                            class="btn btn-danger btn-sm"
+                            x-show="ticket.status === 'resolved' && canReopen()"
+                            @click="openActionModal('close')"
+                            x-cloak>
+                        <i class="fas fa-times mr-2"></i>Cerrar
+                    </button>
+                @endif
+
+                <!-- Imprimir (Todos) -->
+                <button type="button"
+                        class="btn btn-default btn-sm ml-2"
+                        @click="window.print()">
+                    <i class="fas fa-print mr-2"></i>Imprimir
+                </button>
+
+                @if($role === 'COMPANY_ADMIN')
+                    <!-- Eliminar (COMPANY_ADMIN only, if closed) -->
+                    <button type="button"
+                            class="btn btn-danger btn-sm ml-2"
+                            x-show="ticket.status === 'closed'"
+                            @click="deleteTicket()"
+                            x-cloak>
+                        <i class="fas fa-trash mr-2"></i>Eliminar
+                    </button>
+                @endif
+            </div>
+
+            <!-- Descripción -->
+            <div class="mailbox-read-message p-4">
+                <h5><i class="fas fa-align-left mr-2"></i>Descripción</h5>
+                <p x-html="ticket.description ? ticket.description.replace(/\n/g, '<br>') : 'Sin descripción'">
+                    Cargando...
+                </p>
+            </div>
+        </div>
+
+        <!-- Attachments del Ticket Inicial -->
+        <div class="card-footer bg-white" x-show="initialAttachments.length > 0" x-cloak>
+            <h5><i class="fas fa-paperclip mr-2"></i>Adjuntos del Ticket (<span x-text="initialAttachments.length">0</span>)</h5>
+            <ul class="mailbox-attachments d-flex align-items-stretch clearfix">
+                <template x-for="attachment in initialAttachments" :key="attachment.id">
+                    <li>
+                        <span class="mailbox-attachment-icon"
+                              :class="{'has-img': isImage(attachment.file_type)}">
+                            <template x-if="isImage(attachment.file_type)">
+                                <img :src="'/storage/' + attachment.file_url" :alt="attachment.file_name">
+                            </template>
+                            <template x-if="!isImage(attachment.file_type)">
+                                <i :class="getFileIcon(attachment.file_type)"></i>
+                            </template>
+                        </span>
+                        <div class="mailbox-attachment-info">
+                            <a href="#"
+                               class="mailbox-attachment-name"
+                               @click.prevent="downloadAttachment(attachment.id)"
+                               x-text="attachment.file_name">
+                            </a>
+                            <span class="mailbox-attachment-size clearfix mt-1">
+                                <span x-text="formatFileSize(attachment.file_size_bytes)"></span>
+                                <a href="#"
+                                   class="btn btn-default btn-sm float-right"
+                                   @click.prevent="downloadAttachment(attachment.id)">
+                                    <i class="fas fa-cloud-download-alt"></i>
+                                </a>
+                            </span>
                         </div>
-                        <div class="card-body">
-                            <div class="timeline">
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </div>
 
-                                <!-- Timeline: Ticket Creado -->
-                                <div class="time-label">
-                                    <span class="bg-red">16 Nov. 2025</span>
-                                </div>
-                                <div>
-                                    <i class="fas fa-plus-circle bg-blue"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 10:30 AM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">Juan Pérez</a> creó el ticket
-                                        </h3>
-                                        <div class="timeline-body">
-                                            Ticket creado con prioridad normal en categoría "Soporte Técnico"
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- Card: Timeline de Respuestas -->
+    <div class="card" x-show="responses.length > 0" x-cloak>
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-comments mr-2"></i>Conversación (<span x-text="responses.length">0</span> respuestas)
+            </h3>
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                <template x-for="(response, index) in responses" :key="response.id">
+                    <div>
+                        <!-- Time Label (agrupación por día) -->
+                        <template x-if="index === 0 || !isSameDay(responses[index-1].created_at, response.created_at)">
+                            <div class="time-label">
+                                <span :class="{
+                                    'bg-primary': response.author_type === 'user',
+                                    'bg-success': response.author_type === 'agent'
+                                }" x-text="formatDateLabel(response.created_at)"></span>
+                            </div>
+                        </template>
 
-                                <!-- Timeline: Agente Asignado -->
-                                <div>
-                                    <i class="fas fa-user-plus bg-yellow"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 10:35 AM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">Sistema</a> asignó el ticket automáticamente
-                                        </h3>
-                                        <div class="timeline-body">
-                                            Ticket asignado a <strong>María García</strong> (AGENT)
-                                        </div>
-                                    </div>
-                                </div>
+                        <!-- Timeline Item -->
+                        <div>
+                            <i :class="{
+                                'fas fa-user bg-blue': response.author_type === 'user',
+                                'fas fa-user-tie bg-green': response.author_type === 'agent'
+                            }"></i>
 
-                                <!-- Timeline: Primera Respuesta del Agente -->
-                                <div>
-                                    <i class="fas fa-comment bg-green"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 10:45 AM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">María García (AGENT)</a> respondió al ticket
-                                        </h3>
-                                        <div class="timeline-body">
-                                            Gracias por reportar el problema. He revisado los logs del servidor y
-                                            efectivamente hay un error en el módulo de exportación. Estoy trabajando
-                                            en la solución.
-                                        </div>
-                                        <div class="timeline-footer">
-                                            <span class="badge badge-info">Estado cambiado a: Pending</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="timeline-item">
+                                <span class="time">
+                                    <i class="fas fa-clock"></i>
+                                    <span x-text="formatTime(response.created_at)"></span>
+                                </span>
 
-                                <!-- Timeline: Respuesta del Usuario -->
-                                <div>
-                                    <i class="fas fa-comment bg-blue"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 11:15 AM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">Juan Pérez (USER)</a> respondió
-                                        </h3>
-                                        <div class="timeline-body">
-                                            Muchas gracias por la pronta respuesta. ¿Tienen una estimación de cuándo
-                                            estará solucionado? Necesito entregar estos reportes hoy antes de las 5 PM.
-                                        </div>
-                                    </div>
-                                </div>
+                                <h3 class="timeline-header">
+                                    <a href="#" x-text="response.author?.name || 'N/A'">N/A</a>
+                                    <template x-if="response.author_type === 'user'">
+                                        <span class="badge badge-primary badge-sm ml-2">USER</span>
+                                    </template>
+                                    <template x-if="response.author_type === 'agent'">
+                                        <span class="badge badge-success badge-sm ml-2">AGENT</span>
+                                    </template>
+                                    respondió
+                                </h3>
 
-                                <!-- Timeline: Actualización del Agente -->
-                                <div>
-                                    <i class="fas fa-tools bg-purple"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 12:30 PM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">María García (AGENT)</a> actualizó el ticket
-                                        </h3>
-                                        <div class="timeline-body">
-                                            He identificado la causa raíz del problema. Era una incompatibilidad con
-                                            la última actualización de la librería de exportación PDF. Ya apliqué el
-                                            fix y desplegué a producción. Por favor, intenta nuevamente.
-                                        </div>
-                                        <div class="timeline-footer">
+                                <div class="timeline-body" x-html="response.content.replace(/\n/g, '<br>')"></div>
+
+                                <!-- Attachments de esta respuesta -->
+                                <template x-if="response.attachments && response.attachments.length > 0">
+                                    <div class="timeline-footer">
                                         <span class="badge badge-primary">
-                                            <i class="fas fa-paperclip mr-1"></i>1 adjunto
+                                            <i class="fas fa-paperclip mr-1"></i>
+                                            <span x-text="response.attachments.length"></span> adjunto(s)
                                         </span>
-                                        </div>
+                                        <template x-for="att in response.attachments" :key="att.id">
+                                            <a href="#"
+                                               class="btn btn-sm btn-default ml-2"
+                                               @click.prevent="downloadAttachment(att.id)">
+                                                <i class="fas fa-download mr-1"></i>
+                                                <span x-text="att.file_name"></span>
+                                            </a>
+                                        </template>
                                     </div>
-                                </div>
-
-                                <!-- Timeline: Confirmación del Usuario -->
-                                <div>
-                                    <i class="fas fa-check-circle bg-success"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 1:00 PM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">Juan Pérez (USER)</a> confirmó la solución
-                                        </h3>
-                                        <div class="timeline-body">
-                                            ¡Perfecto! Ya pude exportar los reportes sin problemas. Muchas gracias
-                                            por la solución rápida. Todo funciona correctamente ahora.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Timeline: Ticket Resuelto -->
-                                <div>
-                                    <i class="fas fa-star bg-warning"></i>
-                                    <div class="timeline-item">
-                                    <span class="time">
-                                        <i class="fas fa-clock"></i> 1:05 PM
-                                    </span>
-                                        <h3 class="timeline-header">
-                                            <a href="#">María García (AGENT)</a> marcó como resuelto
-                                        </h3>
-                                        <div class="timeline-body">
-                                            Me alegra que el problema esté solucionado. Marcando el ticket como resuelto.
-                                        </div>
-                                        <div class="timeline-footer">
-                                            <span class="badge badge-success">Estado cambiado a: Resolved</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Timeline End -->
-                                <div>
-                                    <i class="fas fa-clock bg-gray"></i>
-                                </div>
-
+                                </template>
                             </div>
                         </div>
                     </div>
-                    <!-- /.card (Timeline) -->
+                </template>
 
-                    <!-- Card: Conversación (Direct Chat Style) -->
-                    <div class="card direct-chat direct-chat-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-comments mr-2"></i>Conversación (3 mensajes)
-                            </h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="direct-chat-messages" style="height: 400px;">
-
-                                <!-- Mensaje 1: Usuario -->
-                                <div class="direct-chat-msg">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-left">Juan Pérez</span>
-                                        <span class="direct-chat-timestamp float-right">16 Nov 10:30 AM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Juan+Perez&size=40&background=0D8ABC&color=fff"
-                                         alt="Juan Pérez">
-                                    <div class="direct-chat-text">
-                                        Cuando intento exportar el reporte mensual de ventas, el sistema muestra un error 500.
-                                        He intentado desde diferentes navegadores con el mismo resultado.
-                                    </div>
-                                </div>
-
-                                <!-- Mensaje 2: Agente (derecha) -->
-                                <div class="direct-chat-msg right">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-right">María García</span>
-                                        <span class="direct-chat-timestamp float-left">16 Nov 10:45 AM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Maria+Garcia&size=40&background=28a745&color=fff"
-                                         alt="María García">
-                                    <div class="direct-chat-text">
-                                        Gracias por reportar el problema. He revisado los logs del servidor y efectivamente
-                                        hay un error en el módulo de exportación. Estoy trabajando en la solución.
-                                    </div>
-                                </div>
-
-                                <!-- Mensaje 3: Usuario -->
-                                <div class="direct-chat-msg">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-left">Juan Pérez</span>
-                                        <span class="direct-chat-timestamp float-right">16 Nov 11:15 AM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Juan+Perez&size=40&background=0D8ABC&color=fff"
-                                         alt="Juan Pérez">
-                                    <div class="direct-chat-text">
-                                        Muchas gracias por la pronta respuesta. ¿Tienen una estimación de cuándo estará
-                                        solucionado? Necesito entregar estos reportes hoy antes de las 5 PM.
-                                    </div>
-                                </div>
-
-                                <!-- Mensaje 4: Agente -->
-                                <div class="direct-chat-msg right">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-right">María García</span>
-                                        <span class="direct-chat-timestamp float-left">16 Nov 12:30 PM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Maria+Garcia&size=40&background=28a745&color=fff"
-                                         alt="María García">
-                                    <div class="direct-chat-text">
-                                        He identificado la causa raíz del problema. Era una incompatibilidad con la última
-                                        actualización de la librería de exportación PDF. Ya apliqué el fix y desplegué a
-                                        producción. Por favor, intenta nuevamente.
-                                        <br><br>
-                                        <div class="attachment-block clearfix">
-                                            <img class="attachment-img"
-                                                 src="https://via.placeholder.com/100x100/28a745/ffffff?text=Fix+Applied"
-                                                 alt="Attachment">
-                                            <div class="attachment-info">
-                                                <a href="#" class="attachment-title">
-                                                    <i class="fas fa-paperclip"></i> fix_deployment_log.txt
-                                                </a>
-                                                <span class="attachment-meta">8 KB</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Mensaje 5: Usuario (Confirmación) -->
-                                <div class="direct-chat-msg">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-left">Juan Pérez</span>
-                                        <span class="direct-chat-timestamp float-right">16 Nov 1:00 PM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Juan+Perez&size=40&background=0D8ABC&color=fff"
-                                         alt="Juan Pérez">
-                                    <div class="direct-chat-text">
-                                        ¡Perfecto! Ya pude exportar los reportes sin problemas. Muchas gracias por la
-                                        solución rápida. Todo funciona correctamente ahora. 👍
-                                    </div>
-                                </div>
-
-                                <!-- Mensaje 6: Agente (Cierre) -->
-                                <div class="direct-chat-msg right">
-                                    <div class="direct-chat-infos clearfix">
-                                        <span class="direct-chat-name float-right">María García</span>
-                                        <span class="direct-chat-timestamp float-left">16 Nov 1:05 PM</span>
-                                    </div>
-                                    <img class="direct-chat-img"
-                                         src="https://ui-avatars.com/api/?name=Maria+Garcia&size=40&background=28a745&color=fff"
-                                         alt="María García">
-                                    <div class="direct-chat-text">
-                                        Me alegra que el problema esté solucionado. Si vuelves a experimentar algún
-                                        inconveniente, no dudes en contactarnos. ¡Que tengas un excelente día!
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <!-- Footer: Formulario de Respuesta (Solo si no está cerrado) -->
-                        <div class="card-footer" id="response-form-container" data-status="open,pending,resolved">
-                            <form id="responseForm">
-                                <div class="input-group">
-                                    <input type="text" name="message" placeholder="Escribe tu respuesta..."
-                                           class="form-control" id="response-input">
-                                    <span class="input-group-append">
-                                    <button type="button" class="btn btn-default" id="attach-file-btn" title="Adjuntar archivo">
-                                        <i class="fas fa-paperclip"></i>
-                                    </button>
-                                    <button type="submit" class="btn btn-primary" id="send-response-btn">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </span>
-                                </div>
-                                <input type="file" id="response-attachment" style="display: none;" multiple>
-                            </form>
-                        </div>
-
-                    </div>
-                    <!-- /.card (Conversación) -->
-
-                </div>
-                <!-- /.col-md-12 -->
-            </div>
-            <!-- /.row -->
-        </div>
-    </section>
-
-    <!-- Modal: Asignar Agente (Solo AGENT) -->
-    <div class="modal fade" id="assignAgentModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title">
-                        <i class="fas fa-user-plus mr-2"></i>Asignar Ticket a Agente
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="assignAgentForm">
-                        <div class="form-group">
-                            <label for="agent-select">
-                                <i class="fas fa-user-tie mr-2"></i>Seleccionar Agente
-                            </label>
-                            <select class="form-control select2" id="agent-select" style="width: 100%;">
-                                <option value="">Selecciona un agente...</option>
-                                <option value="agent1">María García</option>
-                                <option value="agent2">Carlos Rodríguez</option>
-                                <option value="agent3">Ana Martínez</option>
-                                <option value="agent4">Luis Fernández</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="assignment-note">
-                                <i class="fas fa-sticky-note mr-2"></i>Nota (Opcional)
-                            </label>
-                            <textarea class="form-control" id="assignment-note" rows="3"
-                                      placeholder="Ej: Asignando a María por su experiencia en módulos de reportes..."></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-warning" id="confirm-assign-btn">
-                        <i class="fas fa-check mr-2"></i>Asignar
-                    </button>
+                <!-- Timeline End -->
+                <div>
+                    <i class="fas fa-clock bg-gray"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Editar Ticket (AGENT, COMPANY_ADMIN) -->
-    <div class="modal fade" id="editTicketModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h5 class="modal-title">
-                        <i class="fas fa-edit mr-2"></i>Editar Ticket
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="editTicketForm">
-                        <div class="form-group">
-                            <label for="edit-title">
-                                <i class="fas fa-heading mr-2"></i>Título
-                            </label>
-                            <input type="text" class="form-control" id="edit-title"
-                                   value="Error crítico en módulo de reportes">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-category">
-                                <i class="fas fa-tag mr-2"></i>Categoría
-                            </label>
-                            <select class="form-control select2" id="edit-category" style="width: 100%;">
-                                <option value="tech" selected>Soporte Técnico</option>
-                                <option value="billing">Facturación</option>
-                                <option value="general">Consulta General</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="confirm-edit-btn">
-                        <i class="fas fa-save mr-2"></i>Guardar Cambios
-                    </button>
-                </div>
-            </div>
+    <!-- Card: Formulario de Nueva Respuesta -->
+    <div class="card card-primary" x-show="ticket.status !== 'closed'" x-cloak>
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-reply mr-2"></i>Agregar Respuesta
+            </h3>
         </div>
-    </div>
-
-    <!-- Modal: Confirmar Acción (Resolver/Cerrar/Reabrir) -->
-    <div class="modal fade" id="confirmActionModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header" id="confirm-modal-header">
-                    <h5 class="modal-title" id="confirm-modal-title">
-                        <i class="fas fa-question-circle mr-2"></i>Confirmar Acción
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+        <form @submit.prevent="submitResponse()">
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="response-content">
+                        <i class="fas fa-comment-dots mr-2"></i>Tu respuesta
+                    </label>
+                    <textarea class="form-control"
+                              id="response-content"
+                              rows="5"
+                              x-model="newResponse.content"
+                              placeholder="Escribe tu respuesta aquí..."
+                              required></textarea>
+                    <small class="form-text text-muted">
+                        Máximo 5000 caracteres
+                    </small>
                 </div>
-                <div class="modal-body">
-                    <p id="confirm-modal-message">¿Estás seguro de realizar esta acción?</p>
-                    <div class="form-group">
-                        <label for="action-note">
-                            <i class="fas fa-sticky-note mr-2"></i>Nota (Opcional)
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-paperclip mr-2"></i>Adjuntar archivos (Opcional)
+                    </label>
+                    <div class="custom-file">
+                        <input type="file"
+                               class="custom-file-input"
+                               id="response-files"
+                               @change="handleFileSelection"
+                               multiple>
+                        <label class="custom-file-label" for="response-files">
+                            Seleccionar archivos...
                         </label>
-                        <textarea class="form-control" id="action-note" rows="3"
-                                  placeholder="Añade una nota sobre esta acción..."></textarea>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="confirm-action-btn">
-                        <i class="fas fa-check mr-2"></i>Confirmar
-                    </button>
+                    <small class="form-text text-muted">
+                        Máximo 5 archivos, 10 MB cada uno.
+                        Tipos permitidos: PDF, TXT, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, GIF, MP4
+                    </small>
+
+                    <!-- Lista de archivos seleccionados -->
+                    <template x-if="newResponse.files.length > 0">
+                        <ul class="list-unstyled mt-2">
+                            <template x-for="(file, index) in newResponse.files" :key="index">
+                                <li class="text-sm">
+                                    <i class="fas fa-file mr-2"></i>
+                                    <span x-text="file.name"></span>
+                                    (<span x-text="formatFileSize(file.size)"></span>)
+                                    <a href="#"
+                                       class="text-danger ml-2"
+                                       @click.prevent="removeFile(index)">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
                 </div>
             </div>
+            <div class="card-footer">
+                <button type="submit"
+                        class="btn btn-primary"
+                        :disabled="isSubmitting || !newResponse.content.trim()">
+                    <template x-if="isSubmitting">
+                        <span>
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Enviando...
+                        </span>
+                    </template>
+                    <template x-if="!isSubmitting">
+                        <span>
+                            <i class="fas fa-paper-plane mr-2"></i>Enviar Respuesta
+                        </span>
+                    </template>
+                </button>
+                <button type="button"
+                        class="btn btn-default ml-2"
+                        @click="resetResponseForm()">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Mensaje si ticket está cerrado -->
+    <div class="card" x-show="ticket.status === 'closed'" x-cloak>
+        <div class="card-body bg-light text-center p-4">
+            <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+            <h5>Este ticket está cerrado</h5>
+            <p class="text-muted">
+                No se pueden agregar más respuestas a tickets cerrados.
+                @if($role === 'USER')
+                Si necesitas reabrir este ticket, puedes hacerlo dentro de los 30 días posteriores al cierre.
+                @endif
+            </p>
         </div>
     </div>
 
+    @include('app.shared.tickets.modals.assign-agent')
+    @include('app.shared.tickets.modals.edit-ticket')
+    @include('app.shared.tickets.modals.confirm-action')
+</div>
 @endsection
 
 @section('js')
-    <script>
-        // =====================================
-        // SIMULACIÓN DE ROLES Y ESTADO
-        // =====================================
-        // Cambiar estos valores para probar diferentes escenarios
-        const CURRENT_ROLE = 'AGENT'; // 'USER', 'AGENT', 'COMPANY_ADMIN'
-        const TICKET_STATUS = 'open'; // 'open', 'pending', 'resolved', 'closed'
+<script>
+function ticketManage() {
+    return {
+        // State
+        role: '{{ $role }}',
+        ticketCode: '{{ request()->get("ticket") }}',
+        companyId: '{{ $companyId ?? "" }}',
+        ticket: {},
+        responses: [],
+        initialAttachments: [],
+        isSubmitting: false,
 
-        $(function() {
-            // Aplicar visibilidad según rol y estado
-            applyRoleAndStatusVisibility(CURRENT_ROLE, TICKET_STATUS);
+        // New Response Form
+        newResponse: {
+            content: '',
+            files: []
+        },
 
-            // Inicializar Select2
-            $('.select2').select2({
-                theme: 'bootstrap4'
-            });
+        // Modal State
+        actionModal: {
+            action: '',
+            title: '',
+            message: '',
+            note: ''
+        },
 
-            // =====================================
-            // BOTONES DE ACCIÓN
-            // =====================================
+        editModal: {
+            title: '',
+            category_id: ''
+        },
 
-            // Resolver Ticket
-            $('#btn-resolve').on('click', function() {
-                showConfirmModal(
-                    'Resolver Ticket',
-                    '¿Estás seguro de marcar este ticket como resuelto?',
-                    'success',
-                    function() {
-                        simulateAction('resolve');
+        assignModal: {
+            agent_id: '',
+            note: ''
+        },
+
+        // Load Ticket Data
+        async loadTicket() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                // Load ticket details
+                const ticketResponse = await fetch(`/api/tickets/${this.ticketCode}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
                     }
-                );
-            });
+                });
 
-            // Cerrar Ticket
-            $('#btn-close').on('click', function() {
-                showConfirmModal(
-                    'Cerrar Ticket',
-                    '¿Estás seguro de cerrar este ticket?',
-                    'danger',
-                    function() {
-                        simulateAction('close');
+                if (!ticketResponse.ok) {
+                    throw new Error('Error al cargar el ticket');
+                }
+
+                const ticketData = await ticketResponse.json();
+                this.ticket = ticketData.data;
+
+                // Update breadcrumb
+                document.getElementById('breadcrumb-ticket-code').textContent = this.ticket.ticket_code;
+
+                // Load responses
+                await this.loadResponses();
+
+                // Load attachments
+                await this.loadAttachments();
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError('Error al cargar el ticket');
+            }
+        },
+
+        async loadResponses() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/${this.ticketCode}/responses`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
                     }
-                );
-            });
+                });
 
-            // Reabrir Ticket
-            $('#btn-reopen').on('click', function() {
-                showConfirmModal(
-                    'Reabrir Ticket',
-                    '¿Por qué deseas reabrir este ticket?',
-                    'info',
-                    function() {
-                        simulateAction('reopen');
+                if (!response.ok) throw new Error('Error al cargar respuestas');
+
+                const data = await response.json();
+                this.responses = data.data || [];
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
+
+        async loadAttachments() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/${this.ticketCode}/attachments`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
                     }
-                );
-            });
+                });
 
-            // Asignar Agente
-            $('#btn-assign').on('click', function() {
-                $('#assignAgentModal').modal('show');
-            });
+                if (!response.ok) throw new Error('Error al cargar adjuntos');
 
-            $('#confirm-assign-btn').on('click', function() {
-                const agent = $('#agent-select').val();
-                if (!agent) {
-                    alert('Por favor selecciona un agente');
+                const data = await response.json();
+                // Separate initial attachments (no response_id) from response attachments
+                this.initialAttachments = (data.data || []).filter(att => !att.response_id);
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
+
+        // Submit Response
+        async submitResponse() {
+            if (!this.newResponse.content.trim()) {
+                this.showError('Por favor escribe una respuesta');
+                return;
+            }
+
+            this.isSubmitting = true;
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                // 1. Create response
+                const responseData = await fetch(`/api/tickets/${this.ticketCode}/responses`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: this.newResponse.content
+                    })
+                });
+
+                if (!responseData.ok) {
+                    const error = await responseData.json();
+                    throw new Error(error.message || 'Error al enviar respuesta');
+                }
+
+                const responseResult = await responseData.json();
+                const newResponseId = responseResult.data.id;
+
+                // 2. Upload files if any
+                if (this.newResponse.files.length > 0) {
+                    for (const file of this.newResponse.files) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        await fetch(`/api/tickets/${this.ticketCode}/responses/${newResponseId}/attachments`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        });
+                    }
+                }
+
+                // 3. Reload data
+                await this.loadTicket();
+
+                // 4. Reset form
+                this.resetResponseForm();
+
+                this.showSuccess('Respuesta enviada exitosamente');
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message || 'Error al enviar respuesta');
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+
+        // File Handling
+        handleFileSelection(event) {
+            const files = Array.from(event.target.files);
+
+            // Validate max 5 files
+            if (files.length > 5) {
+                this.showError('Máximo 5 archivos permitidos');
+                event.target.value = '';
+                return;
+            }
+
+            // Validate file size (10MB each)
+            for (const file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showError(`El archivo ${file.name} excede el tamaño máximo de 10 MB`);
+                    event.target.value = '';
                     return;
                 }
-                $('#assignAgentModal').modal('hide');
-                alert('Ticket asignado exitosamente (Simulación)');
-            });
+            }
 
-            // Editar Ticket
-            $('#confirm-edit-btn').on('click', function() {
-                $('#editTicketModal').modal('hide');
-                alert('Ticket actualizado exitosamente (Simulación)');
-            });
+            this.newResponse.files = files;
+        },
 
-            // Eliminar Ticket (Solo COMPANY_ADMIN)
-            $('#btn-delete').on('click', function() {
-                if (confirm('¿ESTÁS SEGURO de eliminar permanentemente este ticket?')) {
-                    alert('Ticket eliminado exitosamente (Simulación)');
-                    window.location.href = '/tickets';
+        removeFile(index) {
+            this.newResponse.files.splice(index, 1);
+            document.getElementById('response-files').value = '';
+        },
+
+        resetResponseForm() {
+            this.newResponse = {
+                content: '',
+                files: []
+            };
+            document.getElementById('response-files').value = '';
+        },
+
+        // Actions
+        async openActionModal(action) {
+            this.actionModal.action = action;
+            this.actionModal.note = '';
+
+            const config = {
+                resolve: {
+                    title: 'Resolver Ticket',
+                    message: '¿Estás seguro de marcar este ticket como resuelto?',
+                    color: 'success'
+                },
+                close: {
+                    title: 'Cerrar Ticket',
+                    message: '¿Estás seguro de cerrar este ticket?',
+                    color: 'danger'
+                },
+                reopen: {
+                    title: 'Reabrir Ticket',
+                    message: '¿Por qué deseas reabrir este ticket?',
+                    color: 'info'
                 }
-            });
+            };
 
-            // Imprimir
-            $('#btn-print').on('click', function() {
-                window.print();
-            });
-
-            // =====================================
-            // FORMULARIO DE RESPUESTA
-            // =====================================
-
-            $('#responseForm').on('submit', function(e) {
-                e.preventDefault();
-                const message = $('#response-input').val().trim();
-                if (!message) {
-                    alert('Por favor escribe un mensaje');
-                    return;
-                }
-
-                // Simular envío
-                alert('Respuesta enviada exitosamente (Simulación)');
-                $('#response-input').val('');
-            });
-
-            // Adjuntar archivo en respuesta
-            $('#attach-file-btn').on('click', function() {
-                $('#response-attachment').click();
-            });
-
-            $('#response-attachment').on('change', function() {
-                const fileCount = $(this)[0].files.length;
-                if (fileCount > 0) {
-                    alert(`${fileCount} archivo(s) seleccionado(s) (Simulación)`);
-                }
-            });
-
-            // =====================================
-            // SCROLL SUAVE AL FORMULARIO DE RESPUESTA
-            // =====================================
-            $('.direct-chat-messages').animate({ scrollTop: $('.direct-chat-messages')[0].scrollHeight }, 1000);
-        });
-
-        /**
-         * Muestra modal de confirmación personalizado
-         */
-        function showConfirmModal(title, message, type, callback) {
-            const headerClass = type === 'success' ? 'bg-success' :
-                type === 'danger' ? 'bg-danger' :
-                    type === 'info' ? 'bg-info' : 'bg-warning';
-
-            $('#confirm-modal-header').removeClass().addClass('modal-header ' + headerClass);
-            $('#confirm-modal-title').html('<i class="fas fa-question-circle mr-2"></i>' + title);
-            $('#confirm-modal-message').text(message);
-
-            // Remover listeners anteriores y agregar nuevo
-            $('#confirm-action-btn').off('click').on('click', function() {
-                $('#confirmActionModal').modal('hide');
-                if (callback) callback();
-            });
+            const cfg = config[action];
+            this.actionModal.title = cfg.title;
+            this.actionModal.message = cfg.message;
 
             $('#confirmActionModal').modal('show');
-        }
+        },
 
-        /**
-         * Simula ejecución de acción
-         */
-        function simulateAction(action) {
-            const messages = {
-                resolve: 'Ticket marcado como resuelto exitosamente',
-                close: 'Ticket cerrado exitosamente',
-                reopen: 'Ticket reabierto exitosamente'
-            };
+        async executeAction() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+                const endpoint = `/api/tickets/${this.ticketCode}/${this.actionModal.action}`;
 
-            alert(messages[action] + ' (Simulación)');
-
-            // Simular cambio de badge
-            if (action === 'resolve') {
-                $('#ticket-status').removeClass().addClass('badge badge-success').text('Resolved');
-            } else if (action === 'close') {
-                $('#ticket-status').removeClass().addClass('badge badge-secondary').text('Closed');
-            } else if (action === 'reopen') {
-                $('#ticket-status').removeClass().addClass('badge badge-warning').text('Pending');
-            }
-        }
-
-        /**
-         * Aplica visibilidad según rol y estado del ticket
-         */
-        function applyRoleAndStatusVisibility(role, status) {
-            // Ocultar todos los elementos con data-role
-            $('[data-role]').hide();
-
-            // Mostrar solo elementos del rol actual
-            $('[data-role*="' + role + '"]').show();
-
-            // Ocultar/mostrar botones según estado del ticket
-            $('[data-status]').each(function() {
-                const allowedStatuses = $(this).data('status').toString().split(',');
-                if (allowedStatuses.includes(status)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
+                const bodyData = {};
+                if (this.actionModal.note) {
+                    const noteKey = this.actionModal.action === 'resolve' ? 'resolution_note' :
+                                  this.actionModal.action === 'close' ? 'close_note' :
+                                  'reopen_reason';
+                    bodyData[noteKey] = this.actionModal.note;
                 }
-            });
 
-            // Mostrar/ocultar formulario de respuesta según estado
-            if (status === 'closed') {
-                $('#response-form-container').hide();
-                $('#response-form-container').after(
-                    '<div class="card-footer bg-light text-center">' +
-                    '<i class="fas fa-lock mr-2"></i>' +
-                    '<strong>Este ticket está cerrado. No se pueden agregar más respuestas.</strong>' +
-                    '</div>'
-                );
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al ejecutar acción');
+                }
+
+                $('#confirmActionModal').modal('hide');
+                await this.loadTicket();
+                this.showSuccess('Acción ejecutada exitosamente');
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message);
+            }
+        },
+
+        openAssignModal() {
+            this.assignModal.agent_id = '';
+            this.assignModal.note = '';
+            $('#assignAgentModal').modal('show');
+        },
+
+        async executeAssign() {
+            if (!this.assignModal.agent_id) {
+                this.showError('Por favor selecciona un agente');
+                return;
             }
 
-            // Actualizar badge de estado
-            const statusBadges = {
-                open: { class: 'badge-danger', text: 'Open' },
-                pending: { class: 'badge-warning', text: 'Pending' },
-                resolved: { class: 'badge-success', text: 'Resolved' },
-                closed: { class: 'badge-secondary', text: 'Closed' }
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/${this.ticketCode}/assign`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        new_agent_id: this.assignModal.agent_id,
+                        assignment_note: this.assignModal.note
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al asignar ticket');
+                }
+
+                $('#assignAgentModal').modal('hide');
+                await this.loadTicket();
+                this.showSuccess('Ticket asignado exitosamente');
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message);
+            }
+        },
+
+        openEditModal() {
+            this.editModal.title = this.ticket.title;
+            this.editModal.category_id = this.ticket.category_id;
+            $('#editTicketModal').modal('show');
+        },
+
+        async executeEdit() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/${this.ticketCode}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: this.editModal.title,
+                        category_id: this.editModal.category_id
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al editar ticket');
+                }
+
+                $('#editTicketModal').modal('hide');
+                await this.loadTicket();
+                this.showSuccess('Ticket actualizado exitosamente');
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message);
+            }
+        },
+
+        async deleteTicket() {
+            if (!confirm('¿ESTÁS SEGURO de eliminar permanentemente este ticket? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/${this.ticketCode}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al eliminar ticket');
+                }
+
+                this.showSuccess('Ticket eliminado exitosamente');
+
+                // Redirect to tickets list
+                setTimeout(() => {
+                    const indexRoute = this.role === 'USER' ? '{{ route("user.tickets.index") }}' :
+                                     this.role === 'AGENT' ? '{{ route("agent.tickets.index") }}' :
+                                     '{{ route("company.tickets.index") }}';
+                    window.location.href = indexRoute;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message);
+            }
+        },
+
+        async downloadAttachment(attachmentId) {
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                const response = await fetch(`/api/tickets/attachments/${attachmentId}/download`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Error al descargar archivo');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                // Get filename from Content-Disposition header
+                const contentDisposition = response.headers.get('Content-Disposition');
+                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+                a.download = filenameMatch ? filenameMatch[1] : 'download';
+
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError('Error al descargar archivo');
+            }
+        },
+
+        // Utilities
+        canReopen() {
+            if (!this.ticket.closed_at) return true;
+
+            const closedDate = new Date(this.ticket.closed_at);
+            const now = new Date();
+            const diffDays = (now - closedDate) / (1000 * 60 * 60 * 24);
+
+            return diffDays <= 30;
+        },
+
+        statusText(status) {
+            const map = {
+                open: 'Abierto',
+                pending: 'Pendiente',
+                resolved: 'Resuelto',
+                closed: 'Cerrado'
             };
+            return map[status] || status;
+        },
 
-            const badge = statusBadges[status];
-            $('#ticket-status').removeClass().addClass('badge ' + badge.class).text(badge.text);
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
 
-            console.log('Vista aplicada para Rol:', role, '| Estado:', status);
+        formatDateLabel(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        },
+
+        formatTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+
+        isSameDay(date1, date2) {
+            if (!date1 || !date2) return false;
+            const d1 = new Date(date1);
+            const d2 = new Date(date2);
+            return d1.toDateString() === d2.toDateString();
+        },
+
+        formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        },
+
+        isImage(fileType) {
+            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileType?.toLowerCase());
+        },
+
+        getFileIcon(fileType) {
+            const iconMap = {
+                pdf: 'far fa-file-pdf',
+                doc: 'far fa-file-word',
+                docx: 'far fa-file-word',
+                xls: 'far fa-file-excel',
+                xlsx: 'far fa-file-excel',
+                txt: 'far fa-file-alt',
+                csv: 'far fa-file-csv',
+                mp4: 'far fa-file-video'
+            };
+            return iconMap[fileType?.toLowerCase()] || 'far fa-file';
+        },
+
+        showSuccess(message) {
+            // Using SweetAlert2 (already loaded in authenticated.blade.php)
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: message,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        },
+
+        showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message
+            });
         }
-    </script>
+    }
+}
+</script>
 @endsection
