@@ -605,7 +605,7 @@ $(function() {
                 maxlength: 100
             },
             profile_telefono: {
-                minlength: 10,
+                minlength: 8,
                 maxlength: 20
             },
             profile_avatar: {

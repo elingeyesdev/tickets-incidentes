@@ -54,6 +54,13 @@
                                 </p>
                             </a>
                         </li>
+                        <li class="nav-header">CUENTA</li>
+                        <li class="nav-item">
+                            <a href="{{ route('app.profile') }}" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>Perfil</p>
+                            </a>
+                        </li>
                     </div>
                 </template>
 
@@ -116,23 +123,21 @@
                         <li class="nav-item">
                             <a href="/app/agent/tickets" class="nav-link">
                                 <i class="nav-icon fas fa-ticket-alt"></i>
-                                <p>
-                                    My Tickets
-                                    <span class="badge badge-info right">15</span>
-                                </p>
+                                <p>Tickets</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="/app/agent/notes" class="nav-link">
-                                <i class="nav-icon fas fa-sticky-note"></i>
-                                <p>Internal Notes</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">RESOURCES</li>
+                        <li class="nav-header">RECURSOS</li>
                         <li class="nav-item">
                             <a href="/app/agent/help-center" class="nav-link">
                                 <i class="nav-icon fas fa-question-circle"></i>
-                                <p>Help Center</p>
+                                <p>Centro de Ayuda</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">CUENTA</li>
+                        <li class="nav-item">
+                            <a href="{{ route('app.profile') }}" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>Perfil</p>
                             </a>
                         </li>
                     </div>
@@ -141,33 +146,37 @@
                 <!-- User Menu -->
                 <template x-if="activeRole === 'USER'">
                     <div>
-                        <li class="nav-header">SUPPORT</li>
+                        <li class="nav-header">SOPORTE</li>
                         <li class="nav-item">
                             <a href="/app/user/tickets" class="nav-link">
                                 <i class="nav-icon fas fa-ticket-alt"></i>
-                                <p>
-                                    My Tickets
-                                    <span class="badge badge-primary right">3</span>
-                                </p>
+                                <p>Mis Tickets</p>
                             </a>
                         </li>
+                        <li class="nav-header">INFORMACIÓN</li>
                         <li class="nav-item">
-                            <a href="/app/user/profile" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>My Profile</p>
+                            <a href="/app/user/announcements" class="nav-link">
+                                <i class="nav-icon fas fa-bullhorn"></i>
+                                <p>Anuncios</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="/app/user/help-center" class="nav-link">
                                 <i class="nav-icon fas fa-question-circle"></i>
-                                <p>Help Center</p>
+                                <p>Centro de Ayuda</p>
+                            </a>
+                        </li>
+                        <li class="nav-header">CUENTA</li>
+                        <li class="nav-item">
+                            <a href="{{ route('app.profile') }}" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>Perfil</p>
                             </a>
                         </li>
                     </div>
                 </template>
 
                 <!-- Logout (All roles) -->
-                <li class="nav-header">ACCOUNT</li>
                 <li class="nav-item">
                     <a href="#" @click.prevent="logout()" class="nav-link">
                         <i class="nav-icon fas fa-sign-out-alt"></i>

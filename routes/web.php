@@ -27,9 +27,9 @@ Route::prefix('test')->group(function () {
 });
 
 // Visual Examples / Communication Lab (NO AUTHENTICATION REQUIRED)
-// CURRENTLY SHOWING: Statistics Widgets Options
+// CURRENTLY SHOWING: Category Filters for Tickets
 Route::get('/tests', function () {
-    return view('tests.experiments.statistics-widgets');
+    return view('tests.experiments.category-filters');
 })->name('tests.index');
 
 // ========== PUBLIC ROUTES ==========
@@ -198,18 +198,94 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'companyId' => $companyId
             ]);
         })->name('company.announcements.manage');
+
+        // Tickets Management (Company Admin)
+        Route::get('/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'COMPANY_ADMIN'
+            ]);
+        })->name('company.tickets.index');
+
+        Route::get('/tickets/manage', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.shared.tickets.manage', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'COMPANY_ADMIN'
+            ]);
+        })->name('company.tickets.manage');
     });
 
     // Agent Dashboard (AGENT role)
     Route::middleware('role:AGENT')->prefix('agent')->group(function () {
         Route::get('/dashboard', [AgentController::class, 'dashboard'])
             ->name('dashboard.agent');
+
+        // Tickets (Agent)
+        Route::get('/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'role' => 'AGENT'
+            ]);
+        })->name('agent.tickets.index');
+
+        Route::get('/tickets/manage', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.shared.tickets.manage', [
+                'user' => $user,
+                'role' => 'AGENT'
+            ]);
+        })->name('agent.tickets.manage');
     });
 
     // User Dashboard (USER role)
     Route::middleware('role:USER')->prefix('user')->group(function () {
         Route::get('/dashboard', [UserController::class, 'dashboard'])
             ->name('dashboard.user');
+
+        // Tickets (User)
+        Route::get('/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'role' => 'USER'
+            ]);
+        })->name('user.tickets.index');
     });
+
+    // Generic Tickets Routes (will redirect to role-specific route)
+    Route::get('/tickets', function () {
+        $user = JWTHelper::getAuthenticatedUser();
+        $activeRole = $user['activeRole']['code'] ?? null;
+
+        if ($activeRole === 'COMPANY_ADMIN') {
+            return redirect()->route('company.tickets.index');
+        } elseif ($activeRole === 'AGENT') {
+            return redirect()->route('agent.tickets.index');
+        } elseif ($activeRole === 'USER') {
+            return redirect()->route('user.tickets.index');
+        }
+
+        return redirect()->route('dashboard');
+    })->name('tickets.index');
+
+    Route::get('/tickets/manage', function () {
+        $user = JWTHelper::getAuthenticatedUser();
+        $activeRole = $user['activeRole']['code'] ?? null;
+
+        if ($activeRole === 'COMPANY_ADMIN') {
+            return redirect()->route('company.tickets.manage');
+        } elseif ($activeRole === 'AGENT') {
+            return redirect()->route('agent.tickets.manage');
+        }
+
+        return redirect()->route('dashboard');
+    })->name('tickets.manage');
 });
 
