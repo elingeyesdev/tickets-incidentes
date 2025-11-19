@@ -90,280 +90,228 @@
 @endsection
 
 @section('content')
-<!-- Row 1: Filters and Actions -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card card-primary card-outline">
-            <div class="card-body p-3">
-                <div class="row align-items-center">
-                    <!-- Filter by Category -->
-                    <div class="col-lg-2 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-category" class="mb-1">Categoría:</label>
-                        <select id="filter-category" class="form-control form-control-sm">
-                            <option value="">Todas</option>
-                            <option value="ACCOUNT_PROFILE">Cuenta y Perfil</option>
-                            <option value="SECURITY_PRIVACY">Seguridad y Privacidad</option>
-                            <option value="BILLING_PAYMENTS">Facturación y Pagos</option>
-                            <option value="TECHNICAL_SUPPORT">Soporte Técnico</option>
-                        </select>
-                    </div>
 
-                    <!-- Filter by Status -->
-                    <div class="col-lg-2 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-status" class="mb-1">Estado:</label>
-                        <select id="filter-status" class="form-control form-control-sm">
-                            <option value="">Todos</option>
-                            <option value="draft">Borrador</option>
-                            <option value="published">Publicado</option>
-                        </select>
-                    </div>
-
-                    <!-- Sort Options -->
-                    <div class="col-lg-2 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-sort" class="mb-1">Ordenar por:</label>
-                        <select id="filter-sort" class="form-control form-control-sm">
-                            <option value="-created_at">Más recientes</option>
-                            <option value="created_at">Más antiguos</option>
-                            <option value="title">Título (A-Z)</option>
-                            <option value="-title">Título (Z-A)</option>
-                            <option value="-views">Más visto</option>
-                            <option value="views">Menos visto</option>
-                        </select>
-                    </div>
-
-                    <!-- Search Box -->
-                    <div class="col-lg-3 col-md-6 col-sm-12 mb-2">
-                        <label for="search-articles" class="mb-1">Buscar:</label>
-                        <input type="text" id="search-articles" class="form-control form-control-sm"
-                               placeholder="Buscar en título y contenido...">
-                    </div>
-
-                    <!-- Refresh Button -->
-                    <div class="col-lg-1 col-md-6 col-sm-12 mb-2">
-                        <label class="mb-1">&nbsp;</label>
-                        <button id="btn-refresh" class="btn btn-primary btn-sm btn-block">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-
-                    <!-- Create Button -->
-                    <div class="col-lg-2 col-md-12 col-sm-12 mb-2">
-                        <label class="mb-1">&nbsp;</label>
-                        <button id="btn-create-article" class="btn btn-success btn-sm btn-block">
-                            <i class="fas fa-plus"></i> Crear Artículo
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stats Row -->
-                <div class="row mt-2">
-                    <div class="col-12">
-                        <small class="text-muted">
-                            Total: <strong id="total-count">0</strong> |
-                            Publicados: <strong id="published-count">0</strong> |
-                            Borradores: <strong id="draft-count">0</strong> |
-                            Vistas totales: <strong id="views-count">0</strong>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 2: Articles Table -->
+{{-- Statistics Info Boxes --}}
 <div class="row">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-book"></i> Artículos del Centro de Ayuda
-                </h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="articles-table" class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">Título</th>
-                                <th style="width: 15%;">Categoría</th>
-                                <th style="width: 10%;">Estado</th>
-                                <th style="width: 8%;">Vistas</th>
-                                <th style="width: 12%;">Publicado</th>
-                                <th style="width: 20%;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Loaded dynamically via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer clearfix">
-                <ul class="pagination pagination-sm m-0 float-right" id="pagination">
-                    <!-- Loaded dynamically -->
-                </ul>
-            </div>
-        </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <x-adminlte-info-box title="Total Artículos" text="0" icon="fas fa-book text-info" id="stat-total"/>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <x-adminlte-info-box title="Publicados" text="0" icon="fas fa-check-circle text-success" id="stat-published"/>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <x-adminlte-info-box title="Borradores" text="0" icon="fas fa-pencil-alt text-secondary" id="stat-draft"/>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+        <x-adminlte-info-box title="Vistas Totales" text="0" icon="fas fa-eye text-warning" id="stat-views"/>
     </div>
 </div>
 
-<!-- Modal 1: View Article -->
-<div class="modal fade" id="modal-view" tabindex="-1" role="dialog" aria-labelledby="modalViewLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info">
-                <h5 class="modal-title" id="modalViewLabel">
-                    <i class="fas fa-eye"></i> Ver Artículo
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-12">
-                        <h3 id="view-title" class="mb-3"></h3>
-                        <div class="mb-3">
-                            <span id="view-category-badge-container"></span>
-                            <span id="view-status-badge-container"></span>
-                            <span class="badge badge-light"><i class="fas fa-eye"></i> <span id="view-views">0</span> vistas</span>
-                        </div>
-                        <hr>
-                        <div class="mb-3">
-                            <h5>Resumen:</h5>
-                            <p id="view-excerpt" class="text-muted" style="word-wrap: break-word; white-space: pre-wrap;"></p>
-                        </div>
-                        <hr>
-                        <div class="mb-3">
-                            <h5>Contenido:</h5>
-                            <div id="view-content" class="border rounded p-3 bg-light" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;"></div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <small class="text-muted">Creado: <strong id="view-created"></strong></small>
-                            </div>
-                            <div class="col-md-6 text-right">
-                                <small class="text-muted">Publicado: <strong id="view-published"></strong></small>
-                            </div>
-                        </div>
+{{-- Filters Card --}}
+<x-adminlte-card title="Filtros y Búsqueda" theme="primary" theme-mode="outline" icon="fas fa-filter" collapsible>
+    <div class="row">
+        <div class="col-md-3">
+            <x-adminlte-select id="filter-category" name="filter-category" label="Categoría" label-class="text-sm">
+                <option value="">Todas las categorías</option>
+                <option value="ACCOUNT_PROFILE">Cuenta y Perfil</option>
+                <option value="SECURITY_PRIVACY">Seguridad y Privacidad</option>
+                <option value="BILLING_PAYMENTS">Facturación y Pagos</option>
+                <option value="TECHNICAL_SUPPORT">Soporte Técnico</option>
+            </x-adminlte-select>
+        </div>
+
+        <div class="col-md-3">
+            <x-adminlte-select id="filter-status" name="filter-status" label="Estado" label-class="text-sm">
+                <option value="">Todos los estados</option>
+                <option value="draft">Borrador</option>
+                <option value="published">Publicado</option>
+            </x-adminlte-select>
+        </div>
+
+        <div class="col-md-3">
+            <x-adminlte-select id="filter-sort" name="filter-sort" label="Ordenar por" label-class="text-sm">
+                <option value="-created_at">Más recientes</option>
+                <option value="created_at">Más antiguos</option>
+                <option value="title">Título (A-Z)</option>
+                <option value="-title">Título (Z-A)</option>
+                <option value="-views">Más visitados</option>
+                <option value="views">Menos visitados</option>
+            </x-adminlte-select>
+        </div>
+
+        <div class="col-md-3">
+            <x-adminlte-input id="search-articles" name="search-articles" label="Buscar"
+                placeholder="Buscar en título y contenido..." label-class="text-sm">
+                <x-slot name="prependSlot">
+                    <div class="input-group-text bg-white">
+                        <i class="fas fa-search text-muted"></i>
                     </div>
+                </x-slot>
+            </x-adminlte-input>
+        </div>
+    </div>
+
+    <x-slot name="footerSlot">
+        <x-adminlte-button label="Refrescar" icon="fas fa-sync-alt" theme="primary" id="btn-refresh"/>
+        <x-adminlte-button label="Crear Artículo" icon="fas fa-plus" theme="success" id="btn-create-article" class="float-right"/>
+    </x-slot>
+</x-adminlte-card>
+
+{{-- Articles Table Card --}}
+<x-adminlte-card title="Artículos del Centro de Ayuda" theme="primary" icon="fas fa-book" collapsible maximizable>
+    <div class="table-responsive">
+        <table id="articles-table" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Título</th>
+                    <th style="width: 15%;">Categoría</th>
+                    <th style="width: 10%;">Estado</th>
+                    <th style="width: 8%;">Vistas</th>
+                    <th style="width: 12%;">Publicado</th>
+                    <th style="width: 20%;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando artículos...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <x-slot name="footerSlot">
+        <ul class="pagination pagination-sm m-0 float-right" id="pagination"></ul>
+    </x-slot>
+</x-adminlte-card>
+
+{{-- Modal: View Article --}}
+<x-adminlte-modal id="modal-view" title="Ver Artículo" theme="info" icon="fas fa-eye" size="xl" scrollable>
+    <div class="mb-3">
+        <h3 id="view-title" class="mb-3"></h3>
+        <div class="mb-3">
+            <span id="view-category-badge-container"></span>
+            <span id="view-status-badge-container" class="ml-2"></span>
+            <span class="badge badge-light ml-2">
+                <i class="fas fa-eye"></i> <span id="view-views">0</span> vistas
+            </span>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="mb-3">
+        <h5><i class="fas fa-align-left"></i> Resumen:</h5>
+        <p id="view-excerpt" class="text-muted pl-3" style="word-wrap: break-word; white-space: pre-wrap;"></p>
+    </div>
+
+    <hr>
+
+    <div class="mb-3">
+        <h5><i class="fas fa-file-alt"></i> Contenido:</h5>
+        <div id="view-content" class="border rounded p-3 bg-light"
+             style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;"></div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6">
+            <small class="text-muted">
+                <i class="fas fa-calendar-plus"></i> Creado: <strong id="view-created"></strong>
+            </small>
+        </div>
+        <div class="col-md-6 text-right">
+            <small class="text-muted">
+                <i class="fas fa-calendar-check"></i> Publicado: <strong id="view-published"></strong>
+            </small>
+        </div>
+    </div>
+
+    <x-slot name="footerSlot">
+        <x-adminlte-button label="Cerrar" icon="fas fa-times" theme="secondary" data-dismiss="modal"/>
+        <x-adminlte-button label="Editar" icon="fas fa-edit" theme="primary" id="btn-modal-edit"/>
+    </x-slot>
+</x-adminlte-modal>
+
+{{-- Modal: Create/Edit Article --}}
+<x-adminlte-modal id="modal-form" title="Nuevo Artículo" theme="success" icon="fas fa-plus-circle" size="xl" scrollable>
+    <form id="article-form">
+        <x-adminlte-select id="form-category" name="category_id" label="Categoría" label-class="text-danger"
+                           enable-old-support disabled>
+            <option value="">Cargando categorías...</option>
+        </x-adminlte-select>
+
+        <x-adminlte-input id="form-article-title" name="title" label="Título" placeholder="Título del artículo"
+                          enable-old-support>
+            <x-slot name="prependSlot">
+                <div class="input-group-text">
+                    <i class="fas fa-heading text-primary"></i>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-                <button type="button" id="btn-modal-edit" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+            </x-slot>
+            <x-slot name="bottomSlot">
+                <small class="text-muted">Mínimo 3 caracteres, máximo 255</small>
+            </x-slot>
+        </x-adminlte-input>
 
-<!-- Modal 2: Create/Edit Article -->
-<div class="modal fade" id="modal-form" tabindex="-1" role="dialog" aria-labelledby="modalFormLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-success">
-                <h5 class="modal-title text-white" id="modalFormLabel">
-                    <i class="fas fa-plus-circle"></i> <span id="form-title">Nuevo Artículo</span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="article-form">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="form-category">Categoría <span class="text-danger">*</span></label>
-                                <select id="form-category" class="form-control" required disabled>
-                                    <option value="">Cargando categorías...</option>
-                                </select>
-                                <small class="form-text text-muted">Selecciona la categoría del artículo</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-article-title">Título <span class="text-danger">*</span></label>
-                                <input type="text" id="form-article-title" class="form-control"
-                                       placeholder="Título del artículo"
-                                       minlength="3" maxlength="255" required>
-                                <small class="form-text text-muted">Mínimo 3 caracteres, máximo 255</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-excerpt">Extracto (Opcional)</label>
-                                <textarea id="form-excerpt" class="form-control" rows="2"
-                                          placeholder="Breve descripción del artículo..."
-                                          maxlength="500"></textarea>
-                                <small class="form-text text-muted">Máximo 500 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-content">Contenido <span class="text-danger">*</span></label>
-                                <textarea id="form-content" class="form-control" rows="10"
-                                          placeholder="Escribe el contenido completo del artículo..."
-                                          minlength="50" required></textarea>
-                                <small class="form-text text-muted">Mínimo 50 caracteres</small>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" id="form-article-id">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-save-article" class="btn btn-success">
-                    <i class="fas fa-save"></i> Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 3: Delete Article -->
-<div class="modal fade" id="modal-delete" tabindex="-1" role="dialog" aria-labelledby="modalDeleteLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger">
-                <h5 class="modal-title text-white" id="modalDeleteLabel">
-                    <i class="fas fa-trash"></i> Eliminar Artículo
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>¿Deseas eliminar el artículo "<span id="delete-article-title">-</span>"?</strong>
+        <x-adminlte-textarea id="form-excerpt" name="excerpt" label="Resumen (Opcional)" rows="2"
+                             placeholder="Breve descripción del artículo..." enable-old-support>
+            <x-slot name="prependSlot">
+                <div class="input-group-text">
+                    <i class="fas fa-align-left text-info"></i>
                 </div>
-                <p class="text-muted">Solo se pueden eliminar artículos en estado BORRADOR.</p>
-                <p class="text-danger"><strong>Esta acción no se puede deshacer.</strong></p>
-                <input type="hidden" id="delete-article-id">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-confirm-delete" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+            </x-slot>
+            <x-slot name="bottomSlot">
+                <small class="text-muted">Máximo 500 caracteres</small>
+            </x-slot>
+        </x-adminlte-textarea>
+
+        <x-adminlte-textarea id="form-content" name="content" label="Contenido" rows="10"
+                             placeholder="Escribe el contenido completo del artículo (soporta Markdown)..."
+                             enable-old-support>
+            <x-slot name="prependSlot">
+                <div class="input-group-text">
+                    <i class="fas fa-file-alt text-success"></i>
+                </div>
+            </x-slot>
+            <x-slot name="bottomSlot">
+                <small class="text-muted">
+                    <i class="fab fa-markdown"></i> Soporta formato Markdown. Mínimo 50 caracteres.
+                </small>
+            </x-slot>
+        </x-adminlte-textarea>
+
+        <input type="hidden" id="form-article-id">
+    </form>
+
+    <x-slot name="footerSlot">
+        <x-adminlte-button label="Cancelar" icon="fas fa-times" theme="secondary" data-dismiss="modal"/>
+        <x-adminlte-button label="Guardar" icon="fas fa-save" theme="success" id="btn-save-article"/>
+    </x-slot>
+</x-adminlte-modal>
+
+{{-- Modal: Delete Article --}}
+<x-adminlte-modal id="modal-delete" title="Eliminar Artículo" theme="danger" icon="fas fa-trash">
+    <x-adminlte-callout theme="warning" icon="fas fa-exclamation-triangle">
+        <strong>¿Deseas eliminar el artículo "<span id="delete-article-title">-</span>"?</strong>
+    </x-adminlte-callout>
+
+    <p class="text-muted">
+        <i class="fas fa-info-circle"></i> Solo se pueden eliminar artículos en estado BORRADOR.
+    </p>
+    <p class="text-danger">
+        <i class="fas fa-exclamation-circle"></i> <strong>Esta acción no se puede deshacer.</strong>
+    </p>
+
+    <input type="hidden" id="delete-article-id">
+
+    <x-slot name="footerSlot">
+        <x-adminlte-button label="Cancelar" icon="fas fa-times" theme="secondary" data-dismiss="modal"/>
+        <x-adminlte-button label="Eliminar" icon="fas fa-trash" theme="danger" id="btn-confirm-delete"/>
+    </x-slot>
+</x-adminlte-modal>
+
 @endsection
 
 @section('js')
@@ -408,7 +356,7 @@
                 'TECHNICAL_SUPPORT': 'info'
             };
             const color = colors[code] || 'secondary';
-            return `<span class="badge badge-${color}">${name || code}</span>`;
+            return `<span class="badge badge-${color}"><i class="fas fa-tag"></i> ${name || code}</span>`;
         }
 
         // =====================================================================
@@ -467,6 +415,19 @@
         }
 
         // =====================================================================
+        // UPDATE STATISTICS
+        // =====================================================================
+
+        function updateStatistics(total, published, draft, views, hasFilters = false) {
+            const suffix = hasFilters ? ' (filtrados)' : '';
+
+            document.querySelector('#stat-total .info-box-number').textContent = total + suffix;
+            document.querySelector('#stat-published .info-box-number').textContent = published + suffix;
+            document.querySelector('#stat-draft .info-box-number').textContent = draft + suffix;
+            document.querySelector('#stat-views .info-box-number').textContent = views + suffix;
+        }
+
+        // =====================================================================
         // LOAD ARTICLES
         // =====================================================================
 
@@ -515,25 +476,14 @@
                     totalPages = data.meta?.last_page || 1;
                     renderPagination(data.meta);
 
-                    // Update stats - Only update when no filters are applied
+                    // Update statistics
                     const total = data.meta?.total || 0;
-                    document.getElementById('total-count').textContent = total;
-
-                    // Calculate stats from current page data
                     const publishedCount = allArticles.filter(a => a.status === 'PUBLISHED').length;
                     const draftCount = allArticles.filter(a => a.status === 'DRAFT').length;
                     const totalViews = allArticles.reduce((sum, a) => sum + (a.views_count || 0), 0);
 
-                    // Only show page-specific stats if filtering
-                    if (filters.category || filters.status || filters.search) {
-                        document.getElementById('published-count').textContent = publishedCount + ' (filtrados)';
-                        document.getElementById('draft-count').textContent = draftCount + ' (filtrados)';
-                        document.getElementById('views-count').textContent = totalViews + ' (filtrados)';
-                    } else {
-                        document.getElementById('published-count').textContent = publishedCount;
-                        document.getElementById('draft-count').textContent = draftCount;
-                        document.getElementById('views-count').textContent = totalViews;
-                    }
+                    const hasFilters = filters.category || filters.status || filters.search;
+                    updateStatistics(total, publishedCount, draftCount, totalViews, hasFilters);
                 } else {
                     console.error('[Articles] Invalid response format:', data);
                     const errorMsg = data.message || 'Error al cargar artículos';
@@ -573,24 +523,24 @@
                         <td>${categoryBadge}</td>
                         <td>${statusBadge}</td>
                         <td><span class="badge badge-light"><i class="fas fa-eye"></i> ${article.views_count || 0}</span></td>
-                        <td><small>${formatDate(article.published_at)}</small></td>
-                        <td>
+                        <td><small class="text-muted">${formatDate(article.published_at)}</small></td>
+                        <td class="text-nowrap">
                             <button class="btn btn-sm btn-info btn-view" data-id="${article.id}" title="Ver">
-                                <i class="fas fa-eye"></i>
+                                <i class="fas fa-eye"></i> Ver
                             </button>
                             <button class="btn btn-sm btn-warning btn-edit" data-id="${article.id}" title="Editar">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-edit"></i> Editar
                             </button>
                             ${article.status === 'DRAFT' ? `
                                 <button class="btn btn-sm btn-success btn-publish" data-id="${article.id}" title="Publicar">
-                                    <i class="fas fa-paper-plane"></i>
+                                    <i class="fas fa-paper-plane"></i> Publicar
                                 </button>
                                 <button class="btn btn-sm btn-danger btn-delete" data-id="${article.id}" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash"></i> Eliminar
                                 </button>
                             ` : `
                                 <button class="btn btn-sm btn-secondary btn-unpublish" data-id="${article.id}" title="Despublicar">
-                                    <i class="fas fa-undo"></i>
+                                    <i class="fas fa-undo"></i> Despublicar
                                 </button>
                             `}
                         </td>
@@ -678,7 +628,7 @@
             document.getElementById('view-category-badge-container').innerHTML = getCategoryBadge(categoryCode, categoryName);
             document.getElementById('view-status-badge-container').innerHTML = getStatusBadge(currentArticle.status);
             document.getElementById('view-views').textContent = currentArticle.views_count || 0;
-            document.getElementById('view-excerpt').textContent = currentArticle.excerpt || 'Sin extracto';
+            document.getElementById('view-excerpt').textContent = currentArticle.excerpt || 'Sin resumen';
 
             // Render Markdown content using marked.js
             const contentElement = document.getElementById('view-content');
@@ -712,10 +662,13 @@
             const form = document.getElementById('article-form');
             form.reset();
 
+            const modalTitle = document.querySelector('#modal-form .modal-title');
+            const modalHeader = document.querySelector('#modal-form .modal-header');
+
             if (mode === 'create') {
-                document.getElementById('form-title').textContent = 'Nuevo Artículo';
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.remove('bg-info');
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.add('bg-success');
+                modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Nuevo Artículo';
+                modalHeader.classList.remove('bg-info');
+                modalHeader.classList.add('bg-success');
                 document.getElementById('form-article-id').value = '';
 
                 if (!categoriesLoaded) {
@@ -728,9 +681,9 @@
                     return;
                 }
 
-                document.getElementById('form-title').textContent = 'Editar Artículo';
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.remove('bg-success');
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.add('bg-info');
+                modalTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Artículo';
+                modalHeader.classList.remove('bg-success');
+                modalHeader.classList.add('bg-info');
 
                 document.getElementById('form-category').value = currentArticle.category_id || '';
                 document.getElementById('form-article-title').value = currentArticle.title || '';
@@ -762,6 +715,7 @@
             const url = isCreate ? `${apiUrl}/help-center/articles` : `${apiUrl}/help-center/articles/${articleId}`;
 
             const btnSave = document.getElementById('btn-save-article');
+            const originalHTML = btnSave.innerHTML;
             btnSave.disabled = true;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
 
@@ -789,7 +743,7 @@
             })
             .finally(() => {
                 btnSave.disabled = false;
-                btnSave.innerHTML = '<i class="fas fa-save"></i> Guardar';
+                btnSave.innerHTML = originalHTML;
             });
         }
 
@@ -881,6 +835,7 @@
             const articleId = document.getElementById('delete-article-id').value;
 
             const btnDelete = document.getElementById('btn-confirm-delete');
+            const originalHTML = btnDelete.innerHTML;
             btnDelete.disabled = true;
             btnDelete.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
 
@@ -907,7 +862,7 @@
             })
             .finally(() => {
                 btnDelete.disabled = false;
-                btnDelete.innerHTML = '<i class="fas fa-trash"></i> Eliminar';
+                btnDelete.innerHTML = originalHTML;
             });
         }
 
