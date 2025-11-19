@@ -91,19 +91,19 @@
 
 @section('content')
 
-{{-- Statistics Info Boxes --}}
+{{-- Statistics Small Boxes --}}
 <div class="row">
-    <div class="col-12 col-sm-6 col-md-3">
-        <x-adminlte-info-box title="Total Artículos" text="0" icon="fas fa-book text-info" id="stat-total"/>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <x-adminlte-small-box title="0" text="Total Artículos" icon="fas fa-book" theme="info" id="stat-total"/>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <x-adminlte-info-box title="Publicados" text="0" icon="fas fa-check-circle text-success" id="stat-published"/>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <x-adminlte-small-box title="0" text="Publicados" icon="fas fa-check-circle" theme="success" id="stat-published"/>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <x-adminlte-info-box title="Borradores" text="0" icon="fas fa-pencil-alt text-secondary" id="stat-draft"/>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <x-adminlte-small-box title="0" text="Borradores" icon="fas fa-pencil-alt" theme="secondary" id="stat-draft"/>
     </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <x-adminlte-info-box title="Vistas Totales" text="0" icon="fas fa-eye text-warning" id="stat-views"/>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <x-adminlte-small-box title="0" text="Vistas Totales" icon="fas fa-eye" theme="warning" id="stat-views"/>
     </div>
 </div>
 
@@ -421,10 +421,10 @@
         function updateStatistics(total, published, draft, views, hasFilters = false) {
             const suffix = hasFilters ? ' (filtrados)' : '';
 
-            document.querySelector('#stat-total .info-box-number').textContent = total + suffix;
-            document.querySelector('#stat-published .info-box-number').textContent = published + suffix;
-            document.querySelector('#stat-draft .info-box-number').textContent = draft + suffix;
-            document.querySelector('#stat-views .info-box-number').textContent = views + suffix;
+            document.querySelector('#stat-total .inner h3').textContent = total + suffix;
+            document.querySelector('#stat-published .inner h3').textContent = published + suffix;
+            document.querySelector('#stat-draft .inner h3').textContent = draft + suffix;
+            document.querySelector('#stat-views .inner h3').textContent = views + suffix;
         }
 
         // =====================================================================
