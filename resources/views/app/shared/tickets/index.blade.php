@@ -8,6 +8,36 @@
     <li class="breadcrumb-item active">Tickets</li>
 @endsection
 
+@push('css')
+<style>
+    /* Hacer que Select2 tenga la misma altura que form-control-sm */
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: 31px !important;
+        min-height: 31px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+        line-height: normal !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0 !important;
+        font-size: 0.875rem !important;
+    }
+    /* Placeholder "Categorias" en gris claro */
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__placeholder {
+        color: #adb5bd !important;
+    }
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+        height: 29px !important;
+        top: 1px !important;
+        right: 3px !important;
+    }
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow b {
+        margin-top: -2px !important;
+    }
+</style>
+@endpush
+
 @section('content')
     <div class="row">
         <div class="col-md-3">
@@ -156,8 +186,21 @@
                         @endif
                     </h3>
 
-                    <div class="card-tools">
-                        <div class="input-group input-group-sm">
+                    <div class="card-tools" style="display: flex; align-items: center;">
+                        @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
+                            <div class="input-group input-group-sm" style="width: 180px; margin-right: 5px;">
+                                <select class="form-control form-control-sm select2" id="categoryFilter" data-placeholder="Categorias">
+                                    <option value=""></option>
+                                    <option value="1">Soporte Técnico (28)</option>
+                                    <option value="2">Facturación (12)</option>
+                                    <option value="3">Consulta General (18)</option>
+                                    <option value="4">Hardware (15)</option>
+                                    <option value="5">Software (22)</option>
+                                    <option value="6">Red y Conectividad (9)</option>
+                                </select>
+                            </div>
+                        @endif
+                        <div class="input-group input-group-sm" style="width: 180px;">
                             <input type="text" class="form-control" placeholder="Search Ticket">
                             <div class="input-group-append">
                                 <div class="btn btn-primary">
@@ -414,7 +457,7 @@
     //Initialize Select2 for category filter
     $('#categoryFilter').select2({
       theme: 'bootstrap4',
-      placeholder: 'Todas las Categorías',
+      placeholder: 'Categorias',
       allowClear: true
     })
   })

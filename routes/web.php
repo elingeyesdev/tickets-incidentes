@@ -27,9 +27,9 @@ Route::prefix('test')->group(function () {
 });
 
 // Visual Examples / Communication Lab (NO AUTHENTICATION REQUIRED)
-// CURRENTLY SHOWING: Category Filters for Tickets
+// CURRENTLY SHOWING: Ticket List Comparison (USER vs AGENT/ADMIN)
 Route::get('/tests', function () {
-    return view('tests.experiments.category-filters');
+    return view('tests.experiments.ticket-list-comparison');
 })->name('tests.index');
 
 // ========== PUBLIC ROUTES ==========
