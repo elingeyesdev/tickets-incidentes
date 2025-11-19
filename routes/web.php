@@ -26,6 +26,12 @@ Route::prefix('test')->group(function () {
     })->name('test.jwt-interactive');
 });
 
+// Visual Examples / Communication Lab (NO AUTHENTICATION REQUIRED)
+// CURRENTLY SHOWING: Announcements Split View (Feed + Management)
+Route::get('/tests', function () {
+    return view('tests.experiments.announcements-split');
+})->name('tests.index');
+
 // ========== PUBLIC ROUTES ==========
 
 // Welcome / Landing page
@@ -183,6 +189,15 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'companyId' => $companyId
             ]);
         })->name('company.announcements.index');
+
+        Route::get('/announcements/manage', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.announcements.manage', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.announcements.manage');
     });
 
     // Agent Dashboard (AGENT role)

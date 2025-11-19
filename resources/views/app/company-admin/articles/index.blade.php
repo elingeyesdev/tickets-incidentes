@@ -191,7 +191,7 @@
         </div>
 
         <div class="table-responsive">
-        <table id="articles-table" class="table table-striped table-hover">
+        <table id="articles-table" class="table table-bordered table-striped table-hover mb-0">
             <thead>
                 <tr>
                     <th style="width: 35%;">Título</th>
@@ -387,14 +387,27 @@
         // =====================================================================
 
         function getCategoryBadge(code, name) {
-            const colors = {
-                'ACCOUNT_PROFILE': 'primary',
-                'SECURITY_PRIVACY': 'warning',
-                'BILLING_PAYMENTS': 'success',
-                'TECHNICAL_SUPPORT': 'info'
+            const categoryStyles = {
+                'ACCOUNT_PROFILE': {
+                    icon: 'fas fa-user-circle',
+                    color: 'text-primary'
+                },
+                'SECURITY_PRIVACY': {
+                    icon: 'fas fa-shield-alt',
+                    color: 'text-warning'
+                },
+                'BILLING_PAYMENTS': {
+                    icon: 'fas fa-dollar-sign',
+                    color: 'text-success'
+                },
+                'TECHNICAL_SUPPORT': {
+                    icon: 'fas fa-tools',
+                    color: 'text-info'
+                }
             };
-            const color = colors[code] || 'secondary';
-            return `<span class="badge badge-${color}"><i class="fas fa-tag"></i> ${name || code}</span>`;
+
+            const style = categoryStyles[code] || { icon: 'fas fa-tag', color: 'text-secondary' };
+            return `<i class="${style.icon} ${style.color}"></i> <small>${name || code}</small>`;
         }
 
         // =====================================================================
@@ -557,9 +570,9 @@
                     <tr data-id="${article.id}">
                         <td>
                             <strong>${article.title || 'Sin título'}</strong><br>
-                            <small class="text-muted">${(article.excerpt || '').substring(0, 80)}${(article.excerpt || '').length > 80 ? '...' : ''}</small>
+                            <small class="text-muted d-block text-truncate" style="max-width: 400px;">${article.excerpt || 'Sin resumen'}</small>
                         </td>
-                        <td>${categoryBadge}</td>
+                        <td class="text-nowrap">${categoryBadge}</td>
                         <td>${statusBadge}</td>
                         <td><span class="badge badge-light"><i class="fas fa-eye"></i> ${article.views_count || 0}</span></td>
                         <td><small class="text-muted">${formatDate(article.published_at)}</small></td>

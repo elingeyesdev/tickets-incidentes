@@ -1,945 +1,752 @@
 @extends('layouts.authenticated')
 
-@section('title', 'Gestión de Anuncios')
+@section('title', 'Anuncios')
 
-@section('content_header', 'Gestión de Anuncios')
+@section('content_header')
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Anuncios Publicados</h1>
+        <a href="{{ route('company.announcements.manage') }}" class="btn btn-outline-primary">
+            <i class="fas fa-cogs mr-1"></i>
+            Gestionar Anuncios
+        </a>
+    </div>
+@endsection
 
 @section('breadcrumbs')
-    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('dashboard.company-admin') }}">Dashboard</a></li>
     <li class="breadcrumb-item active">Anuncios</li>
 @endsection
 
 @section('content')
-    <section class="content">
-        <div class="container-fluid">
-            <!-- Jerárquía canónica de AdminLTE v3: .row > .col-md-4 (lista) + .col-md-8 (detalle) -->
-            <div class="row">
-
-                <!-- COLUMNA IZQUIERDA: Lista de Anuncios (col-md-4) -->
-                <div class="col-md-4">
-
-                    <!-- TARJETA 1: Filtros y Búsqueda -->
-                    <div class="card card-primary card-outline">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-filter mr-2"></i>Filtros
-                            </h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <form id="filter-form">
-                                <!-- Tipo de Anuncio -->
-                                <div class="form-group">
-                                    <label for="filter-type">Tipo</label>
-                                    <select class="form-control select2" id="filter-type" name="type" style="width: 100%;">
-                                        <option value="">Todos los tipos</option>
-                                        <option value="MAINTENANCE">Mantenimiento</option>
-                                        <option value="INCIDENT">Incidente</option>
-                                        <option value="NEWS">Noticias</option>
-                                        <option value="ALERT">Alerta</option>
-                                    </select>
-                                </div>
-
-                                <!-- Estado -->
-                                <div class="form-group">
-                                    <label for="filter-status">Estado</label>
-                                    <select class="form-control select2" id="filter-status" name="status" style="width: 100%;">
-                                        <option value="">Todos los estados</option>
-                                        <option value="DRAFT">Borrador</option>
-                                        <option value="SCHEDULED">Programado</option>
-                                        <option value="PUBLISHED">Publicado</option>
-                                        <option value="ARCHIVED">Archivado</option>
-                                    </select>
-                                </div>
-
-                                <!-- Urgencia -->
-                                <div class="form-group">
-                                    <label for="filter-urgency">Urgencia</label>
-                                    <select class="form-control select2" id="filter-urgency" name="urgency" style="width: 100%;">
-                                        <option value="">Todas las urgencias</option>
-                                        <option value="LOW">Baja</option>
-                                        <option value="MEDIUM">Media</option>
-                                        <option value="HIGH">Alta</option>
-                                        <option value="CRITICAL">Crítica</option>
-                                    </select>
-                                </div>
-
-                                <!-- Búsqueda -->
-                                <div class="form-group">
-                                    <label for="filter-search">Búsqueda</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="filter-search" name="search"
-                                               placeholder="Buscar en título y contenido..." maxlength="100">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-default" type="button" id="clear-search">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Botones de Acción -->
-                                <div class="form-group mb-0">
-                                    <button type="button" class="btn btn-primary btn-block" id="apply-filters">
-                                        <i class="fas fa-search mr-2"></i>Aplicar Filtros
-                                    </button>
-                                    <button type="button" class="btn btn-default btn-block" id="reset-filters">
-                                        <i class="fas fa-undo mr-2"></i>Limpiar Filtros
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <!-- /.card -->
-
-                    <!-- TARJETA 2: Lista de Anuncios -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-bullhorn mr-2"></i>Anuncios
-                            </h3>
-                            <div class="card-tools">
-                                <span class="badge badge-info" id="announcements-count">0</span>
-                            </div>
-                        </div>
-                        <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
-                            <!-- Loading -->
-                            <div id="list-loading" class="text-center p-4">
-                                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
-                                <p class="text-muted mt-2">Cargando anuncios...</p>
-                            </div>
-
-                            <!-- Lista -->
-                            <div id="announcements-list" style="display: none;">
-                                <!-- Populated by JavaScript -->
-                            </div>
-
-                            <!-- Empty State -->
-                            <div id="list-empty" style="display: none;" class="text-center p-4">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No se encontraron anuncios</p>
-                                <button class="btn btn-primary btn-sm" id="create-first-announcement">
-                                    <i class="fas fa-plus mr-2"></i>Crear Primer Anuncio
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-success btn-block" id="create-new-announcement">
-                                <i class="fas fa-plus mr-2"></i>Crear Nuevo Anuncio
-                            </button>
-                        </div>
-                    </div>
-                    <!-- /.card -->
-
-                </div>
-                <!-- /.col-md-4 -->
-
-                <!-- COLUMNA DERECHA: Detalles y Formularios (col-md-8) -->
-                <div class="col-md-8">
-                    <div class="card">
-
-                        <!-- NAV PILLS en Card Header (Patrón Canónico AdminLTE v3) -->
-                        <div class="card-header p-2">
-                            <ul class="nav nav-pills" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="detailsTab" data-toggle="tab" href="#detailsPane"
-                                       role="tab" aria-controls="detailsPane" aria-selected="true">
-                                        <i class="fas fa-info-circle mr-2"></i>Detalles
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="editorTab" data-toggle="tab" href="#editorPane"
-                                       role="tab" aria-controls="editorPane" aria-selected="false">
-                                        <i class="fas fa-edit mr-2"></i>Editor
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="timelineTab" data-toggle="tab" href="#timelinePane"
-                                       role="tab" aria-controls="timelinePane" aria-selected="false">
-                                        <i class="fas fa-history mr-2"></i>Historial
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="statsTab" data-toggle="tab" href="#statsPane"
-                                       role="tab" aria-controls="statsPane" aria-selected="false">
-                                        <i class="fas fa-chart-bar mr-2"></i>Estadísticas
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                        <!-- /.card-header -->
-
-                        <!-- TAB CONTENT -->
-                        <div class="card-body">
-                            <div class="tab-content">
-
-                                <!-- ========== PESTAÑA 1: DETALLES ========== -->
-                                <div class="tab-pane fade show active" id="detailsPane" role="tabpanel"
-                                     aria-labelledby="detailsTab">
-
-                                    <!-- Welcome State -->
-                                    <div id="details-welcome" class="text-center p-5">
-                                        <i class="fas fa-hand-pointer fa-4x text-muted mb-3"></i>
-                                        <h4 class="text-muted">Selecciona un anuncio</h4>
-                                        <p class="text-muted">Selecciona un anuncio de la lista para ver sus detalles</p>
-                                    </div>
-
-                                    <!-- Details Content -->
-                                    <div id="details-content" style="display: none;">
-
-                                        <!-- Header con Título y Badges -->
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h3 id="detail-title" class="mb-2">Título del Anuncio</h3>
-                                                    <div>
-                                                        <span id="detail-type-badge" class="badge badge-info mr-2">TIPO</span>
-                                                        <span id="detail-status-badge" class="badge badge-secondary mr-2">ESTADO</span>
-                                                        <span id="detail-urgency-badge" class="badge badge-warning">URGENCIA</span>
-                                                    </div>
-                                                </div>
-                                                <div class="btn-group">
-                                                    <button type="button" class="btn btn-default dropdown-toggle"
-                                                            data-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-cog"></i> Acciones
-                                                    </button>
-                                                    <div class="dropdown-menu dropdown-menu-right" id="detail-actions-menu">
-                                                        <!-- Populated by JavaScript -->
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <hr>
-
-                                        <!-- Contenido del Anuncio -->
-                                        <div class="mb-4">
-                                            <h5><i class="fas fa-align-left mr-2"></i>Contenido</h5>
-                                            <div id="detail-content" class="border rounded p-3 bg-light">
-                                                Contenido del anuncio...
-                                            </div>
-                                        </div>
-
-                                        <!-- Metadata Cards -->
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="info-box bg-light">
-                                                    <span class="info-box-icon"><i class="fas fa-user"></i></span>
-                                                    <div class="info-box-content">
-                                                        <span class="info-box-text">Autor</span>
-                                                        <span class="info-box-number" id="detail-author">--</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="info-box bg-light">
-                                                    <span class="info-box-icon"><i class="fas fa-calendar"></i></span>
-                                                    <div class="info-box-content">
-                                                        <span class="info-box-text">Creado</span>
-                                                        <span class="info-box-number" id="detail-created">--</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Metadata Específica por Tipo -->
-                                        <div id="detail-specific-metadata">
-                                            <!-- Populated by JavaScript based on announcement type -->
-                                        </div>
-
-                                    </div>
-
-                                </div>
-                                <!-- /.tab-pane #detailsPane -->
-
-                                <!-- ========== PESTAÑA 2: EDITOR ========== -->
-                                <div class="tab-pane fade" id="editorPane" role="tabpanel"
-                                     aria-labelledby="editorTab">
-
-                                    <!-- Editor Welcome State -->
-                                    <div id="editor-welcome" class="text-center p-5">
-                                        <i class="fas fa-edit fa-4x text-muted mb-3"></i>
-                                        <h4 class="text-muted">Modo de Edición</h4>
-                                        <p class="text-muted">Crea un nuevo anuncio o selecciona uno existente para editar</p>
-                                        <button class="btn btn-primary" id="start-create">
-                                            <i class="fas fa-plus mr-2"></i>Crear Nuevo Anuncio
-                                        </button>
-                                    </div>
-
-                                    <!-- Editor Form -->
-                                    <div id="editor-form-container" style="display: none;">
-                                        <form id="announcement-form">
-
-                                            <!-- Información Básica -->
-                                            <div class="card card-outline card-primary">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-info-circle mr-2"></i>Información Básica
-                                                    </h3>
-                                                </div>
-                                                <div class="card-body">
-
-                                                    <!-- Tipo de Anuncio -->
-                                                    <div class="form-group">
-                                                        <label for="form-type">Tipo de Anuncio <span class="text-danger">*</span></label>
-                                                        <select class="form-control select2" id="form-type" name="type" required style="width: 100%;">
-                                                            <option value="">-- Selecciona un tipo --</option>
-                                                            <option value="MAINTENANCE">🔧 Mantenimiento</option>
-                                                            <option value="INCIDENT">🚨 Incidente</option>
-                                                            <option value="NEWS">📰 Noticias</option>
-                                                            <option value="ALERT">⚠️ Alerta</option>
-                                                        </select>
-                                                        <small class="form-text text-muted">Selecciona el tipo de anuncio que deseas crear</small>
-                                                    </div>
-
-                                                    <!-- Título -->
-                                                    <div class="form-group">
-                                                        <label for="form-title">Título <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control" id="form-title" name="title"
-                                                               placeholder="Ej: Mantenimiento Programado del Sistema"
-                                                               minlength="5" maxlength="200" required>
-                                                        <small class="form-text text-muted">Mínimo 5 caracteres, máximo 200</small>
-                                                    </div>
-
-                                                    <!-- Contenido -->
-                                                    <div class="form-group">
-                                                        <label for="form-content">Contenido <span class="text-danger">*</span></label>
-                                                        <textarea class="form-control" id="form-content" name="content" rows="6"
-                                                                  placeholder="Describe detalladamente el anuncio..." required></textarea>
-                                                        <small class="form-text text-muted">Proporciona una descripción completa del anuncio</small>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                            <!-- /.card -->
-
-                                            <!-- MANTENIMIENTO - Campos Específicos -->
-                                            <div id="maintenance-fields" class="card card-outline card-warning type-specific-card" style="display: none;">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-tools mr-2"></i>Detalles de Mantenimiento
-                                                    </h3>
-                                                </div>
-                                                <div class="card-body">
-
-                                                    <!-- Urgencia -->
-                                                    <div class="form-group">
-                                                        <label for="maint-urgency">Urgencia <span class="text-danger">*</span></label>
-                                                        <select class="form-control" id="maint-urgency" name="urgency">
-                                                            <option value="LOW">🟢 Baja</option>
-                                                            <option value="MEDIUM">🟡 Media</option>
-                                                            <option value="HIGH">🔴 Alta</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Inicio Programado -->
-                                                    <div class="form-group">
-                                                        <label for="maint-scheduled-start">Inicio Programado <span class="text-danger">*</span></label>
-                                                        <div class="input-group date" id="scheduled-start-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="maint-scheduled-start" name="scheduled_start"
-                                                                   data-target="#scheduled-start-picker"/>
-                                                            <div class="input-group-append" data-target="#scheduled-start-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Fin Programado -->
-                                                    <div class="form-group">
-                                                        <label for="maint-scheduled-end">Fin Programado <span class="text-danger">*</span></label>
-                                                        <div class="input-group date" id="scheduled-end-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="maint-scheduled-end" name="scheduled_end"
-                                                                   data-target="#scheduled-end-picker"/>
-                                                            <div class="input-group-append" data-target="#scheduled-end-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Emergencia -->
-                                                    <div class="form-group">
-                                                        <div class="custom-control custom-switch">
-                                                            <input type="checkbox" class="custom-control-input" id="maint-emergency" name="is_emergency">
-                                                            <label class="custom-control-label" for="maint-emergency">
-                                                                <strong>Es Mantenimiento de Emergencia</strong>
-                                                            </label>
-                                                        </div>
-                                                        <small class="form-text text-muted">Si es emergencia, la urgencia se establecerá automáticamente como Alta</small>
-                                                    </div>
-
-                                                    <!-- Servicios Afectados -->
-                                                    <div class="form-group">
-                                                        <label for="maint-affected-services">Servicios Afectados <span class="text-danger">*</span></label>
-                                                        <select class="form-control select2" id="maint-affected-services"
-                                                                name="affected_services" multiple="multiple"
-                                                                data-placeholder="Selecciona los servicios afectados" style="width: 100%;">
-                                                            <option value="API">API</option>
-                                                            <option value="Dashboard">Dashboard</option>
-                                                            <option value="Database">Base de Datos</option>
-                                                            <option value="Authentication">Autenticación</option>
-                                                            <option value="Email">Email</option>
-                                                            <option value="Storage">Almacenamiento</option>
-                                                            <option value="Payment">Pagos</option>
-                                                            <option value="Reporting">Reportes</option>
-                                                        </select>
-                                                        <small class="form-text text-muted">Selecciona al menos un servicio</small>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                            <!-- /.card MAINTENANCE -->
-
-                                            <!-- INCIDENTE - Campos Específicos -->
-                                            <div id="incident-fields" class="card card-outline card-danger type-specific-card" style="display: none;">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-exclamation-triangle mr-2"></i>Detalles del Incidente
-                                                    </h3>
-                                                </div>
-                                                <div class="card-body">
-
-                                                    <!-- Urgencia -->
-                                                    <div class="form-group">
-                                                        <label for="incident-urgency">Urgencia <span class="text-danger">*</span></label>
-                                                        <select class="form-control" id="incident-urgency" name="urgency">
-                                                            <option value="LOW">🟢 Baja</option>
-                                                            <option value="MEDIUM">🟡 Media</option>
-                                                            <option value="HIGH">🟠 Alta</option>
-                                                            <option value="CRITICAL">🔴 Crítica</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Fecha de Inicio -->
-                                                    <div class="form-group">
-                                                        <label for="incident-started-at">Fecha de Inicio <span class="text-danger">*</span></label>
-                                                        <div class="input-group date" id="incident-started-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="incident-started-at" name="started_at"
-                                                                   data-target="#incident-started-picker"/>
-                                                            <div class="input-group-append" data-target="#incident-started-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Fecha de Fin (Opcional) -->
-                                                    <div class="form-group">
-                                                        <label for="incident-ended-at">Fecha de Fin (Opcional)</label>
-                                                        <div class="input-group date" id="incident-ended-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="incident-ended-at" name="ended_at"
-                                                                   data-target="#incident-ended-picker"/>
-                                                            <div class="input-group-append" data-target="#incident-ended-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Resuelto -->
-                                                    <div class="form-group">
-                                                        <div class="custom-control custom-switch">
-                                                            <input type="checkbox" class="custom-control-input" id="incident-resolved" name="is_resolved">
-                                                            <label class="custom-control-label" for="incident-resolved">
-                                                                <strong>Incidente Resuelto</strong>
-                                                            </label>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Contenido de Resolución -->
-                                                    <div class="form-group" id="incident-resolution-group" style="display: none;">
-                                                        <label for="incident-resolution">Contenido de Resolución</label>
-                                                        <textarea class="form-control" id="incident-resolution" name="resolution_content" rows="4"
-                                                                  placeholder="Describe cómo se resolvió el incidente..."></textarea>
-                                                    </div>
-
-                                                    <!-- Servicios Afectados -->
-                                                    <div class="form-group">
-                                                        <label for="incident-affected-services">Servicios Afectados</label>
-                                                        <select class="form-control select2" id="incident-affected-services"
-                                                                name="affected_services" multiple="multiple"
-                                                                data-placeholder="Selecciona los servicios afectados" style="width: 100%;">
-                                                            <option value="API">API</option>
-                                                            <option value="Dashboard">Dashboard</option>
-                                                            <option value="Database">Base de Datos</option>
-                                                            <option value="Authentication">Autenticación</option>
-                                                            <option value="Email">Email</option>
-                                                            <option value="Storage">Almacenamiento</option>
-                                                            <option value="Payment">Pagos</option>
-                                                            <option value="Reporting">Reportes</option>
-                                                        </select>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                            <!-- /.card INCIDENT -->
-
-                                            <!-- NOTICIAS - Campos Específicos -->
-                                            <div id="news-fields" class="card card-outline card-info type-specific-card" style="display: none;">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-newspaper mr-2"></i>Detalles de Noticias
-                                                    </h3>
-                                                </div>
-                                                <div class="card-body">
-
-                                                    <!-- Tipo de Noticia -->
-                                                    <div class="form-group">
-                                                        <label for="news-type">Tipo de Noticia <span class="text-danger">*</span></label>
-                                                        <select class="form-control" id="news-type" name="news_type">
-                                                            <option value="feature_release">🎉 Lanzamiento de Característica</option>
-                                                            <option value="policy_update">📋 Actualización de Política</option>
-                                                            <option value="general_update">ℹ️ Actualización General</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Resumen -->
-                                                    <div class="form-group">
-                                                        <label for="news-summary">Resumen <span class="text-danger">*</span></label>
-                                                        <textarea class="form-control" id="news-summary" name="summary" rows="3"
-                                                                  placeholder="Resumen breve de la noticia (máx. 280 caracteres)..."
-                                                                  maxlength="280"></textarea>
-                                                        <small class="form-text text-muted">
-                                                            <span id="summary-char-count">0</span> / 280 caracteres
-                                                        </small>
-                                                    </div>
-
-                                                    <!-- Audiencia Objetivo -->
-                                                    <div class="form-group">
-                                                        <label for="news-audience">Audiencia Objetivo <span class="text-danger">*</span></label>
-                                                        <select class="form-control select2" id="news-audience"
-                                                                name="target_audience" multiple="multiple"
-                                                                data-placeholder="Selecciona la audiencia" style="width: 100%;">
-                                                            <option value="users">👥 Usuarios</option>
-                                                            <option value="agents">🎧 Agentes</option>
-                                                            <option value="admins">👔 Administradores</option>
-                                                        </select>
-                                                        <small class="form-text text-muted">Selecciona al menos una audiencia</small>
-                                                    </div>
-
-                                                    <!-- Call to Action -->
-                                                    <div class="card card-outline card-secondary">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Call to Action (Opcional)</h3>
-                                                            <div class="card-tools">
-                                                                <div class="custom-control custom-switch">
-                                                                    <input type="checkbox" class="custom-control-input" id="news-cta-enabled">
-                                                                    <label class="custom-control-label" for="news-cta-enabled">Habilitar</label>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="card-body" id="news-cta-fields" style="display: none;">
-                                                            <div class="form-group">
-                                                                <label for="news-cta-text">Texto del Botón</label>
-                                                                <input type="text" class="form-control" id="news-cta-text" name="cta_text"
-                                                                       placeholder="Ej: Más Información" maxlength="50">
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label for="news-cta-url">URL</label>
-                                                                <input type="url" class="form-control" id="news-cta-url" name="cta_url"
-                                                                       placeholder="https://ejemplo.com/mas-info">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                            <!-- /.card NEWS -->
-
-                                            <!-- ALERTA - Campos Específicos -->
-                                            <div id="alert-fields" class="card card-outline card-dark type-specific-card" style="display: none;">
-                                                <div class="card-header bg-dark">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-bell mr-2"></i>Detalles de Alerta
-                                                    </h3>
-                                                </div>
-                                                <div class="card-body">
-
-                                                    <!-- Urgencia (Solo HIGH y CRITICAL) -->
-                                                    <div class="form-group">
-                                                        <label for="alert-urgency">Urgencia <span class="text-danger">*</span></label>
-                                                        <select class="form-control" id="alert-urgency" name="urgency">
-                                                            <option value="HIGH">🟠 Alta</option>
-                                                            <option value="CRITICAL">🔴 Crítica</option>
-                                                        </select>
-                                                        <small class="form-text text-muted">Las alertas solo pueden ser Alta o Crítica</small>
-                                                    </div>
-
-                                                    <!-- Tipo de Alerta -->
-                                                    <div class="form-group">
-                                                        <label for="alert-type">Tipo de Alerta <span class="text-danger">*</span></label>
-                                                        <select class="form-control" id="alert-type" name="alert_type">
-                                                            <option value="security">🔒 Seguridad</option>
-                                                            <option value="system">⚙️ Sistema</option>
-                                                            <option value="service">🔌 Servicio</option>
-                                                            <option value="compliance">📜 Cumplimiento</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <!-- Mensaje -->
-                                                    <div class="form-group">
-                                                        <label for="alert-message">Mensaje de Alerta <span class="text-danger">*</span></label>
-                                                        <textarea class="form-control" id="alert-message" name="message" rows="3"
-                                                                  placeholder="Mensaje breve y claro de la alerta (máx. 500 caracteres)..."
-                                                                  maxlength="500"></textarea>
-                                                        <small class="form-text text-muted">
-                                                            <span id="alert-char-count">0</span> / 500 caracteres
-                                                        </small>
-                                                    </div>
-
-                                                    <!-- Fecha de Inicio -->
-                                                    <div class="form-group">
-                                                        <label for="alert-started-at">Fecha de Inicio <span class="text-danger">*</span></label>
-                                                        <div class="input-group date" id="alert-started-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="alert-started-at" name="started_at"
-                                                                   data-target="#alert-started-picker"/>
-                                                            <div class="input-group-append" data-target="#alert-started-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Fecha de Fin (Opcional) -->
-                                                    <div class="form-group">
-                                                        <label for="alert-ended-at">Fecha de Fin (Opcional)</label>
-                                                        <div class="input-group date" id="alert-ended-picker" data-target-input="nearest">
-                                                            <input type="text" class="form-control datetimepicker-input"
-                                                                   id="alert-ended-at" name="ended_at"
-                                                                   data-target="#alert-ended-picker"/>
-                                                            <div class="input-group-append" data-target="#alert-ended-picker" data-toggle="datetimepicker">
-                                                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Acción Requerida -->
-                                                    <div class="form-group">
-                                                        <div class="custom-control custom-switch">
-                                                            <input type="checkbox" class="custom-control-input" id="alert-action-required" name="action_required">
-                                                            <label class="custom-control-label" for="alert-action-required">
-                                                                <strong>Acción Requerida del Usuario</strong>
-                                                            </label>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Descripción de la Acción -->
-                                                    <div class="form-group" id="alert-action-description-group" style="display: none;">
-                                                        <label for="alert-action-description">Descripción de la Acción <span class="text-danger">*</span></label>
-                                                        <textarea class="form-control" id="alert-action-description" name="action_description" rows="3"
-                                                                  placeholder="Describe qué acción debe tomar el usuario..."></textarea>
-                                                        <small class="form-text text-muted">Requerido si se marca "Acción Requerida"</small>
-                                                    </div>
-
-                                                    <!-- Servicios Afectados -->
-                                                    <div class="form-group">
-                                                        <label for="alert-affected-services">Servicios Afectados (Opcional)</label>
-                                                        <select class="form-control select2" id="alert-affected-services"
-                                                                name="affected_services" multiple="multiple"
-                                                                data-placeholder="Selecciona los servicios afectados" style="width: 100%;">
-                                                            <option value="API">API</option>
-                                                            <option value="Dashboard">Dashboard</option>
-                                                            <option value="Database">Base de Datos</option>
-                                                            <option value="Authentication">Autenticación</option>
-                                                            <option value="Email">Email</option>
-                                                            <option value="Storage">Almacenamiento</option>
-                                                            <option value="Payment">Pagos</option>
-                                                            <option value="Reporting">Reportes</option>
-                                                        </select>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                            <!-- /.card ALERT -->
-
-                                            <!-- Botones de Acción -->
-                                            <div class="card">
-                                                <div class="card-footer">
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <button type="button" class="btn btn-default btn-block" id="cancel-form">
-                                                                <i class="fas fa-times mr-2"></i>Cancelar
-                                                            </button>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="btn-group btn-block">
-                                                                <button type="submit" class="btn btn-secondary" id="save-draft">
-                                                                    <i class="fas fa-save mr-2"></i>Guardar Borrador
-                                                                </button>
-                                                                <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                                                                        data-toggle="dropdown" aria-expanded="false">
-                                                                    <span class="sr-only">Toggle Dropdown</span>
-                                                                </button>
-                                                                <div class="dropdown-menu dropdown-menu-right">
-                                                                    <a class="dropdown-item" href="#" id="save-and-schedule">
-                                                                        <i class="fas fa-clock mr-2"></i>Guardar y Programar
-                                                                    </a>
-                                                                    <a class="dropdown-item" href="#" id="save-and-publish">
-                                                                        <i class="fas fa-paper-plane mr-2"></i>Guardar y Publicar
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- /.card -->
-
-                                        </form>
-                                    </div>
-
-                                </div>
-                                <!-- /.tab-pane #editorPane -->
-
-                                <!-- ========== PESTAÑA 3: HISTORIAL ========== -->
-                                <div class="tab-pane fade" id="timelinePane" role="tabpanel"
-                                     aria-labelledby="timelineTab">
-
-                                    <!-- Timeline Welcome State -->
-                                    <div id="timeline-welcome" class="text-center p-5">
-                                        <i class="fas fa-history fa-4x text-muted mb-3"></i>
-                                        <h4 class="text-muted">Historial de Actividad</h4>
-                                        <p class="text-muted">Selecciona un anuncio para ver su historial</p>
-                                    </div>
-
-                                    <!-- Timeline Content -->
-                                    <div id="timeline-content" style="display: none;">
-                                        <div class="timeline" id="announcement-timeline">
-                                            <!-- Populated by JavaScript -->
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <!-- /.tab-pane #timelinePane -->
-
-                                <!-- ========== PESTAÑA 4: ESTADÍSTICAS ========== -->
-                                <div class="tab-pane fade" id="statsPane" role="tabpanel"
-                                     aria-labelledby="statsTab">
-
-                                    <!-- Stats Loading -->
-                                    <div id="stats-loading" class="text-center p-5">
-                                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
-                                        <p class="text-muted mt-2">Cargando estadísticas...</p>
-                                    </div>
-
-                                    <!-- Stats Content -->
-                                    <div id="stats-content" style="display: none;">
-
-                                        <!-- Resumen General -->
-                                        <div class="row">
-                                            <div class="col-lg-3 col-6">
-                                                <div class="small-box bg-info">
-                                                    <div class="inner">
-                                                        <h3 id="stat-total">0</h3>
-                                                        <p>Total Anuncios</p>
-                                                    </div>
-                                                    <div class="icon">
-                                                        <i class="fas fa-bullhorn"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-3 col-6">
-                                                <div class="small-box bg-success">
-                                                    <div class="inner">
-                                                        <h3 id="stat-published">0</h3>
-                                                        <p>Publicados</p>
-                                                    </div>
-                                                    <div class="icon">
-                                                        <i class="fas fa-check-circle"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-3 col-6">
-                                                <div class="small-box bg-warning">
-                                                    <div class="inner">
-                                                        <h3 id="stat-scheduled">0</h3>
-                                                        <p>Programados</p>
-                                                    </div>
-                                                    <div class="icon">
-                                                        <i class="fas fa-clock"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-3 col-6">
-                                                <div class="small-box bg-secondary">
-                                                    <div class="inner">
-                                                        <h3 id="stat-draft">0</h3>
-                                                        <p>Borradores</p>
-                                                    </div>
-                                                    <div class="icon">
-                                                        <i class="fas fa-file-alt"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Gráficos -->
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="card">
-                                                    <div class="card-header">
-                                                        <h3 class="card-title">Anuncios por Tipo</h3>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <canvas id="chart-by-type" style="height: 250px;"></canvas>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="card">
-                                                    <div class="card-header">
-                                                        <h3 class="card-title">Anuncios por Estado</h3>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <canvas id="chart-by-status" style="height: 250px;"></canvas>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Tabla de Actividad Reciente -->
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">
-                                                    <i class="fas fa-history mr-2"></i>Actividad Reciente
-                                                </h3>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <table class="table table-striped table-sm" id="recent-activity-table">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Anuncio</th>
-                                                        <th>Acción</th>
-                                                        <th>Usuario</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    <!-- Populated by JavaScript -->
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-
-                                    </div>
-
-                                </div>
-                                <!-- /.tab-pane #statsPane -->
-
-                            </div>
-                            <!-- /.tab-content -->
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- /.card -->
-                </div>
-                <!-- /.col-md-8 -->
-
+{{-- Statistics Row --}}
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-light">
+            <div class="inner">
+                <h3 id="stat-total">-</h3>
+                <p>Total Publicados</p>
             </div>
-            <!-- /.row -->
+            <div class="icon">
+                <i class="fas fa-broadcast-tower"></i>
+            </div>
         </div>
-    </section>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-light">
+            <div class="inner">
+                <h3 id="stat-incidents" class="text-danger">-</h3>
+                <p>Incidentes Activos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-light">
+            <div class="inner">
+                <h3 id="stat-maintenance" class="text-purple">-</h3>
+                <p>Mantenimientos Próximos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-tools text-purple"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-light">
+            <div class="inner">
+                <h3 id="stat-month">-</h3>
+                <p>Este Mes</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- MODAL: Programar Publicación -->
-    <div class="modal fade" id="schedule-modal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-info">
-                    <h4 class="modal-title">
-                        <i class="fas fa-clock mr-2"></i>Programar Publicación
-                    </h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+{{-- Main Content --}}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-stream mr-2"></i>
+            Feed de Anuncios
+        </h3>
+        <div class="card-tools">
+            {{-- Filters --}}
+            <div class="btn-group btn-group-sm mr-2">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    <i class="fas fa-filter mr-1"></i> Tipo
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item filter-type active" href="#" data-type="">Todos</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item filter-type" href="#" data-type="NEWS">
+                        <i class="fas fa-newspaper text-info mr-1"></i> Noticias
+                    </a>
+                    <a class="dropdown-item filter-type" href="#" data-type="MAINTENANCE">
+                        <i class="fas fa-tools text-purple mr-1"></i> Mantenimiento
+                    </a>
+                    <a class="dropdown-item filter-type" href="#" data-type="INCIDENT">
+                        <i class="fas fa-exclamation-triangle text-danger mr-1"></i> Incidentes
+                    </a>
+                    <a class="dropdown-item filter-type" href="#" data-type="ALERT">
+                        <i class="fas fa-bell text-warning mr-1"></i> Alertas
+                    </a>
                 </div>
-                <div class="modal-body">
-                    <p>Selecciona la fecha y hora en que deseas publicar este anuncio:</p>
-                    <div class="form-group">
-                        <label for="schedule-datetime">Fecha y Hora de Publicación</label>
-                        <div class="input-group date" id="schedule-datetime-picker" data-target-input="nearest">
-                            <input type="text" class="form-control datetimepicker-input"
-                                   id="schedule-datetime" data-target="#schedule-datetime-picker"/>
-                            <div class="input-group-append" data-target="#schedule-datetime-picker" data-toggle="datetimepicker">
-                                <div class="input-group-text"><i class="fa fa-calendar"></i></div>
-                            </div>
-                        </div>
-                        <small class="form-text text-muted">Debe ser entre 5 minutos y 1 año en el futuro</small>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-info" id="confirm-schedule">
-                        <i class="fas fa-check mr-2"></i>Programar
+            </div>
+            <div class="input-group input-group-sm" style="width: 200px; display: inline-flex;">
+                <input type="text" id="search-input" class="form-control" placeholder="Buscar...">
+                <div class="input-group-append">
+                    <button class="btn btn-default" id="btn-search">
+                        <i class="fas fa-search"></i>
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- /.modal -->
 
+    <div class="card-body" style="background-color: #f4f6f9;">
+        {{-- Timeline Container --}}
+        <div id="announcements-timeline" class="timeline">
+            {{-- Content loaded via JavaScript --}}
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="mt-2 text-muted">Cargando anuncios...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer clearfix">
+        <div class="float-left">
+            <span id="pagination-info" class="text-muted">-</span>
+        </div>
+        <ul class="pagination pagination-sm m-0 float-right" id="pagination-container">
+            {{-- Pagination loaded via JavaScript --}}
+        </ul>
+    </div>
+</div>
 @endsection
 
-@push('styles')
-    <!-- Select2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
-    <!-- Tempus Dominus Bootstrap 4 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tempusdominus-bootstrap-4@5.39.0/build/css/tempusdominus-bootstrap-4.min.css">
-    <!-- Custom Styles -->
-    <style>
-        .announcement-item {
-            border-left: 4px solid #007bff;
-            padding: 15px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fff;
-        }
-        .announcement-item:hover {
-            background: #f8f9fa;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .announcement-item.active {
-            background: #e3f2fd;
-            border-left-color: #1976d2;
-        }
-        .announcement-item.type-MAINTENANCE {
-            border-left-color: #ffc107;
-        }
-        .announcement-item.type-INCIDENT {
-            border-left-color: #dc3545;
-        }
-        .announcement-item.type-NEWS {
-            border-left-color: #17a2b8;
-        }
-        .announcement-item.type-ALERT {
-            border-left-color: #343a40;
-        }
-        .timeline > div > .timeline-item > .timeline-header {
-            font-weight: 600;
-        }
-    </style>
-@endpush
+@section('css')
+<style>
+    /* Status badge position in timeline - before time */
+    .timeline-item > .badge {
+        float: right;
+        margin-top: 8px;
+        margin-left: 10px;
+    }
 
-@push('scripts')
-    <!-- Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <!-- Moment.js -->
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-    <!-- Tempus Dominus Bootstrap 4 -->
-    <script src="https://cdn.jsdelivr.net/npm/tempusdominus-bootstrap-4@5.39.0/build/js/tempusdominus-bootstrap-4.min.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- jQuery Validation -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    /* Filter active state */
+    .filter-type.active {
+        background-color: #007bff;
+        color: white;
+    }
 
-    <!-- Main Script -->
-    <script src="{{ asset('js/pages/announcements.js') }}"></script>
-@endpush
+    /* Purple color for maintenance */
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+
+    .badge-purple {
+        background-color: #6f42c1;
+        color: #fff;
+    }
+
+    .btn-purple {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+        color: #fff;
+    }
+
+    .btn-purple:hover {
+        background-color: #5a32a3;
+        border-color: #5a32a3;
+        color: #fff;
+    }
+
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+
+    /* Metadata display */
+    .announcement-metadata {
+        font-size: .85rem;
+        color: #6c757d;
+        margin-top: 10px;
+    }
+
+    .announcement-metadata i {
+        width: 16px;
+    }
+</style>
+@endsection
+
+@section('js')
+<script>
+// Global variables for action handlers
+let announcementsToken = null;
+let loadAnnouncementsFn = null;
+let loadStatisticsFn = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const companyId = '{{ $companyId }}';
+    const token = window.tokenManager?.getAccessToken();
+    announcementsToken = token; // Make available globally
+    let currentPage = 1;
+    let currentType = '';
+    let currentSearch = '';
+    let dateColorIndex = 0; // For alternating date colors
+
+    // Load initial data
+    loadAnnouncements();
+    loadStatistics();
+
+    // Filter by type
+    document.querySelectorAll('.filter-type').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.filter-type').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            currentType = this.dataset.type;
+            currentPage = 1;
+            loadAnnouncements();
+        });
+    });
+
+    // Search
+    document.getElementById('btn-search').addEventListener('click', function() {
+        currentSearch = document.getElementById('search-input').value;
+        currentPage = 1;
+        loadAnnouncements();
+    });
+
+    document.getElementById('search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            currentSearch = this.value;
+            currentPage = 1;
+            loadAnnouncements();
+        }
+    });
+
+    function loadAnnouncements() {
+        const timeline = document.getElementById('announcements-timeline');
+        timeline.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="mt-2 text-muted">Cargando anuncios...</p>
+            </div>
+        `;
+
+        let url = `/api/announcements?status=published&per_page=10&page=${currentPage}`;
+        if (currentType) url += `&type=${currentType}`;
+        if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+
+        fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.length > 0) {
+                renderTimeline(data.data);
+                renderPagination(data.meta);
+            } else {
+                timeline.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay anuncios publicados</p>
+                    </div>
+                `;
+                document.getElementById('pagination-container').innerHTML = '';
+                document.getElementById('pagination-info').textContent = '0 anuncios';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            timeline.innerHTML = `
+                <div class="text-center py-5 text-danger">
+                    <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                    <p>Error al cargar los anuncios</p>
+                </div>
+            `;
+        });
+    }
+
+    function renderTimeline(announcements) {
+        const timeline = document.getElementById('announcements-timeline');
+        let html = '';
+        let currentDate = '';
+        let dateColorIndex = 0;
+        const dateColors = ['bg-red', 'bg-green', 'bg-blue', 'bg-yellow'];
+
+        announcements.forEach(announcement => {
+            const publishedDate = new Date(announcement.published_at);
+            const dateStr = publishedDate.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+
+            // Date separator with alternating colors (AdminLTE v3 time-label)
+            if (dateStr !== currentDate) {
+                currentDate = dateStr;
+                const colorClass = dateColors[dateColorIndex % dateColors.length];
+                dateColorIndex++;
+                html += `
+                    <!-- timeline time label -->
+                    <div class="time-label">
+                        <span class="${colorClass}">${dateStr}</span>
+                    </div>
+                    <!-- /.timeline-label -->
+                `;
+            }
+
+            // Announcement item (AdminLTE v3 timeline item)
+            const typeConfig = getTypeConfig(announcement.type);
+            const timeStr = publishedDate.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const statusBadge = getStatusBadge(announcement);
+
+            html += `
+                <!-- timeline item -->
+                <div>
+                    <i class="${typeConfig.icon} ${typeConfig.bgColor}"></i>
+                    <div class="timeline-item">
+                        <span class="time"><i class="fas fa-clock"></i> ${timeStr}</span>
+                        ${statusBadge}
+                        <h3 class="timeline-header">
+                            <span class="badge ${typeConfig.badgeColor} mr-2">${typeConfig.label}</span>
+                            ${announcement.title}
+                        </h3>
+                        <div class="timeline-body">
+                            ${announcement.content}
+                            ${renderMetadata(announcement)}
+                        </div>
+                        <div class="timeline-footer">
+                            ${renderFooterButtons(announcement)}
+                        </div>
+                    </div>
+                </div>
+                <!-- END timeline item -->
+            `;
+        });
+
+        // Timeline end marker (AdminLTE v3 style)
+        html += `
+            <div>
+                <i class="fas fa-clock bg-gray"></i>
+            </div>
+        `;
+
+        timeline.innerHTML = html;
+    }
+
+    function getTypeConfig(type) {
+        const configs = {
+            'NEWS': {
+                icon: 'fas fa-newspaper',
+                bgColor: 'bg-blue',
+                badgeColor: 'badge-info',
+                label: 'Noticia'
+            },
+            'MAINTENANCE': {
+                icon: 'fas fa-tools',
+                bgColor: 'bg-purple',
+                badgeColor: 'badge-purple',
+                label: 'Mantenimiento'
+            },
+            'INCIDENT': {
+                icon: 'fas fa-exclamation-triangle',
+                bgColor: 'bg-red',
+                badgeColor: 'badge-danger',
+                label: 'Incidente'
+            },
+            'ALERT': {
+                icon: 'fas fa-bell',
+                bgColor: 'bg-yellow',
+                badgeColor: 'badge-warning',
+                label: 'Alerta'
+            }
+        };
+        return configs[type] || configs['NEWS'];
+    }
+
+    function getStatusBadge(announcement) {
+        const metadata = announcement.metadata || {};
+
+        if (announcement.type === 'INCIDENT') {
+            if (metadata.is_resolved) {
+                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Resuelto</span>`;
+            } else {
+                return `<span class="badge badge-warning"><i class="fas fa-spinner fa-spin mr-1"></i> En Investigación</span>`;
+            }
+        }
+
+        if (announcement.type === 'MAINTENANCE') {
+            if (metadata.actual_end) {
+                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Completado</span>`;
+            } else if (metadata.actual_start) {
+                return `<span class="badge badge-warning"><i class="fas fa-cog fa-spin mr-1"></i> En Progreso</span>`;
+            } else {
+                return `<span class="badge badge-info"><i class="fas fa-clock mr-1"></i> Programado</span>`;
+            }
+        }
+
+        if (announcement.type === 'ALERT') {
+            if (metadata.ended_at) {
+                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Finalizada</span>`;
+            }
+        }
+
+        return '';
+    }
+
+    function renderMetadata(announcement) {
+        const metadata = announcement.metadata || {};
+        let html = '<div class="announcement-metadata mt-2">';
+
+        // Urgency
+        if (metadata.urgency) {
+            const urgencyColors = {
+                'LOW': 'text-success',
+                'MEDIUM': 'text-info',
+                'HIGH': 'text-warning',
+                'CRITICAL': 'text-danger'
+            };
+            html += `<span class="${urgencyColors[metadata.urgency] || ''} mr-3">
+                <i class="fas fa-bolt"></i> ${metadata.urgency}
+            </span>`;
+        }
+
+        // Affected services
+        if (metadata.affected_services && metadata.affected_services.length > 0) {
+            html += `<span class="mr-3">
+                <i class="fas fa-server"></i> ${metadata.affected_services.join(', ')}
+            </span>`;
+        }
+
+        // Scheduled dates for maintenance
+        if (metadata.scheduled_start) {
+            const start = new Date(metadata.scheduled_start);
+            const end = metadata.scheduled_end ? new Date(metadata.scheduled_end) : null;
+            html += `<span class="mr-3">
+                <i class="fas fa-calendar"></i>
+                ${start.toLocaleDateString('es-ES')} ${start.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                ${end ? ' - ' + end.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : ''}
+            </span>`;
+        }
+
+        // Action required for alerts
+        if (metadata.action_required) {
+            html += `<span class="text-danger">
+                <i class="fas fa-exclamation-circle"></i> Acción requerida
+            </span>`;
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function renderFooterButtons(announcement) {
+        const metadata = announcement.metadata || {};
+        let buttons = [];
+
+        // Action buttons only (no status badges - those go in header)
+        if (announcement.type === 'INCIDENT') {
+            if (!metadata.is_resolved) {
+                buttons.push(`<a class="btn btn-success btn-sm" href="#" onclick="resolveIncident('${announcement.id}'); return false;"><i class="fas fa-check-circle mr-1"></i> Resolver</a>`);
+            }
+        }
+
+        if (announcement.type === 'MAINTENANCE') {
+            if (metadata.actual_end) {
+                // Completed - no action needed
+            } else if (metadata.actual_start) {
+                buttons.push(`<a class="btn btn-success btn-sm" href="#" onclick="completeMaintenance('${announcement.id}'); return false;"><i class="fas fa-check-circle mr-1"></i> Completar</a>`);
+            } else {
+                buttons.push(`<a class="btn btn-sm bg-purple" href="#" onclick="startMaintenance('${announcement.id}'); return false;"><i class="fas fa-play mr-1"></i> Iniciar</a>`);
+            }
+        }
+
+        if (announcement.type === 'NEWS') {
+            if (metadata.call_to_action) {
+                buttons.push(`<a href="${metadata.call_to_action.url}" class="btn btn-primary btn-sm" target="_blank">${metadata.call_to_action.text}</a>`);
+            }
+        }
+
+        if (announcement.type === 'ALERT') {
+            if (!metadata.ended_at) {
+                buttons.push(`<a class="btn btn-warning btn-sm" href="#" onclick="endAlert('${announcement.id}'); return false;"><i class="fas fa-stop-circle mr-1"></i> Finalizar</a>`);
+            }
+        }
+
+        // Archive button for all published announcements
+        buttons.push(`<a class="btn btn-danger btn-sm" href="#" onclick="archiveAnnouncement('${announcement.id}'); return false;"><i class="fas fa-archive"></i></a>`);
+
+        return buttons.join('\n                            ');
+    }
+
+    // Make functions available globally
+    loadAnnouncementsFn = loadAnnouncements;
+    loadStatisticsFn = loadStatistics;
+
+    function renderPagination(meta) {
+        const container = document.getElementById('pagination-container');
+        const info = document.getElementById('pagination-info');
+
+        info.textContent = `Mostrando ${meta.from || 0}-${meta.to || 0} de ${meta.total} anuncios`;
+
+        if (meta.last_page <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Previous
+        html += `<li class="page-item ${meta.current_page === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${meta.current_page - 1}">&laquo;</a>
+        </li>`;
+
+        // Pages
+        for (let i = 1; i <= meta.last_page; i++) {
+            if (i === 1 || i === meta.last_page || (i >= meta.current_page - 1 && i <= meta.current_page + 1)) {
+                html += `<li class="page-item ${i === meta.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            } else if (i === meta.current_page - 2 || i === meta.current_page + 2) {
+                html += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+            }
+        }
+
+        // Next
+        html += `<li class="page-item ${meta.current_page === meta.last_page ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${meta.current_page + 1}">&raquo;</a>
+        </li>`;
+
+        container.innerHTML = html;
+
+        // Add click handlers
+        container.querySelectorAll('a[data-page]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = parseInt(this.dataset.page);
+                if (page >= 1 && page <= meta.last_page) {
+                    currentPage = page;
+                    loadAnnouncements();
+                }
+            });
+        });
+    }
+
+    function loadStatistics() {
+        // Load total published
+        fetch(`/api/announcements?status=published&per_page=1`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stat-total').textContent = data.meta?.total || 0;
+        });
+
+        // Load active incidents (not resolved)
+        fetch(`/api/announcements?status=published&type=INCIDENT&per_page=100`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const activeIncidents = data.data?.filter(a => !a.metadata?.is_resolved) || [];
+            document.getElementById('stat-incidents').textContent = activeIncidents.length;
+        });
+
+        // Load upcoming maintenance
+        fetch(`/api/announcements?status=published&type=MAINTENANCE&per_page=100`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const upcoming = data.data?.filter(a => {
+                if (!a.metadata?.scheduled_start) return false;
+                return new Date(a.metadata.scheduled_start) > new Date() && !a.metadata.actual_end;
+            }) || [];
+            document.getElementById('stat-maintenance').textContent = upcoming.length;
+        });
+
+        // Load this month's count
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        fetch(`/api/announcements?status=published&published_after=${firstDay}&per_page=1`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stat-month').textContent = data.meta?.total || 0;
+        });
+    }
+
+});
+
+// Global action handlers (must be outside DOMContentLoaded for onclick)
+function resolveIncident(id) {
+    const resolution = prompt('Descripción de la resolución:');
+    if (resolution === null) return;
+
+    fetch(`/api/v1/announcements/incidents/${id}/resolve`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${announcementsToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            resolution_content: resolution || 'Incidente resuelto',
+            resolved_at: new Date().toISOString()
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Incidente resuelto exitosamente');
+            if (loadAnnouncementsFn) loadAnnouncementsFn();
+            if (loadStatisticsFn) loadStatisticsFn();
+        } else {
+            alert('Error: ' + (data.message || 'No se pudo resolver el incidente'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al resolver el incidente');
+    });
+}
+
+function startMaintenance(id) {
+    if (!confirm('¿Iniciar este mantenimiento ahora?')) return;
+
+    fetch(`/api/announcements/maintenance/${id}/start`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${announcementsToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mantenimiento iniciado');
+            if (loadAnnouncementsFn) loadAnnouncementsFn();
+        } else {
+            alert('Error: ' + (data.message || 'No se pudo iniciar el mantenimiento'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al iniciar el mantenimiento');
+    });
+}
+
+function completeMaintenance(id) {
+    if (!confirm('¿Marcar este mantenimiento como completado?')) return;
+
+    fetch(`/api/announcements/maintenance/${id}/complete`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${announcementsToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mantenimiento completado');
+            if (loadAnnouncementsFn) loadAnnouncementsFn();
+            if (loadStatisticsFn) loadStatisticsFn();
+        } else {
+            alert('Error: ' + (data.message || 'No se pudo completar el mantenimiento'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al completar el mantenimiento');
+    });
+}
+
+function endAlert(id) {
+    if (!confirm('¿Finalizar esta alerta?')) return;
+
+    fetch(`/api/announcements/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${announcementsToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            metadata: {
+                ended_at: new Date().toISOString()
+            }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Alerta finalizada');
+            if (loadAnnouncementsFn) loadAnnouncementsFn();
+        } else {
+            alert('Error: ' + (data.message || 'No se pudo finalizar la alerta'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al finalizar la alerta');
+    });
+}
+
+function archiveAnnouncement(id) {
+    if (!confirm('¿Archivar este anuncio?')) return;
+
+    fetch(`/api/announcements/${id}/archive`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${announcementsToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Anuncio archivado');
+            if (loadAnnouncementsFn) loadAnnouncementsFn();
+            if (loadStatisticsFn) loadStatisticsFn();
+        } else {
+            alert('Error: ' + (data.message || 'No se pudo archivar el anuncio'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al archivar el anuncio');
+    });
+}
+</script>
+@endsection
