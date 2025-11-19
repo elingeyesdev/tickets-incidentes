@@ -483,46 +483,216 @@ document.addEventListener('DOMContentLoaded', function() {
         const metadata = announcement.metadata || {};
         let html = '<div class="announcement-metadata mt-2">';
 
-        // Urgency
-        if (metadata.urgency) {
-            const urgencyColors = {
-                'LOW': 'text-success',
-                'MEDIUM': 'text-info',
-                'HIGH': 'text-warning',
-                'CRITICAL': 'text-danger'
-            };
-            html += `<span class="${urgencyColors[metadata.urgency] || ''} mr-3">
-                <i class="fas fa-bolt"></i> ${metadata.urgency}
-            </span>`;
+        // === MAINTENANCE specific ===
+        if (announcement.type === 'MAINTENANCE') {
+            // Urgency
+            if (metadata.urgency) {
+                const urgencyColors = {
+                    'LOW': 'text-success',
+                    'MEDIUM': 'text-info',
+                    'HIGH': 'text-warning'
+                };
+                html += `<span class="${urgencyColors[metadata.urgency] || ''} mr-3">
+                    <i class="fas fa-bolt"></i> ${metadata.urgency}
+                </span>`;
+            }
+
+            // Scheduled date/time window
+            if (metadata.scheduled_start && metadata.scheduled_end) {
+                const plannedStart = new Date(metadata.scheduled_start);
+                const plannedEnd = new Date(metadata.scheduled_end);
+                const plannedDuration = Math.round((plannedEnd - plannedStart) / 1000 / 60); // minutes
+
+                const startDate = plannedStart.toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                const startTime = plannedStart.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const endTime = plannedEnd.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                html += `<div class="mt-2">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    <strong>Programado:</strong> ${startDate}, ${startTime} - ${endTime} (${formatDuration(plannedDuration)})
+                </div>`;
+
+                // Show actual times if maintenance has started/completed
+                if (metadata.actual_start) {
+                    const actualStart = new Date(metadata.actual_start);
+                    const actualStartTime = actualStart.toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    html += `<div class="mt-1">
+                        <i class="fas fa-play mr-1 text-warning"></i>
+                        <strong>Inicio real:</strong> ${actualStartTime}`;
+
+                    if (metadata.actual_end) {
+                        const actualEnd = new Date(metadata.actual_end);
+                        const actualEndTime = actualEnd.toLocaleTimeString('es-ES', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        const actualDuration = Math.round((actualEnd - actualStart) / 1000 / 60);
+                        html += ` - ${actualEndTime} (${formatDuration(actualDuration)})`;
+                    }
+
+                    html += `</div>`;
+                }
+            }
+
+            // Affected services
+            if (metadata.affected_services && metadata.affected_services.length > 0) {
+                html += `<div class="mt-1">
+                    <i class="fas fa-server mr-1"></i> <strong>Servicios afectados:</strong> ${metadata.affected_services.join(', ')}
+                </div>`;
+            }
         }
 
-        // Affected services
-        if (metadata.affected_services && metadata.affected_services.length > 0) {
-            html += `<span class="mr-3">
-                <i class="fas fa-server"></i> ${metadata.affected_services.join(', ')}
-            </span>`;
+        // === INCIDENT specific ===
+        if (announcement.type === 'INCIDENT') {
+            // Urgency
+            if (metadata.urgency) {
+                const urgencyColors = {
+                    'LOW': 'text-success',
+                    'MEDIUM': 'text-info',
+                    'HIGH': 'text-warning',
+                    'CRITICAL': 'text-danger'
+                };
+                html += `<span class="${urgencyColors[metadata.urgency] || ''} mr-3">
+                    <i class="fas fa-bolt"></i> ${metadata.urgency}
+                </span>`;
+            }
+
+            // Incident duration
+            if (metadata.started_at) {
+                const start = new Date(metadata.started_at);
+                const end = metadata.ended_at ? new Date(metadata.ended_at) : new Date();
+                const duration = Math.round((end - start) / 1000 / 60); // minutes
+
+                html += `<span class="mr-3">
+                    <i class="fas fa-hourglass-half"></i> Duración: ${formatDuration(duration)}
+                </span>`;
+            }
+
+            // Resolution details (collapsible)
+            if (metadata.is_resolved && metadata.resolution_content) {
+                html += `<div class="mt-2">
+                    <a data-toggle="collapse" href="#resolution-${announcement.id}" class="text-success">
+                        <i class="fas fa-check-circle mr-1"></i> Ver resolución
+                    </a>
+                    <div class="collapse mt-2" id="resolution-${announcement.id}">
+                        <div class="alert alert-success mb-0">
+                            <strong>Resolución:</strong><br>
+                            ${metadata.resolution_content}
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            // Affected services
+            if (metadata.affected_services && metadata.affected_services.length > 0) {
+                html += `<span class="mr-3">
+                    <i class="fas fa-server"></i> ${metadata.affected_services.join(', ')}
+                </span>`;
+            }
         }
 
-        // Scheduled dates for maintenance
-        if (metadata.scheduled_start) {
-            const start = new Date(metadata.scheduled_start);
-            const end = metadata.scheduled_end ? new Date(metadata.scheduled_end) : null;
-            html += `<span class="mr-3">
-                <i class="fas fa-calendar"></i>
-                ${start.toLocaleDateString('es-ES')} ${start.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
-                ${end ? ' - ' + end.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : ''}
-            </span>`;
+        // === NEWS specific ===
+        if (announcement.type === 'NEWS') {
+            // Target audience with icons
+            if (metadata.target_audience && metadata.target_audience.length > 0) {
+                const audienceIcons = {
+                    'users': '<i class="fas fa-user text-primary"></i>',
+                    'agents': '<i class="fas fa-headset text-info"></i>',
+                    'admins': '<i class="fas fa-user-shield text-warning"></i>'
+                };
+
+                html += `<span class="mr-3">
+                    <i class="fas fa-users mr-1"></i>
+                    ${metadata.target_audience.map(aud => audienceIcons[aud] || aud).join(' ')}
+                </span>`;
+            }
+
+            // Summary (instead of showing full content in body)
+            if (metadata.summary) {
+                html += `<div class="mt-2">
+                    <em class="text-muted">${metadata.summary}</em>
+                </div>`;
+            }
         }
 
-        // Action required for alerts
-        if (metadata.action_required) {
-            html += `<span class="text-danger">
-                <i class="fas fa-exclamation-circle"></i> Acción requerida
-            </span>`;
+        // === ALERT specific ===
+        if (announcement.type === 'ALERT') {
+            // Urgency
+            if (metadata.urgency) {
+                const urgencyColors = {
+                    'HIGH': 'text-warning',
+                    'CRITICAL': 'text-danger'
+                };
+                html += `<span class="${urgencyColors[metadata.urgency] || ''} mr-3">
+                    <i class="fas fa-bolt"></i> ${metadata.urgency}
+                </span>`;
+            }
+
+            // Message (highlighted)
+            if (metadata.message) {
+                html += `<div class="alert alert-warning mt-2 mb-2">
+                    <strong><i class="fas fa-megaphone mr-1"></i> ${metadata.message}</strong>
+                </div>`;
+            }
+
+            // Action required (callout)
+            if (metadata.action_required && metadata.action_description) {
+                html += `<div class="alert alert-danger mt-2 mb-2">
+                    <strong><i class="fas fa-exclamation-triangle mr-1"></i> Acción Requerida:</strong><br>
+                    ${metadata.action_description}
+                </div>`;
+            }
+
+            // Active duration
+            if (metadata.started_at && !metadata.ended_at) {
+                const start = new Date(metadata.started_at);
+                const now = new Date();
+                const duration = Math.round((now - start) / 1000 / 60);
+
+                html += `<span class="text-danger">
+                    <i class="fas fa-clock"></i> Activa desde hace ${formatDuration(duration)}
+                </span>`;
+            }
+
+            // Affected services
+            if (metadata.affected_services && metadata.affected_services.length > 0) {
+                html += `<span class="mr-3">
+                    <i class="fas fa-server"></i> ${metadata.affected_services.join(', ')}
+                </span>`;
+            }
         }
 
         html += '</div>';
         return html;
+    }
+
+    // Helper function to format duration
+    function formatDuration(minutes) {
+        if (minutes < 60) {
+            return `${minutes}min`;
+        } else if (minutes < 1440) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+        } else {
+            const days = Math.floor(minutes / 1440);
+            const hours = Math.floor((minutes % 1440) / 60);
+            return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+        }
     }
 
     function renderFooterButtons(announcement) {
@@ -681,7 +851,17 @@ function resolveIncident(id) {
     const resolution = prompt('Descripción de la resolución:');
     if (resolution === null) return;
 
-    fetch(`/api/v1/announcements/incidents/${id}/resolve`, {
+    // Format: YYYY-MM-DDTHH:MM:SS+00:00 (Laravel expects P timezone format, not Z)
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+    const resolvedAt = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+00:00`;
+
+    fetch(`/api/announcements/incidents/${id}/resolve`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${announcementsToken}`,
@@ -690,7 +870,7 @@ function resolveIncident(id) {
         },
         body: JSON.stringify({
             resolution_content: resolution || 'Incidente resuelto',
-            resolved_at: new Date().toISOString()
+            resolved_at: resolvedAt
         })
     })
     .then(response => response.json())
@@ -725,6 +905,7 @@ function startMaintenance(id) {
         if (data.success) {
             alert('Mantenimiento iniciado');
             if (loadAnnouncementsFn) loadAnnouncementsFn();
+            if (loadStatisticsFn) loadStatisticsFn();
         } else {
             alert('Error: ' + (data.message || 'No se pudo iniciar el mantenimiento'));
         }
@@ -765,6 +946,16 @@ function completeMaintenance(id) {
 function endAlert(id) {
     if (!confirm('¿Finalizar esta alerta?')) return;
 
+    // Format: YYYY-MM-DDTHH:MM:SS+00:00 (Laravel expects P timezone format, not Z)
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+    const endedAt = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+00:00`;
+
     fetch(`/api/announcements/${id}`, {
         method: 'PUT',
         headers: {
@@ -774,22 +965,32 @@ function endAlert(id) {
         },
         body: JSON.stringify({
             metadata: {
-                ended_at: new Date().toISOString()
+                ended_at: endedAt
             }
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                console.error('Error response:', err);
+                console.error('Validation errors:', JSON.stringify(err.errors, null, 2));
+                throw new Error(err.message || 'Error en la validación');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Alerta finalizada');
             if (loadAnnouncementsFn) loadAnnouncementsFn();
+            if (loadStatisticsFn) loadStatisticsFn();
         } else {
             alert('Error: ' + (data.message || 'No se pudo finalizar la alerta'));
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error al finalizar la alerta');
+        console.error('Error completo:', error);
+        alert('Error al finalizar la alerta: ' + error.message);
     });
 }
 

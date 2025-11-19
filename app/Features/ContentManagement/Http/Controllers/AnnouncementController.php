@@ -241,14 +241,17 @@ class AnnouncementController extends Controller
         $column = ltrim($sort, '-');
         $query->orderBy($column, $direction);
 
-        // 7. Paginate results (max 100 per page)
+        // 7. Load relationships for full resource
+        $query->with(['company', 'author.profile']);
+
+        // 8. Paginate results (max 100 per page)
         $perPage = min($validated['per_page'] ?? 20, 100);
         $announcements = $query->paginate($perPage);
 
-        // 8. Return response
+        // 9. Return response with full resource (same as show endpoint)
         return response()->json([
             'success' => true,
-            'data' => AnnouncementListResource::collection($announcements->items()),
+            'data' => AnnouncementResource::collection($announcements->items()),
             'meta' => [
                 'current_page' => $announcements->currentPage(),
                 'per_page' => $announcements->perPage(),
