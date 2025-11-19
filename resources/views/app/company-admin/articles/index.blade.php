@@ -107,59 +107,90 @@
     </div>
 </div>
 
-{{-- Filters Card --}}
-<x-adminlte-card title="Filtros y Búsqueda" theme="primary" theme-mode="outline" icon="fas fa-filter" collapsible>
-    <div class="row">
-        <div class="col-md-3">
-            <x-adminlte-select id="filter-category" name="filter-category" label="Categoría" label-class="text-sm">
-                <option value="">Todas las categorías</option>
-                <option value="ACCOUNT_PROFILE">Cuenta y Perfil</option>
-                <option value="SECURITY_PRIVACY">Seguridad y Privacidad</option>
-                <option value="BILLING_PAYMENTS">Facturación y Pagos</option>
-                <option value="TECHNICAL_SUPPORT">Soporte Técnico</option>
-            </x-adminlte-select>
-        </div>
-
-        <div class="col-md-3">
-            <x-adminlte-select id="filter-status" name="filter-status" label="Estado" label-class="text-sm">
-                <option value="">Todos los estados</option>
-                <option value="draft">Borrador</option>
-                <option value="published">Publicado</option>
-            </x-adminlte-select>
-        </div>
-
-        <div class="col-md-3">
-            <x-adminlte-select id="filter-sort" name="filter-sort" label="Ordenar por" label-class="text-sm">
-                <option value="-created_at">Más recientes</option>
-                <option value="created_at">Más antiguos</option>
-                <option value="title">Título (A-Z)</option>
-                <option value="-title">Título (Z-A)</option>
-                <option value="-views">Más visitados</option>
-                <option value="views">Menos visitados</option>
-            </x-adminlte-select>
-        </div>
-
-        <div class="col-md-3">
-            <x-adminlte-input id="search-articles" name="search-articles" label="Buscar"
-                placeholder="Buscar en título y contenido..." label-class="text-sm">
-                <x-slot name="prependSlot">
-                    <div class="input-group-text bg-white">
-                        <i class="fas fa-search text-muted"></i>
-                    </div>
-                </x-slot>
-            </x-adminlte-input>
+{{-- Articles Table Card --}}
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-book"></i> Artículos del Centro de Ayuda</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-create-article">
+                <i class="fas fa-plus"></i> Crear Artículo
+            </button>
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button type="button" class="btn btn-tool" data-card-widget="maximize">
+                <i class="fas fa-expand"></i>
+            </button>
         </div>
     </div>
 
-    <x-slot name="footerSlot">
-        <x-adminlte-button label="Refrescar" icon="fas fa-sync-alt" theme="primary" id="btn-refresh"/>
-        <x-adminlte-button label="Crear Artículo" icon="fas fa-plus" theme="success" id="btn-create-article" class="float-right"/>
-    </x-slot>
-</x-adminlte-card>
+    <div class="card-body p-0">
+        {{-- Sección de Filtros --}}
+        <div class="p-3 border-bottom bg-light">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Buscar</label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="search-articles" placeholder="Título o contenido...">
+                        </div>
+                    </div>
+                </div>
 
-{{-- Articles Table Card --}}
-<x-adminlte-card title="Artículos del Centro de Ayuda" theme="primary" icon="fas fa-book" collapsible maximizable>
-    <div class="table-responsive">
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Categoría</label>
+                        <select class="form-control form-control-sm" id="filter-category">
+                            <option value="">Todas</option>
+                            <option value="ACCOUNT_PROFILE">Cuenta y Perfil</option>
+                            <option value="SECURITY_PRIVACY">Seguridad y Privacidad</option>
+                            <option value="BILLING_PAYMENTS">Facturación y Pagos</option>
+                            <option value="TECHNICAL_SUPPORT">Soporte Técnico</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Estado</label>
+                        <select class="form-control form-control-sm" id="filter-status">
+                            <option value="">Todos</option>
+                            <option value="draft">Borrador</option>
+                            <option value="published">Publicado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Ordenar por</label>
+                        <select class="form-control form-control-sm" id="filter-sort">
+                            <option value="-created_at">Más recientes</option>
+                            <option value="created_at">Más antiguos</option>
+                            <option value="title">Título (A-Z)</option>
+                            <option value="-title">Título (Z-A)</option>
+                            <option value="-views">Más visitados</option>
+                            <option value="views">Menos visitados</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="text-sm mb-1 d-block">&nbsp;</label>
+                    <button type="button" class="btn btn-default btn-sm" id="btn-clear-filters">
+                        <i class="fas fa-eraser"></i> Limpiar Filtros
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Refrescar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
         <table id="articles-table" class="table table-striped table-hover">
             <thead>
                 <tr>
@@ -179,15 +210,22 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
-    <x-slot name="footerSlot">
-        <ul class="pagination pagination-sm m-0 float-right" id="pagination"></ul>
-    </x-slot>
-</x-adminlte-card>
+    {{-- Footer: Paginación --}}
+    <div class="card-footer border-top py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted" id="pagination-info">Mostrando 0 de 0</small>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
 
 {{-- Modal: View Article --}}
-<x-adminlte-modal id="modal-view" title="Ver Artículo" theme="info" icon="fas fa-eye" size="xl" scrollable>
+<x-adminlte-modal id="modal-view" title="Ver Artículo" theme="warning" icon="fas fa-eye" size="xl" scrollable>
     <div class="mb-3">
         <h3 id="view-title" class="mb-3"></h3>
         <div class="mb-3">
@@ -236,7 +274,7 @@
 </x-adminlte-modal>
 
 {{-- Modal: Create/Edit Article --}}
-<x-adminlte-modal id="modal-form" title="Nuevo Artículo" theme="success" icon="fas fa-plus-circle" size="xl" scrollable>
+<x-adminlte-modal id="modal-form" title="Nuevo Artículo" theme="primary" icon="fas fa-plus-circle" size="xl" scrollable>
     <form id="article-form">
         <x-adminlte-select id="form-category" name="category_id" label="Categoría" label-class="text-danger"
                            enable-old-support disabled>
@@ -287,7 +325,7 @@
 
     <x-slot name="footerSlot">
         <x-adminlte-button label="Cancelar" icon="fas fa-times" theme="secondary" data-dismiss="modal"/>
-        <x-adminlte-button label="Guardar" icon="fas fa-save" theme="success" id="btn-save-article"/>
+        <x-adminlte-button label="Guardar" icon="fas fa-save" theme="primary" id="btn-save-article"/>
     </x-slot>
 </x-adminlte-modal>
 
@@ -448,7 +486,7 @@
             if (filters.search) params.append('search', filters.search);
             if (filters.sort) params.append('sort', filters.sort);
             params.append('page', page);
-            params.append('per_page', 15);
+            params.append('per_page', 10);
 
             if (params.toString()) {
                 url += '?' + params.toString();
@@ -475,6 +513,7 @@
                     currentPage = data.meta?.current_page || 1;
                     totalPages = data.meta?.last_page || 1;
                     renderPagination(data.meta);
+                    updatePaginationInfo(data.meta);
 
                     // Update statistics
                     const total = data.meta?.total || 0;
@@ -525,10 +564,10 @@
                         <td><span class="badge badge-light"><i class="fas fa-eye"></i> ${article.views_count || 0}</span></td>
                         <td><small class="text-muted">${formatDate(article.published_at)}</small></td>
                         <td class="text-nowrap">
-                            <button class="btn btn-sm btn-info btn-view" data-id="${article.id}" title="Ver">
+                            <button class="btn btn-sm btn-warning btn-view" data-id="${article.id}" title="Ver">
                                 <i class="fas fa-eye"></i> Ver
                             </button>
-                            <button class="btn btn-sm btn-warning btn-edit" data-id="${article.id}" title="Editar">
+                            <button class="btn btn-sm btn-info btn-edit" data-id="${article.id}" title="Editar">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                             ${article.status === 'DRAFT' ? `
@@ -552,7 +591,7 @@
         }
 
         // =====================================================================
-        // RENDER PAGINATION
+        // RENDER PAGINATION (AdminLTE v3 Style)
         // =====================================================================
 
         function renderPagination(meta) {
@@ -563,25 +602,96 @@
                 return;
             }
 
+            const currentPage = meta.current_page;
+            const totalPages = meta.last_page;
             let html = '';
 
-            // Previous button
-            if (meta.current_page > 1) {
-                html += `<li class="page-item"><a class="page-link" href="#" data-page="${meta.current_page - 1}">&laquo;</a></li>`;
+            // Botón Previous
+            if (currentPage > 1) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+                    </li>
+                `;
+            } else {
+                html += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                `;
             }
 
-            // Page numbers
-            for (let i = 1; i <= meta.last_page; i++) {
-                if (i === meta.current_page) {
-                    html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
-                } else {
-                    html += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+            // Números de página (máximo 5 botones visibles)
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            // Primera página si no está visible
+            if (startPage > 1) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="1">1</a>
+                    </li>
+                `;
+                if (startPage > 2) {
+                    html += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
                 }
             }
 
-            // Next button
-            if (meta.current_page < meta.last_page) {
-                html += `<li class="page-item"><a class="page-link" href="#" data-page="${meta.current_page + 1}">&raquo;</a></li>`;
+            // Páginas visibles
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    html += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else {
+                    html += `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+
+            // Última página si no está visible
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    `;
+                }
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>
+                    </li>
+                `;
+            }
+
+            // Botón Next
+            if (currentPage < totalPages) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+                    </li>
+                `;
+            } else {
+                html += `
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                `;
             }
 
             pagination.innerHTML = html;
@@ -663,12 +773,9 @@
             form.reset();
 
             const modalTitle = document.querySelector('#modal-form .modal-title');
-            const modalHeader = document.querySelector('#modal-form .modal-header');
 
             if (mode === 'create') {
                 modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Nuevo Artículo';
-                modalHeader.classList.remove('bg-info');
-                modalHeader.classList.add('bg-success');
                 document.getElementById('form-article-id').value = '';
 
                 if (!categoriesLoaded) {
@@ -682,8 +789,6 @@
                 }
 
                 modalTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Artículo';
-                modalHeader.classList.remove('bg-success');
-                modalHeader.classList.add('bg-info');
 
                 document.getElementById('form-category').value = currentArticle.category_id || '';
                 document.getElementById('form-article-title').value = currentArticle.title || '';
@@ -752,29 +857,42 @@
         // =====================================================================
 
         function publishArticle(articleId) {
-            if (!confirm('¿Deseas publicar este artículo? Será visible para los usuarios.')) {
-                return;
-            }
+            const article = allArticles.find(a => a.id === articleId);
+            const articleTitle = article ? article.title : 'este artículo';
 
-            fetch(`${apiUrl}/help-center/articles/${articleId}/publish`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            Swal.fire({
+                title: '¿Publicar artículo?',
+                html: `¿Deseas publicar <strong>${articleTitle}</strong>?<br><small class="text-muted">Será visible para todos los usuarios.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-paper-plane"></i> Sí, publicar',
+                cancelButtonText: 'Cancelar',
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiUrl}/help-center/articles/${articleId}/publish`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.data || data.success) {
+                            showAlert('success', 'Artículo publicado exitosamente');
+                            loadArticles(getCurrentFilters(), currentPage);
+                        } else {
+                            showAlert('error', data.message || 'Error al publicar el artículo');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error publishing article:', error);
+                        showAlert('error', 'Error de conexión: ' + error.message);
+                    });
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data || data.success) {
-                    showAlert('success', 'Artículo publicado exitosamente');
-                    loadArticles(getCurrentFilters(), currentPage);
-                } else {
-                    showAlert('error', data.message || 'Error al publicar el artículo');
-                }
-            })
-            .catch(error => {
-                console.error('Error publishing article:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
             });
         }
 
@@ -783,29 +901,42 @@
         // =====================================================================
 
         function unpublishArticle(articleId) {
-            if (!confirm('¿Deseas despublicar este artículo? Volverá al estado de borrador.')) {
-                return;
-            }
+            const article = allArticles.find(a => a.id === articleId);
+            const articleTitle = article ? article.title : 'este artículo';
 
-            fetch(`${apiUrl}/help-center/articles/${articleId}/unpublish`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            Swal.fire({
+                title: '¿Despublicar artículo?',
+                html: `¿Deseas despublicar <strong>${articleTitle}</strong>?<br><small class="text-muted">Volverá al estado de borrador y no será visible para los usuarios.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6c757d',
+                cancelButtonColor: '#adb5bd',
+                confirmButtonText: '<i class="fas fa-undo"></i> Sí, despublicar',
+                cancelButtonText: 'Cancelar',
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiUrl}/help-center/articles/${articleId}/unpublish`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.data || data.success) {
+                            showAlert('success', 'Artículo despublicado exitosamente');
+                            loadArticles(getCurrentFilters(), currentPage);
+                        } else {
+                            showAlert('error', data.message || 'Error al despublicar el artículo');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error unpublishing article:', error);
+                        showAlert('error', 'Error de conexión: ' + error.message);
+                    });
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data || data.success) {
-                    showAlert('success', 'Artículo despublicado exitosamente');
-                    loadArticles(getCurrentFilters(), currentPage);
-                } else {
-                    showAlert('error', data.message || 'Error al despublicar el artículo');
-                }
-            })
-            .catch(error => {
-                console.error('Error unpublishing article:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
             });
         }
 
@@ -926,6 +1057,37 @@
         }
 
         // =====================================================================
+        // CLEAR FILTERS
+        // =====================================================================
+
+        function clearFilters() {
+            document.getElementById('search-articles').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-sort').value = '-created_at';
+            loadArticles({}, 1);
+        }
+
+        // =====================================================================
+        // UPDATE PAGINATION INFO
+        // =====================================================================
+
+        function updatePaginationInfo(meta) {
+            const paginationInfo = document.getElementById('pagination-info');
+            if (!paginationInfo) return;
+
+            if (!meta || !meta.total) {
+                paginationInfo.textContent = 'Mostrando 0 de 0';
+                return;
+            }
+
+            const from = meta.from || 0;
+            const to = meta.to || 0;
+            const total = meta.total || 0;
+            paginationInfo.textContent = `Mostrando ${from} a ${to} de ${total}`;
+        }
+
+        // =====================================================================
         // EVENT LISTENERS
         // =====================================================================
 
@@ -948,6 +1110,8 @@
         document.getElementById('btn-refresh').addEventListener('click', function() {
             loadArticles(getCurrentFilters(), currentPage);
         });
+
+        document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
 
         document.getElementById('btn-create-article').addEventListener('click', function() {
             openFormModal('create');
