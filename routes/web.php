@@ -27,9 +27,9 @@ Route::prefix('test')->group(function () {
 });
 
 // Visual Examples / Communication Lab (NO AUTHENTICATION REQUIRED)
-// CURRENTLY SHOWING: Announcements Split View (Feed + Management)
+// CURRENTLY SHOWING: Statistics Widgets Options
 Route::get('/tests', function () {
-    return view('tests.experiments.announcements-split');
+    return view('tests.experiments.statistics-widgets');
 })->name('tests.index');
 
 // ========== PUBLIC ROUTES ==========

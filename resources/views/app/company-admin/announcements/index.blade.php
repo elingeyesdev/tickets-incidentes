@@ -3,13 +3,7 @@
 @section('title', 'Anuncios')
 
 @section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1>Anuncios Publicados</h1>
-        <a href="{{ route('company.announcements.manage') }}" class="btn btn-outline-primary">
-            <i class="fas fa-cogs mr-1"></i>
-            Gestionar Anuncios
-        </a>
-    </div>
+    <h1>Anuncios Publicados</h1>
 @endsection
 
 @section('breadcrumbs')
@@ -23,11 +17,11 @@
     <div class="col-lg-3 col-6">
         <div class="small-box bg-light">
             <div class="inner">
-                <h3 id="stat-total">-</h3>
+                <h3 id="stat-total" class="text-info">-</h3>
                 <p>Total Publicados</p>
             </div>
             <div class="icon">
-                <i class="fas fa-broadcast-tower"></i>
+                <i class="fas fa-broadcast-tower text-info"></i>
             </div>
         </div>
     </div>
@@ -56,11 +50,11 @@
     <div class="col-lg-3 col-6">
         <div class="small-box bg-light">
             <div class="inner">
-                <h3 id="stat-month">-</h3>
+                <h3 id="stat-month" class="text-success">-</h3>
                 <p>Este Mes</p>
             </div>
             <div class="icon">
-                <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-calendar-alt text-success"></i>
             </div>
         </div>
     </div>
@@ -74,6 +68,25 @@
             Feed de Anuncios
         </h3>
         <div class="card-tools">
+            {{-- Manage Button --}}
+            <a href="{{ route('company.announcements.manage') }}" class="btn btn-primary btn-sm mr-2">
+                <i class="fas fa-cogs mr-1"></i>
+                Gestionar
+            </a>
+            {{-- Sort Order - COMENTADO PRÓXIMAMENTE --}}
+            {{-- <div class="btn-group btn-group-sm mr-2">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    <i class="fas fa-sort mr-1"></i> <span id="sort-label">Más recientes</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item sort-option active" href="#" data-sort="-published_at">
+                        <i class="fas fa-arrow-down mr-1"></i> Más recientes
+                    </a>
+                    <a class="dropdown-item sort-option" href="#" data-sort="published_at">
+                        <i class="fas fa-arrow-up mr-1"></i> Más antiguos
+                    </a>
+                </div>
+            </div> --}}
             {{-- Filters --}}
             <div class="btn-group btn-group-sm mr-2">
                 <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
@@ -131,6 +144,11 @@
 
 @section('css')
 <style>
+    /* Small box icon improvements */
+    .small-box .icon > i {
+        font-size: 70px;
+    }
+
     /* Status badge position in timeline - before time */
     .timeline-item > .badge {
         float: right;
@@ -143,6 +161,13 @@
         background-color: #007bff;
         color: white;
     }
+    /* Sort option active state - COMENTADO PRÓXIMAMENTE */
+    /*
+    .sort-option.active {
+        background-color: #007bff;
+        color: white;
+    }
+    */
 
     /* Purple color for maintenance */
     .bg-purple {
@@ -197,11 +222,28 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
     let currentType = '';
     let currentSearch = '';
+    // let currentSort = '-published_at'; // Default: más recientes - COMENTADO PRÓXIMAMENTE
     let dateColorIndex = 0; // For alternating date colors
 
     // Load initial data
     loadAnnouncements();
     loadStatistics();
+
+    // Sort order - COMENTADO PRÓXIMAMENTE
+    /*
+    document.querySelectorAll('.sort-option').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.sort-option').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            currentSort = this.dataset.sort;
+            // Update label
+            document.getElementById('sort-label').textContent = this.textContent.trim();
+            currentPage = 1;
+            loadAnnouncements();
+        });
+    });
+    */
 
     // Filter by type
     document.querySelectorAll('.filter-type').forEach(item => {
@@ -242,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let url = `/api/announcements?status=published&per_page=10&page=${currentPage}`;
         if (currentType) url += `&type=${currentType}`;
         if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+        // sort parameter removed - PRÓXIMAMENTE
 
         fetch(url, {
             headers: {
@@ -321,10 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="timeline-item">
                         <span class="time"><i class="fas fa-clock"></i> ${timeStr}</span>
                         ${statusBadge}
-                        <h3 class="timeline-header">
-                            <span class="badge ${typeConfig.badgeColor} mr-2">${typeConfig.label}</span>
-                            ${announcement.title}
-                        </h3>
+                        <h3 class="timeline-header"><a href="#"><strong>${typeConfig.label}</strong></a> ${announcement.title}</h3>
                         <div class="timeline-body">
                             ${announcement.content}
                             ${renderMetadata(announcement)}
@@ -380,32 +420,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getStatusBadge(announcement) {
         const metadata = announcement.metadata || {};
+        let badges = [];
 
         if (announcement.type === 'INCIDENT') {
             if (metadata.is_resolved) {
-                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Resuelto</span>`;
+                badges.push(`<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Resuelto</span>`);
             } else {
-                return `<span class="badge badge-warning"><i class="fas fa-spinner fa-spin mr-1"></i> En Investigación</span>`;
+                badges.push(`<span class="badge badge-warning"><i class="fas fa-spinner fa-spin mr-1"></i> En Investigación</span>`);
             }
         }
 
         if (announcement.type === 'MAINTENANCE') {
+            // Emergency badge
+            if (metadata.is_emergency) {
+                badges.push(`<span class="badge badge-danger"><i class="fas fa-exclamation-circle mr-1"></i> EMERGENCIA</span>`);
+            }
+
             if (metadata.actual_end) {
-                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Completado</span>`;
+                badges.push(`<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Completado</span>`);
             } else if (metadata.actual_start) {
-                return `<span class="badge badge-warning"><i class="fas fa-cog fa-spin mr-1"></i> En Progreso</span>`;
+                badges.push(`<span class="badge badge-warning"><i class="fas fa-cog fa-spin mr-1"></i> En Progreso</span>`);
             } else {
-                return `<span class="badge badge-info"><i class="fas fa-clock mr-1"></i> Programado</span>`;
+                badges.push(`<span class="badge badge-info"><i class="fas fa-clock mr-1"></i> Programado</span>`);
+            }
+        }
+
+        if (announcement.type === 'NEWS') {
+            // News type badge
+            const newsTypes = {
+                'feature_release': '<span class="badge badge-primary"><i class="fas fa-star mr-1"></i> Nuevo Feature</span>',
+                'policy_update': '<span class="badge badge-warning"><i class="fas fa-gavel mr-1"></i> Política</span>',
+                'general_update': '<span class="badge badge-info"><i class="fas fa-info-circle mr-1"></i> Actualización</span>'
+            };
+            if (metadata.news_type && newsTypes[metadata.news_type]) {
+                badges.push(newsTypes[metadata.news_type]);
             }
         }
 
         if (announcement.type === 'ALERT') {
+            // Alert type badge
+            const alertTypes = {
+                'security': '<span class="badge badge-danger"><i class="fas fa-shield-alt mr-1"></i> Seguridad</span>',
+                'system': '<span class="badge badge-warning"><i class="fas fa-server mr-1"></i> Sistema</span>',
+                'service': '<span class="badge badge-info"><i class="fas fa-broadcast-tower mr-1"></i> Servicio</span>',
+                'compliance': '<span class="badge badge-secondary"><i class="fas fa-balance-scale mr-1"></i> Cumplimiento</span>'
+            };
+            if (metadata.alert_type && alertTypes[metadata.alert_type]) {
+                badges.push(alertTypes[metadata.alert_type]);
+            }
+
             if (metadata.ended_at) {
-                return `<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Finalizada</span>`;
+                badges.push(`<span class="badge badge-success"><i class="fas fa-check mr-1"></i> Finalizada</span>`);
+            } else {
+                badges.push(`<span class="badge badge-danger"><i class="fas fa-exclamation-triangle mr-1"></i> Activa</span>`);
             }
         }
 
-        return '';
+        return badges.join(' ');
     }
 
     function renderMetadata(announcement) {
@@ -488,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Archive button for all published announcements
-        buttons.push(`<a class="btn btn-danger btn-sm" href="#" onclick="archiveAnnouncement('${announcement.id}'); return false;"><i class="fas fa-archive"></i></a>`);
+        buttons.push(`<a class="btn btn-secondary btn-sm" href="#" onclick="archiveAnnouncement('${announcement.id}'); return false;"><i class="fas fa-archive mr-1"></i> Archivar</a>`);
 
         return buttons.join('\n                            ');
     }
