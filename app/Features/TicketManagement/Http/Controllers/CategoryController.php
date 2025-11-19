@@ -643,11 +643,11 @@ class CategoryController extends Controller
             ], 404);
         }
 
-        // Autorización mediante Policy
+
         $this->authorize('delete', $category);
 
         try {
-            // Intentar eliminar (lanza excepción si hay tickets activos)
+
             $this->categoryService->delete($category);
 
             return response()->json([

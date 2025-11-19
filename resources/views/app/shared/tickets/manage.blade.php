@@ -443,8 +443,30 @@ function ticketManage() {
             note: ''
         },
 
+        // Wait for tokenManager to be ready
+        async waitForTokenManager() {
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max (50 * 100ms)
+
+            while (!window.tokenManager && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            if (!window.tokenManager) {
+                console.error('[Ticket Manage] TokenManager not available after 5 seconds');
+                this.showError('Error de autenticación. Por favor, recarga la página.');
+                throw new Error('TokenManager not available');
+            }
+
+            console.log('[Ticket Manage] TokenManager ready');
+        },
+
         // Load Ticket Data
         async loadTicket() {
+            // Wait for tokenManager to be available
+            await this.waitForTokenManager();
+
             try {
                 const token = window.tokenManager.getAccessToken();
 

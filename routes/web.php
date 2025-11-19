@@ -229,16 +229,20 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         // Tickets (Agent)
         Route::get('/tickets', function () {
             $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
             return view('app.shared.tickets.index', [
                 'user' => $user,
+                'companyId' => $companyId,
                 'role' => 'AGENT'
             ]);
         })->name('agent.tickets.index');
 
         Route::get('/tickets/manage', function () {
             $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
             return view('app.shared.tickets.manage', [
                 'user' => $user,
+                'companyId' => $companyId,
                 'role' => 'AGENT'
             ]);
         })->name('agent.tickets.manage');
@@ -252,11 +256,23 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         // Tickets (User)
         Route::get('/tickets', function () {
             $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('USER');
             return view('app.shared.tickets.index', [
                 'user' => $user,
+                'companyId' => $companyId,
                 'role' => 'USER'
             ]);
         })->name('user.tickets.index');
+
+        Route::get('/tickets/manage', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('USER');
+            return view('app.shared.tickets.manage', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'USER'
+            ]);
+        })->name('user.tickets.manage');
     });
 
     // Generic Tickets Routes (will redirect to role-specific route)
