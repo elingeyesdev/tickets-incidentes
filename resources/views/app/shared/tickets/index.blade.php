@@ -80,15 +80,6 @@
                             <li class="nav-item">
                                 <a href="#"
                                    class="nav-link"
-                                   :class="{ 'active': activeFolder === 'unassigned' }"
-                                   @click.prevent="applyFolderFilter('unassigned', 'owner_agent_id=null')">
-                                    <i class="fas fa-user-slash"></i> Unassigned
-                                    <span class="badge bg-warning float-right" x-text="stats.unassigned || 0">0</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#"
-                                   class="nav-link"
                                    :class="{ 'active': activeFolder === 'assigned' }"
                                    @click.prevent="applyFolderFilter('assigned', 'owner_agent_id=me')">
                                     <i class="fas fa-user-check"></i> My Assigned
@@ -117,10 +108,10 @@
                             <li class="nav-item">
                                 <a href="#"
                                    class="nav-link"
-                                   :class="{ 'active': activeFolder === 'unassigned' }"
-                                   @click.prevent="applyFolderFilter('unassigned', 'owner_agent_id=null')">
-                                    <i class="fas fa-user-slash"></i> Unassigned
-                                    <span class="badge bg-danger float-right" x-text="stats.unassigned || 0">0</span>
+                                   :class="{ 'active': activeFolder === 'new' }"
+                                   @click.prevent="applyFolderFilter('new', 'owner_agent_id=null')">
+                                    <i class="far fa-circle text-info"></i> New Tickets
+                                    <span class="badge bg-info float-right" x-text="stats.new_tickets || 0">0</span>
                                 </a>
                             </li>
                         @endif
