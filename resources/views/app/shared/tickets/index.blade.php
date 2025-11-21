@@ -37,7 +37,7 @@
                                    :class="{ 'active': activeFolder === 'all' }"
                                    @click.prevent="applyFolderFilter('all', '')">
                                     <i class="fas fa-inbox"></i> All Tickets
-                                    <span class="badge bg-primary float-right" x-text="stats.total || 0">0</span>
+                                    <span class="badge bg-primary float-right" x-show="stats.total > 0" x-text="stats.total || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -46,7 +46,7 @@
                                    :class="{ 'active': activeFolder === 'awaiting' }"
                                    @click.prevent="applyFolderFilter('awaiting', 'last_response_author_type=user')">
                                     <i class="far fa-clock"></i> Awaiting Support
-                                    <span class="badge bg-warning float-right" x-text="stats.awaiting_support || 0">0</span>
+                                    <span class="badge bg-warning float-right" x-show="stats.awaiting_support > 0" x-text="stats.awaiting_support || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -55,7 +55,7 @@
                                    :class="{ 'active': activeFolder === 'resolved' }"
                                    @click.prevent="applyFolderFilter('resolved', 'status=resolved')">
                                     <i class="far fa-check-circle"></i> Resolved
-                                    <span class="badge bg-success float-right" x-text="stats.resolved || 0">0</span>
+                                    <span class="badge bg-success float-right" x-show="stats.resolved > 0" x-text="stats.resolved || 0">0</span>
                                 </a>
                             </li>
                         @elseif($role === 'AGENT')
@@ -65,7 +65,7 @@
                                    :class="{ 'active': activeFolder === 'all' }"
                                    @click.prevent="applyFolderFilter('all', '')">
                                     <i class="fas fa-inbox"></i> All Tickets
-                                    <span class="badge bg-primary float-right" x-text="stats.total || 0">0</span>
+                                    <span class="badge bg-primary float-right" x-show="stats.total > 0" x-text="stats.total || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -74,7 +74,7 @@
                                    :class="{ 'active': activeFolder === 'new' }"
                                    @click.prevent="applyFolderFilter('new', 'owner_agent_id=null')">
                                     <i class="fas fa-star"></i> New Tickets
-                                    <span class="badge bg-info float-right" x-text="stats.new_tickets || 0">0</span>
+                                    <span class="badge bg-info float-right" x-show="stats.new_tickets > 0" x-text="stats.new_tickets || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -83,7 +83,7 @@
                                    :class="{ 'active': activeFolder === 'assigned' }"
                                    @click.prevent="applyFolderFilter('assigned', 'owner_agent_id=me')">
                                     <i class="fas fa-user-check"></i> My Assigned
-                                    <span class="badge bg-danger float-right" x-text="stats.my_assigned || 0">0</span>
+                                    <span class="badge bg-danger float-right" x-show="stats.my_assigned > 0" x-text="stats.my_assigned || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -92,7 +92,7 @@
                                    :class="{ 'active': activeFolder === 'awaiting_response' }"
                                    @click.prevent="applyFolderFilter('awaiting_response', 'owner_agent_id=me&last_response_author_type=user')">
                                     <i class="far fa-comments"></i> Awaiting My Response
-                                    <span class="badge bg-success float-right" x-text="stats.awaiting_my_response || 0">0</span>
+                                    <span class="badge bg-success float-right" x-show="stats.awaiting_my_response > 0" x-text="stats.awaiting_my_response || 0">0</span>
                                 </a>
                             </li>
                         @elseif($role === 'COMPANY_ADMIN')
@@ -102,7 +102,7 @@
                                    :class="{ 'active': activeFolder === 'all' }"
                                    @click.prevent="applyFolderFilter('all', '')">
                                     <i class="fas fa-inbox"></i> All Tickets
-                                    <span class="badge bg-primary float-right" x-text="stats.total || 0">0</span>
+                                    <span class="badge bg-primary float-right" x-show="stats.total > 0" x-text="stats.total || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -111,7 +111,7 @@
                                    :class="{ 'active': activeFolder === 'new' }"
                                    @click.prevent="applyFolderFilter('new', 'owner_agent_id=null')">
                                     <i class="fas fa-star"></i> New Tickets
-                                    <span class="badge bg-info float-right" x-text="stats.new_tickets || 0">0</span>
+                                    <span class="badge bg-info float-right" x-show="stats.new_tickets > 0" x-text="stats.new_tickets || 0">0</span>
                                 </a>
                             </li>
                         @endif
