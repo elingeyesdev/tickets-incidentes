@@ -210,8 +210,8 @@ function ticketsList() {
                     const myData = await myResponse.json();
                     this.stats.my_assigned = myData.meta?.total || 0;
 
-                    // Awaiting my response (excluding closed tickets)
-                    const awaitingResponse = await fetch(`/api/tickets?owner_agent_id=me&last_response_author_type=user&status!=closed&per_page=1`, {
+                    // Awaiting my response (only open and pending)
+                    const awaitingResponse = await fetch(`/api/tickets?owner_agent_id=me&last_response_author_type=user&status=open,pending&per_page=1`, {
                         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                     });
                     const awaitingData = await awaitingResponse.json();
