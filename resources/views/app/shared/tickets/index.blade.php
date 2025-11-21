@@ -83,7 +83,7 @@
                                    :class="{ 'active': activeFolder === 'assigned' }"
                                    @click.prevent="applyFolderFilter('assigned', 'owner_agent_id=me')">
                                     <i class="fas fa-user-check"></i> My Assigned
-                                    <span class="badge bg-danger float-right" x-show="stats.my_assigned > 0" x-text="stats.my_assigned || 0">0</span>
+                                    <span class="badge bg-success float-right" x-show="stats.my_assigned > 0" x-text="stats.my_assigned || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -92,7 +92,7 @@
                                    :class="{ 'active': activeFolder === 'awaiting_response' }"
                                    @click.prevent="applyFolderFilter('awaiting_response', 'owner_agent_id=me&last_response_author_type=user')">
                                     <i class="far fa-comments"></i> Awaiting My Response
-                                    <span class="badge bg-success float-right" x-show="stats.awaiting_my_response > 0" x-text="stats.awaiting_my_response || 0">0</span>
+                                    <span class="badge bg-danger float-right" x-show="stats.awaiting_my_response > 0" x-text="stats.awaiting_my_response || 0">0</span>
                                 </a>
                             </li>
                         @elseif($role === 'COMPANY_ADMIN')

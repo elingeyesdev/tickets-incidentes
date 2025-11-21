@@ -137,6 +137,16 @@ function ticketsList() {
                 this.tickets = data.data || [];
                 this.meta = data.meta || {};
 
+                // Filter out closed tickets for 'awaiting_response' folder
+                if (this.activeFolder === 'awaiting_response') {
+                    this.tickets = this.tickets.filter(ticket => ticket.status !== 'closed');
+                }
+
+                // Filter out resolved and closed tickets for 'assigned' folder
+                if (this.activeFolder === 'assigned') {
+                    this.tickets = this.tickets.filter(ticket => ticket.status !== 'resolved' && ticket.status !== 'closed');
+                }
+
                 // Initialize starred state (would need backend support)
                 this.tickets.forEach(ticket => ticket.is_starred = false);
 
@@ -203,19 +213,21 @@ function ticketsList() {
                     const unassignedData = await unassignedResponse.json();
                     this.stats.unassigned = unassignedData.meta?.total || 0;
 
-                    // My assigned
-                    const myResponse = await fetch(`/api/tickets?owner_agent_id=me&per_page=1`, {
+                    // My assigned (excluding resolved and closed)
+                    const myFullResponse = await fetch(`/api/tickets?owner_agent_id=me&per_page=100`, {
                         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                     });
-                    const myData = await myResponse.json();
-                    this.stats.my_assigned = myData.meta?.total || 0;
+                    const myFullData = await myFullResponse.json();
+                    const myAssignedActive = (myFullData.data || []).filter(t => t.status !== 'resolved' && t.status !== 'closed').length;
+                    this.stats.my_assigned = myAssignedActive;
 
-                    // Awaiting my response
-                    const awaitingResponse = await fetch(`/api/tickets?owner_agent_id=me&last_response_author_type=user&per_page=1`, {
+                    // Awaiting my response (excluding closed)
+                    const awaitingFullResponse = await fetch(`/api/tickets?owner_agent_id=me&last_response_author_type=user&per_page=100`, {
                         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                     });
-                    const awaitingData = await awaitingResponse.json();
-                    this.stats.awaiting_my_response = awaitingData.meta?.total || 0;
+                    const awaitingFullData = await awaitingFullResponse.json();
+                    const awaitingNotClosed = (awaitingFullData.data || []).filter(t => t.status !== 'closed').length;
+                    this.stats.awaiting_my_response = awaitingNotClosed;
                 } else if (this.role === 'COMPANY_ADMIN') {
                     // New tickets (unassigned - no agent)
                     const newResponse = await fetch(`/api/tickets?owner_agent_id=null&per_page=1`, {
@@ -274,6 +286,12 @@ function ticketsList() {
                         },
                         cache: true
                     }
+                });
+
+                // Sincronizar Select2 con Alpine.js
+                $('#categoryFilter').on('change', function() {
+                    self.filters.category_id = $(this).val();
+                    self.applyFilters();
                 });
             }
 
@@ -835,115 +853,3 @@ $(function () {
         </div>
     </div>
 </div>
-
-<!-- Modal: Crear Nuevo Ticket (USER) -->
-@if($role === 'USER')
-    <div class="modal fade" id="createTicketModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h4 class="modal-title text-white">
-                        <i class="fas fa-plus mr-2"></i>Crear Nuevo Ticket
-                    </h4>
-                    <button type="button" class="close text-white" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <form @submit.prevent="createTicket()">
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="ticketTitle">
-                                <i class="fas fa-heading mr-2"></i>Título <span class="text-danger">*</span>
-                            </label>
-                            <input type="text"
-                                   class="form-control"
-                                   id="ticketTitle"
-                                   x-model="newTicket.title"
-                                   placeholder="Ej: Error al exportar reporte"
-                                   minlength="5"
-                                   maxlength="255"
-                                   required>
-                            <small class="form-text text-muted">Mínimo 5 caracteres, máximo 255</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="ticketCategory">
-                                <i class="fas fa-tag mr-2"></i>Categoría <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-control select2"
-                                    id="ticketCategory"
-                                    x-model="newTicket.category_id"
-                                    style="width: 100%;"
-                                    required>
-                                <option value="">Selecciona una categoría...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="ticketDescription">
-                                <i class="fas fa-align-left mr-2"></i>Descripción <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control"
-                                      id="ticketDescription"
-                                      x-model="newTicket.description"
-                                      rows="5"
-                                      placeholder="Describe tu problema en detalle..."
-                                      minlength="10"
-                                      required></textarea>
-                            <small class="form-text text-muted">Mínimo 10 caracteres. Se lo más específico posible.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="ticketAttachment">
-                                <i class="fas fa-paperclip mr-2"></i>Adjuntos (Opcional)
-                            </label>
-                            <div class="custom-file">
-                                <input type="file"
-                                       class="custom-file-input"
-                                       id="ticketAttachment"
-                                       @change="handleTicketFiles"
-                                       multiple>
-                                <label class="custom-file-label" for="ticketAttachment">Seleccionar archivos...</label>
-                            </div>
-                            <small class="form-text text-muted">
-                                Máximo 5 archivos, 10 MB cada uno. Tipos: PDF, TXT, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, GIF, MP4
-                            </small>
-                            <template x-if="newTicket.files.length > 0">
-                                <ul class="list-unstyled mt-2">
-                                    <template x-for="(file, index) in newTicket.files" :key="index">
-                                        <li class="text-sm">
-                                            <i class="fas fa-file mr-2"></i>
-                                            <span x-text="file.name"></span>
-                                            (<span x-text="formatFileSize(file.size)"></span>)
-                                            <a href="#"
-                                               class="text-danger ml-2"
-                                               @click.prevent="removeTicketFile(index)">
-                                                <i class="fas fa-times"></i>
-                                            </a>
-                                        </li>
-                                    </template>
-                                </ul>
-                            </template>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            <i class="fas fa-times mr-2"></i>Cancelar
-                        </button>
-                        <button type="submit"
-                                class="btn btn-primary"
-                                :disabled="isCreating">
-                            <template x-if="isCreating">
-                                <span>
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Creando...
-                                </span>
-                            </template>
-                            <template x-if="!isCreating">
-                                <span>
-                                    <i class="fas fa-check mr-2"></i>Crear Ticket
-                                </span>
-                            </template>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-@endif
