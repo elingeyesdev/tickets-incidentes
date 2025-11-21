@@ -33,7 +33,11 @@ mkdir -p storage/logs \
          storage/app/public \
          bootstrap/cache
 
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+# Set permissions recursively (required after restarts on Windows)
+chmod -R 777 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+
+echo "✅ Storage directories permissions fixed"
 
 # --- 4. Generate APP_KEY if not set ---
 if [ ! -f .env ] || grep -q "APP_KEY=$" .env; then

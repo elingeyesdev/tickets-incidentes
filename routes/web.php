@@ -289,7 +289,7 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         }
 
         return redirect()->route('dashboard');
-    })->name('tickets.index');
+    })->name('app.tickets.index');
 
     Route::get('/tickets/manage', function () {
         $user = JWTHelper::getAuthenticatedUser();
