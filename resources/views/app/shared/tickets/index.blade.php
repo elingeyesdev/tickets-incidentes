@@ -90,7 +90,7 @@
                                 <a href="#"
                                    class="nav-link"
                                    :class="{ 'active': activeFolder === 'awaiting_response' }"
-                                   @click.prevent="applyFolderFilter('awaiting_response', 'owner_agent_id=me&last_response_author_type=user')">
+                                   @click.prevent="applyFolderFilter('awaiting_response', 'owner_agent_id=me&last_response_author_type=user&status!=closed')">
                                     <i class="far fa-comments"></i> Awaiting My Response
                                     <span class="badge bg-success float-right" x-show="stats.awaiting_my_response > 0" x-text="stats.awaiting_my_response || 0">0</span>
                                 </a>
