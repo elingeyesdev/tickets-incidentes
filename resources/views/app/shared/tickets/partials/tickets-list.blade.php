@@ -339,13 +339,19 @@ function ticketsList() {
                 });
             }
 
+            // Special handling for 'new' folder (which filters by owner_agent_id)
+            if (folder === 'new' && !queryString) {
+                this.filters.owner_agent_id = 'null';
+            }
+
             this.applyFilters();
         },
 
         applyStatusFilter(status, queryString = '') {
             this.activeFolder = '';
             this.activeStatus = status;
-            this.filters.status = status;
+            // Special handling for 'new' status (which is not a real status, just a filter)
+            this.filters.status = (status === 'new') ? '' : status;
             this.filters.owner_agent_id = '';
             this.filters.last_response_author_type = '';
 
@@ -354,6 +360,9 @@ function ticketsList() {
                 const params = new URLSearchParams(queryString);
                 if (params.has('last_response_author_type')) {
                     this.filters.last_response_author_type = params.get('last_response_author_type');
+                }
+                if (params.has('owner_agent_id')) {
+                    this.filters.owner_agent_id = params.get('owner_agent_id');
                 }
             }
 
