@@ -43,6 +43,10 @@ function ticketsList() {
         showCreateForm: false,
         companies: [],
         categoriesCache: {}, // Caché de categorías por company_id
+
+        // Show Ticket Details
+        showTicketDetails: false,
+        currentTicketCode: '',
         newTicket: {
             company_id: '',
             title: '',
@@ -59,6 +63,15 @@ function ticketsList() {
             await this.loadTickets();
             await this.loadStats();
             this.initializeSelect2();
+
+            // Watcher para currentTicketCode - dispatchear evento para las partials
+            this.$watch('currentTicketCode', (newCode) => {
+                if (newCode) {
+                    // Dispatchear evento personalizado que las partials escucharán
+                    const event = new CustomEvent('loadTicketDetail', { detail: newCode });
+                    document.dispatchEvent(event);
+                }
+            });
         },
 
         // Wait for tokenManager to be ready
@@ -352,14 +365,21 @@ function ticketsList() {
             return `${from}-${to}/${total}`;
         },
 
-        // Navigate to ticket
+        // Show ticket details
         goToTicket(ticketCode) {
-            const routeMap = {
-                'USER': '{{ route("user.tickets.manage") }}',
-                'AGENT': '{{ route("agent.tickets.manage") }}',
-                'COMPANY_ADMIN': '{{ route("company.tickets.manage") }}'
-            };
-            window.location.href = `${routeMap[this.role]}?ticket=${ticketCode}`;
+            this.showCreateForm = false;
+            this.showTicketDetails = true;
+            // Esperar a que Alpine renderice la partial antes de cambiar el ticketCode
+            this.$nextTick(async () => {
+                this.currentTicketCode = ticketCode;
+            });
+        },
+
+        // Close ticket details
+        closeTicketDetails() {
+            this.showTicketDetails = false;
+            this.currentTicketCode = '';
+            this.loadTickets(); // Reload list to reflect changes
         },
 
         // Toggle star
@@ -746,11 +766,14 @@ $(function () {
     <div class="row">
         <div class="col-md-3">
             @if($role === 'USER')
-                <button class="btn btn-primary btn-block mb-3" @click="!showCreateForm ? openCreateModal() : (showCreateForm = false)">
-                    <template x-if="!showCreateForm">
+                <button class="btn btn-primary btn-block mb-3" @click="!showCreateForm ? openCreateModal() : (showCreateForm = false, showTicketDetails = false)">
+                    <template x-if="!showCreateForm && !showTicketDetails">
                         <span><i class="fas fa-plus mr-2"></i>Crear Nuevo Ticket</span>
                     </template>
                     <template x-if="showCreateForm">
+                        <span><i class="fas fa-arrow-left mr-2"></i>Volver a Inbox</span>
+                    </template>
+                    <template x-if="showTicketDetails">
                         <span><i class="fas fa-arrow-left mr-2"></i>Volver a Inbox</span>
                     </template>
                 </button>
@@ -929,12 +952,37 @@ $(function () {
         </div>
 
         <div class="col-md-9">
-            <div x-show="!showCreateForm">
+            {{-- Tickets List View --}}
+            <div x-show="!showCreateForm && !showTicketDetails">
                 @include('app.shared.tickets.partials.tickets-list')
             </div>
 
-            <div x-show="showCreateForm">
+            {{-- Create Ticket Form --}}
+            <div x-show="showCreateForm && !showTicketDetails">
                 @include('app.shared.tickets.partials.create-ticket')
+            </div>
+
+            {{-- Show Ticket Details --}}
+            <div x-show="showTicketDetails && role === 'USER'">
+                <div class="mb-3">
+                    <button class="btn btn-secondary btn-sm" @click="closeTicketDetails()">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver a la Lista
+                    </button>
+                </div>
+                <div x-data="showTicketUser()" x-init="init()">
+                    @include('app.shared.tickets.partials.show-ticket-user')
+                </div>
+            </div>
+
+            <div x-show="showTicketDetails && (role === 'AGENT' || role === 'COMPANY_ADMIN')">
+                <div class="mb-3">
+                    <button class="btn btn-secondary btn-sm" @click="closeTicketDetails()">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver a la Lista
+                    </button>
+                </div>
+                <div x-data="showTicketAgentAdmin('{{ $role ?? 'AGENT' }}')" x-init="init()">
+                    @include('app.shared.tickets.partials.show-ticket-agent-admin')
+                </div>
             </div>
         </div>
     </div>
