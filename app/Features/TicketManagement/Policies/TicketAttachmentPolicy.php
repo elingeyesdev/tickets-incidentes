@@ -23,7 +23,7 @@ use Carbon\Carbon;
 class TicketAttachmentPolicy
 {
     /**
-     * Subir attachment a ticket: creador del ticket o agent de la compañía.
+     * Subir attachment a ticket: creador del ticket, agent o company admin de la compañía.
      */
     public function upload(User $user, Ticket $ticket): bool
     {
@@ -32,8 +32,11 @@ class TicketAttachmentPolicy
             return true;
         }
 
-        // Agent de la compañía puede subir
+        // Agent o Company Admin de la compañía puede subir
         $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        if (!$companyId) {
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        }
         return $companyId && $ticket->company_id === $companyId;
     }
 
@@ -53,7 +56,7 @@ class TicketAttachmentPolicy
     }
 
     /**
-     * Ver attachments: creador del ticket o agent de la compañía.
+     * Ver attachments: creador del ticket, agent o company admin de la compañía.
      */
     public function viewAny(User $user, Ticket $ticket): bool
     {
@@ -62,8 +65,11 @@ class TicketAttachmentPolicy
             return true;
         }
 
-        // Agent de la compañía puede ver
+        // Agent o Company Admin de la compañía puede ver
         $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        if (!$companyId) {
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        }
         return $companyId && $ticket->company_id === $companyId;
     }
 

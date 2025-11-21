@@ -21,7 +21,7 @@ class DashboardController extends Controller
      * Redirect to appropriate dashboard based on active role from JWT.
      *
      * The active role is determined from the JWT payload set during role selection.
-     * Users must have completed role selection to access dashboards.
+     * If user has only one role, redirects directly to that dashboard without requiring selection.
      *
      * @param Request $request
      * @return RedirectResponse
@@ -42,15 +42,49 @@ class DashboardController extends Controller
         $activeRole = $payload['active_role'] ?? null;
         $activeRoleCode = $activeRole['code'] ?? null;
 
-        // If no active role selected, redirect to role selector
+        // If no active role selected, check if user has only one role
         if (!$activeRoleCode) {
-            // User has not selected a role yet
+            // Get all available roles from JWT
+            $roles = $payload['roles'] ?? [];
+
+            if (empty($roles)) {
+                // User has no roles - redirect to login
+                return redirect()->route('login')
+                    ->with('error', 'No roles assigned. Please contact administrator.');
+            }
+
+            // If user has only ONE role, redirect directly to that dashboard
+            if (count($roles) === 1) {
+                $singleRole = reset($roles); // Get first (and only) role
+                $activeRoleCode = $singleRole['code'] ?? null;
+
+                if (!$activeRoleCode) {
+                    return redirect()->route('login')
+                        ->with('error', 'Invalid role configuration.');
+                }
+
+                // Redirect directly without requiring role selection
+                return $this->redirectToDashboard($activeRoleCode);
+            }
+
+            // User has multiple roles - redirect to role selector
             return redirect('/auth-flow/role-selector')
                 ->with('info', 'Please select a role to continue.');
         }
 
-        // Redirect based on active role code
-        return match($activeRoleCode) {
+        // Active role is set - redirect to appropriate dashboard
+        return $this->redirectToDashboard($activeRoleCode);
+    }
+
+    /**
+     * Redirect to dashboard based on role code
+     *
+     * @param string $roleCode
+     * @return RedirectResponse
+     */
+    private function redirectToDashboard(string $roleCode): RedirectResponse
+    {
+        return match($roleCode) {
             'PLATFORM_ADMIN' => redirect()->route('dashboard.platform-admin'),
             'COMPANY_ADMIN' => redirect()->route('dashboard.company-admin'),
             'AGENT' => redirect()->route('dashboard.agent'),

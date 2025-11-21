@@ -71,6 +71,15 @@ class Ticket extends Model
     public $incrementing = false;
 
     /**
+     * Use ticket_code for route model binding instead of id
+     * This allows API routes to accept /api/tickets/TKT-2025-00001 instead of UUID
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'ticket_code';
+    }
+
+    /**
      * Campos asignables en masa
      */
     protected $fillable = [

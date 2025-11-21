@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class TicketResponsePolicy
 {
     /**
-     * Crear respuesta: creador del ticket o agent de la compañía.
+     * Crear respuesta: creador del ticket, agent o company admin de la compañía.
      */
     public function create(User $user, Ticket $ticket): bool
     {
@@ -20,13 +20,16 @@ class TicketResponsePolicy
             return true;
         }
 
-        // Agent de la compañía puede responder
+        // Agent o Company Admin de la compañía puede responder
         $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        if (!$companyId) {
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        }
         return $companyId && $ticket->company_id === $companyId;
     }
 
     /**
-     * Ver respuestas: creador del ticket o agent de la compañía.
+     * Ver respuestas: creador del ticket, agent o company admin de la compañía.
      */
     public function viewAny(User $user, Ticket $ticket): bool
     {
@@ -35,8 +38,11 @@ class TicketResponsePolicy
             return true;
         }
 
-        // Agent de la compañía puede ver
+        // Agent o Company Admin de la compañía puede ver
         $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        if (!$companyId) {
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        }
         return $companyId && $ticket->company_id === $companyId;
     }
 
