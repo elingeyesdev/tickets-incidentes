@@ -73,7 +73,7 @@
                                    class="nav-link"
                                    :class="{ 'active': activeFolder === 'new' }"
                                    @click.prevent="applyFolderFilter('new', 'owner_agent_id=null')">
-                                    <i class="far fa-circle text-info"></i> New Tickets
+                                    <i class="fas fa-star"></i> New Tickets
                                     <span class="badge bg-info float-right" x-text="stats.new_tickets || 0">0</span>
                                 </a>
                             </li>
@@ -110,7 +110,7 @@
                                    class="nav-link"
                                    :class="{ 'active': activeFolder === 'new' }"
                                    @click.prevent="applyFolderFilter('new', 'owner_agent_id=null')">
-                                    <i class="far fa-circle text-info"></i> New Tickets
+                                    <i class="fas fa-star"></i> New Tickets
                                     <span class="badge bg-info float-right" x-text="stats.new_tickets || 0">0</span>
                                 </a>
                             </li>
