@@ -92,7 +92,7 @@
                                    :class="{ 'active': activeFolder === 'assigned' }"
                                    @click.prevent="applyFolderFilter('assigned', 'owner_agent_id=me')">
                                     <i class="fas fa-user-check"></i> My Assigned
-                                    <span class="badge bg-info float-right" x-text="stats.my_assigned || 0">0</span>
+                                    <span class="badge bg-danger float-right" x-text="stats.my_assigned || 0">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
