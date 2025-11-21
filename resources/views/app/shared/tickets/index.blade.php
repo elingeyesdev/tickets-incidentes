@@ -371,6 +371,29 @@ function ticketsList() {
         openCreateModal() {
             this.showCreateForm = true;
             this.resetNewTicket();
+
+            // Inicializar Select2 para compañías
+            setTimeout(() => {
+                if ($('#createCompany').length) {
+                    if (!$('#createCompany').data('select2')) {
+                        $('#createCompany').select2({
+                            theme: 'bootstrap4',
+                            placeholder: 'Selecciona una compañía...',
+                            allowClear: true
+                        });
+
+                        // Agregar placeholder al campo de búsqueda
+                        $('#createCompany').on('select2:open', () => {
+                            $('.select2-search__field').attr('placeholder', 'Buscar compañía...');
+                        });
+
+                        $('#createCompany').on('change', () => {
+                            this.newTicket.company_id = $('#createCompany').val();
+                            this.initializeCategorySelect2();
+                        });
+                    }
+                }
+            }, 100);
         },
 
         initializeCategorySelect2() {
@@ -429,6 +452,11 @@ function ticketsList() {
                                 return { results: results };
                             }
                         }
+                    });
+
+                    // Agregar placeholder al campo de búsqueda
+                    $('#createCategory').on('select2:open', () => {
+                        $('.select2-search__field').attr('placeholder', 'Buscar categoría...');
                     });
 
                     $('#createCategory').on('change', function() {
@@ -578,19 +606,17 @@ function ticketsList() {
         },
 
         handleTicketFiles(event) {
-            const files = Array.from(event.target.files);
-
-            // Validar cantidad de archivos
-            if (files.length > 5) {
-                this.showError('Máximo 5 archivos permitidos');
-                event.target.value = '';
-                return;
-            }
-
-            // Formatos permitidos según API
+            const newFiles = Array.from(event.target.files);
             const allowedExtensions = ['pdf', 'txt', 'log', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'mp4'];
 
-            for (const file of files) {
+            for (const file of newFiles) {
+                // Validar que no supere 5 archivos en total
+                if (this.newTicket.files.length >= 5) {
+                    this.showError('Máximo 5 archivos permitidos');
+                    event.target.value = '';
+                    return;
+                }
+
                 // Validar tamaño (max 10 MB)
                 if (file.size > 10 * 1024 * 1024) {
                     this.showError(`El archivo ${file.name} excede el tamaño máximo de 10 MB`);
@@ -605,9 +631,13 @@ function ticketsList() {
                     event.target.value = '';
                     return;
                 }
+
+                // Agregar archivo a la lista
+                this.newTicket.files.push(file);
             }
 
-            this.newTicket.files = files;
+            // Limpiar input para permitir seleccionar el mismo archivo otra vez
+            event.target.value = '';
         },
 
         removeTicketFile(index) {
