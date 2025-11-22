@@ -13,7 +13,7 @@
             <!-- /.card-header -->
             <div class="card-body">
                 <!-- Conversations are loaded here -->
-                <div class="direct-chat-messages" style="height: 500px;">
+                <div class="direct-chat-messages" style="height: 550px;">
                     <!-- Message. Default to the left (Support) -->
                     <div class="direct-chat-msg">
                         <div class="direct-chat-infos clearfix">
@@ -115,6 +115,24 @@
             <!-- /.card-body -->
             <div class="card-footer">
                 <form action="#" method="post">
+                    <!-- Attachments preview section -->
+                    <div style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; padding: 6px 10px; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.85rem;">
+                            <i class="fas fa-file-pdf mr-2" style="color: #007bff;"></i>
+                            <span style="color: #444; flex: 1;">documento.pdf</span>
+                            <button type="button" style="background-color: #e9ecef; border: 1px solid #ced4da; width: 18px; height: 18px; cursor: pointer; color: #495057; margin-left: 5px; transition: all 0.2s ease; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0;" title="Remove" onmouseover="this.style.color='#007bff';" onmouseout="this.style.color='#495057';">
+                                <i class="fas fa-times" style="font-size: 0.65rem;"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; align-items: center; padding: 6px 10px; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.85rem;">
+                            <i class="fas fa-file-excel mr-2" style="color: #28a745;"></i>
+                            <span style="color: #444; flex: 1;">datos.xlsx</span>
+                            <button type="button" style="background-color: #e9ecef; border: 1px solid #ced4da; width: 18px; height: 18px; cursor: pointer; color: #495057; margin-left: 5px; transition: all 0.2s ease; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0;" title="Remove" onmouseover="this.style.color='#28a745';" onmouseout="this.style.color='#495057';">
+                                <i class="fas fa-times" style="font-size: 0.65rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- End attachments preview -->
                     <div class="input-group">
                         <span class="input-group-prepend">
                             <button class="btn btn-light border" type="button" data-toggle="tooltip" title="Attach File" style="border-color: #ced4da; background-color: #e9ecef; color: #495057;">
