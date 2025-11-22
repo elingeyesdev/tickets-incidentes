@@ -986,5 +986,4 @@ $(function () {
             </div>
         </div>
     </div>
-</div>
 @endsection

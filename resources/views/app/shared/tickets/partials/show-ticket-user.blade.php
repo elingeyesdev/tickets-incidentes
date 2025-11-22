@@ -16,30 +16,6 @@
 
 @push('css')
 <style>
-    .response-thread {
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    .response-item {
-        border-left: 3px solid #007bff;
-        margin-bottom: 1rem;
-    }
-    .response-item.agent-response {
-        border-left-color: #28a745;
-    }
-    .attachment-item {
-        display: flex;
-        align-items: center;
-        padding: 0.5rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-        margin-bottom: 0.5rem;
-        background-color: #f8f9fa;
-    }
-    .attachment-item:hover {
-        background-color: #e9ecef;
-    }
-
     /* Fix table layout for details */
     .details-table {
         table-layout: fixed;
@@ -57,6 +33,21 @@
     }
     .details-table td:last-child {
         width: 65%;
+    }
+
+    /* Attachment Styling */
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+        background-color: #f8f9fa;
+    }
+
+    .attachment-item:hover {
+        background-color: #e9ecef;
     }
 </style>
 @endpush
@@ -167,6 +158,30 @@
                         </div>
                         <div class="card-body">
                             <p x-text="ticket.description" style="white-space: pre-wrap;"></p>
+
+                            {{-- Initial Attachments (from ticket creation) --}}
+                            <template x-if="initialAttachments.length > 0">
+                                <div class="mt-3">
+                                    <strong class="d-block mb-2"><i class="fas fa-paperclip mr-1"></i>Archivos adjuntos del ticket:</strong>
+                                    <template x-for="attachment in initialAttachments" :key="attachment.id">
+                                        <div class="attachment-item mb-2">
+                                            <i class="fas fa-file mr-2 text-primary" style="flex-shrink: 0;"></i>
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <a :href="'/api/tickets/attachments/' + attachment.id + '/download'"
+                                                   target="_blank"
+                                                   :title="attachment.file_name"
+                                                   class="font-weight-bold text-truncate d-block"
+                                                   x-text="attachment.file_name"></a>
+                                                <small class="d-block text-muted">
+                                                    <span x-text="formatFileSize(attachment.file_size_bytes)"></span>
+                                                    <span class="mx-1">•</span>
+                                                    <span x-text="attachment.file_type"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -248,103 +263,9 @@
                     </div>
                 </div>
 
-                {{-- RIGHT Column: Responses (Timeline) --}}
+                {{-- RIGHT Column: Chat Component --}}
                 <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-comments mr-2"></i>Respuestas
-                                <span class="badge badge-info ml-2" x-text="responses.length"></span>
-                            </h3>
-                            <div class="card-tools">
-                                <button class="btn btn-sm btn-default" @click="loadResponses()">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            {{-- Timeline --}}
-                            <div class="timeline">
-                                <template x-if="responses.length === 0">
-                                    <div class="text-center text-muted py-4">
-                                        <i class="fas fa-comments fa-3x mb-3"></i>
-                                        <p>No hay respuestas aún</p>
-                                    </div>
-                                </template>
-
-                                <template x-for="response in responses" :key="response.id">
-                                    <div>
-                                        <i class="fas mr-2 bg-light"
-                                           :class="response.author_type === 'agent' ? 'fa-user-check text-success' : 'fa-user text-primary'"></i>
-                                        <div class="timeline-item">
-                                            <span class="time"><i class="fas fa-clock"></i> <span x-text="formatTimeAgo(response.created_at)"></span></span>
-                                            <h3 class="timeline-header">
-                                                <strong x-text="response.author?.name || 'Usuario'"></strong>
-                                                <small class="badge ml-2"
-                                                       :class="response.author_type === 'agent' ? 'badge-success' : 'badge-primary'"
-                                                       x-text="response.author_type === 'agent' ? 'Agente' : 'Usuario'"></small>
-                                            </h3>
-                                            <div class="timeline-body" style="white-space: pre-wrap;" x-text="response.content"></div>
-
-                                            {{-- Response Attachments --}}
-                                            <template x-if="response.attachments && response.attachments.length > 0">
-                                                <div class="timeline-body pt-0">
-                                                    <div class="mt-2">
-                                                        <strong class="d-block mb-2"><i class="fas fa-paperclip mr-1"></i>Adjuntos:</strong>
-                                                        <div class="d-flex flex-wrap">
-                                                            <template x-for="att in response.attachments" :key="att.id">
-                                                                <div class="mr-2 mb-2">
-                                                                    <a :href="'/api/tickets/attachments/' + att.id + '/download'"
-                                                                       target="_blank"
-                                                                       class="btn btn-sm btn-outline-primary"
-                                                                       :title="att.file_name">
-                                                                        <i class="fas fa-download mr-1"></i>
-                                                                        <span x-text="att.file_name" class="text-truncate" style="max-width: 150px;"></span>
-                                                                        <br>
-                                                                        <small x-text="'(' + formatFileSize(att.file_size_bytes) + ')'"></small>
-                                                                    </a>
-                                                                </div>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- Timeline End --}}
-                                <template x-if="responses.length > 0">
-                                    <div>
-                                        <i class="fas fa-check bg-success"></i>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-
-                        {{-- Response Form (if not closed) --}}
-                        <template x-if="ticket.status !== 'closed'">
-                            <div class="card-footer">
-                                <form @submit.prevent="createResponse()">
-                                    <div class="form-group mb-2">
-                                        <textarea class="form-control"
-                                                  x-model="newResponse"
-                                                  placeholder="Escribe tu respuesta..."
-                                                  rows="3"
-                                                  required></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary" :disabled="submitting || !newResponse.trim()">
-                                        <template x-if="!submitting">
-                                            <span><i class="fas fa-paper-plane mr-2"></i>Enviar Respuesta</span>
-                                        </template>
-                                        <template x-if="submitting">
-                                            <span><span class="spinner-border spinner-border-sm mr-2"></span>Enviando...</span>
-                                        </template>
-                                    </button>
-                                </form>
-                            </div>
-                        </template>
-                    </div>
+                    <x-ticket-chat :role="'USER'" />
                 </div>
             </div>
 
@@ -384,12 +305,11 @@ function showTicketUser() {
     return {
         ticketCode: '',
         ticket: null,
-        responses: [],
         attachments: [],
+        initialAttachments: [],  // Archivos del ticket inicial (response_id === null)
         loading: true,
         error: null,
         submitting: false,
-        newResponse: '',
         showEditModal: false,
         editTitle: '',
 
@@ -413,6 +333,41 @@ function showTicketUser() {
             }
             if (!window.tokenManager) {
                 this.error = 'Error de autenticación. Por favor, recarga la página.';
+            }
+        },
+
+        async handleApiError(response) {
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                return 'Error de comunicación con el servidor';
+            }
+
+            switch(response.status) {
+                case 400:
+                    return data.message || 'Solicitud inválida';
+                case 401:
+                    return 'Sesión expirada. Por favor, inicia sesión nuevamente';
+                case 403:
+                    return data.message || 'No tienes permisos para realizar esta acción';
+                case 404:
+                    return data.message || 'Recurso no encontrado';
+                case 413:
+                    return 'Archivo demasiado grande (máximo 10 MB)';
+                case 422:
+                    if (data.errors) {
+                        const errorMessages = [];
+                        Object.keys(data.errors).forEach(field => {
+                            errorMessages.push(...data.errors[field]);
+                        });
+                        return errorMessages.join('\n');
+                    }
+                    return data.message || 'Error de validación';
+                case 500:
+                    return 'Error del servidor. Por favor, intenta más tarde';
+                default:
+                    return data.message || 'Error desconocido';
             }
         },
 
@@ -440,21 +395,9 @@ function showTicketUser() {
             }
         },
 
+
         async loadResponses() {
-            try {
-                const token = window.tokenManager.getAccessToken();
-                const response = await fetch(`/api/tickets/${this.ticketCode}/responses`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                if (!response.ok) throw new Error('Error al cargar respuestas');
-                const data = await response.json();
-                this.responses = data.data || [];
-            } catch (error) {
-                console.error('Error loading responses:', error);
-            }
+            // Responses are now handled by the ticket-chat component
         },
 
         async loadAttachments() {
@@ -469,35 +412,14 @@ function showTicketUser() {
                 if (!response.ok) throw new Error('Error al cargar adjuntos');
                 const data = await response.json();
                 this.attachments = data.data || [];
+
+                // Separar archivos iniciales (response_id === null) de archivos de respuestas
+                this.initialAttachments = this.attachments.filter(att => !att.response_id);
             } catch (error) {
                 console.error('Error loading attachments:', error);
             }
         },
 
-        async createResponse() {
-            if (!this.newResponse.trim()) return;
-            this.submitting = true;
-            try {
-                const token = window.tokenManager.getAccessToken();
-                const response = await fetch(`/api/tickets/${this.ticketCode}/responses`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ content: this.newResponse })
-                });
-                if (!response.ok) throw new Error('Error al enviar respuesta');
-                this.newResponse = '';
-                await this.loadResponses();
-                Swal.fire({ icon: 'success', title: 'Respuesta enviada', timer: 2000, showConfirmButton: false });
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo enviar la respuesta' });
-            } finally {
-                this.submitting = false;
-            }
-        },
 
         async uploadAttachment(event) {
             const file = event.target.files[0];
@@ -660,7 +582,39 @@ function showTicketUser() {
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
+        },
+
+        formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+
+            const timeStr = date.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            if (isToday) {
+                return `Hoy ${timeStr}`;
+            }
+
+            const dateStr = date.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short'
+            });
+
+            return `${dateStr} ${timeStr}`;
+        },
+
+        getAvatarUrl(name) {
+            if (!name) return 'https://ui-avatars.com/api/?name=U&size=128&background=6c757d&color=fff';
+            const colors = ['007bff', '28a745', 'dc3545', 'ffc107', '17a2b8', '6610f2', 'e83e8c', 'fd7e14'];
+            const charCode = name.charCodeAt(0) || 0;
+            const colorIndex = charCode % colors.length;
+            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=128&background=${colors[colorIndex]}&color=fff&bold=true`;
+        },
+
     }
 }
 </script>
