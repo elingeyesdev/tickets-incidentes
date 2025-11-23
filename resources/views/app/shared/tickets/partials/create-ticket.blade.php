@@ -66,7 +66,7 @@
 
         <div class="card-footer">
             <div class="float-right">
-                <button type="button" class="btn btn-default" id="btn-discard-ticket"><i class="fas fa-times"></i> Descartar</button>
+                <button type="button" class="btn btn-outline-dark" id="btn-discard-ticket"><i class="fas fa-times"></i> Descartar</button>
                 <button type="submit" class="btn btn-primary"><i class="far fa-envelope"></i> Enviar Ticket</button>
             </div>
         </div>
@@ -79,8 +79,8 @@
     <li>
         <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
         <div class="mailbox-attachment-info">
-            <a href="#" class="mailbox-attachment-name file-name-truncate" title="">
-                <i class="fas fa-paperclip"></i> <span class="file-name">filename.pdf</span>
+            <a href="#" class="mailbox-attachment-name" title="">
+                <i class="fas fa-paperclip"></i> <span class="file-name file-name-truncate">filename.pdf</span>
             </a>
             <span class="mailbox-attachment-size clearfix mt-1">
                 <span class="file-size">1.2 MB</span>
@@ -90,25 +90,67 @@
     </li>
 </template>
 
-{{-- CSS para truncar nombres de archivo a 2 líneas --}}
+{{-- Push CSS to layout head (better practice than inline <style>) --}}
+@push('css')
 <style>
-/* Truncar nombre de archivo a máximo 2 líneas con ellipsis */
+/* Alinear botones correctamente y agregar espacio entre ellos */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px; /* Espacio entre ícono y texto */
+}
+
+/* Agregar margen entre el botón Descartar y Enviar */
+#btn-discard-ticket {
+    margin-right: 10px;
+}
+
+/* Agregar espacio entre el small text y la lista de archivos */
+.mailbox-attachments {
+    margin-top: 12px !important;
+}
+
+/* Configurar el link como flex para alinear ícono + texto */
+.mailbox-attachment-name {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Pequeño espacio entre ícono y texto */
+}
+
+/* Truncar nombre de archivo a máximo 1 línea con ellipsis */
 .file-name-truncate {
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    word-break: break-word;
-    max-width: 100%;
+    word-break: break-all; /* Forzar ruptura en cualquier carácter (incluso guiones bajos) */
+    flex: 1; /* Tomar todo el espacio disponible */
+    min-width: 0; /* Permitir que el flex item se encoja más allá de su contenido */
 }
 
-/* Asegurar que el ícono no se rompa */
-.file-name-truncate .fas,
-.file-name-truncate .far {
-    flex-shrink: 0;
+/* Fix: AdminLTE v3 CSS oficial NO maneja correctamente imágenes portrait/landscape */
+/* Forzar tamaño fijo para todos los thumbnails (portrait, landscape, 16:9, etc.) */
+.mailbox-attachment-icon.has-img {
+    width: 200px !important;          /* ← Ancho fijo igual al contenedor padre */
+    height: 132.5px !important;       /* ← Altura fija igual a los íconos de archivo */
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #f4f4f4; /* ← Fondo gris claro para letterboxing */
+    padding: 0 !important;     /* ← Sobrescribir padding de AdminLTE */
+}
+
+.mailbox-attachment-icon.has-img > img {
+    width: 100% !important;           /* ← Llenar todo el ancho del contenedor */
+    height: 100% !important;          /* ← Llenar toda la altura del contenedor */
+    object-fit: cover !important;     /* ← Recortar manteniendo aspecto (sin distorsión) */
+    object-position: center !important; /* ← Centrar la imagen antes de recortar */
+    max-width: none !important;       /* ← Sobrescribir max-width: 100% de AdminLTE */
 }
 </style>
+@endpush
 
 <script>
 (function() {
@@ -178,13 +220,14 @@
     // Handle Company Change
     $companySelect.on('change', function() {
         const companyId = $(this).val();
-        
+        console.log(`[Create Ticket] Compañía seleccionada: ${companyId || 'ninguna'}`);
+
         // Reset Category
         $categorySelect.val(null).trigger('change');
-        
+
         if (companyId) {
             $categorySelect.prop('disabled', false);
-            
+
             // Re-init Select2 with AJAX for specific company
             $categorySelect.select2({
                 theme: 'bootstrap4',
@@ -225,6 +268,22 @@
                 placeholder: 'Selecciona una compañía primero'
             });
         }
+
+        // 🔴 FIX Select2 + jQuery Validation: Forzar re-validación
+        // Select2 interfiere con eventos nativos change de jQuery Validation
+        $form.validate().element('#createCompany');
+        console.log('[Create Ticket] Re-validando company_id');
+    });
+
+    // Handle Category Change - jQuery Validation Fix
+    $categorySelect.on('change', function() {
+        const categoryId = $(this).val();
+        console.log(`[Create Ticket] Categoría seleccionada: ${categoryId || 'ninguna'}`);
+
+        // 🔴 FIX Select2 + jQuery Validation: Forzar re-validación
+        // Esto limpia el error de validación cuando el usuario selecciona una categoría
+        $form.validate().element('#createCategory');
+        console.log('[Create Ticket] Re-validando category_id');
     });
 
     // ==============================================================

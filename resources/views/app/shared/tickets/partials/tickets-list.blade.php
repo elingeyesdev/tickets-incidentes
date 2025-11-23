@@ -1,272 +1,302 @@
-@push('css')
-<style>
-    /* Hacer que Select2 tenga la misma altura que form-control-sm */
-    .select2-container--bootstrap4 .select2-selection--single {
-        height: 31px !important;
-        min-height: 31px !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
-        line-height: normal !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0 !important;
-        font-size: 0.875rem !important;
-    }
-    /* Placeholder "Categorias" en gris claro */
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__placeholder {
-        color: #adb5bd !important;
-    }
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
-        height: 29px !important;
-        top: 1px !important;
-        right: 3px !important;
-    }
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow b {
-        margin-top: -2px !important;
-    }
+<div class="card card-primary card-outline">
+    <div class="card-header">
+        <h3 class="card-title">
+            @if($role === 'USER')
+                Mis Tickets
+            @else
+                Bandeja de Entrada
+            @endif
+        </h3>
 
-    /* Loading overlay */
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255,255,255,0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    }
-</style>
-@endpush
-
-<div>
-    <div class="card card-primary card-outline" style="position: relative;">
-        <!-- Loading overlay -->
-        <div x-show="loading" class="loading-overlay" x-cloak>
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Cargando...</span>
-            </div>
-        </div>
-
-        <div class="card-header">
-            <h3 class="card-title">
-                @if($role === 'USER')
-                    Mis Tickets
-                @elseif($role === 'AGENT')
-                    Todos los Tickets
-                @else
-                    Gestión de Tickets
-                @endif
-            </h3>
-
-            <div class="card-tools" style="display: flex; align-items: center;">
-                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
-                    <div class="input-group input-group-sm" style="width: 180px; margin-right: 5px;">
-                        <select class="form-control form-control-sm select2"
-                                id="categoryFilter"
-                                x-model="filters.category_id"
-                                @change="applyFilters()"
-                                data-placeholder="Categorias">
-                            <option value=""></option>
-                        </select>
-                    </div>
-                @endif
-                <div class="input-group input-group-sm" style="width: 180px;">
-                    <input type="text"
-                           class="form-control"
-                           placeholder="Search Ticket"
-                           x-model="filters.search"
-                           @keyup.debounce.500ms="applyFilters()">
-                    <div class="input-group-append">
-                        <div class="btn btn-primary" @click="applyFilters()">
-                            <i class="fas fa-search"></i>
-                        </div>
+        <div class="card-tools">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="search-tickets" placeholder="Buscar Ticket...">
+                <div class="input-group-append">
+                    <div class="btn btn-primary">
+                        <i class="fas fa-search"></i>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="card-body p-0">
-            <div class="mailbox-controls">
-                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
-                    <button type="button" class="btn btn-default btn-sm checkbox-toggle"><i class="far fa-square"></i></button>
-                @endif
-                <button type="button" class="btn btn-default btn-sm" @click="loadTickets()" title="Refresh">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <div class="float-right">
-                    <span x-text="paginationText()">0-0/0</span>
-                    <div class="btn-group">
-                        <button type="button"
-                                class="btn btn-default btn-sm"
-                                @click="previousPage()"
-                                :disabled="!meta.prev">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <button type="button"
-                                class="btn btn-default btn-sm"
-                                @click="nextPage()"
-                                :disabled="!meta.next">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="table-responsive mailbox-messages">
-                <table class="table table-hover">
-                    <tbody>
-                    @if($role === 'USER')
-                        {{-- USER VIEW: Sin avatar, sin nombre de creador --}}
-                        <template x-if="tickets.length === 0 && !loading">
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-5">
-                                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                                    <p>No hay tickets para mostrar</p>
-                                </td>
-                            </tr>
-                        </template>
-                        <template x-for="ticket in tickets" :key="ticket.id">
-                            <tr style="cursor: pointer;" @click="goToTicket(ticket.ticket_code)">
-                                <td style="width: 40px;" @click.stop>
-                                    <a href="#" @click.prevent="toggleStar(ticket)">
-                                        <i :class="ticket.is_starred ? 'fas fa-star text-warning' : 'far fa-star'"></i>
-                                    </a>
-                                </td>
-                                <td>
-                                    <div>
-                                        <span class="badge mr-2"
-                                              :class="{
-                                                  'badge-danger': ticket.status === 'open',
-                                                  'badge-warning': ticket.status === 'pending',
-                                                  'badge-success': ticket.status === 'resolved',
-                                                  'badge-secondary': ticket.status === 'closed'
-                                              }"
-                                              x-text="statusText(ticket.status)"></span>
-                                        <strong x-text="ticket.ticket_code"></strong> - <span x-text="ticket.title"></span>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="fas fa-tag"></i> <span x-text="ticket.category?.name || 'N/A'"></span>
-                                        <i class="fas fa-comments ml-3"></i> <span x-text="ticket.responses_count"></span> respuestas
-                                        <template x-if="ticket.attachments_count > 0">
-                                            <span>
-                                                <i class="fas fa-paperclip ml-2"></i> <span x-text="ticket.attachments_count"></span> adjunto(s)
-                                            </span>
-                                        </template>
-                                    </small>
-                                </td>
-                                <td style="width: 120px; text-align: right;">
-                                    <small class="text-muted" x-text="formatTimeAgo(ticket.created_at)"></small>
-                                </td>
-                            </tr>
-                        </template>
-                    @else
-                        {{-- AGENT/COMPANY_ADMIN VIEW: Con checkbox, avatar y nombre de creador --}}
-                        <template x-if="tickets.length === 0 && !loading">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-5">
-                                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                                    <p>No hay tickets para mostrar</p>
-                                </td>
-                            </tr>
-                        </template>
-                        <template x-for="ticket in tickets" :key="ticket.id">
-                            <tr style="cursor: pointer;" @click="goToTicket(ticket.ticket_code)">
-                                <td style="width: 40px;" @click.stop>
-                                    <div class="icheck-primary">
-                                        <input type="checkbox" :value="ticket.id" :id="'check-' + ticket.id">
-                                        <label :for="'check-' + ticket.id"></label>
-                                    </div>
-                                </td>
-                                <td style="width: 40px;" @click.stop>
-                                    <a href="#" @click.prevent="toggleStar(ticket)">
-                                        <i :class="ticket.is_starred ? 'fas fa-star text-warning' : 'far fa-star'"></i>
-                                    </a>
-                                </td>
-                                <td style="width: 50px;">
-                                    <img :src="getAvatarUrl(ticket.created_by_user?.name || 'Unknown')"
-                                         class="img-circle"
-                                         alt="User Image">
-                                </td>
-                                <td>
-                                    <div>
-                                        <span class="badge mr-2"
-                                              :class="{
-                                                  'badge-danger': ticket.status === 'open',
-                                                  'badge-warning': ticket.status === 'pending',
-                                                  'badge-success': ticket.status === 'resolved',
-                                                  'badge-secondary': ticket.status === 'closed'
-                                              }"
-                                              x-text="statusText(ticket.status)"></span>
-                                        <template x-if="!ticket.last_response_author_type">
-                                            <span class="badge badge-info mr-2">
-                                                <i class="fas fa-bell"></i> New
-                                            </span>
-                                        </template>
-                                        <strong x-text="ticket.ticket_code"></strong> - <span x-text="ticket.title"></span>
-                                    </div>
-                                    <small class="text-muted">
-                                        <strong x-text="ticket.created_by_user?.name || 'N/A'"></strong>
-                                        <i class="fas fa-tag ml-3"></i> <span x-text="ticket.category?.name || 'N/A'"></span>
-                                        <template x-if="ticket.owner_agent">
-                                            <span>
-                                                <i class="fas fa-user-check ml-3"></i> Asignado: <span x-text="ticket.owner_agent.name"></span>
-                                            </span>
-                                        </template>
-                                        <template x-if="!ticket.owner_agent">
-                                            <span>
-                                                <i class="fas fa-user-slash ml-3 text-danger"></i> Sin asignar
-                                            </span>
-                                        </template>
-                                        <i class="fas fa-comments ml-3"></i> <span x-text="ticket.responses_count"></span>
-                                        <template x-if="ticket.attachments_count > 0">
-                                            <span>
-                                                <i class="fas fa-paperclip ml-2"></i> <span x-text="ticket.attachments_count"></span>
-                                            </span>
-                                        </template>
-                                    </small>
-                                </td>
-                                <td style="width: 120px; text-align: right;">
-                                    <small class="text-muted" x-text="formatTimeAgo(ticket.created_at)"></small>
-                                </td>
-                            </tr>
-                        </template>
-                    @endif
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card-footer p-0">
-            <div class="mailbox-controls">
-                @if($role === 'AGENT' || $role === 'COMPANY_ADMIN')
-                    <button type="button" class="btn btn-default btn-sm checkbox-toggle">
-                        <i class="far fa-square"></i>
+        <!-- /.card-tools -->
+    </div>
+    <!-- /.card-header -->
+    <div class="card-body p-0">
+        <div class="mailbox-controls">
+            <!-- Refresh Button -->
+            <button type="button" class="btn btn-default btn-sm" id="btn-refresh-list" title="Actualizar">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <div class="float-right">
+                <span id="pagination-info">1-50/200</span>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default btn-sm" id="btn-prev-page">
+                        <i class="fas fa-chevron-left"></i>
                     </button>
-                @endif
-                <button type="button" class="btn btn-default btn-sm" @click="loadTickets()" title="Refresh">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <div class="float-right">
-                    <span x-text="paginationText()">0-0/0</span>
-                    <div class="btn-group">
-                        <button type="button"
-                                class="btn btn-default btn-sm"
-                                @click="previousPage()"
-                                :disabled="!meta.prev">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <button type="button"
-                                class="btn btn-default btn-sm"
-                                @click="nextPage()"
-                                :disabled="!meta.next">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
+                    <button type="button" class="btn btn-default btn-sm" id="btn-next-page">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
                 </div>
+                <!-- /.btn-group -->
             </div>
+            <!-- /.float-right -->
+        </div>
+        <div class="table-responsive mailbox-messages">
+            <table class="table table-hover table-striped">
+                <tbody id="tickets-table-body">
+                    {{-- Content will be loaded via jQuery --}}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                            <p class="mt-2">Cargando tickets...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- /.table -->
+        </div>
+        <!-- /.mail-box-messages -->
+    </div>
+    <!-- /.card-body -->
+    <div class="card-footer p-0">
+        <div class="mailbox-controls">
+            <div class="float-right">
+                <span id="pagination-info-footer">1-50/200</span>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default btn-sm"><i class="fas fa-chevron-left"></i></button>
+                    <button type="button" class="btn btn-default btn-sm"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <!-- /.btn-group -->
+            </div>
+            <!-- /.float-right -->
         </div>
     </div>
 </div>
+<!-- /.card -->
+
+{{-- Template for Ticket Row --}}
+<template id="template-ticket-row">
+    <tr class="ticket-row" style="cursor: pointer;">
+        <td class="mailbox-name">
+            <!-- Status Badge will go here -->
+        </td>
+        <td class="mailbox-subject">
+            <!-- Code - Title will go here -->
+        </td>
+        <td class="mailbox-attachment"></td>
+        <td class="mailbox-date"></td>
+    </tr>
+</template>
+
+<script>
+(function() {
+    console.log('[Tickets List] Script loaded - waiting for jQuery...');
+
+    function initTicketsList() {
+        console.log('[Tickets List] jQuery available - Initializing');
+
+        // ==============================================================
+        // SIMULATED DATA
+        // ==============================================================
+        const mockTickets = [
+            {
+                id: 1,
+                code: 'TKT-2025-001',
+                title: 'Problema con la impresora de RRHH',
+                status: 'open',
+                status_label: 'Abierto',
+                created_at: 'Hace 5 mins',
+                creator_name: 'Juan Perez',
+                owner_agent_name: null,
+                category_name: 'Hardware',
+                responses_count: 2,
+                attachments_count: 1,
+                is_new: true
+            },
+            {
+                id: 2,
+                code: 'TKT-2025-002',
+                title: 'Error al acceder al ERP',
+                status: 'pending',
+                status_label: 'Pendiente',
+                created_at: 'Hace 2 horas',
+                creator_name: 'Maria Garcia',
+                owner_agent_name: 'Carlos Admin',
+                category_name: 'Software',
+                responses_count: 5,
+                attachments_count: 0,
+                is_new: false
+            },
+            {
+                id: 3,
+                code: 'TKT-2025-003',
+                title: 'Solicitud de acceso a VPN',
+                status: 'resolved',
+                status_label: 'Resuelto',
+                created_at: 'Ayer',
+                creator_name: 'Pedro Lopez',
+                owner_agent_name: 'Carlos Admin',
+                category_name: 'Redes',
+                responses_count: 8,
+                attachments_count: 2,
+                is_new: false
+            },
+            {
+                id: 4,
+                code: 'TKT-2025-004',
+                title: 'Pantalla azul en laptop',
+                status: 'closed',
+                status_label: 'Cerrado',
+                created_at: 'Hace 2 dias',
+                creator_name: 'Ana Martinez',
+                owner_agent_name: 'Carlos Admin',
+                category_name: 'Hardware',
+                responses_count: 12,
+                attachments_count: 3,
+                is_new: false
+            },
+            {
+                id: 5,
+                code: 'TKT-2025-005',
+                title: 'Actualización de Licencia Office',
+                status: 'open',
+                status_label: 'Abierto',
+                created_at: 'Hace 3 dias',
+                creator_name: 'Luis Rodriguez',
+                owner_agent_name: null,
+                category_name: 'Software',
+                responses_count: 1,
+                attachments_count: 0,
+                is_new: true
+            }
+        ];
+
+        // RENDER LOGIC
+        // ==============================================================
+        const $tableBody = $('#tickets-table-body');
+        const $template = $('#template-ticket-row');
+        const userRole = '{{ $role }}'; // Blade injection
+
+        function renderTickets(tickets) {
+            $tableBody.empty();
+
+            if (tickets.length === 0) {
+                $tableBody.html(`
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No hay tickets para mostrar</p>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            tickets.forEach(ticket => {
+                const $clone = $($template.html());
+                
+                // 1. Mailbox Name -> NOW STATUS (Icon + Text)
+                // Define Icon and Color based on status
+                let statusIcon = 'fa-circle';
+                let statusColor = 'text-secondary';
+                
+                if (ticket.status === 'open') {
+                    statusIcon = 'fa-circle';
+                    statusColor = 'text-danger';
+                } else if (ticket.status === 'pending') {
+                    statusIcon = 'fa-clock';
+                    statusColor = 'text-warning';
+                } else if (ticket.status === 'resolved') {
+                    statusIcon = 'fa-check-circle';
+                    statusColor = 'text-success';
+                } else if (ticket.status === 'closed') {
+                    statusIcon = 'fa-times-circle';
+                    statusColor = 'text-secondary';
+                }
+                
+                // Clean Status HTML: Icon + Text (Capitalized)
+                const statusHtml = `<i class="fas ${statusIcon} ${statusColor} mr-2"></i> <span class="text-dark">${ticket.status_label}</span>`;
+                $clone.find('.mailbox-name').html(statusHtml);
+
+                // 2. Mailbox Subject -> Code + Title + Response Count
+                // Construct Subject HTML: <b>Code</b> - Title
+                let subjectHtml = `<b>${ticket.code}</b> - ${ticket.title}`;
+                
+                // Add Response Count to Subject (Float Right or Inline)
+                if (ticket.responses_count > 0) {
+                    // Fixed width container ensures icons align vertically perfectly
+                    subjectHtml += `<span class="float-right text-dark text-sm" style="width: 50px; text-align: right;">
+                        <small>${ticket.responses_count}</small> <i class="far fa-comments ml-1 text-dark"></i>
+                    </span>`;
+                }
+                
+                $clone.find('.mailbox-subject').html(subjectHtml);
+
+                // 3. Attachments (STRICTLY ICON ONLY)
+                if (ticket.attachments_count > 0) {
+                    $clone.find('.mailbox-attachment').html('<i class="fas fa-paperclip"></i>');
+                } else {
+                    $clone.find('.mailbox-attachment').empty();
+                }
+
+                // 4. Date
+                $clone.find('.mailbox-date').text(ticket.created_at);
+
+                // Click Event
+                $clone.find('tr.ticket-row').on('click', function(e) {
+                    if ($(e.target).is('a')) return;
+                    console.log(`[Tickets List] Opening ticket ${ticket.code}`);
+                    // $(document).trigger('tickets:view-details', [ticket.id]);
+                });
+
+                $tableBody.append($clone);
+            });
+        }
+
+        // Initial Render
+        setTimeout(() => {
+            renderTickets(mockTickets);
+        }, 500); // Simulate network delay
+
+        // ==============================================================
+        // EVENTS
+        // ==============================================================
+        
+        // Refresh Button
+        $('#btn-refresh-list').click(function() {
+            $tableBody.html(`
+                <tr>
+                    <td colspan="4" class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Actualizando...</p>
+                    </td>
+                </tr>
+            `);
+            setTimeout(() => {
+                renderTickets(mockTickets);
+            }, 800);
+        });
+
+        // Filter Change (Simulation)
+        $('#search-tickets').on('keyup', function() {
+            // In a real app, this would trigger an API call
+            console.log('[Tickets List] Search changed');
+        });
+    }
+
+    // Wait for jQuery
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(initTicketsList);
+    } else {
+        var checkJQuery = setInterval(function() {
+            if (typeof jQuery !== 'undefined') {
+                clearInterval(checkJQuery);
+                $(document).ready(initTicketsList);
+            }
+        }, 100);
+        setTimeout(function() {
+            clearInterval(checkJQuery);
+        }, 10000);
+    }
+})();
+</script>
