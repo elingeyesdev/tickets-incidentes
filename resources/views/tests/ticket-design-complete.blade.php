@@ -11,7 +11,7 @@
 
 @section('content')
 
-<div class="row">
+<div class="row" x-data="ticketDemo()">
     <!-- LEFT COLUMN: Sidebar -->
     <div class="col-md-3">
 
@@ -22,7 +22,10 @@
                     <i class="fas fa-folder mr-2"></i>Folders
                 </h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <button type="button" class="btn btn-sm btn-primary" @click="showCreateForm = !showCreateForm" title="Crear nuevo ticket">
+                        <i class="fas fa-plus mr-1"></i>Crear Ticket
+                    </button>
+                    <button type="button" class="btn btn-tool ml-2" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
                     </button>
                 </div>
@@ -111,6 +114,140 @@
 
     <!-- RIGHT COLUMN: Main Content Area -->
     <div class="col-md-9">
+
+        <!-- VISTA DE CREAR TICKET -->
+        <template x-if="showCreateForm">
+            <!-- Back Button -->
+            <div class="mb-3">
+                <button type="button" class="btn btn-secondary" @click="showCreateForm = false">
+                    <i class="fas fa-arrow-left mr-2"></i> Volver al Ticket
+                </button>
+            </div>
+
+            <!-- Create Ticket Form -->
+            <div class="card card-primary card-outline">
+                <div class="card-header with-border">
+                    <h3 class="card-title">Crear Nuevo Ticket</h3>
+                </div>
+
+                <form>
+                    <div class="card-body">
+                        <!-- Row 1: Company & Category -->
+                        <div class="row">
+                            <!-- Compañía -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="createCompany">Compañía <span class="text-danger">*</span></label>
+                                    <select id="createCompany" class="form-control" required>
+                                        <option value="">Selecciona una compañía...</option>
+                                        <option value="1">Acme Corporation</option>
+                                        <option value="2">Tech Solutions Inc.</option>
+                                        <option value="3">Global Enterprises</option>
+                                    </select>
+                                    <small class="form-text text-muted d-block mt-1">
+                                        Selecciona la compañía para la que deseas crear el ticket
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Categoría -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="createCategory">Categoría <span class="text-danger">*</span></label>
+                                    <select id="createCategory" class="form-control" required>
+                                        <option value="">Selecciona una categoría...</option>
+                                        <option value="1">Technical Support</option>
+                                        <option value="2">Billing</option>
+                                        <option value="3">Feature Request</option>
+                                        <option value="4">General Inquiry</option>
+                                    </select>
+                                    <small class="form-text text-muted d-block mt-1">
+                                        Selecciona la categoría que mejor describe tu problema
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Asunto -->
+                        <div class="form-group">
+                            <label for="createTitle">
+                                Asunto <span class="text-danger">*</span>
+                                <span class="float-right">
+                                    <small class="text-muted">0/255</small>
+                                </span>
+                            </label>
+                            <input type="text"
+                                   id="createTitle"
+                                   class="form-control"
+                                   placeholder="Describe brevemente el problema"
+                                   maxlength="255"
+                                   autocomplete="off"
+                                   required>
+                            <small class="form-text text-muted d-block mt-1">
+                                Mínimo 5, máximo 255 caracteres
+                            </small>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="form-group">
+                            <label for="createDescription">
+                                Descripción <span class="text-danger">*</span>
+                                <span class="float-right">
+                                    <small class="text-muted">0/5000</small>
+                                </span>
+                            </label>
+                            <textarea id="createDescription"
+                                      class="form-control"
+                                      placeholder="Proporciona todos los detalles necesarios..."
+                                      rows="6"
+                                      maxlength="5000"
+                                      required
+                                      style="resize: vertical;"></textarea>
+                            <small class="form-text text-muted d-block mt-1">
+                                Mínimo 10, máximo 5000 caracteres
+                            </small>
+                        </div>
+
+                        <!-- Archivos Adjuntos -->
+                        <div class="form-group">
+                            <label for="createAttachment">
+                                Archivos Adjuntos
+                                <span class="badge badge-secondary">0/5</span>
+                            </label>
+                            <div class="custom-file">
+                                <input type="file"
+                                       id="createAttachment"
+                                       class="custom-file-input"
+                                       multiple
+                                       accept=".pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.mp4">
+                                <label class="custom-file-label text-truncate" for="createAttachment">
+                                    Selecciona archivos (máx 5, 10MB c/u)
+                                </label>
+                            </div>
+                            <small class="form-text text-muted d-block mt-1">
+                                Máximo 5 archivos de 10MB cada uno
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-secondary" @click="showCreateForm = false">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled>
+                                <i class="fas fa-paper-plane mr-2"></i>Enviar Ticket
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </template>
+
+        <!-- VISTA DE TICKET NORMAL -->
+        <template x-if="!showCreateForm">
 
         <!-- Ticket Header Card -->
         <div class="card card-primary card-outline mb-3">
@@ -335,6 +472,12 @@
     </div>
     <!-- /.col -->
 
+        </template>
+        <!-- /.VISTA DE TICKET NORMAL -->
+
+    </div>
+    <!-- /.col -->
+
 </div>
 <!-- /.row -->
 
@@ -343,6 +486,12 @@
 @section('js')
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
+    function ticketDemo() {
+        return {
+            showCreateForm: false,
+        }
+    }
+
     function ticketActions() {
         return {
             ticket: {
