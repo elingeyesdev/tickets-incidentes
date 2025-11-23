@@ -255,8 +255,9 @@
                 // Click Event -> View Details
                 $clone.on('click', function(e) {
                     if ($(e.target).is('a')) return; // Don't trigger if clicking a link
-                    console.log(`[Tickets List] Opening ticket ${ticket.ticket_code}`);
-                    $(document).trigger('tickets:view-details', [ticket.id]);
+                    const code = ticket.ticket_code || ticket.code;
+                    console.log(`[Tickets List] Opening ticket ${code}`);
+                    $(document).trigger('tickets:view-details', [code]);
                 });
 
                 $tableBody.append($clone);

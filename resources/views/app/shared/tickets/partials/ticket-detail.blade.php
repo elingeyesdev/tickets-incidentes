@@ -90,10 +90,24 @@
                     }
                 });
 
-                if (response.success) {
-                    currentTicket = response.data;
+                console.log('[Ticket Detail] API Response:', response); // DEBUG
+
+                if (response.success || response.data) { // Handle both standard formats
+                    currentTicket = response.data || response; // Fallback if data is root
+                    console.log('[Ticket Detail] Ticket Data:', currentTicket); // DEBUG
+                    
                     renderTicketData(currentTicket);
+                    console.log('[Ticket Detail] Rendered Data'); // DEBUG
+                    
                     updateActionButtons(currentTicket);
+                    console.log('[Ticket Detail] Updated Buttons'); // DEBUG
+                    
+                    // Notify Chat Component
+                    console.log('[Ticket Detail] Triggering chat load...'); // DEBUG
+                    $(document).trigger('tickets:details-loaded', [currentTicket]);
+                } else {
+                    console.error('[Ticket Detail] API returned success: false', response);
+                    throw new Error(response.message || 'Error desconocido');
                 }
 
             } catch (error) {

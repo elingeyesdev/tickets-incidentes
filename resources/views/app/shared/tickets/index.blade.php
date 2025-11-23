@@ -171,8 +171,9 @@
         <div id="view-create-ticket" class="d-none">
             @include('app.shared.tickets.partials.create-ticket')
         </div>
+
         <div id="view-ticket-details" class="d-none">
-            @include('app.shared.tickets.partials.ticket-detail-mock')
+            @include('app.shared.tickets.partials.ticket-detail')
         </div>
 
     </div>
