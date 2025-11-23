@@ -27,10 +27,59 @@ Route::prefix('test')->group(function () {
 });
 
 // Visual Examples / Communication Lab (NO AUTHENTICATION REQUIRED)
-// CURRENTLY SHOWING: Ticket List Comparison (USER vs AGENT/ADMIN)
+// CURRENTLY SHOWING: Ticket Design Complete
 Route::get('/tests', function () {
-    return view('tests.experiments.ticket-list-comparison');
+    return view('tests.ticket-design-complete');
 })->name('tests.index');
+
+// Alternative Design - Design
+Route::get('/tests2', function () {
+    return view('tests.ticket-design');
+})->name('tests.design');
+
+// Announcement Designs
+Route::get('/tests/announcements', function () {
+    return view('tests.announcements-timeline');
+})->name('tests.announcements.timeline');
+
+Route::get('/tests/announcements/cards', function () {
+    return view('tests.announcements-cards');
+})->name('tests.announcements.cards');
+
+Route::get('/tests/announcements/list', function () {
+    return view('tests.announcements-list');
+})->name('tests.announcements.list');
+
+Route::get('/tests/announcements/accordion', function () {
+    return view('tests.announcements-accordion');
+})->name('tests.announcements.accordion');
+
+// Create Ticket Design Demo
+Route::get('/tests/create-ticket', function () {
+    return view('tests.create-ticket-design');
+})->name('tests.create-ticket');
+
+Route::get('/tests/announcements/feed', function () {
+    return view('tests.announcements-feed');
+})->name('tests.announcements.feed');
+
+Route::get('/tests/announcements/featured', function () {
+    return view('tests.announcements-featured');
+})->name('tests.announcements.featured');
+
+// Help Center Designs
+Route::get('/tests/helpcenter-search-first', function () {
+    return view('tests.helpcenter-search-first');
+})->name('tests.helpcenter.search-first');
+
+Route::get('/tests/helpcenter-faq-accordion', function () {
+    return view('tests.helpcenter-faq-accordion');
+})->name('tests.helpcenter.faq-accordion');
+
+Route::get('/tests/helpcenter-knowledge-base', function () {
+    return view('tests.helpcenter-knowledge-base');
+})->name('tests.helpcenter.knowledge-base');
+
 
 // ========== PUBLIC ROUTES ==========
 

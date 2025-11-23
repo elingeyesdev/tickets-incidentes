@@ -237,6 +237,9 @@
             },
 
             loadCompanyRequestsCount() {
+                // Only load for PLATFORM_ADMIN
+                if (this.activeRole !== 'PLATFORM_ADMIN') return;
+
                 // Load company requests count from API - only PENDING requests
                 const token = localStorage.getItem('access_token');
                 if (!token) return;

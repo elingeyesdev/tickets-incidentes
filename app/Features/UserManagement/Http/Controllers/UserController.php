@@ -117,9 +117,10 @@ class UserController extends Controller
      * - orderBy: created_at, updated_at, email, status, last_login_at, last_activity_at
      * - order: asc, desc (default: desc)
      *
-     * Authorization: PLATFORM_ADMIN or COMPANY_ADMIN
+     * Authorization: PLATFORM_ADMIN, COMPANY_ADMIN, or AGENT
      * - PLATFORM_ADMIN: sees all users
      * - COMPANY_ADMIN: sees only users from their company
+     * - AGENT: sees only users from their company (for ticket assignment)
      *
      * @param Request $request
      * @return JsonResponse
@@ -127,7 +128,7 @@ class UserController extends Controller
     #[OA\Get(
         path: '/api/users',
         summary: 'List users with filters and pagination',
-        description: 'Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN sees only users from their company',
+        description: 'Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN and AGENT see only users from their company.',
         security: [['bearerAuth' => []]],
         tags: ['Users'],
         operationId: 'list_users',
@@ -187,8 +188,9 @@ class UserController extends Controller
         // Authorization check
         $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
         $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
+        $isAgent = $currentUser->hasRole('AGENT');
 
-        if (!$isPlatformAdmin && !$isCompanyAdmin) {
+        if (!$isPlatformAdmin && !$isCompanyAdmin && !$isAgent) {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to list users',
@@ -241,6 +243,7 @@ class UserController extends Controller
      * Authorization:
      * - PLATFORM_ADMIN: can view any user
      * - COMPANY_ADMIN: can view users from their company only
+     * - AGENT: can view users from their company only
      * - Others: forbidden
      *
      * @param string $id User UUID
@@ -249,7 +252,7 @@ class UserController extends Controller
     #[OA\Get(
         path: '/api/users/{id}',
         summary: 'Get specific user by ID',
-        description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only, any user can view themselves',
+        description: 'Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN and AGENT can view users from their company only, any user can view themselves.',
         security: [['bearerAuth' => []]],
         tags: ['Users'],
         operationId: 'show_user',
@@ -279,9 +282,10 @@ class UserController extends Controller
         // Authorization check
         $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
         $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
+        $isAgent = $currentUser->hasRole('AGENT');
 
         // Allow user to view themselves
-        if (!$isPlatformAdmin && !$isCompanyAdmin && $currentUser->id != $id) {
+        if (!$isPlatformAdmin && !$isCompanyAdmin && !$isAgent && $currentUser->id != $id) {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to view user details',

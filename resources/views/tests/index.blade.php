@@ -86,8 +86,81 @@
         </x-adminlte-card>
     </div>
 
+    {{-- Experiment 4: Help Center - Search First --}}
+    <div class="col-md-6">
+        <x-adminlte-card theme="info" icon="fas fa-search" title="Help Center - Búsqueda Primero" collapsible>
+            <p class="text-muted">
+                Diseño centrado en búsqueda con hero section, categorías en cards y artículos populares.
+            </p>
+            <div class="mb-2">
+                <span class="badge badge-primary">Barra de búsqueda prominente</span>
+            </div>
+            <div class="mb-2">
+                <span class="badge badge-success">4 categorías principales</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-calendar"></i> Creado: Nov 2025
+                </small>
+                <a href="{{ url('/tests/helpcenter-search-first') }}" class="btn btn-sm btn-info">
+                    <i class="fas fa-eye"></i> Ver Diseño
+                </a>
+            </div>
+        </x-adminlte-card>
+    </div>
+
+    {{-- Experiment 5: Help Center - FAQ Accordion --}}
+    <div class="col-md-6">
+        <x-adminlte-card theme="purple" icon="fas fa-question-circle" title="Help Center - FAQ Accordion" collapsible>
+            <p class="text-muted">
+                Diseño estilo FAQ con acordeones colapsables y tabs por categoría.
+            </p>
+            <div class="mb-2">
+                <span class="badge badge-info">Preguntas frecuentes</span>
+            </div>
+            <div class="mb-2">
+                <span class="badge badge-warning">Acordeones animados</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-calendar"></i> Creado: Nov 2025
+                </small>
+                <a href="{{ url('/tests/helpcenter-faq-accordion') }}" class="btn btn-sm btn-purple" style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
+                    <i class="fas fa-eye"></i> Ver Diseño
+                </a>
+            </div>
+        </x-adminlte-card>
+    </div>
+
+    {{-- Experiment 6: Help Center - Knowledge Base --}}
+    <div class="col-md-6">
+        <x-adminlte-card theme="dark" icon="fas fa-book-open" title="Help Center - Knowledge Base" collapsible>
+            <p class="text-muted">
+                Diseño tipo knowledge base con artículos destacados y grilla de categorías.
+            </p>
+            <div class="mb-2">
+                <span class="badge badge-warning">Artículos destacados</span>
+            </div>
+            <div class="mb-2">
+                <span class="badge badge-info">Vista completa por categoría</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="fas fa-calendar"></i> Creado: Nov 2025
+                </small>
+                <a href="{{ url('/tests/helpcenter-knowledge-base') }}" class="btn btn-sm btn-dark">
+                    <i class="fas fa-eye"></i> Ver Diseño
+                </a>
+            </div>
+        </x-adminlte-card>
+    </div>
+
     {{-- Future Experiments Placeholder --}}
     <div class="col-md-6">
+
         <x-adminlte-card theme="secondary" icon="fas fa-plus-circle" title="Agregar Nuevo Experimento" collapsible collapsed>
             <p class="text-muted">
                 Para agregar un nuevo experimento al laboratorio:

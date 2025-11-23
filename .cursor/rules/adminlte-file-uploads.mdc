@@ -1,0 +1,607 @@
+---
+alwaysApply: true
+---
+# AdminLTE v3 File Uploads - Official Patterns
+
+## Official File Input Template
+
+**Source:** `https://adminlte.io/themes/v3/pages/forms/general.html`
+
+### Basic File Input (Bootstrap 4 Custom File)
+
+```html
+<div class="form-group">
+    <label for="fileInput">File Label</label>
+    <div class="custom-file">
+        <input type="file" class="custom-file-input" id="fileInput" name="file" multiple>
+        <label class="custom-file-label" for="fileInput">Choose file</label>
+    </div>
+    <small class="form-text text-muted">Helper text about file requirements</small>
+</div>
+```
+
+**❌ WRONG:** Using custom button wrapper
+```html
+<!-- DON'T DO THIS -->
+<div class="btn btn-default btn-file">
+    <i class="fas fa-paperclip"></i> Attach Files
+    <input type="file" ...>
+</div>
+```
+
+**✅ CORRECT:** Using Bootstrap 4 custom-file (AdminLTE v3 standard)
+
+---
+
+## bs-custom-file-input Plugin (Required)
+
+**Purpose:** Updates the file input label with selected file name(s).
+
+**CRITICAL:** This plugin MUST be included in your layout file.
+
+### Include in Layout
+
+Add to your main layout (e.g., `authenticated.blade.php`):
+
+```html
+{{-- bs-custom-file-input (AdminLTE v3 Official Plugin for File Inputs) --}}
+<script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input@1.3.4/dist/bs-custom-file-input.min.js"></script>
+```
+
+**Where to place:** After jQuery and Bootstrap, before your custom scripts.
+
+### Verification and Initialization
+
+```javascript
+// ALWAYS verify plugin is loaded
+if (typeof bsCustomFileInput !== 'undefined') {
+    bsCustomFileInput.init();
+    console.log('[Component] ✓ bs-custom-file-input inicializado');
+} else {
+    console.warn('[Component] ⚠ bs-custom-file-input no disponible, usando fallback');
+    // Fallback: Manual label update
+    $('#fileInput').on('change', function() {
+        const fileCount = this.files.length;
+        const label = $(this).siblings('.custom-file-label');
+        if (fileCount === 0) {
+            label.text('Choose file');
+        } else if (fileCount === 1) {
+            label.text(this.files[0].name);
+        } else {
+            label.text(`${fileCount} files selected`);
+        }
+    });
+}
+```
+
+**Include in layout:**
+```html
+<!-- bs-custom-file-input -->
+<script src="/plugins/bs-custom-file-input/bs-custom-file-input.min.js"></script>
+```
+
+---
+
+## Official File Attachment Display
+
+**Source:** `https://adminlte.io/themes/v3/pages/mailbox/read-mail.html`
+
+### Mailbox Attachments Template (OFFICIAL)
+
+**Use this for displaying uploaded/selected files:**
+
+```html
+<ul class="mailbox-attachments d-flex align-items-stretch clearfix" id="file-list">
+    <!-- Files will be appended here -->
+</ul>
+
+<!-- Template (Hidden) -->
+<template id="template-file-item">
+    <li>
+        <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
+        <div class="mailbox-attachment-info">
+            <a href="#" class="mailbox-attachment-name">
+                <i class="fas fa-paperclip"></i> <span class="file-name file-name-truncate">filename.pdf</span>
+            </a>
+            <span class="mailbox-attachment-size clearfix mt-1">
+                <span class="file-size">1.2 MB</span>
+                <button type="button" class="btn btn-default btn-sm float-right btn-remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        </div>
+    </li>
+</template>
+```
+
+---
+
+## Visual Behavior: align-items-stretch
+
+**Official behavior:** AdminLTE v3 uses `align-items-stretch` which makes ALL file items stretch to the height of the tallest item.
+
+```html
+<ul class="mailbox-attachments d-flex align-items-stretch clearfix">
+```
+
+**This is EXPECTED and OFFICIAL:**
+- All `<li>` elements will have the same height
+- Height matches the tallest item (longest filename)
+- Creates uniform, aligned appearance
+
+### Solution: Truncate Long Filenames (Recommended)
+
+Instead of changing `align-items-stretch`, **truncate filenames to 2 lines** with ellipsis:
+
+**HTML Template:**
+
+```html
+<template id="template-file-item">
+    <li>
+        <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
+        <div class="mailbox-attachment-info">
+            <a href="#" class="mailbox-attachment-name" title="">
+                <i class="fas fa-paperclip"></i> <span class="file-name file-name-truncate">filename.pdf</span>
+            </a>
+            <span class="mailbox-attachment-size clearfix mt-1">
+                <span class="file-size">1.2 MB</span>
+                <button type="button" class="btn btn-default btn-sm float-right btn-remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        </div>
+    </li>
+</template>
+```
+
+**CSS (use @push to add to layout head):**
+
+```blade
+{{-- Push CSS to layout head (better practice than inline <style>) --}}
+@push('css')
+<style>
+/* Agregar espacio entre el small text y la lista de archivos */
+.mailbox-attachments {
+    margin-top: 12px !important;
+}
+
+/* Configurar el link como flex para alinear ícono + texto */
+.mailbox-attachment-name {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Pequeño espacio entre ícono y texto */
+}
+
+/* Truncate filename to max 1 line with ellipsis */
+.file-name-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-all; /* Forzar ruptura en cualquier carácter (incluso guiones bajos) */
+    flex: 1; /* Tomar todo el espacio disponible */
+    min-width: 0; /* Permitir que el flex item se encoja más allá de su contenido */
+}
+
+/* Fix: AdminLTE v3 CSS oficial NO maneja correctamente imágenes portrait/landscape */
+/* Forzar tamaño fijo para todos los thumbnails (portrait, landscape, 16:9, etc.) */
+.mailbox-attachment-icon.has-img {
+    width: 200px !important;          /* ← Ancho fijo igual al contenedor padre */
+    height: 132.5px !important;       /* ← Altura fija igual a los íconos de archivo */
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #f4f4f4; /* ← Fondo gris claro para letterboxing */
+    padding: 0 !important;     /* ← Sobrescribir padding de AdminLTE */
+}
+
+.mailbox-attachment-icon.has-img > img {
+    width: 100% !important;           /* ← Llenar todo el ancho del contenedor */
+    height: 100% !important;          /* ← Llenar toda la altura del contenedor */
+    object-fit: cover !important;     /* ← Recortar manteniendo aspecto (sin distorsión) */
+    object-position: center !important; /* ← Centrar la imagen antes de recortar */
+    max-width: none !important;       /* ← Sobrescribir max-width: 100% de AdminLTE */
+}
+</style>
+@endpush
+```
+
+**Why @push instead of inline <style>?**
+- ✅ CSS goes to `<head>` (better practice)
+- ✅ Works with Blade `@stack('css')` in layout
+- ✅ Avoids inline styles (better performance)
+- ✅ Easier to override if needed
+
+**Why the extra CSS for images?**
+- ⚠️ AdminLTE v3 official CSS has bugs with image thumbnails:
+  - Portrait images: `height: auto` with NO `max-height` → stretch infinitely
+  - Landscape images: `max-width: 100%` → shrink proportionally, reducing height
+- ✅ Our fix forces fixed dimensions: 200px × 132.5px (same as file icons)
+- ✅ Uses `object-fit: cover` to fill the entire space without distortion
+- ✅ All thumbnails same size regardless of aspect ratio (16:9, portrait, square, etc.)
+- ✅ Uses `!important` to override AdminLTE v3 CSS (necessary for landscape images)
+
+**Why move `.file-name-truncate` to the `<span>` instead of `<a>`?**
+- ⚠️ Long filenames with underscores (e.g., `juan_lucas_jdsjdjsd_jdjsd_skjsd.pdf`) disappear completely
+- ⚠️ When `.file-name-truncate` is on `<a>`, the `-webkit-box` display conflicts with icon `<i>`
+- ✅ Moving truncation to `<span class="file-name">` fixes the issue
+- ✅ Parent `<a>` uses `display: flex` to align icon + text properly
+- ✅ `word-break: break-all` forces breaking even on underscores/hyphens
+- ✅ `min-width: 0` allows flex item to shrink beyond content size
+
+**JavaScript: Add tooltip for full name**
+
+```javascript
+// Add title attribute for tooltip (shows full name on hover)
+$item.find('.mailbox-attachment-name').attr('title', file.name);
+```
+
+**Benefits:**
+- ✅ Maintains official `align-items-stretch` behavior
+- ✅ Reduces wasted vertical space
+- ✅ Shows full name on hover (tooltip)
+- ✅ Professional appearance (like Gmail, Google Drive)
+- ✅ Consistent height across all items
+
+### Alternative: Natural Height (NOT recommended)
+
+If you prefer each file to have natural height (not official):
+
+```html
+<!-- Change align-items-stretch to align-items-start -->
+<ul class="mailbox-attachments d-flex align-items-start clearfix">
+```
+
+**Note:** This deviates from AdminLTE v3 official design.
+
+---
+
+## File Type Icons (AdminLTE v3 Official)
+
+### Icon Mapping
+
+```javascript
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+
+    const iconMap = {
+        // Documents
+        'pdf': 'fa-file-pdf',
+        'doc': 'fa-file-word',
+        'docx': 'fa-file-word',
+
+        // Spreadsheets
+        'xls': 'fa-file-excel',
+        'xlsx': 'fa-file-excel',
+        'csv': 'fa-file-excel',
+
+        // Text
+        'txt': 'fa-file-alt',
+        'log': 'fa-file-alt',
+
+        // Video
+        'mp4': 'fa-file-video',
+        'avi': 'fa-file-video',
+        'mov': 'fa-file-video',
+
+        // Audio
+        'mp3': 'fa-file-audio',
+        'wav': 'fa-file-audio',
+
+        // Archives
+        'zip': 'fa-file-archive',
+        'rar': 'fa-file-archive',
+        '7z': 'fa-file-archive',
+
+        // Code
+        'js': 'fa-file-code',
+        'php': 'fa-file-code',
+        'py': 'fa-file-code',
+        'html': 'fa-file-code'
+    };
+
+    return iconMap[ext] || 'fa-file';
+}
+```
+
+### Image Thumbnails (Special Case)
+
+**For images, use `.has-img` class with actual thumbnail:**
+
+```javascript
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+
+if (imageExtensions.includes(ext)) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        $item.find('.mailbox-attachment-icon')
+            .addClass('has-img')
+            .html(`<img src="${e.target.result}" alt="${file.name}">`);
+    };
+    reader.readAsDataURL(file);
+}
+```
+
+---
+
+## Complete File Handling Implementation
+
+```javascript
+// Configuration
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_EXTENSIONS = ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx',
+                            'jpg', 'jpeg', 'png', 'gif', 'mp4'];
+
+let selectedFiles = []; // Array to store File objects
+
+// File Input Handler
+$('#fileInput').on('change', function(e) {
+    const newFiles = Array.from(this.files);
+    console.log(`[Component] Archivos seleccionados: ${newFiles.length}`);
+
+    // Clear input to allow re-selecting same file
+    $(this).val('');
+    $(this).siblings('.custom-file-label').text('Choose file');
+
+    let hasError = false;
+
+    newFiles.forEach(file => {
+        console.log(`[Component] Procesando: ${file.name} (${formatBytes(file.size)})`);
+
+        // Validation: Max Files
+        if (selectedFiles.length >= MAX_FILES) {
+            if (!hasError) {
+                console.warn(`[Component] ❌ Límite alcanzado: ${MAX_FILES} archivos`);
+                Swal.fire('Límite alcanzado', `Máximo ${MAX_FILES} archivos permitidos.`, 'warning');
+            }
+            hasError = true;
+            return;
+        }
+
+        // Validation: Size
+        if (file.size > MAX_FILE_SIZE) {
+            console.warn(`[Component] ❌ Archivo muy grande: ${file.name}`);
+            Swal.fire('Archivo muy grande', `${file.name} excede los ${formatBytes(MAX_FILE_SIZE)}.`, 'warning');
+            return;
+        }
+
+        // Validation: Extension
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+            console.warn(`[Component] ❌ Extensión no permitida: ${ext}`);
+            Swal.fire('Formato no válido', `${file.name} no es válido.`, 'warning');
+            return;
+        }
+
+        // Add to array
+        selectedFiles.push(file);
+        console.log(`[Component] ✓ Archivo validado. Total: ${selectedFiles.length}/${MAX_FILES}`);
+        renderFileItem(file);
+    });
+});
+
+// Render File Item (AdminLTE v3 Official Template)
+function renderFileItem(file) {
+    const template = document.getElementById('template-file-item').content.cloneNode(true);
+    const $item = $(template.querySelector('li'));
+
+    // Set file name and size
+    $item.find('.file-name').text(file.name);
+    $item.find('.file-size').text(formatBytes(file.size));
+
+    // Set icon
+    const ext = file.name.split('.').pop().toLowerCase();
+    const $icon = $item.find('.mailbox-attachment-icon i');
+
+    // Check if image
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+    if (imageExtensions.includes(ext)) {
+        // Show thumbnail for images
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $item.find('.mailbox-attachment-icon')
+                .addClass('has-img')
+                .html(`<img src="${e.target.result}" alt="${file.name}">`);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        // Show icon for other files
+        const iconClass = getFileIcon(file.name);
+        $icon.removeClass('fa-file').addClass(iconClass);
+    }
+
+    // Remove handler
+    $item.find('.btn-remove').on('click', function(e) {
+        e.preventDefault();
+        const index = selectedFiles.indexOf(file);
+        if (index > -1) {
+            selectedFiles.splice(index, 1);
+            $item.remove();
+            console.log(`[Component] Archivo "${file.name}" eliminado. Total: ${selectedFiles.length}`);
+        }
+    });
+
+    // Append to list
+    $('#file-list').append($item);
+    console.log(`[Component] ✓ Archivo agregado a la lista: ${file.name}`);
+}
+
+// Format bytes helper
+function formatBytes(bytes, decimals = 2) {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+```
+
+---
+
+## File Upload to Server (with FormData)
+
+```javascript
+async function uploadFiles(ticketId) {
+    if (selectedFiles.length === 0) return;
+
+    console.log(`[Component] Subiendo ${selectedFiles.length} archivos...`);
+
+    for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`/api/tickets/${ticketId}/attachments`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error uploading ${file.name}`);
+            }
+
+            console.log(`[Component] ✓ Archivo subido: ${file.name}`);
+        } catch (error) {
+            console.error(`[Component] ❌ Error subiendo ${file.name}:`, error);
+            // Continue with other files
+        }
+    }
+}
+```
+
+---
+
+## Form Reset Pattern for File Inputs
+
+```javascript
+$('#btn-reset').on('click', function() {
+    // Clear file input
+    $('#fileInput').val('');
+
+    // Reset label
+    $('.custom-file-label').text('Choose file');
+
+    // Clear file array
+    selectedFiles = [];
+
+    // Clear file list UI
+    $('#file-list').empty();
+
+    console.log('[Component] ✓ File input reset completamente');
+});
+```
+
+---
+
+## Common Mistakes
+
+### ❌ Mistake 1: Not using custom-file structure
+```html
+<!-- WRONG -->
+<input type="file" class="form-control">
+```
+
+**Fix:** Use `custom-file` structure with `custom-file-input` and `custom-file-label`.
+
+### ❌ Mistake 2: Not initializing bs-custom-file-input
+```javascript
+// WRONG - Label won't update with filename
+<input type="file" class="custom-file-input">
+```
+
+**Fix:** Initialize `bsCustomFileInput.init()` or use fallback.
+
+### ❌ Mistake 3: Using custom alert/div for file list
+```html
+<!-- WRONG - Not AdminLTE v3 standard -->
+<div class="alert alert-secondary">
+    <i class="fas fa-file"></i> filename.pdf
+    <button class="close">&times;</button>
+</div>
+```
+
+**Fix:** Use `.mailbox-attachments` official template.
+
+### ❌ Mistake 4: Not clearing input after selection
+```javascript
+// PROBLEM: Can't re-select same file
+$('#fileInput').on('change', function() {
+    // Process files...
+    // Missing: $(this).val('');
+});
+```
+
+**Fix:** Clear input with `$(this).val('')` to allow re-selection.
+
+### ❌ Mistake 5: Missing file validations
+```javascript
+// INCOMPLETE - No size/type checks
+selectedFiles.push(file);
+```
+
+**Fix:** Always validate: size, extension, count.
+
+---
+
+## Advanced: Dropzone.js (For Complex Uploads)
+
+**Source:** `https://adminlte.io/themes/v3/pages/forms/advanced.html`
+
+**When to use:**
+- Need drag & drop
+- Multiple file uploads with progress bars
+- Image previews before upload
+- Advanced UI/UX requirements
+
+**Basic setup:**
+```html
+<!-- Include Dropzone -->
+<link rel="stylesheet" href="/plugins/dropzone/min/dropzone.min.css">
+<script src="/plugins/dropzone/min/dropzone.min.js"></script>
+
+<!-- Dropzone container -->
+<div class="dropzone" id="myDropzone"></div>
+
+<script>
+// Configure Dropzone
+Dropzone.options.myDropzone = {
+    url: "/api/upload",
+    maxFilesize: 10, // MB
+    acceptedFiles: ".pdf,.jpg,.png",
+    addRemoveLinks: true
+};
+</script>
+```
+
+---
+
+## Checklist for File Uploads
+
+- [ ] Using `custom-file` Bootstrap 4 structure
+- [ ] `bs-custom-file-input` initialized (or fallback)
+- [ ] Using `.mailbox-attachments` for file list (not custom divs)
+- [ ] File validations: size, extension, count
+- [ ] Image thumbnails using FileReader API
+- [ ] Correct icons per file type
+- [ ] Remove button functionality
+- [ ] Input cleared after selection (allow re-select)
+- [ ] Files stored in array (not DOM-only)
+- [ ] Complete reset in form cleanup
+- [ ] Logging for debugging
+- [ ] FormData used for upload
+
+---
+
+## Related Files
+
+- See: `create-ticket.blade.php` for complete working example
+- See: `.cursor/rules/adminlte-forms-validation.mdc` for form validation
+- See: `.cursor/rules/component-logging.mdc` for logging patterns

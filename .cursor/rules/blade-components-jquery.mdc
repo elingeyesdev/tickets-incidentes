@@ -1,0 +1,259 @@
+---
+alwaysApply: true
+---
+# Blade Components with jQuery - Best Practices
+
+## Problem Context
+When creating Blade partial components (files in `resources/views/.../partials/`) that are included via `@include` in parent views, inline `<script>` tags may execute **before jQuery is loaded**, causing errors like:
+```
+ERROR: jQuery no está disponible!
+Uncaught ReferenceError: $ is not defined
+```
+
+This happens because:
+1. The partial is included in the HTML early
+2. jQuery is typically loaded at the end of the layout via `@stack('scripts')`
+3. Inline scripts in partials execute immediately when parsed
+4. `@push('scripts')` **does NOT work** inside `@include` partials
+
+## ✅ CORRECT Pattern for Blade Partials with jQuery
+
+### Option 1: Wait for jQuery (Recommended for Partials)
+```blade
+{{-- resources/views/partials/my-component.blade.php --}}
+
+<div id="my-component">
+    <!-- HTML content here -->
+</div>
+
+<script>
+(function() {
+    console.log('[My Component] Script loaded - waiting for jQuery...');
+    
+    // Function to initialize the component
+    function initMyComponent() {
+        console.log('[My Component] jQuery available - Initializing');
+        
+        // Your jQuery code here
+        $('#my-component').on('click', function() {
+            // ...
+        });
+    }
+    
+    // Wait for jQuery to be available
+    if (typeof jQuery !== 'undefined') {
+        // jQuery is already loaded
+        $(document).ready(initMyComponent);
+    } else {
+        // Wait for jQuery to load
+        var checkJQuery = setInterval(function() {
+            if (typeof jQuery !== 'undefined') {
+                console.log('[My Component] jQuery detected after waiting');
+                clearInterval(checkJQuery);
+                $(document).ready(initMyComponent);
+            }
+        }, 100); // Check every 100ms
+        
+        // Timeout after 10 seconds
+        setTimeout(function() {
+            if (typeof jQuery === 'undefined') {
+                clearInterval(checkJQuery);
+                console.error('[My Component] ERROR: jQuery did not load after 10 seconds');
+            }
+        }, 10000);
+    }
+})();
+</script>
+```
+
+### Option 2: Move Script to Parent View (For Simple Cases)
+If the script is small, move it to the parent view's `@push('scripts')` section:
+
+```blade
+{{-- resources/views/partials/my-component.blade.php --}}
+<div id="my-component">
+    <!-- HTML only, no script -->
+</div>
+```
+
+```blade
+{{-- resources/views/parent.blade.php --}}
+@extends('layouts.app')
+
+@section('content')
+    @include('partials.my-component')
+@endsection
+
+@push('scripts')
+<script>
+$(function() {
+    // jQuery is guaranteed to be available here
+    $('#my-component').on('click', function() {
+        // ...
+    });
+});
+</script>
+@endpush
+```
+
+## ❌ INCORRECT Patterns (DO NOT USE)
+
+### ❌ Direct jQuery in Partial (Will Fail)
+```blade
+{{-- DON'T DO THIS --}}
+<script>
+$(function() {
+    // ERROR: $ is not defined
+    $('#my-component').doSomething();
+});
+</script>
+```
+
+### ❌ @push in @include Partial (Will Fail)
+```blade
+{{-- DON'T DO THIS --}}
+@push('scripts')
+<script>
+    // ERROR: @push doesn't work in @include partials
+    // Error: Undefined property: Illuminate\View\Factory::$startPush
+</script>
+@endpush
+```
+
+### ❌ No jQuery Check (Unreliable)
+```blade
+{{-- DON'T DO THIS --}}
+<script>
+// Assumes jQuery is loaded - may fail
+$('#my-component').doSomething();
+</script>
+```
+
+## Rules Summary
+
+### When Creating Blade Partials with JavaScript:
+
+1. **ALWAYS wrap in IIFE**: `(function() { ... })()`
+2. **ALWAYS check for jQuery availability** before using `$`
+3. **NEVER use `@push('scripts')`** inside `@include` partials
+4. **ALWAYS add console logs** for debugging:
+   - Log when script loads
+   - Log when jQuery is detected
+   - Log when initialization completes
+5. **ALWAYS use `$(document).ready()`** or `$(function() {})` for DOM manipulation
+6. **ALWAYS set a timeout** to detect if jQuery never loads
+
+### Debugging Checklist:
+- [ ] Script has console.log at start
+- [ ] jQuery availability is checked
+- [ ] Fallback/wait mechanism is implemented
+- [ ] Timeout error handler is present
+- [ ] Code is wrapped in IIFE
+- [ ] Initialization is in a named function
+
+### File Locations:
+- **Blade Partials**: `resources/views/{module}/partials/{component}.blade.php`
+- **Parent Views**: `resources/views/{module}/{view}.blade.php`
+- **Layouts**: `resources/views/layouts/{layout}.blade.php`
+
+## Examples
+
+### Example 1: Form Component with Select2
+```blade
+{{-- resources/views/tickets/partials/create-form.blade.php --}}
+
+<form id="ticket-form">
+    <select id="category" class="form-control"></select>
+</form>
+
+<script>
+(function() {
+    console.log('[Ticket Form] Script loaded');
+    
+    function initTicketForm() {
+        console.log('[Ticket Form] Initializing Select2');
+        
+        $('#category').select2({
+            theme: 'bootstrap4',
+            ajax: {
+                url: '/api/categories',
+                // ...
+            }
+        });
+    }
+    
+    if (typeof jQuery !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
+        $(document).ready(initTicketForm);
+    } else {
+        var checkDeps = setInterval(function() {
+            if (typeof jQuery !== 'undefined' && typeof $.fn.select2 !== 'undefined') {
+                clearInterval(checkDeps);
+                $(document).ready(initTicketForm);
+            }
+        }, 100);
+        
+        setTimeout(function() {
+            clearInterval(checkDeps);
+            if (typeof jQuery === 'undefined') {
+                console.error('[Ticket Form] jQuery not loaded');
+            } else if (typeof $.fn.select2 === 'undefined') {
+                console.error('[Ticket Form] Select2 not loaded');
+            }
+        }, 10000);
+    }
+})();
+</script>
+```
+
+### Example 2: Simple Event Handler
+```blade
+{{-- resources/views/components/delete-button.blade.php --}}
+
+<button id="delete-btn" class="btn btn-danger">Delete</button>
+
+<script>
+(function() {
+    function initDeleteButton() {
+        $('#delete-btn').on('click', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure?')) {
+                // Delete logic
+            }
+        });
+    }
+    
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(initDeleteButton);
+    } else {
+        var check = setInterval(function() {
+            if (typeof jQuery !== 'undefined') {
+                clearInterval(check);
+                $(document).ready(initDeleteButton);
+            }
+        }, 100);
+    }
+})();
+</script>
+```
+
+## AdminLTE v3 Specific Notes
+
+When working with AdminLTE v3 components (Select2, DataTables, etc.):
+- Check for both jQuery AND the plugin: `typeof $.fn.select2 !== 'undefined'`
+- AdminLTE plugins load after jQuery
+- Use the same wait pattern for plugins
+
+## Cache Clearing
+
+After modifying Blade views, always clear Laravel's view cache:
+```bash
+# With Docker
+docker-compose exec app php artisan view:clear
+
+# Without Docker
+php artisan view:clear
+```
+
+## Related Files
+- See `resources/views/app/shared/tickets/partials/create-ticket.blade.php` for a complete working example
+- See `resources/views/app/shared/tickets/index.blade.php` for parent view integration

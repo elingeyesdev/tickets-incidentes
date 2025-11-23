@@ -1,0 +1,319 @@
+---
+alwaysApply: true
+---
+# AdminLTE v3 Buttons - Official Patterns
+
+## Base Button Structure
+
+**All buttons must start with the `.btn` class:**
+
+```html
+<button type="button" class="btn btn-primary">Primary Button</button>
+```
+
+**Official Reference:** https://adminlte.io/themes/v3/pages/UI/buttons.html
+
+---
+
+## Solid Button Colors (Filled Background)
+
+Use these classes for buttons with solid background colors:
+
+```html
+<button class="btn btn-primary">Primary</button>
+<button class="btn btn-secondary">Secondary</button>
+<button class="btn btn-success">Success</button>
+<button class="btn btn-info">Info</button>
+<button class="btn btn-danger">Danger</button>
+<button class="btn btn-warning">Warning</button>
+<button class="btn btn-light">Light</button>
+<button class="btn btn-dark">Dark</button>
+```
+
+---
+
+## Outline Buttons (Border Only - Recommended for Cancel/Reset)
+
+Use `.btn-outline-*` for buttons with **borders only** (no background fill). These are perfect for secondary actions like "Cancel" or "Discard".
+
+```html
+<!-- Light border (gray) -->
+<button class="btn btn-outline-secondary">Secondary Outline</button>
+
+<!-- Dark border (recommended for cancel buttons) -->
+<button class="btn btn-outline-dark">Dark Outline</button>
+
+<!-- Other outline options -->
+<button class="btn btn-outline-primary">Primary Outline</button>
+<button class="btn btn-outline-success">Success Outline</button>
+<button class="btn btn-outline-danger">Danger Outline</button>
+```
+
+### Color Reference (from AdminLTE v3 CSS):
+
+```css
+.btn-outline-secondary {
+  color: #6c757d;           /* Lighter gray text */
+  border-color: #6c757d;    /* Lighter gray border */
+}
+
+.btn-outline-dark {
+  color: #343a40;           /* Dark gray text */
+  border-color: #343a40;    /* Dark gray border ← More prominent */
+}
+```
+
+**When to use `.btn-outline-dark`:**
+- Cancel/Discard buttons (secondary action)
+- Reset form buttons
+- Back buttons
+- Any non-primary action
+
+**When to use `.btn-outline-secondary`:**
+- Slightly less prominent alternative action
+- When you want a lighter gray appearance
+
+---
+
+## Button Sizes
+
+Apply alongside the color class:
+
+```html
+<!-- Large -->
+<button class="btn btn-primary btn-lg">Large Primary</button>
+
+<!-- Normal (default) -->
+<button class="btn btn-primary">Primary</button>
+
+<!-- Small -->
+<button class="btn btn-primary btn-sm">Small Primary</button>
+
+<!-- Extra Small -->
+<button class="btn btn-primary btn-xs">Extra Small Primary</button>
+```
+
+---
+
+## Button Variations
+
+### Flat Buttons (No Shadow)
+
+```html
+<button class="btn btn-primary btn-flat">Flat Primary</button>
+```
+
+### Block Buttons (Full Width)
+
+```html
+<button class="btn btn-primary btn-block">Full Width Primary</button>
+```
+
+### Disabled State
+
+```html
+<!-- HTML disabled attribute -->
+<button class="btn btn-primary" disabled>Disabled Button</button>
+
+<!-- CSS class (for accessibility) -->
+<button class="btn btn-primary disabled">Disabled Button</button>
+```
+
+---
+
+## Button Alignment and Spacing
+
+### Icon + Text Alignment Issue
+
+**Problem:** Icons and text in buttons are often misaligned vertically.
+
+**Solution:** Use flexbox on buttons to properly center icons and text:
+
+```css
+.btn {
+    display: inline-flex;    /* Use flexbox instead of inline */
+    align-items: center;     /* Center items vertically */
+    gap: 6px;                /* Space between icon and text */
+}
+```
+
+**Result:**
+- ✅ Icon and text perfectly centered
+- ✅ Consistent alignment across all buttons
+- ✅ Works with any icon library (FontAwesome, etc.)
+
+### Button Group Spacing
+
+When you have multiple buttons in a row (like Cancel + Submit), add margin to create space:
+
+```css
+/* Space between buttons when they're next to each other */
+.btn-group .btn {
+    margin-right: 10px; /* Or use gap in flex container */
+}
+
+/* Or use margin on specific buttons */
+#btn-discard {
+    margin-right: 10px;
+}
+```
+
+**HTML:**
+```html
+<div class="float-right">
+    <!-- Buttons will have space between them -->
+    <button class="btn btn-outline-dark" id="btn-discard">
+        <i class="fas fa-times"></i> Descartar
+    </button>
+    <button class="btn btn-primary">
+        <i class="fas fa-save"></i> Guardar
+    </button>
+</div>
+```
+
+**Better approach using flexbox:**
+```html
+<div class="float-right d-flex gap-2">
+    <!-- Bootstrap utility classes handle spacing -->
+    <button class="btn btn-outline-dark">
+        <i class="fas fa-times"></i> Descartar
+    </button>
+    <button class="btn btn-primary">
+        <i class="fas fa-save"></i> Guardar
+    </button>
+</div>
+```
+
+---
+
+## Common Patterns
+
+### Form Action Buttons (Best Practice)
+
+```html
+<div class="card-footer">
+    <div class="float-right">
+        <!-- Cancel/Discard: Use outline-dark -->
+        <button type="button" class="btn btn-outline-dark" id="btn-discard">
+            <i class="fas fa-times"></i> Descartar
+        </button>
+
+        <!-- Submit: Use primary with solid background -->
+        <button type="submit" class="btn btn-primary">
+            <i class="far fa-envelope"></i> Enviar
+        </button>
+    </div>
+</div>
+```
+
+**Why this pattern?**
+- ✅ Primary action (submit) is visually prominent
+- ✅ Secondary action (discard) is visually de-emphasized
+- ✅ Follows AdminLTE v3 official recommendations
+- ✅ Dark outline border is clear and professional
+- ✅ Icons and text properly aligned with flexbox
+- ✅ Adequate spacing between buttons (10px margin)
+
+### With Icons
+
+AdminLTE v3 includes FontAwesome icons by default:
+
+```html
+<!-- Success with icon -->
+<button class="btn btn-success">
+    <i class="fas fa-check"></i> Guardar
+</button>
+
+<!-- Delete/Danger with icon -->
+<button class="btn btn-danger">
+    <i class="fas fa-trash"></i> Eliminar
+</button>
+
+<!-- Discard with icon -->
+<button class="btn btn-outline-dark">
+    <i class="fas fa-times"></i> Descartar
+</button>
+```
+
+### Button Groups
+
+```html
+<div class="btn-group" role="group">
+    <button type="button" class="btn btn-secondary">Left</button>
+    <button type="button" class="btn btn-secondary">Middle</button>
+    <button type="button" class="btn btn-secondary">Right</button>
+</div>
+```
+
+---
+
+## DO's and DON'Ts
+
+### ❌ DON'T
+
+```html
+<!-- WRONG: Using Bootstrap classes without AdminLTE -->
+<button class="btn btn-default">Default</button>
+
+<!-- WRONG: Mixing different button styles inconsistently -->
+<button class="btn btn-secondary">Secondary</button>
+<button class="btn btn-light">Light</button>  <!-- Hard to see on white background -->
+
+<!-- WRONG: Not using outline for secondary actions -->
+<button class="btn btn-danger">Discard</button>  <!-- Looks like a dangerous action -->
+```
+
+### ✅ DO
+
+```html
+<!-- CORRECT: Use outline for secondary actions -->
+<button class="btn btn-outline-dark">Descartar</button>
+
+<!-- CORRECT: Use primary for main action -->
+<button class="btn btn-primary">Enviar</button>
+
+<!-- CORRECT: Use consistent color scheme -->
+<button class="btn btn-success">Guardar</button>
+<button class="btn btn-outline-dark">Cancelar</button>
+```
+
+---
+
+## Color Palette (AdminLTE v3)
+
+| Class | Background | Border | Use Case |
+|-------|-----------|--------|----------|
+| `.btn-primary` | `#007bff` | - | Main actions |
+| `.btn-secondary` | `#6c757d` | - | Alternative actions |
+| `.btn-success` | `#28a745` | - | Confirm/Save |
+| `.btn-danger` | `#dc3545` | - | Delete/Danger |
+| `.btn-warning` | `#ffc107` | - | Warning actions |
+| `.btn-info` | `#17a2b8` | - | Information |
+| `.btn-light` | `#f8f9fa` | - | Subtle actions |
+| `.btn-dark` | `#343a40` | - | Dark actions |
+| **Outline Variants** | `transparent` | Color | Secondary actions |
+
+---
+
+## JavaScript Interactions
+
+### Disable button during submission
+
+```javascript
+$submitBtn = $('#btn-submit');
+
+$submitBtn.prop('disabled', true);
+$submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+
+// Re-enable after completion
+$submitBtn.prop('disabled', false);
+$submitBtn.html('<i class="fas fa-envelope"></i> Enviar');
+```
+
+---
+
+## Related Files
+
+- See: `.cursor/rules/adminlte-forms-validation.mdc` for form patterns
+- See: `resources/views/app/shared/tickets/partials/create-ticket.blade.php` for usage example
+- Official: https://adminlte.io/themes/v3/pages/UI/buttons.html
