@@ -27,6 +27,9 @@ class AnnouncementSchemaController extends Controller
         operationId: 'get_announcement_schemas',
         description: 'Returns the metadata schema structure for each announcement type. Only COMPANY_ADMIN and PLATFORM_ADMIN can access this endpoint. Used by frontend to dynamically build forms.',
         summary: 'Get announcement type schemas',
+        security: [
+            ['bearerAuth' => []],
+        ],
         tags: ['Announcements'],
         responses: [
             new OA\Response(

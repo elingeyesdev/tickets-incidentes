@@ -6037,7 +6037,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/help-center/articles": {
@@ -14637,7 +14642,7 @@
                     "Users"
                 ],
                 "summary": "List users with filters and pagination",
-                "description": "Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN sees only users from their company",
+                "description": "Returns paginated list of users with optional filters. PLATFORM_ADMIN sees all users, COMPANY_ADMIN and AGENT see only users from their company.",
                 "operationId": "list_users",
                 "parameters": [
                     {
@@ -14849,7 +14854,7 @@
                     "Users"
                 ],
                 "summary": "Get specific user by ID",
-                "description": "Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN can view users from their company only, any user can view themselves",
+                "description": "Returns complete user information. PLATFORM_ADMIN can view any user, COMPANY_ADMIN and AGENT can view users from their company only, any user can view themselves.",
                 "operationId": "show_user",
                 "parameters": [
                     {

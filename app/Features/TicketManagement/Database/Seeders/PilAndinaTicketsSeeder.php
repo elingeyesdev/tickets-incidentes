@@ -1,4 +1,4 @@
-todos<?php
+<?php
 
 namespace App\Features\TicketManagement\Database\Seeders;
 
