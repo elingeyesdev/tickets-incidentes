@@ -10,8 +10,8 @@
                     PENDING
                 </span>
                 <div class="card-tools" style="display: inline-block;">
-                    <button type="button" class="btn btn-tool" id="btn-close-ticket-detail" title="Volver a la lista">
-                        <i class="fas fa-times"></i>
+                    <button type="button" class="btn btn-tool" id="btn-minimize-ticket-detail" title="Minimizar pestaña" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
                     </button>
                 </div>
             </div>

@@ -109,10 +109,41 @@
 
         let currentState = {
             page: 1,
-            per_page: 15,
-            filters: {}, // { status: 'open', search: '...' }
+            per_page: 50, // User requested 50 per page
+            filters: {}, 
             meta: null
         };
+
+        // ==============================================================
+        // HELPER FUNCTIONS
+        // ==============================================================
+
+        const statusMap = {
+            'open': { label: 'Abierto', icon: 'fa-circle', color: 'text-danger' },
+            'pending': { label: 'Pendiente', icon: 'fa-clock', color: 'text-warning' },
+            'resolved': { label: 'Resuelto', icon: 'fa-check-circle', color: 'text-success' },
+            'closed': { label: 'Cerrado', icon: 'fa-times-circle', color: 'text-secondary' }
+        };
+
+        function getStatusConfig(status) {
+            return statusMap[status] || { label: status, icon: 'fa-circle', color: 'text-secondary' };
+        }
+
+        function formatRelativeTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return 'Hace un momento';
+            if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} mins`;
+            if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)} horas`;
+            if (diffInSeconds < 172800) return 'Ayer';
+            
+            // Format: DD MMM (e.g., 23 Nov)
+            const options = { day: 'numeric', month: 'short' };
+            return date.toLocaleDateString('es-ES', options);
+        }
 
         // ==============================================================
         // CORE FUNCTIONS
@@ -196,24 +227,8 @@
                 const $clone = $($template.html());
                 
                 // 1. Status (Icon + Text)
-                let statusIcon = 'fa-circle';
-                let statusColor = 'text-secondary';
-                
-                if (ticket.status === 'open') {
-                    statusIcon = 'fa-circle';
-                    statusColor = 'text-danger';
-                } else if (ticket.status === 'pending') {
-                    statusIcon = 'fa-clock';
-                    statusColor = 'text-warning';
-                } else if (ticket.status === 'resolved') {
-                    statusIcon = 'fa-check-circle';
-                    statusColor = 'text-success';
-                } else if (ticket.status === 'closed') {
-                    statusIcon = 'fa-times-circle';
-                    statusColor = 'text-secondary';
-                }
-                
-                const statusHtml = `<i class="fas ${statusIcon} ${statusColor} mr-2"></i> <span class="text-dark">${ticket.status_label || ticket.status}</span>`;
+                const statusConfig = getStatusConfig(ticket.status);
+                const statusHtml = `<i class="fas ${statusConfig.icon} ${statusConfig.color} mr-2"></i> <span class="text-dark">${statusConfig.label}</span>`;
                 $clone.find('.mailbox-name').html(statusHtml);
 
                 // 2. Subject (Code + Title + Response Count)
@@ -234,16 +249,8 @@
                     $clone.find('.mailbox-attachment').empty();
                 }
 
-                // 4. Date (Format nicely if possible, otherwise use raw)
-                // Simple formatter: "Hace X tiempo" or Date string
-                // For now using the raw string or a simple JS date
-                let dateDisplay = ticket.created_at;
-                try {
-                    const date = new Date(ticket.created_at);
-                    dateDisplay = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                } catch(e) {}
-                
-                $clone.find('.mailbox-date').text(dateDisplay);
+                // 4. Date (Relative Format)
+                $clone.find('.mailbox-date').text(formatRelativeTime(ticket.created_at));
 
                 // Click Event -> View Details
                 $clone.on('click', function(e) {
@@ -262,10 +269,25 @@
         function updatePagination(meta) {
             if (!meta) return;
 
-            // Text: "1-15/45"
-            const from = meta.from || 0;
-            const to = meta.to || 0;
             const total = meta.total || 0;
+            let from = meta.from;
+            let to = meta.to;
+
+            // Fallback calculation if API returns null for from/to but we have items
+            if (total > 0 && (!from || !to)) {
+                const currentPage = meta.current_page || 1;
+                const perPage = parseInt(meta.per_page) || 50;
+                
+                from = (currentPage - 1) * perPage + 1;
+                to = Math.min(from + perPage - 1, total);
+            }
+
+            // If still 0/null and total is 0, then it is 0-0
+            if (total === 0) {
+                from = 0;
+                to = 0;
+            }
+
             $paginationInfo.text(`${from}-${to}/${total}`);
 
             // Buttons State
