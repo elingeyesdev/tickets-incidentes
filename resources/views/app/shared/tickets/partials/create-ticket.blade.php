@@ -12,17 +12,19 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="createCompany">Compañía <span class="text-danger">*</span></label>
-                        <select id="createCompany" class="form-control select2" style="width: 100%;" required>
+                        <select id="createCompany" name="company_id" class="form-control select2" style="width: 100%;" required>
                             <option value="">Selecciona una compañía...</option>
                         </select>
+                        <small class="form-text text-muted">Selecciona la compañía relacionada con este ticket</small>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="createCategory">Categoría <span class="text-danger">*</span></label>
-                        <select id="createCategory" class="form-control select2" style="width: 100%;" disabled required>
+                        <select id="createCategory" name="category_id" class="form-control select2" style="width: 100%;" disabled required>
                             <option value="">Selecciona una compañía primero</option>
                         </select>
+                        <small class="form-text text-muted">Categoría que mejor describe el problema</small>
                     </div>
                 </div>
             </div>
@@ -30,25 +32,28 @@
             {{-- Subject --}}
             <div class="form-group">
                 <label for="createTitle">Asunto <span class="text-danger">*</span></label>
-                <input type="text" id="createTitle" class="form-control" placeholder="Asunto:" required maxlength="255">
+                <input type="text" id="createTitle" name="title" class="form-control" placeholder="Asunto:" required minlength="5" maxlength="255">
+                <small class="form-text text-muted">Resumen breve del problema (mínimo 5 caracteres)</small>
                 <small class="text-muted float-right" id="title-counter">0/255</small>
             </div>
 
             {{-- Description --}}
             <div class="form-group">
                 <label for="createDescription">Descripción <span class="text-danger">*</span></label>
-                <textarea id="createDescription" class="form-control" style="height: 300px" placeholder="Escribe aquí los detalles del problema..." required maxlength="5000"></textarea>
+                <textarea id="createDescription" name="description" class="form-control" style="height: 300px" placeholder="Escribe aquí los detalles del problema..." required minlength="10" maxlength="5000"></textarea>
+                <small class="form-text text-muted">Describe el problema con el mayor detalle posible (mínimo 10 caracteres)</small>
                 <small class="text-muted float-right" id="description-counter">0/5000</small>
             </div>
 
             {{-- File Input --}}
             <div class="form-group">
-                <div class="btn btn-default btn-file">
-                    <i class="fas fa-paperclip"></i> Adjuntar Archivos
-                    <input type="file" id="createAttachment" name="attachment" multiple accept=".pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.mp4">
+                <label for="createAttachment">Adjuntar Archivos</label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="createAttachment" name="attachment" multiple accept=".pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg,.mp4">
+                    <label class="custom-file-label" for="createAttachment">Seleccionar archivos...</label>
                 </div>
-                <p class="help-block">Max. 10MB por archivo (Límite 5 archivos)</p>
-                
+                <small class="form-text text-muted">Máximo 10MB por archivo. Límite de 5 archivos. Formatos permitidos: PDF, imágenes, documentos Office, videos.</small>
+
                 {{-- File List Container --}}
                 <div id="file-list-container" class="mt-2">
                     {{-- Files will be appended here via jQuery --}}
@@ -199,12 +204,34 @@
     // ==============================================================
     // FILE HANDLING
     // ==============================================================
-    
+
+    // Initialize bs-custom-file-input plugin (AdminLTE v3 standard)
+    if (typeof bsCustomFileInput !== 'undefined') {
+        bsCustomFileInput.init();
+        console.log('[Create Ticket] ✓ bs-custom-file-input inicializado');
+    } else {
+        // Fallback: Actualizar label manualmente si el plugin no está disponible
+        console.log('[Create Ticket] ⚠ bs-custom-file-input no disponible, usando fallback manual');
+        $fileInput.on('change', function() {
+            const fileCount = this.files.length;
+            const label = $(this).siblings('.custom-file-label');
+            if (fileCount === 0) {
+                label.text('Seleccionar archivos...');
+            } else if (fileCount === 1) {
+                label.text(this.files[0].name);
+            } else {
+                label.text(`${fileCount} archivos seleccionados`);
+            }
+        });
+    }
+
     $fileInput.on('change', function(e) {
         const newFiles = Array.from(this.files);
-        
+
         // Clear input to allow re-selecting same file
         $(this).val('');
+        // Reset label after clearing input
+        $(this).siblings('.custom-file-label').text('Seleccionar archivos...');
 
         let hasError = false;
 
@@ -296,13 +323,36 @@
     $form.validate({
         errorElement: 'span',
         errorClass: 'invalid-feedback',
+        errorPlacement: function(error, element) {
+            // Para Select2, colocar el error después del contenedor .select2
+            if (element.hasClass('select2') && element.next('.select2-container').length) {
+                error.insertAfter(element.next('.select2-container'));
+            } else {
+                // Para otros elementos, colocar después del elemento
+                error.insertAfter(element);
+            }
+        },
         highlight: function(element, errorClass, validClass) {
             $(element).addClass('is-invalid');
+            // Para Select2, agregar clase al contenedor también
+            if ($(element).hasClass('select2')) {
+                $(element).next('.select2-container').find('.select2-selection').addClass('is-invalid');
+            }
         },
         unhighlight: function(element, errorClass, validClass) {
             $(element).removeClass('is-invalid');
+            // Para Select2, remover clase del contenedor también
+            if ($(element).hasClass('select2')) {
+                $(element).next('.select2-container').find('.select2-selection').removeClass('is-invalid');
+            }
         },
         rules: {
+            company_id: {
+                required: true
+            },
+            category_id: {
+                required: true
+            },
             title: {
                 required: true,
                 minlength: 5,
@@ -315,6 +365,12 @@
             }
         },
         messages: {
+            company_id: {
+                required: "Debes seleccionar una compañía"
+            },
+            category_id: {
+                required: "Debes seleccionar una categoría"
+            },
             title: {
                 required: "El asunto es obligatorio",
                 minlength: "El asunto debe tener al menos 5 caracteres",
@@ -327,16 +383,6 @@
             }
         },
         submitHandler: function(form) {
-            // Manual validation for Select2 (since they are hidden inputs usually)
-            if (!$companySelect.val()) {
-                Swal.fire('Error', 'Debes seleccionar una compañía', 'error');
-                return false;
-            }
-            if (!$categorySelect.val()) {
-                Swal.fire('Error', 'Debes seleccionar una categoría', 'error');
-                return false;
-            }
-
             submitTicket();
         }
     });
@@ -444,8 +490,21 @@
     $('#btn-discard-ticket').on('click', function() {
         $form[0].reset();
         $companySelect.val(null).trigger('change');
+        $categorySelect.val(null).trigger('change');
         selectedFiles = [];
         $fileList.empty();
+
+        // Reset character counters
+        $('#title-counter').text('0/255');
+        $('#description-counter').text('0/5000');
+
+        // Reset custom file input label
+        $('.custom-file-label').text('Seleccionar archivos...');
+
+        // Remove validation errors
+        $form.find('.is-invalid').removeClass('is-invalid');
+        $form.find('.invalid-feedback').remove();
+
         $(document).trigger('tickets:discarded');
     });
     } // End of initCreateTicketForm
