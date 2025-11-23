@@ -16,7 +16,7 @@
         
         {{-- CREATE BUTTON (USER ONLY) --}}
         @if($role === 'USER')
-            <a href="#" id="btn-compose" class="btn btn-primary btn-block mb-3"><i class="fas fa-plus mr-2"></i>Crear Ticket</a>
+            <a href="#" id="btn-compose" class="btn btn-primary btn-block mb-3 text-center d-flex justify-content-center align-items-center"><i class="fas fa-plus mr-2"></i>Crear Ticket</a>
         @else
             {{-- REFRESH BUTTON (AGENT/ADMIN) --}}
             <button id="btn-refresh-sidebar" class="btn btn-primary btn-block mb-3">
@@ -192,122 +192,136 @@
         }
     };
 
-    $(function() {
-        // ==============================================================
-        // NAVIGATION LOGIC
-        // ==============================================================
-        const $mainContainer = $('#tickets-main-container');
-        const $createContainer = $('#view-create-ticket');
-        const $detailsContainer = $('#view-ticket-details');
-        
-        const $btnCompose = $('#btn-compose');
-        
-        // Show Create View
-        $btnCompose.on('click', function(e) {
-            e.preventDefault();
+    (function() {
+        function initTicketSystem() {
+            console.log('[Tickets Index] Initializing navigation logic...');
             
-            if ($mainContainer.hasClass('d-none')) {
-                // Currently in create view, go back to list
-                $createContainer.addClass('d-none');
-                $detailsContainer.addClass('d-none');
-                $mainContainer.removeClass('d-none');
-                $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
-            } else {
-                // Currently in list view, go to create
-                $mainContainer.addClass('d-none');
-                $detailsContainer.addClass('d-none');
-                $createContainer.removeClass('d-none');
-                $btnCompose.html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
-            }
-        });
-
-        // Event: View Ticket Details
-        $(document).on('tickets:view-details', function(e, ticketId) {
-            console.log(`[Index] Viewing details for ticket ${ticketId}`);
-            $mainContainer.addClass('d-none');
-            $createContainer.addClass('d-none');
-            $detailsContainer.removeClass('d-none');
+            // ==============================================================
+            // NAVIGATION LOGIC
+            // ==============================================================
+            const $mainContainer = $('#tickets-main-container');
+            const $createContainer = $('#view-create-ticket');
+            const $detailsContainer = $('#view-ticket-details');
             
-            // Update Compose Button to "Back" style if needed, or keep as is
-            // For now, let's change it to "Back to Inbox" to allow easy return
-            if ($btnCompose.length) {
-                $btnCompose.html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
-                // We need to override the click handler temporarily or handle state better
-                // But the existing click handler checks for d-none on mainContainer, so it should work to go back!
-            }
-        });
-
-        // Event: Show List (Back from details)
-        $(document).on('tickets:show-list', function() {
-            console.log('[Index] Returning to list');
-            $detailsContainer.addClass('d-none');
-            $createContainer.addClass('d-none');
-            $mainContainer.removeClass('d-none');
+            const $btnCompose = $('#btn-compose');
             
-            if ($btnCompose.length) {
-                $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
-            }
-        });
-
-        // Handle "Discard" or "Created" events from Create Component
-
-        // Handle "Discard" or "Created" events from Create Component
-        $(document).on('tickets:discarded tickets:created', function() {
-            // Return to list view
-            $createContainer.addClass('d-none');
-            $detailsContainer.addClass('d-none');
-            $mainContainer.removeClass('d-none');
-            $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
-            
-            // If ticket was created, refresh list and stats
-            if (event.type === 'tickets:created') {
-                $(document).trigger('tickets:refresh-list');
-                $(document).trigger('tickets:stats-update-required');
-            }
-        });
-
-
-        // ==============================================================
-        // SIDEBAR LOGIC (Folders & Status)
-        // ==============================================================
-
-        // 1. Handle Filter Clicks (Folders & Status)
-        $('.nav-link[data-filter], .nav-link[data-status]').on('click', function(e) {
-            e.preventDefault();
-            
-            // If we're in another view, return to list
-            if ($mainContainer.hasClass('d-none')) {
-                $createContainer.addClass('d-none');
-                $detailsContainer.addClass('d-none');
-                $mainContainer.removeClass('d-none');
-                $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
-            }
-
-            // Visual Update (Active State)
-            $('.nav-link').removeClass('active');
-            $(this).addClass('active');
-
-            // Get Filter Data
-            const filterType = $(this).data('filter') ? 'folder' : 'status';
-            const value = $(this).data('filter') || $(this).data('status');
-
-            console.log(`[Sidebar] Filter clicked: ${filterType} = ${value}`);
-
-            // Trigger Event for the List Component to handle
-            $(document).trigger('tickets:filter-changed', {
-                type: filterType,
-                value: value
+            // Show Create View
+            $btnCompose.on('click', function(e) {
+                e.preventDefault();
+                
+                if ($mainContainer.hasClass('d-none')) {
+                    // Currently in create view, go back to list
+                    $createContainer.addClass('d-none');
+                    $detailsContainer.addClass('d-none');
+                    $mainContainer.removeClass('d-none');
+                    $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                } else {
+                    // Currently in list view, go to create
+                    $mainContainer.addClass('d-none');
+                    $detailsContainer.addClass('d-none');
+                    $createContainer.removeClass('d-none');
+                    $btnCompose.html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
+                }
             });
-        });
 
-        // 2. Load Stats (Counters)
-        loadSidebarStats();
+            // Event: View Ticket Details
+            $(document).on('tickets:view-details', function(e, ticketId) {
+                console.log(`[Index] Viewing details for ticket ${ticketId}`);
+                $mainContainer.addClass('d-none');
+                $createContainer.addClass('d-none');
+                $detailsContainer.removeClass('d-none');
+                
+                // Update Compose Button to "Back" style if needed
+                if ($btnCompose.length) {
+                    $btnCompose.html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
+                }
+            });
 
-        // Escuchar evento para recargar stats cuando sea necesario (ej: ticket creado/actualizado)
-        $(document).on('tickets:stats-update-required', function() {
+            // Event: Show List (Back from details)
+            $(document).on('tickets:show-list', function() {
+                console.log('[Index] Returning to list');
+                $detailsContainer.addClass('d-none');
+                $createContainer.addClass('d-none');
+                $mainContainer.removeClass('d-none');
+                
+                if ($btnCompose.length) {
+                    $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                }
+            });
+
+            // Handle "Discard" or "Created" events from Create Component
+            $(document).on('tickets:discarded tickets:created', function(event) {
+                // Return to list view
+                $createContainer.addClass('d-none');
+                $detailsContainer.addClass('d-none');
+                $mainContainer.removeClass('d-none');
+                $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                
+                // If ticket was created, refresh list and stats
+                if (event.type === 'tickets:created') {
+                    $(document).trigger('tickets:refresh-list');
+                    $(document).trigger('tickets:stats-update-required');
+                }
+            });
+
+
+            // ==============================================================
+            // SIDEBAR LOGIC (Folders & Status)
+            // ==============================================================
+
+            // 1. Handle Filter Clicks (Folders & Status)
+            $('.nav-link[data-filter], .nav-link[data-status]').on('click', function(e) {
+                e.preventDefault();
+                
+                // If we're in another view, return to list
+                if ($mainContainer.hasClass('d-none')) {
+                    $createContainer.addClass('d-none');
+                    $detailsContainer.addClass('d-none');
+                    $mainContainer.removeClass('d-none');
+                    $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                }
+
+                // Visual Update (Active State)
+                $('.nav-link').removeClass('active');
+                $(this).addClass('active');
+
+                // Get Filter Data
+                const filterType = $(this).data('filter') ? 'folder' : 'status';
+                const value = $(this).data('filter') || $(this).data('status');
+
+                console.log(`[Sidebar] Filter clicked: ${filterType} = ${value}`);
+
+                // Trigger Event for the List Component to handle
+                $(document).trigger('tickets:filter-changed', {
+                    type: filterType,
+                    value: value
+                });
+            });
+
+            // 2. Load Stats (Counters)
             loadSidebarStats();
-        });
-    });
+
+            // Escuchar evento para recargar stats cuando sea necesario (ej: ticket creado/actualizado)
+            $(document).on('tickets:stats-update-required', function() {
+                loadSidebarStats();
+            });
+        }
+
+        // Wait for jQuery
+        if (typeof jQuery !== 'undefined') {
+            $(document).ready(initTicketSystem);
+        } else {
+            var checkJQuery = setInterval(function() {
+                if (typeof jQuery !== 'undefined') {
+                    clearInterval(checkJQuery);
+                    $(document).ready(initTicketSystem);
+                }
+            }, 100);
+            setTimeout(function() {
+                clearInterval(checkJQuery);
+            }, 10000);
+        }
+    })();
 
     /**
      * Load Stats for Sidebar Badges

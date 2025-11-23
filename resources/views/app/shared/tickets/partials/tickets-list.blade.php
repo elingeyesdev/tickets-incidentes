@@ -88,6 +88,7 @@
     </tr>
 </template>
 
+
 <script>
 (function() {
     console.log('[Tickets List] Script loaded - waiting for jQuery...');
@@ -96,91 +97,90 @@
         console.log('[Tickets List] jQuery available - Initializing');
 
         // ==============================================================
-        // SIMULATED DATA
-        // ==============================================================
-        const mockTickets = [
-            {
-                id: 1,
-                code: 'TKT-2025-001',
-                title: 'Problema con la impresora de RRHH',
-                status: 'open',
-                status_label: 'Abierto',
-                created_at: 'Hace 5 mins',
-                creator_name: 'Juan Perez',
-                owner_agent_name: null,
-                category_name: 'Hardware',
-                responses_count: 2,
-                attachments_count: 1,
-                is_new: true
-            },
-            {
-                id: 2,
-                code: 'TKT-2025-002',
-                title: 'Error al acceder al ERP',
-                status: 'pending',
-                status_label: 'Pendiente',
-                created_at: 'Hace 2 horas',
-                creator_name: 'Maria Garcia',
-                owner_agent_name: 'Carlos Admin',
-                category_name: 'Software',
-                responses_count: 5,
-                attachments_count: 0,
-                is_new: false
-            },
-            {
-                id: 3,
-                code: 'TKT-2025-003',
-                title: 'Solicitud de acceso a VPN',
-                status: 'resolved',
-                status_label: 'Resuelto',
-                created_at: 'Ayer',
-                creator_name: 'Pedro Lopez',
-                owner_agent_name: 'Carlos Admin',
-                category_name: 'Redes',
-                responses_count: 8,
-                attachments_count: 2,
-                is_new: false
-            },
-            {
-                id: 4,
-                code: 'TKT-2025-004',
-                title: 'Pantalla azul en laptop',
-                status: 'closed',
-                status_label: 'Cerrado',
-                created_at: 'Hace 2 dias',
-                creator_name: 'Ana Martinez',
-                owner_agent_name: 'Carlos Admin',
-                category_name: 'Hardware',
-                responses_count: 12,
-                attachments_count: 3,
-                is_new: false
-            },
-            {
-                id: 5,
-                code: 'TKT-2025-005',
-                title: 'Actualización de Licencia Office',
-                status: 'open',
-                status_label: 'Abierto',
-                created_at: 'Hace 3 dias',
-                creator_name: 'Luis Rodriguez',
-                owner_agent_name: null,
-                category_name: 'Software',
-                responses_count: 1,
-                attachments_count: 0,
-                is_new: true
-            }
-        ];
-
-        // RENDER LOGIC
+        // CONFIGURATION & STATE
         // ==============================================================
         const $tableBody = $('#tickets-table-body');
         const $template = $('#template-ticket-row');
-        const userRole = '{{ $role }}'; // Blade injection
+        const $paginationInfo = $('#pagination-info, #pagination-info-footer');
+        const $btnPrev = $('#btn-prev-page');
+        const $btnNext = $('#btn-next-page');
+        const $btnRefresh = $('#btn-refresh-list');
+        const $searchInput = $('#search-tickets');
 
+        let currentState = {
+            page: 1,
+            per_page: 15,
+            filters: {}, // { status: 'open', search: '...' }
+            meta: null
+        };
+
+        // ==============================================================
+        // CORE FUNCTIONS
+        // ==============================================================
+
+        /**
+         * Load Tickets from API
+         */
+        async function loadTickets() {
+            // 1. Show Loading State
+            $tableBody.html(`
+                <tr>
+                    <td colspan="4" class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Cargando tickets...</p>
+                    </td>
+                </tr>
+            `);
+
+            try {
+                // 2. Prepare Params
+                const token = window.tokenManager.getAccessToken();
+                if (!token) {
+                    throw new Error('No access token found');
+                }
+
+                const params = {
+                    page: currentState.page,
+                    per_page: currentState.per_page,
+                    ...currentState.filters
+                };
+
+                // 3. Fetch Data
+                const response = await $.ajax({
+                    url: TicketConfig.endpoints.list,
+                    method: 'GET',
+                    data: params,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                // 4. Render Data
+                renderTickets(response.data);
+                updatePagination(response.meta);
+                currentState.meta = response.meta;
+
+            } catch (error) {
+                console.error('[Tickets List] Error loading tickets:', error);
+                $tableBody.html(`
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                            <p>Error al cargar los tickets. Por favor intente nuevamente.</p>
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+
+        /**
+         * Render Ticket Rows
+         */
         function renderTickets(tickets) {
             $tableBody.empty();
 
-            if (tickets.length === 0) {
+            if (!tickets || tickets.length === 0) {
                 $tableBody.html(`
                     <tr>
                         <td colspan="4" class="text-center py-5 text-muted">
@@ -195,8 +195,7 @@
             tickets.forEach(ticket => {
                 const $clone = $($template.html());
                 
-                // 1. Mailbox Name -> NOW STATUS (Icon + Text)
-                // Define Icon and Color based on status
+                // 1. Status (Icon + Text)
                 let statusIcon = 'fa-circle';
                 let statusColor = 'text-secondary';
                 
@@ -214,17 +213,13 @@
                     statusColor = 'text-secondary';
                 }
                 
-                // Clean Status HTML: Icon + Text (Capitalized)
-                const statusHtml = `<i class="fas ${statusIcon} ${statusColor} mr-2"></i> <span class="text-dark">${ticket.status_label}</span>`;
+                const statusHtml = `<i class="fas ${statusIcon} ${statusColor} mr-2"></i> <span class="text-dark">${ticket.status_label || ticket.status}</span>`;
                 $clone.find('.mailbox-name').html(statusHtml);
 
-                // 2. Mailbox Subject -> Code + Title + Response Count
-                // Construct Subject HTML: <b>Code</b> - Title
-                let subjectHtml = `<b>${ticket.code}</b> - ${ticket.title}`;
+                // 2. Subject (Code + Title + Response Count)
+                let subjectHtml = `<b>${ticket.code || ticket.ticket_code}</b> - ${ticket.title}`;
                 
-                // Add Response Count to Subject (Float Right or Inline)
                 if (ticket.responses_count > 0) {
-                    // Fixed width container ensures icons align vertically perfectly
                     subjectHtml += `<span class="float-right text-dark text-sm" style="width: 50px; text-align: right;">
                         <small>${ticket.responses_count}</small> <i class="far fa-comments ml-1 text-dark"></i>
                     </span>`;
@@ -232,56 +227,125 @@
                 
                 $clone.find('.mailbox-subject').html(subjectHtml);
 
-                // 3. Attachments (STRICTLY ICON ONLY)
+                // 3. Attachments (Icon Only)
                 if (ticket.attachments_count > 0) {
                     $clone.find('.mailbox-attachment').html('<i class="fas fa-paperclip"></i>');
                 } else {
                     $clone.find('.mailbox-attachment').empty();
                 }
 
-                // 4. Date
-                $clone.find('.mailbox-date').text(ticket.created_at);
+                // 4. Date (Format nicely if possible, otherwise use raw)
+                // Simple formatter: "Hace X tiempo" or Date string
+                // For now using the raw string or a simple JS date
+                let dateDisplay = ticket.created_at;
+                try {
+                    const date = new Date(ticket.created_at);
+                    dateDisplay = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                } catch(e) {}
+                
+                $clone.find('.mailbox-date').text(dateDisplay);
 
-                // Click Event
-                $clone.find('tr.ticket-row').on('click', function(e) {
-                    if ($(e.target).is('a')) return;
-                    console.log(`[Tickets List] Opening ticket ${ticket.code}`);
-                    // $(document).trigger('tickets:view-details', [ticket.id]);
+                // Click Event -> View Details
+                $clone.on('click', function(e) {
+                    if ($(e.target).is('a')) return; // Don't trigger if clicking a link
+                    console.log(`[Tickets List] Opening ticket ${ticket.ticket_code}`);
+                    $(document).trigger('tickets:view-details', [ticket.id]);
                 });
 
                 $tableBody.append($clone);
             });
         }
 
-        // Initial Render
-        setTimeout(() => {
-            renderTickets(mockTickets);
-        }, 500); // Simulate network delay
+        /**
+         * Update Pagination UI
+         */
+        function updatePagination(meta) {
+            if (!meta) return;
+
+            // Text: "1-15/45"
+            const from = meta.from || 0;
+            const to = meta.to || 0;
+            const total = meta.total || 0;
+            $paginationInfo.text(`${from}-${to}/${total}`);
+
+            // Buttons State
+            $btnPrev.prop('disabled', meta.current_page <= 1);
+            $btnNext.prop('disabled', meta.current_page >= meta.last_page);
+        }
 
         // ==============================================================
         // EVENTS
         // ==============================================================
         
-        // Refresh Button
-        $('#btn-refresh-list').click(function() {
-            $tableBody.html(`
-                <tr>
-                    <td colspan="4" class="text-center py-5">
-                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-                        <p class="mt-2">Actualizando...</p>
-                    </td>
-                </tr>
-            `);
-            setTimeout(() => {
-                renderTickets(mockTickets);
-            }, 800);
+        // Refresh
+        $btnRefresh.click(function() {
+            loadTickets();
         });
 
-        // Filter Change (Simulation)
-        $('#search-tickets').on('keyup', function() {
-            // In a real app, this would trigger an API call
-            console.log('[Tickets List] Search changed');
+        // Pagination: Prev
+        $btnPrev.click(function() {
+            if (currentState.page > 1) {
+                currentState.page--;
+                loadTickets();
+            }
         });
+
+        // Pagination: Next
+        $btnNext.click(function() {
+            if (currentState.meta && currentState.page < currentState.meta.last_page) {
+                currentState.page++;
+                loadTickets();
+            }
+        });
+
+        // Search (Debounced)
+        let searchTimeout;
+        $searchInput.on('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const val = $(this).val();
+                currentState.filters.search = val;
+                currentState.page = 1; // Reset to page 1 on search
+                loadTickets();
+            }, 500);
+        });
+
+        // Filter Changed (from Sidebar)
+        $(document).on('tickets:filter-changed', function(e, data) {
+            // Reset filters but keep search if needed? Usually sidebar click clears search or combines.
+            // Let's reset other filters and apply new one.
+            currentState.filters = {}; 
+            currentState.page = 1;
+
+            if (data.type === 'status') {
+                currentState.filters.status = data.value;
+            } else if (data.type === 'folder') {
+                // Map folder names to API params
+                if (data.value === 'new') {
+                    currentState.filters.owner_agent_id = 'null'; // Unassigned
+                } else if (data.value === 'assigned') {
+                    currentState.filters.owner_agent_id = 'me';
+                } else if (data.value === 'awaiting_response') {
+                    currentState.filters.owner_agent_id = 'me';
+                    currentState.filters.last_response_author_type = 'user';
+                } else if (data.value === 'awaiting_support') {
+                    currentState.filters.last_response_author_type = 'user'; // Or none?
+                } else if (data.value === 'resolved') {
+                    currentState.filters.status = 'resolved';
+                }
+                // 'all' doesn't need params
+            }
+
+            loadTickets();
+        });
+
+        // Refresh List Event (External)
+        $(document).on('tickets:refresh-list', function() {
+            loadTickets();
+        });
+
+        // Initial Load
+        loadTickets();
     }
 
     // Wait for jQuery
