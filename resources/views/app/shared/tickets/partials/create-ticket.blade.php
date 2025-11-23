@@ -54,14 +54,16 @@
                 </div>
                 <small class="form-text text-muted">Máximo 10MB por archivo. Límite de 5 archivos. Formatos permitidos: PDF, imágenes, documentos Office, videos.</small>
 
-                {{-- File List Container --}}
-                <div id="file-list-container" class="mt-2">
+                {{-- File List Container - AdminLTE v3 Official Mailbox Attachments Style --}}
+                {{-- Note: align-items-stretch makes all items same height (official behavior) --}}
+                {{-- Change to align-items-start for natural height (non-official) --}}
+                <ul class="mailbox-attachments d-flex align-items-stretch clearfix" id="file-list-container">
                     {{-- Files will be appended here via jQuery --}}
-                </div>
+                </ul>
             </div>
         </div>
         <!-- /.card-body -->
-        
+
         <div class="card-footer">
             <div class="float-right">
                 <button type="button" class="btn btn-default" id="btn-discard-ticket"><i class="fas fa-times"></i> Descartar</button>
@@ -72,17 +74,41 @@
     </form>
 </div>
 
-{{-- Template for File Item (Hidden) --}}
+{{-- Template for File Item (AdminLTE v3 Official Mailbox Attachment) --}}
 <template id="template-file-item">
-    <div class="ticket-file-item alert alert-secondary alert-dismissible fade show mb-2" role="alert">
-        <i class="fas fa-file file-icon mr-2"></i>
-        <strong class="file-name">filename.pdf</strong>
-        <span class="file-size text-muted ml-2">(1.2 MB)</span>
-        <button type="button" class="close btn-remove-file" aria-label="Remove">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
+    <li>
+        <span class="mailbox-attachment-icon"><i class="far fa-file"></i></span>
+        <div class="mailbox-attachment-info">
+            <a href="#" class="mailbox-attachment-name file-name-truncate" title="">
+                <i class="fas fa-paperclip"></i> <span class="file-name">filename.pdf</span>
+            </a>
+            <span class="mailbox-attachment-size clearfix mt-1">
+                <span class="file-size">1.2 MB</span>
+                <button type="button" class="btn btn-default btn-sm float-right btn-remove-file"><i class="fas fa-times"></i></button>
+            </span>
+        </div>
+    </li>
 </template>
+
+{{-- CSS para truncar nombres de archivo a 2 líneas --}}
+<style>
+/* Truncar nombre de archivo a máximo 2 líneas con ellipsis */
+.file-name-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+/* Asegurar que el ícono no se rompa */
+.file-name-truncate .fas,
+.file-name-truncate .far {
+    flex-shrink: 0;
+}
+</style>
 
 <script>
 (function() {
@@ -227,6 +253,7 @@
 
     $fileInput.on('change', function(e) {
         const newFiles = Array.from(this.files);
+        console.log(`[Create Ticket] Archivos seleccionados: ${newFiles.length}`);
 
         // Clear input to allow re-selecting same file
         $(this).val('');
@@ -236,15 +263,21 @@
         let hasError = false;
 
         newFiles.forEach(file => {
+            console.log(`[Create Ticket] Procesando: ${file.name} (${formatBytes(file.size)})`);
+
             // Validation: Max Files
             if (selectedFiles.length >= MAX_FILES) {
-                if (!hasError) Swal.fire('Límite alcanzado', 'Máximo 5 archivos permitidos.', 'warning');
+                if (!hasError) {
+                    console.warn(`[Create Ticket] ❌ Límite alcanzado: ${MAX_FILES} archivos máximo`);
+                    Swal.fire('Límite alcanzado', 'Máximo 5 archivos permitidos.', 'warning');
+                }
                 hasError = true;
                 return;
             }
 
             // Validation: Size
             if (file.size > MAX_FILE_SIZE) {
+                console.warn(`[Create Ticket] ❌ Archivo muy grande: ${file.name} (${formatBytes(file.size)} > 10MB)`);
                 Swal.fire('Archivo muy grande', `El archivo ${file.name} excede los 10MB.`, 'warning');
                 return;
             }
@@ -252,41 +285,73 @@
             // Validation: Extension
             const ext = file.name.split('.').pop().toLowerCase();
             if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                console.warn(`[Create Ticket] ❌ Extensión no permitida: ${ext} (archivo: ${file.name})`);
                 Swal.fire('Formato no válido', `El archivo ${file.name} no es válido.`, 'warning');
                 return;
             }
 
             // Add to array
             selectedFiles.push(file);
+            console.log(`[Create Ticket] ✓ Archivo validado y agregado. Total: ${selectedFiles.length}/${MAX_FILES}`);
             renderFileItem(file);
         });
     });
 
+    // Render File Item usando AdminLTE v3 Official Template (mailbox-attachments)
     function renderFileItem(file) {
         const template = document.getElementById('template-file-item').content.cloneNode(true);
-        const $item = $(template.querySelector('.ticket-file-item'));
-        
+        const $item = $(template.querySelector('li'));
+
+        // Set file name and size
         $item.find('.file-name').text(file.name);
         $item.find('.file-size').text(formatBytes(file.size));
-        
-        // Icon logic
+
+        // Add title attribute for tooltip (shows full name on hover when truncated)
+        $item.find('.mailbox-attachment-name').attr('title', file.name);
+
+        // Icon logic - AdminLTE v3 Official Icons
         const ext = file.name.split('.').pop().toLowerCase();
-        const $icon = $item.find('.file-icon');
-        if (['jpg','jpeg','png','gif'].includes(ext)) $icon.removeClass('fa-file').addClass('fa-file-image text-warning');
-        else if (ext === 'pdf') $icon.removeClass('fa-file').addClass('fa-file-pdf text-danger');
-        else if (['doc','docx'].includes(ext)) $icon.removeClass('fa-file').addClass('fa-file-word text-info');
-        else if (['xls','xlsx','csv'].includes(ext)) $icon.removeClass('fa-file').addClass('fa-file-excel text-success');
+        const $icon = $item.find('.mailbox-attachment-icon i');
+
+        // Icon mapping según AdminLTE v3 mailbox
+        if (['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext)) {
+            // Para imágenes, usar has-img class con thumbnail
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $item.find('.mailbox-attachment-icon')
+                    .addClass('has-img')
+                    .html(`<img src="${e.target.result}" alt="${file.name}">`);
+            };
+            reader.readAsDataURL(file);
+        } else if (ext === 'pdf') {
+            $icon.removeClass('fa-file').addClass('fa-file-pdf');
+        } else if (['doc','docx'].includes(ext)) {
+            $icon.removeClass('fa-file').addClass('fa-file-word');
+        } else if (['xls','xlsx','csv'].includes(ext)) {
+            $icon.removeClass('fa-file').addClass('fa-file-excel');
+        } else if (ext === 'txt') {
+            $icon.removeClass('fa-file').addClass('fa-file-alt');
+        } else if (ext === 'mp4') {
+            $icon.removeClass('fa-file').addClass('fa-file-video');
+        } else {
+            // Default: mantener fa-file
+            $icon.addClass('fa-file');
+        }
 
         // Remove Handler
-        $item.find('.btn-remove-file').on('click', function() {
+        $item.find('.btn-remove-file').on('click', function(e) {
+            e.preventDefault();
             const index = selectedFiles.indexOf(file);
             if (index > -1) {
                 selectedFiles.splice(index, 1);
                 $item.remove();
+                console.log(`[Create Ticket] Archivo "${file.name}" eliminado. Total: ${selectedFiles.length}`);
             }
         });
 
+        // Append to list
         $fileList.append($item);
+        console.log(`[Create Ticket] ✓ Archivo "${file.name}" agregado a la lista (${formatBytes(file.size)})`);
     }
 
     function formatBytes(bytes, decimals = 2) {
@@ -319,32 +384,24 @@
         console.log('[Create Ticket] ✓ jQuery Validation Plugin cargado correctamente');
     }
 
-    // jQuery Validation Rules
+    // jQuery Validation Rules (AdminLTE v3 Official Configuration)
     $form.validate({
         errorElement: 'span',
         errorClass: 'invalid-feedback',
         errorPlacement: function(error, element) {
-            // Para Select2, colocar el error después del contenedor .select2
-            if (element.hasClass('select2') && element.next('.select2-container').length) {
-                error.insertAfter(element.next('.select2-container'));
-            } else {
-                // Para otros elementos, colocar después del elemento
-                error.insertAfter(element);
-            }
+            // ESTÁNDAR OFICIAL AdminLTE v3: agregar al final del form-group
+            error.addClass('invalid-feedback');
+            element.closest('.form-group').append(error);
         },
         highlight: function(element, errorClass, validClass) {
             $(element).addClass('is-invalid');
-            // Para Select2, agregar clase al contenedor también
-            if ($(element).hasClass('select2')) {
-                $(element).next('.select2-container').find('.select2-selection').addClass('is-invalid');
-            }
+            // Ocultar form-text cuando aparece error de validación (mejora de UX)
+            $(element).closest('.form-group').find('.form-text').hide();
         },
         unhighlight: function(element, errorClass, validClass) {
             $(element).removeClass('is-invalid');
-            // Para Select2, remover clase del contenedor también
-            if ($(element).hasClass('select2')) {
-                $(element).next('.select2-container').find('.select2-selection').removeClass('is-invalid');
-            }
+            // Mostrar form-text nuevamente cuando el error desaparece
+            $(element).closest('.form-group').find('.form-text').show();
         },
         rules: {
             company_id: {
@@ -488,6 +545,8 @@
 
     // Discard Button
     $('#btn-discard-ticket').on('click', function() {
+        console.log('[Create Ticket] Descartando formulario...');
+
         $form[0].reset();
         $companySelect.val(null).trigger('change');
         $categorySelect.val(null).trigger('change');
@@ -504,6 +563,11 @@
         // Remove validation errors
         $form.find('.is-invalid').removeClass('is-invalid');
         $form.find('.invalid-feedback').remove();
+
+        // Asegurar que form-text esté visible después de limpiar errores
+        $form.find('.form-text').show();
+
+        console.log('[Create Ticket] ✓ Formulario descartado y limpiado completamente');
 
         $(document).trigger('tickets:discarded');
     });
