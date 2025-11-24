@@ -76,14 +76,27 @@
 
 @endsection
 
+@push('css')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+@endpush
+
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
     $(document).ready(function() {
         // State
         let currentPage = 1;
         let currentType = '';
         let currentSearch = '';
-        const token = localStorage.getItem('jwt_token'); // Assuming token is stored here
+        
+        // Get token securely using TokenManager
+        const token = window.tokenManager ? window.tokenManager.getAccessToken() : localStorage.getItem('access_token');
+
+        if (!token) {
+            console.error('No access token found');
+            toastr.error('No se encontró sesión activa. Por favor inicie sesión nuevamente.');
+            return;
+        }
 
         // Initial Load
         checkFollowedCompanies();
@@ -138,7 +151,7 @@
             $('#empty-state').hide();
             $('#pagination-container').empty();
 
-            let url = `/api/announcements?page=${currentPage}&per_page=10&status=PUBLISHED`;
+            let url = `/api/announcements?page=${currentPage}&per_page=10&status=published`;
             if (currentType) url += `&type=${currentType}`;
             if (currentSearch) url += `&search=${currentSearch}`;
 
@@ -263,7 +276,7 @@
 
         function loadSuggestions() {
             $.ajax({
-                url: '/api/companies/explore?sort_by=followers_count&sort_direction=desc&per_page=3',
+                url: '/api/companies/explore?sort_by=followers_count&sort_direction=desc&per_page=6',
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token },
                 success: function(response) {
@@ -275,10 +288,10 @@
                             container.append(`
                                 <div class="d-flex justify-content-between align-items-center border-bottom py-2">
                                     <div class="d-flex align-items-center">
-                                        <img src="${company.logo_url || '/img/default-company.png'}" class="img-circle mr-2" style="width: 40px; height: 40px;">
+                                        <img src="${company.logoUrl || '/vendor/adminlte/dist/img/AdminLTELogo.png'}" class="img-circle mr-2" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='/vendor/adminlte/dist/img/AdminLTELogo.png'">
                                         <div>
                                             <h6 class="mb-0 font-weight-bold">${company.name}</h6>
-                                            <small class="text-muted">${company.followers_count} seguidores</small>
+                                            <small class="text-muted">${company.followersCount} seguidores</small>
                                         </div>
                                     </div>
                                     <button class="btn btn-sm btn-primary btn-follow" data-id="${company.id}">

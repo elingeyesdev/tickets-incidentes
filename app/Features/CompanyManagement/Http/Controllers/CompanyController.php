@@ -322,7 +322,13 @@ class CompanyController extends Controller
         // Ordenamiento
         $sortBy = $request->input('sort_by', 'name');
         $sortDirection = $request->input('sort_direction', 'asc');
-        $query->orderBy($sortBy, $sortDirection);
+
+        if ($sortBy === 'followers_count') {
+            $query->withCount('followers')
+                  ->orderBy('followers_count', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
 
         $companies = $query->paginate($request->input('per_page', 20));
 

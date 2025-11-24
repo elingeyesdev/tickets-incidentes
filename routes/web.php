@@ -321,6 +321,13 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             ]);
         })->name('user.announcements.index');
 
+        Route::get('/companies', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.user.companies.index', [
+                'user' => $user,
+            ]);
+        })->name('user.companies.index');
+
         Route::get('/tickets/manage', function () {
             $user = JWTHelper::getAuthenticatedUser();
             $companyId = JWTHelper::getCompanyIdFromJWT('USER');

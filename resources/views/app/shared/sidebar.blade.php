@@ -161,6 +161,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('user.companies.index') }}" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>Empresas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="/app/user/help-center" class="nav-link">
                                 <i class="nav-icon fas fa-question-circle"></i>
                                 <p>Centro de Ayuda</p>
