@@ -654,7 +654,7 @@
             // Add cancel button if it doesn't exist
             if ($('#btn-cancel-edit').length === 0) {
                 const cancelBtn = `
-                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="margin-left: 8px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="margin-left: 8px; height: 38px; padding: 0 15px; display: flex; align-items: center; justify-content: center;">
                         Cancelar
                     </button>
                 `;
@@ -688,6 +688,10 @@
             $sendBtn.text('Enviar').removeClass('btn-warning').addClass('btn-primary');
             $('#btn-cancel-edit').remove();
             $('#editing-indicator').remove();
+
+            // Clear validation errors from jQuery Validation plugin
+            $input.removeClass('is-invalid');
+            $input.closest('.input-group').find('.invalid-feedback').remove();
         }
 
         async function updateMessage(msgId, newContent) {
