@@ -38,7 +38,7 @@
                     </button>
                     <input type="file" id="chat-file-input" multiple style="display: none;" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif">
                 </span>
-                <textarea name="message" id="chat-message-input" placeholder="Escribe un mensaje..." class="form-control" rows="1" style="resize: none; height: 38px; line-height: 24px;"></textarea>
+                <textarea name="message" id="chat-message-input" placeholder="Escribe un mensaje..." class="form-control" rows="1" style="resize: none; height: 38px; line-height: 24px; min-height: 38px; max-height: 150px; overflow-y: auto;"></textarea>
                 <span class="input-group-append">
                     <button type="submit" class="btn btn-primary" id="btn-send-message">Enviar</button>
                 </span>
@@ -84,6 +84,20 @@
         // Validation Configuration
         if (typeof $.fn.validate !== 'undefined') {
             $form.validate({
+                rules: {
+                    message: {
+                        required: true,
+                        minlength: 1,
+                        maxlength: 5000
+                    }
+                },
+                messages: {
+                    message: {
+                        required: "El mensaje no puede estar vacío.",
+                        minlength: "El mensaje debe tener al menos 1 carácter.",
+                        maxlength: "El mensaje no puede exceder 5000 caracteres."
+                    }
+                },
                 errorElement: 'span',
                 errorClass: 'invalid-feedback',
                 errorPlacement: function(error, element) {
@@ -98,6 +112,22 @@
                 }
             });
         }
+
+        // ==============================================================
+        // AUTO-GROW TEXTAREA (AdminLTE v3 Pattern)
+        // ==============================================================
+
+        // Auto-expand textarea as user types (AdminLTE v3 style)
+        $input.on('input', function() {
+            // Reset height to auto to get scrollHeight
+            $(this).css('height', 'auto');
+
+            // Get the scrollHeight and set it as the new height
+            const newHeight = Math.min(this.scrollHeight, 150); // Max 150px
+            $(this).css('height', newHeight + 'px');
+
+            console.log(`[Chat] Textarea height: ${newHeight}px`);
+        });
 
         // ==============================================================
         // EVENTS
@@ -311,7 +341,7 @@
                 let actionsHtml = '';
                 if (canModify) {
                     actionsHtml = `
-                        <div class="message-actions" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease;">
+                        <div class="message-actions" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease; z-index: 1000;">
                             <div class="dropdown">
                                 <button class="btn btn-link p-0 text-white" type="button" data-toggle="dropdown" aria-expanded="false" style="font-size: 1.1rem; line-height: 1; padding: 4px 8px;">
                                     <i class="fas fa-chevron-down"></i>
@@ -358,17 +388,15 @@
                         if (canDeleteAtt) {
                             deleteButtonHtml = `
                                 <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}"
-                                    style="position: absolute; top: 8px; right: 65px; width: 28px; height: 28px; border: 1px solid rgba(220, 53, 69, 0.5); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.7); padding: 0; transition: all 0.2s ease;"
-                                    onmouseover="this.style.borderColor='#dc3545'; this.style.color='#dc3545'; this.style.backgroundColor='rgba(220, 53, 69, 0.1)';"
-                                    onmouseout="this.style.borderColor='rgba(220, 53, 69, 0.5)'; this.style.color='rgba(220, 53, 69, 0.7)'; this.style.backgroundColor='transparent';"
+                                    style="position: absolute; top: 50%; right: 60px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid rgba(220, 53, 69, 0.4); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.6); padding: 0; transition: all 0.2s ease; opacity: 0;"
                                     title="Eliminar adjunto">
-                                    <i class="fas fa-times" style="font-size: 0.75rem;"></i>
+                                    <i class="fas fa-times" style="font-size: 0.9rem;"></i>
                                 </button>
                             `;
                         }
 
                         attachmentsHtml += `
-                            <div style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
+                            <div class="attachment-card" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
                                 <div style="margin-bottom: 10px;">
                                     <a href="${att.file_url}" target="_blank" style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
                                         <i class="fas ${iconClass} mr-2"></i>
@@ -406,7 +434,7 @@
                 $msgList.append(html);
             });
 
-            // Show actions on hover
+            // Show actions on hover for messages
             $('.direct-chat-msg').hover(
                 function() {
                     $(this).find('.message-actions').css('opacity', '1');
@@ -415,6 +443,32 @@
                     $(this).find('.message-actions').css('opacity', '0');
                 }
             );
+
+            // Show delete button on hover for attachments (delegated)
+            $msgList.on('mouseenter', '.attachment-card', function() {
+                $(this).find('.btn-delete-attachment').css('opacity', '1');
+            });
+
+            $msgList.on('mouseleave', '.attachment-card', function() {
+                $(this).find('.btn-delete-attachment').css('opacity', '0');
+            });
+
+            // Highlight delete button on hover
+            $msgList.on('mouseenter', '.btn-delete-attachment', function() {
+                $(this).css({
+                    'border-color': '#dc3545',
+                    'color': '#dc3545',
+                    'background-color': 'rgba(220, 53, 69, 0.1)'
+                });
+            });
+
+            $msgList.on('mouseleave', '.btn-delete-attachment', function() {
+                $(this).css({
+                    'border-color': 'rgba(220, 53, 69, 0.4)',
+                    'color': 'rgba(220, 53, 69, 0.6)',
+                    'background-color': 'transparent'
+                });
+            });
 
             // Scroll to bottom
             $msgList.scrollTop($msgList[0].scrollHeight);
