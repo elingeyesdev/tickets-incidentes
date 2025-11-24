@@ -77,6 +77,28 @@
         let editingMessageId = null; // Track if we're editing a message
         let editingMessageContent = null; // Original content backup
 
+        // 🔴 GLOBAL SPAM PROTECTION: Track all operations in progress
+        // Format: "operation:id" (e.g., "send:newMsg", "update:123", "delete:456", "deleteAtt:789")
+        const operationsInProgress = new Set();
+
+        // Helper function to check if operation is allowed
+        function canPerformOperation(operationType, operationId) {
+            const key = `${operationType}:${operationId}`;
+            if (operationsInProgress.has(key)) {
+                console.log(`[Chat] Operation blocked (already in progress): ${key}`);
+                return false;
+            }
+            operationsInProgress.add(key);
+            return true;
+        }
+
+        // Helper function to mark operation as complete
+        function completeOperation(operationType, operationId) {
+            const key = `${operationType}:${operationId}`;
+            operationsInProgress.delete(key);
+            console.log(`[Chat] Operation completed: ${key}`);
+        }
+
         // ==============================================================
         // INITIALIZATION
         // ==============================================================
@@ -86,15 +108,17 @@
             $form.validate({
                 rules: {
                     message: {
-                        required: true,
-                        minlength: 1,
+                        // 🔴 CUSTOM: Only required if no files attached
+                        // If files exist, empty message is allowed (will auto-fill with "Archivo adjunto.")
+                        required: function(element) {
+                            return selectedFiles.length === 0; // Required only if NO files
+                        },
                         maxlength: 5000
                     }
                 },
                 messages: {
                     message: {
-                        required: "El mensaje no puede estar vacío.",
-                        minlength: "El mensaje debe tener al menos 1 carácter.",
+                        required: "Debes escribir un mensaje o adjuntar un archivo.",
                         maxlength: "El mensaje no puede exceder 5000 caracteres."
                     }
                 },
@@ -109,24 +133,85 @@
                 },
                 unhighlight: function(element, errorClass, validClass) {
                     $(element).removeClass('is-invalid');
+                },
+                // 🔴 FIX: Disable automatic validation during typing/blur
+                // Only validate on form submission to avoid unwanted errors while editing
+                onkeyup: false,
+                onfocusout: false,
+                onsubmit: true,
+                submitHandler: function(form) {
+                    let content = $input.val().trim();
+
+                    // If we're editing, call updateMessage instead of sending new message
+                    if (editingMessageId) {
+                        if (!content) {
+                            $(document).Toasts('create', {
+                                class: 'bg-warning',
+                                title: 'Advertencia',
+                                body: 'El mensaje no puede estar vacío.',
+                                autohide: true,
+                                delay: 2000
+                            });
+                            return false;
+                        }
+                        updateMessage(editingMessageId, content);
+                    } else {
+                        // 🔴 SPAM PROTECTION: Check if send operation is already in progress
+                        if (!canPerformOperation('send', 'newMsg')) {
+                            return false;
+                        }
+
+                        // 🔴 FIX #2: If no message but has attachments, auto-add "Archivo adjunto."
+                        if (!content && selectedFiles.length > 0) {
+                            console.log('[Chat] No message but has attachments - auto-adding "Archivo adjunto."');
+                            content = 'Archivo adjunto.';
+                        }
+
+                        // Send new message via AJAX
+                        const $btn = $('#btn-send-message');
+                        const originalBtnText = $btn.text();
+                        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+                        sendMessage(content).finally(() => {
+                            completeOperation('send', 'newMsg');
+                            $btn.prop('disabled', false).html(originalBtnText);
+                        });
+                    }
+
+                    return false; // Prevent actual form submission
                 }
             });
         }
 
         // ==============================================================
-        // AUTO-GROW TEXTAREA (AdminLTE v3 Pattern)
+        // TEXTAREA HANDLERS: Validation Cleanup + Auto-grow (Combined)
         // ==============================================================
 
-        // Auto-expand textarea as user types (AdminLTE v3 style)
         $input.on('input', function() {
+            // 🔴 FIX #1: Auto-clean validation errors when user starts typing
+            if ($input.hasClass('is-invalid')) {
+                const validator = $form.validate();
+                validator.element($input); // Re-validate the element immediately
+                console.log('[Chat] Validation error cleared on input');
+            }
+
+            // 🔴 FIX: AUTO-GROW TEXTAREA (AdminLTE v3 Pattern)
+            const minHeight = 38; // Mínimo 38px (1 línea)
+            const maxHeight = 150; // Máximo 150px
+
             // Reset height to auto to get scrollHeight
             $(this).css('height', 'auto');
 
-            // Get the scrollHeight and set it as the new height
-            const newHeight = Math.min(this.scrollHeight, 150); // Max 150px
+            // Get the scrollHeight
+            let newHeight = this.scrollHeight;
+
+            // Apply min and max constraints
+            newHeight = Math.max(newHeight, minHeight); // No less than 38px
+            newHeight = Math.min(newHeight, maxHeight); // No more than 150px
+
             $(this).css('height', newHeight + 'px');
 
-            console.log(`[Chat] Textarea height: ${newHeight}px`);
+            console.log(`[Chat] Textarea height: ${newHeight}px | Validation cleared: ${$input.hasClass('is-invalid') ? 'NO' : 'YES'}`);
         });
 
         // ==============================================================
@@ -234,13 +319,33 @@
         $msgList.on('click', '.btn-delete-attachment', function() {
             const attId = $(this).data('att-id');
             const attName = $(this).data('att-name');
-            confirmDeleteAttachment(attId, attName);
+            const msgId = $(this).data('msg-id');
+            const msgContent = $(this).data('msg-content');
+            confirmDeleteAttachment(attId, attName, msgId, msgContent);
         });
 
         // 6. Confirm Edit Button
         $(document).on('click', '#btn-confirm-edit', function(e) {
             e.preventDefault();
-            $form.submit();
+
+            // Si estamos editando un mensaje, actualizar ese mensaje
+            if (editingMessageId) {
+                const content = $input.val();
+                if (!content.trim()) {
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'Advertencia',
+                        body: 'El mensaje no puede estar vacío.',
+                        autohide: true,
+                        delay: 2000
+                    });
+                    return;
+                }
+                updateMessage(editingMessageId, content);
+            } else {
+                // Si es un mensaje nuevo, enviar normalmente
+                $form.submit();
+            }
         });
 
         // 7. Cancel Edit Button
@@ -250,20 +355,10 @@
         });
 
         // 8. Form Submit Handler
-        $form.on('submit', async function(e) {
-            e.preventDefault();
-            if (!$form.valid()) return;
-
-            const content = $input.val();
-            if (!content.trim() && selectedFiles.length === 0) return;
-
-            // Check if we're editing or sending new message
-            if (editingMessageId) {
-                await updateMessage(editingMessageId, content);
-            } else {
-                await sendMessage(content);
-            }
-        });
+        // NOTE: Form submission is now handled by jQuery Validation plugin's submitHandler
+        // This ensures validation only happens on submit, not during editing/typing
+        // The submitHandler in the validate() config above handles routing to either
+        // updateMessage() for edits or sendMessage() for new messages
 
         // ==============================================================
         // CORE FUNCTIONS
@@ -401,7 +496,7 @@
                         let deleteButtonHtml = '';
                         if (canDeleteAtt) {
                             deleteButtonHtml = `
-                                <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}"
+                                <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}"
                                     style="position: absolute; top: 50%; right: 60px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid rgba(220, 53, 69, 0.4); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.6); padding: 0; transition: all 0.2s ease; opacity: 0;"
                                     title="Eliminar adjunto">
                                     <i class="fas fa-times" style="font-size: 0.9rem;"></i>
@@ -410,7 +505,7 @@
                         }
 
                         attachmentsHtml += `
-                            <div class="attachment-card" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
+                            <div class="attachment-card" data-att-id="${att.id}" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
                                 <div style="margin-bottom: 10px;">
                                     <a href="${att.file_url}" target="_blank" style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
                                         <i class="fas ${iconClass} mr-2"></i>
@@ -665,10 +760,10 @@
             // Add edit action buttons if they don't exist
             if ($('#btn-confirm-edit').length === 0) {
                 const editButtons = `
-                    <button type="button" class="btn btn-sm btn-success" id="btn-confirm-edit" title="Guardar cambios (Enter)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center; margin-right: 4px;">
+                    <button type="button" class="btn btn-sm btn-success" id="btn-confirm-edit" title="Guardar cambios (Enter)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0;">
                         <i class="fas fa-check"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-danger" id="btn-cancel-edit" title="Cancelar (Esc)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-cancel-edit" title="Cancelar (Esc)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center; margin: 0; margin-left: -1px;">
                         <i class="fas fa-times"></i>
                     </button>
                 `;
@@ -712,9 +807,21 @@
         }
 
         async function updateMessage(msgId, newContent) {
-            const $btn = $('#btn-send-message');
-            const originalBtnText = $btn.text();
-            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            // 🔴 SPAM PROTECTION: Check if update operation for this message is already in progress
+            if (!canPerformOperation('update', msgId)) {
+                console.log(`[Chat] Update blocked - message ${msgId} is already being updated`);
+                return;
+            }
+
+            const $confirmBtn = $('#btn-confirm-edit');
+            const $cancelBtn = $('#btn-cancel-edit');
+
+            // Store original content for rollback
+            const originalContent = $confirmBtn.html();
+
+            // Disable both buttons and show loading state
+            $confirmBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            $cancelBtn.prop('disabled', true);
 
             try {
                 const token = window.tokenManager.getAccessToken();
@@ -751,13 +858,24 @@
                     autohide: true,
                     delay: 3000
                 });
+
+                // Restore button state on error
+                $confirmBtn.prop('disabled', false).html(originalContent);
+                $cancelBtn.prop('disabled', false);
             } finally {
-                $btn.prop('disabled', false).text(originalBtnText);
+                // 🔴 SPAM PROTECTION: Mark operation as complete
+                completeOperation('update', msgId);
             }
         }
 
         async function confirmDeleteMessage(msgId) {
             if (!confirm('¿Estás seguro de que deseas eliminar este mensaje? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            // 🔴 SPAM PROTECTION: Check if delete operation for this message is already in progress
+            if (!canPerformOperation('delete', msgId)) {
+                console.log(`[Chat] Delete blocked - message ${msgId} is already being deleted`);
                 return;
             }
 
@@ -779,10 +897,18 @@
                     delay: 2000
                 });
 
-                // Reload messages
-                loadMessages();
+                // 🔴 PROFESSIONAL: Remove message from DOM immediately (no API call needed)
+                $(`.direct-chat-msg[data-msg-id="${msgId}"]`).fadeOut(300, function() {
+                    $(this).remove();
+                    console.log(`[Chat] Message ${msgId} removed from DOM`);
+                });
 
-                // Update response count in detail view
+                // 🔴 PROFESSIONAL: Emit event for other components to update (detail view counter, etc.)
+                $(document).trigger('tickets:message-deleted', {
+                    messageId: msgId
+                });
+
+                // Update response count in detail view locally (no API call)
                 const $count = $('#t-info-responses');
                 let current = parseInt($count.text()) || 0;
                 if (current > 0) $count.text(current - 1);
@@ -796,24 +922,78 @@
                     autohide: true,
                     delay: 3000
                 });
+            } finally {
+                // 🔴 SPAM PROTECTION: Mark operation as complete
+                completeOperation('delete', msgId);
             }
         }
 
-        async function confirmDeleteAttachment(attId, attName) {
+        async function confirmDeleteAttachment(attId, attName, msgId, msgContent) {
             if (!confirm(`¿Estás seguro de que deseas eliminar el archivo "${attName}"? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+
+            // 🔴 SPAM PROTECTION: Check if delete operation for this attachment is already in progress
+            if (!canPerformOperation('deleteAtt', attId)) {
+                console.log(`[Chat] Delete attachment blocked - attachment ${attId} is already being deleted`);
                 return;
             }
 
             try {
                 const token = window.tokenManager.getAccessToken();
 
+                // 1. Delete the attachment
                 await $.ajax({
                     url: `/api/tickets/${currentTicketCode}/attachments/${attId}`,
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                // Success
+                // 2. 🔴 FIX: If message content is "Archivo adjunto.", also delete the message (silent operation)
+                if (msgContent === 'Archivo adjunto.') {
+                    console.log(`[Chat] Message content is "Archivo adjunto." - deleting message ${msgId} in background`);
+
+                    try {
+                        await $.ajax({
+                            url: `/api/tickets/${currentTicketCode}/responses/${msgId}`,
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+
+                        // 🔴 PROFESSIONAL: Remove entire message from DOM (includes all attachments)
+                        $(`.direct-chat-msg[data-msg-id="${msgId}"]`).fadeOut(300, function() {
+                            $(this).remove();
+                            console.log(`[Chat] Message ${msgId} removed from DOM (contained "Archivo adjunto.")`);
+                        });
+
+                        // 🔴 PROFESSIONAL: Emit event for detail view to update counter
+                        $(document).trigger('tickets:message-deleted', {
+                            messageId: msgId
+                        });
+
+                        // Update response count
+                        const $count = $('#t-info-responses');
+                        let current = parseInt($count.text()) || 0;
+                        if (current > 0) $count.text(current - 1);
+                    } catch (deleteError) {
+                        console.error('[Chat] Error deleting message:', deleteError);
+                        // Silent fail - message deletion is background operation
+                    }
+                } else {
+                    // 🔴 PROFESSIONAL: Only remove the attachment from DOM (not the message)
+                    $(`.attachment-card[data-att-id="${attId}"]`).fadeOut(300, function() {
+                        $(this).remove();
+                        console.log(`[Chat] Attachment ${attId} removed from DOM`);
+                    });
+
+                    // 🔴 PROFESSIONAL: Emit event for other components
+                    $(document).trigger('tickets:attachment-deleted', {
+                        attachmentId: attId,
+                        messageId: msgId
+                    });
+                }
+
+                // Show same toast regardless of background operations
                 $(document).Toasts('create', {
                     class: 'bg-success',
                     title: 'Éxito',
@@ -822,10 +1002,7 @@
                     delay: 2000
                 });
 
-                // Reload messages to reflect changes
-                loadMessages();
-
-                // Update attachment count in detail view
+                // Update attachment count in detail view (no API call)
                 const $countAtt = $('#t-attachments-count');
                 let currentAttCount = parseInt($countAtt.text()) || 0;
                 if (currentAttCount > 0) $countAtt.text(currentAttCount - 1);
@@ -839,6 +1016,9 @@
                     autohide: true,
                     delay: 3000
                 });
+            } finally {
+                // 🔴 SPAM PROTECTION: Mark operation as complete
+                completeOperation('deleteAtt', attId);
             }
         }
 

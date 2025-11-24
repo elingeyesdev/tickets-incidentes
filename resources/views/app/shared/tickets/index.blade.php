@@ -19,7 +19,7 @@
             <a href="#" id="btn-compose" class="btn btn-primary btn-block mb-3 text-center d-flex justify-content-center align-items-center"><i class="fas fa-plus mr-2"></i>Crear Ticket</a>
         @else
             {{-- REFRESH BUTTON (AGENT/ADMIN) --}}
-            <button id="btn-refresh-sidebar" class="btn btn-primary btn-block mb-3">
+            <button id="btn-refresh-sidebar" class="btn btn-primary btn-block mb-3 text-center d-flex justify-content-center align-items-center">
                 <i class="fas fa-sync-alt mr-2"></i>Actualizar Buzón
             </button>
         @endif
@@ -204,24 +204,29 @@
             const $createContainer = $('#view-create-ticket');
             const $detailsContainer = $('#view-ticket-details');
             
-            const $btnCompose = $('#btn-compose');
+            const $btnCompose = $('#btn-compose, #btn-refresh-sidebar');
             
             // Show Create View
+            // Show Create View (Or Refresh if Agent)
             $btnCompose.on('click', function(e) {
                 e.preventDefault();
                 
                 if ($mainContainer.hasClass('d-none')) {
-                    // Currently in create view, go back to list
-                    $createContainer.addClass('d-none');
-                    $detailsContainer.addClass('d-none');
-                    $mainContainer.removeClass('d-none');
-                    $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                    // Currently in create/detail view, go back to list
+                    $(document).trigger('tickets:show-list');
                 } else {
-                    // Currently in list view, go to create
-                    $mainContainer.addClass('d-none');
-                    $detailsContainer.addClass('d-none');
-                    $createContainer.removeClass('d-none');
-                    $btnCompose.html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
+                    // Currently in list view
+                    if ($(this).attr('id') === 'btn-compose') {
+                        // User: Go to Create
+                        $mainContainer.addClass('d-none');
+                        $detailsContainer.addClass('d-none');
+                        $createContainer.removeClass('d-none');
+                        $(this).html('<i class="fas fa-arrow-left mr-2"></i>Volver a Inbox');
+                    } else {
+                        // Agent: Refresh List
+                        $(document).trigger('tickets:refresh-list');
+                        $(document).trigger('tickets:stats-update-required');
+                    }
                 }
             });
 
@@ -246,7 +251,11 @@
                 $mainContainer.removeClass('d-none');
                 
                 if ($btnCompose.length) {
-                    $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                    if ($btnCompose.attr('id') === 'btn-compose') {
+                        $btnCompose.html('<i class="fas fa-plus mr-2"></i>Crear Ticket');
+                    } else {
+                        $btnCompose.html('<i class="fas fa-sync-alt mr-2"></i>Actualizar Buzón');
+                    }
                 }
             });
 
@@ -382,21 +391,26 @@
                 const newTickets = await getCount({ owner_agent_id: 'null' });
                 $('.count-new').text(newTickets > 0 ? newTickets : '');
 
-                // My Assigned (Active)
-                // Note: Original logic filtered out resolved/closed in JS. 
-                // Ideally API should support multiple status exclusion, but for now we fetch assigned.
-                // We'll approximation: owner_agent_id=me (API returns all statuses)
-                // To be precise we might need backend support or fetch active statuses separately.
-                // For now, let's just count all assigned to me.
-                const myAssigned = await getCount({ owner_agent_id: 'me' }); 
-                $('.count-assigned').text(myAssigned > 0 ? myAssigned : '');
+                // My Assigned (Active only: Open/Pending)
+                // We fetch open and pending separately and sum them up
+                const assignedOpen = await getCount({ owner_agent_id: 'me', status: 'open' }); 
+                const assignedPending = await getCount({ owner_agent_id: 'me', status: 'pending' }); 
+                $('.count-assigned').text((assignedOpen + assignedPending) > 0 ? (assignedOpen + assignedPending) : '');
 
-                // Awaiting My Response (Assigned to me + User replied last)
-                const awaitingResponse = await getCount({ 
+                // Awaiting My Response (Assigned to me + User replied last + Active)
+                // We filter by status open/pending to ensure we don't count resolved/closed
+                const awaitingOpen = await getCount({ 
                     owner_agent_id: 'me', 
-                    last_response_author_type: 'user' 
+                    last_response_author_type: 'user',
+                    status: 'open'
                 });
-                $('.count-awaiting-response').text(awaitingResponse > 0 ? awaitingResponse : '');
+                const awaitingPending = await getCount({ 
+                    owner_agent_id: 'me', 
+                    last_response_author_type: 'user',
+                    status: 'pending'
+                });
+                const totalAwaiting = awaitingOpen + awaitingPending;
+                $('.count-awaiting-response').text(totalAwaiting > 0 ? totalAwaiting : '');
             }
 
             // --- COMPANY ADMIN ---

@@ -1,5 +1,5 @@
 <!-- Ticket Info -->
-<div class="card card-outline card-primary">
+<div class="card card-outline card-primary" id="card-ticket-info">
     <div class="card-header">
         <h3 class="card-title">Información del Ticket</h3>
         <div class="card-tools">

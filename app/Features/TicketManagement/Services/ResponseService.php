@@ -47,6 +47,7 @@ class ResponseService
     public function list(Ticket $ticket): Collection
     {
         return $ticket->responses()
+            ->with(['author.profile', 'attachments'])
             ->orderBy('created_at', 'asc')
             ->get();
     }

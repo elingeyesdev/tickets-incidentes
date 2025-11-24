@@ -81,6 +81,7 @@ Route::get('/tests/helpcenter-knowledge-base', function () {
 })->name('tests.helpcenter.knowledge-base');
 
 
+
 // ========== PUBLIC ROUTES ==========
 
 // Welcome / Landing page
