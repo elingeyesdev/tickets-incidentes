@@ -52,7 +52,7 @@
 <script>
 (function() {
     console.log('[Ticket Chat] Script loaded - waiting for jQuery...');
-    console.log('[Ticket Chat] Version: Stateless Fix Applied'); // VERIFICATION LOG
+    console.log('[Ticket Chat] Version: Optimistic UI with Event-Driven Architecture');
 
     function initTicketChat() {
         console.log('[Ticket Chat] jQuery available - Initializing');
@@ -70,10 +70,8 @@
         const $msgCount = $('#chat-msg-count');
 
         let currentTicketCode = null;
-        let currentTicketId = null;
         let currentTicketStatus = null; // Track ticket status for validations
         let selectedFiles = [];
-        let currentUser = null; // Will be set from token or API
         let editingMessageId = null; // Track if we're editing a message
         let editingMessageContent = null; // Original content backup
 
@@ -156,26 +154,14 @@
                         }
                         updateMessage(editingMessageId, content);
                     } else {
-                        // 🔴 SPAM PROTECTION: Check if send operation is already in progress
-                        if (!canPerformOperation('send', 'newMsg')) {
-                            return false;
-                        }
-
                         // 🔴 FIX #2: If no message but has attachments, auto-add "Archivo adjunto."
                         if (!content && selectedFiles.length > 0) {
                             console.log('[Chat] No message but has attachments - auto-adding "Archivo adjunto."');
                             content = 'Archivo adjunto.';
                         }
 
-                        // Send new message via AJAX
-                        const $btn = $('#btn-send-message');
-                        const originalBtnText = $btn.text();
-                        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-                        sendMessage(content).finally(() => {
-                            completeOperation('send', 'newMsg');
-                            $btn.prop('disabled', false).html(originalBtnText);
-                        });
+                        // Send new message via AJAX (no spam protection here, handled inside sendMessage)
+                        sendMessage(content);
                     }
 
                     return false; // Prevent actual form submission
@@ -233,7 +219,6 @@
         // Better: Listen for a specific event passing the full ticket
         $(document).on('tickets:details-loaded', function(e, ticket) {
             currentTicketCode = ticket.ticket_code;
-            currentTicketId = ticket.id;
             currentTicketStatus = ticket.status; // Store status for validations
             cancelEdit(); // Reset editing state when switching tickets
             loadMessages();
@@ -417,129 +402,9 @@
                 return;
             }
 
+            // Use renderSingleMessage for each message
             messages.forEach(msg => {
-                const authorId = msg.author_id || msg.user_id;
-                const isMe = String(authorId) === String(currentUserId);
-                const alignClass = isMe ? 'right' : '';
-                const nameFloat = isMe ? 'float-right' : 'float-left';
-                const timeFloat = isMe ? 'float-left' : 'float-right';
-                const bgClass = isMe ? 'background-color: #007bff; color: #fff;' : 'background-color: #d2d6de; color: #444;';
-
-                // Safe Author Access
-                let authorName = 'Desconocido';
-
-                if (msg.author && msg.author.name) {
-                    authorName = msg.author.name;
-                } else if (msg.uploaded_by_name) {
-                    authorName = msg.uploaded_by_name;
-                } else {
-                    // TODO: IMPLEMENTAR CUANDO EXISTA
-                }
-
-                // Get role label in uppercase
-                const roleLabel = msg.author_type ? msg.author_type.toUpperCase() : 'UNKNOWN';
-                const displayName = `<strong>${roleLabel}</strong> ${authorName}`;
-
-                // Avatar (UI Avatars)
-                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&size=128&background=${isMe ? '007bff' : '6c757d'}&color=fff&bold=true`;
-
-                // Check if user can edit/delete this message
-                const canModify = isMe && isWithin30Minutes(msg.created_at) && currentTicketStatus !== 'closed';
-
-                // Message Actions Dropdown (Only for own messages)
-                let actionsHtml = '';
-                if (canModify) {
-                    actionsHtml = `
-                        <div class="message-actions" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease; z-index: 1000;">
-                            <div class="dropdown">
-                                <button class="btn btn-link p-0 text-white" type="button" data-toggle="dropdown" aria-expanded="false" style="font-size: 1.1rem; line-height: 1; padding: 4px 8px;">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-right" style="min-width: 140px; font-size: 0.9rem;">
-                                    <a class="dropdown-item btn-edit-message" href="#" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}">
-                                        <i class="fas fa-edit mr-2"></i> Editar
-                                    </a>
-                                    <a class="dropdown-item text-danger btn-delete-message" href="#" data-msg-id="${msg.id}">
-                                        <i class="fas fa-trash mr-2"></i> Eliminar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                let attachmentsHtml = '';
-                if (msg.attachments && msg.attachments.length > 0) {
-                    msg.attachments.forEach(att => {
-                        // Determine icon (simple, like mock)
-                        let iconClass = 'fa-file-pdf'; // Mock uses fa-file-pdf for all
-                        if (att.file_type) {
-                            if (att.file_type.includes('image')) iconClass = 'fa-file-image';
-                            else if (att.file_type.includes('word') || att.file_type.includes('document')) iconClass = 'fa-file-word';
-                            else if (att.file_type.includes('sheet') || att.file_type.includes('excel')) iconClass = 'fa-file-excel';
-                        }
-
-                        // Check if user can delete this attachment
-                        const canDeleteAtt = isMe && isWithin30Minutes(att.created_at) && currentTicketStatus !== 'closed';
-
-                        // EXACT MOCK DESIGN - Different styles for user vs agent
-                        const marginStyle = isMe ? 'margin: 8px 50px 0 0' : 'margin: 8px 0 0 50px';
-                        const bgColor = isMe ? 'rgba(0,123,255,0.1)' : '#f8f9fa';
-                        const borderColor = isMe ? '#007bff' : '#d2d6de';
-                        const linkColor = isMe ? 'class="text-primary"' : 'style="color: #444;"';
-                        const buttonBorderColor = isMe ? 'rgba(0, 123, 255, 0.4)' : 'rgba(68, 68, 68, 0.4)';
-                        const buttonColor = isMe ? 'rgba(0, 123, 255, 0.6)' : 'rgba(68, 68, 68, 0.6)';
-                        const buttonHoverBorder = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
-                        const buttonHoverColor = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
-
-                        // Delete button for own attachments (conditionally shown)
-                        let deleteButtonHtml = '';
-                        if (canDeleteAtt) {
-                            deleteButtonHtml = `
-                                <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}"
-                                    style="position: absolute; top: 50%; right: 60px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid rgba(220, 53, 69, 0.4); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.6); padding: 0; transition: all 0.2s ease; opacity: 0;"
-                                    title="Eliminar adjunto">
-                                    <i class="fas fa-times" style="font-size: 0.9rem;"></i>
-                                </button>
-                            `;
-                        }
-
-                        attachmentsHtml += `
-                            <div class="attachment-card" data-att-id="${att.id}" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
-                                <div style="margin-bottom: 10px;">
-                                    <a href="${att.file_url}" target="_blank" style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
-                                        <i class="fas ${iconClass} mr-2"></i>
-                                        <strong>${att.file_name}</strong>
-                                    </a>
-                                </div>
-                                <div style="font-size: 0.85rem; color: #999; margin-bottom: 8px;">
-                                    <span>Tamaño: ${formatBytes(att.file_size_bytes)}</span>
-                                    <span class="mx-2">•</span>
-                                    <span>Tipo: ${att.file_type || 'application/octet-stream'}</span>
-                                </div>
-                                ${deleteButtonHtml}
-                                <button type="button" onclick="window.open('${att.file_url}', '_blank')" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid ${buttonBorderColor}; background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: ${buttonColor}; padding: 0; transition: all 0.2s ease;" onmouseover="this.style.borderColor='${buttonHoverBorder}'; this.style.color='${buttonHoverColor}';" onmouseout="this.style.borderColor='${buttonBorderColor}'; this.style.color='${buttonColor}';">
-                                    <i class="fas fa-download" style="font-size: 0.9rem;"></i>
-                                </button>
-                            </div>
-                        `;
-                    });
-                }
-
-                const html = `
-                    <div class="direct-chat-msg ${alignClass}" data-msg-id="${msg.id}">
-                        <div class="direct-chat-infos clearfix">
-                            <span class="direct-chat-name ${nameFloat}">${displayName}</span>
-                            <span class="direct-chat-timestamp ${timeFloat}">${formatDate(msg.created_at)}</span>
-                        </div>
-                        <img class="direct-chat-img" src="${avatarUrl}" alt="${authorName}">
-                        <div class="direct-chat-text" style="${bgClass}; position: relative; padding-right: 85px;">
-                            ${actionsHtml}
-                            ${msg.content}
-                        </div>
-                        ${attachmentsHtml}
-                    </div>
-                `;
+                const html = renderSingleMessage(msg, currentUserId, false);
                 $msgList.append(html);
             });
 
@@ -584,9 +449,41 @@
         }
 
         async function sendMessage(content) {
-            const $btn = $('#btn-send-message');
-            const originalBtnText = $btn.text();
-            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            // 🔴 OPTIMISTIC UI: Generate temporary ID FIRST for spam protection
+            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // 🔴 SPAM PROTECTION: Check if send operation for THIS specific message is in progress
+            // Use unique tempId instead of fixed 'newMsg' to allow message queuing
+            if (!canPerformOperation('send', tempId)) {
+                console.log(`[Chat] Send blocked - message ${tempId} is already being sent`);
+                return;
+            }
+
+            const currentUserInfo = getCurrentUserInfo();
+
+            // Create temporary message object (minimal, will be replaced with real data from API)
+            const tempMessage = {
+                id: tempId,
+                content: content,
+                created_at: new Date().toISOString(),
+                author_id: currentUserInfo.id,
+                user_id: currentUserInfo.id,
+                author_type: 'user',
+                attachments: []
+            };
+
+            // Add message to DOM with pending state (opacity 40%)
+            addMessageToDOM(tempMessage, [], true);
+
+            // Backup content in case of error
+            const contentBackup = content;
+            const filesBackup = [...selectedFiles];
+
+            // Clear form immediately for better UX (allows sending next message)
+            $input.val('');
+            $input.css('height', '38px');
+            selectedFiles = [];
+            renderFilePreviews();
 
             try {
                 const token = window.tokenManager.getAccessToken();
@@ -603,8 +500,8 @@
                 const uploadedAttachments = [];
 
                 // 2. Upload Attachments (if any)
-                if (selectedFiles.length > 0) {
-                    for (const file of selectedFiles) {
+                if (filesBackup.length > 0) {
+                    for (const file of filesBackup) {
                         const formData = new FormData();
                         formData.append('file', file);
 
@@ -617,7 +514,7 @@
                                 processData: false,
                                 contentType: false
                             });
-                            
+
                             // Capture uploaded attachment data
                             if (attResponse.data) {
                                 uploadedAttachments.push(attResponse.data);
@@ -633,14 +530,33 @@
                     }
                 }
 
-                // 3. Cleanup & Reload
-                $input.val('');
-                $input.css('height', '38px'); // Reset textarea height to original
-                selectedFiles = [];
-                renderFilePreviews();
-                loadMessages(); // Reload chat to show new message
-                
-                // 4. Emit Event for other components (Payload Response Strategy)
+                // 🔴 OPTIMISTIC UI: Replace temp message with real message
+                $(`.direct-chat-msg[data-msg-id="${tempId}"]`).remove();
+
+                // Add real message with attachments (no pending state)
+                // Note: Counter already incremented when temp message was added, don't increment again
+                const currentUserId = getCurrentUserId();
+                responseData.data.attachments = uploadedAttachments;
+
+                const html = renderSingleMessage(responseData.data, currentUserId, false);
+                $msgList.append(html);
+
+                // Bind hover events for new message
+                const $newMsg = $(`.direct-chat-msg[data-msg-id="${responseData.data.id}"]`);
+                $newMsg.hover(
+                    function() {
+                        $(this).find('.message-actions').css('opacity', '1');
+                    },
+                    function() {
+                        $(this).find('.message-actions').css('opacity', '0');
+                    }
+                );
+
+                // Scroll to bottom
+                $msgList.scrollTop($msgList[0].scrollHeight);
+
+                // 🔴 Emit Event for other components (Payload Response Strategy)
+                // Let the event handlers update counters - NO local counter updates here
                 $(document).trigger('tickets:message-sent', {
                     message: responseData.data,
                     attachments: uploadedAttachments
@@ -651,11 +567,21 @@
                     title: 'Éxito',
                     body: 'Mensaje enviado correctamente.',
                     autohide: true,
-                    delay: 3000
+                    delay: 2000
                 });
 
             } catch (error) {
                 console.error('[Ticket Chat] Error sending message:', error);
+
+                // 🔴 OPTIMISTIC UI ROLLBACK: Remove pending message and restore form
+                removeMessageFromDOM(tempId);
+
+                // Restore content and files to form
+                $input.val(contentBackup);
+                selectedFiles = filesBackup;
+                renderFilePreviews();
+                $input.trigger('input'); // Trigger auto-grow
+
                 $(document).Toasts('create', {
                     class: 'bg-danger',
                     title: 'Error',
@@ -664,7 +590,8 @@
                     delay: 3000
                 });
             } finally {
-                $btn.prop('disabled', false).text(originalBtnText);
+                // 🔴 SPAM PROTECTION: Mark operation as complete
+                completeOperation('send', tempId);
             }
         }
 
@@ -729,6 +656,282 @@
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ==============================================================
+        // OPTIMISTIC UI HELPERS
+        // ==============================================================
+
+        /**
+         * Get current user ID from JWT token
+         * @returns {string|null} User ID
+         */
+        function getCurrentUserId() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                return payload.sub;
+            } catch (e) {
+                console.error('[Chat] Error parsing token:', e);
+                return null;
+            }
+        }
+
+        /**
+         * Get current user info from JWT token
+         * @returns {Object} User info {id, name, email}
+         */
+        function getCurrentUserInfo() {
+            try {
+                const token = window.tokenManager.getAccessToken();
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+
+                return {
+                    id: payload.sub,
+                    email: payload.email || ''
+                };
+            } catch (e) {
+                console.error('[Chat] Error parsing token:', e);
+                return { id: null, email: '' };
+            }
+        }
+
+        /**
+         * Render a single message HTML
+         * @param {Object} msg - Message object
+         * @param {string} currentUserId - Current user ID
+         * @param {boolean} isPending - Whether message is pending API confirmation
+         * @returns {string} HTML string
+         */
+        function renderSingleMessage(msg, currentUserId, isPending = false) {
+            const authorId = msg.author_id || msg.user_id;
+            const isMe = String(authorId) === String(currentUserId);
+            const alignClass = isMe ? 'right' : '';
+            const nameFloat = isMe ? 'float-right' : 'float-left';
+            const timeFloat = isMe ? 'float-left' : 'float-right';
+            const bgClass = isMe ? 'background-color: #007bff; color: #fff;' : 'background-color: #d2d6de; color: #444;';
+
+            // Apply pending opacity
+            const opacityStyle = isPending ? 'opacity: 0.4; transition: opacity 0.3s ease;' : '';
+
+            // 🔴 OPTIMISTIC UI: Show "Enviando..." for pending messages
+            let displayName;
+            let authorName = 'Usuario';
+
+            if (isPending) {
+                displayName = 'Enviando...';
+                authorName = 'Enviando';
+            } else {
+                // Safe Author Access - Try multiple sources
+                // Priority 1: author object with name
+                if (msg.author && msg.author.name) {
+                    authorName = msg.author.name;
+                }
+                // Priority 2: uploaded_by_name (from API)
+                else if (msg.uploaded_by_name) {
+                    authorName = msg.uploaded_by_name;
+                }
+
+                // Get role label in uppercase
+                const roleLabel = msg.author_type ? msg.author_type.toUpperCase() : 'USER';
+
+                // 🔴 FIX: Add "(tú)" suffix for current user messages
+                const tuSuffix = isMe ? ' (tú)' : '';
+                displayName = `<strong>${roleLabel}</strong> ${authorName}${tuSuffix}`;
+            }
+
+            // Avatar (UI Avatars)
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&size=128&background=${isMe ? '007bff' : '6c757d'}&color=fff&bold=true`;
+
+            // Check if user can edit/delete this message
+            const canModify = isMe && isWithin30Minutes(msg.created_at) && currentTicketStatus !== 'closed';
+
+            // Message Actions Dropdown (Only for own messages, not for pending)
+            let actionsHtml = '';
+            if (canModify && !isPending) {
+                actionsHtml = `
+                    <div class="message-actions" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease; z-index: 1000;">
+                        <div class="dropdown">
+                            <button class="btn btn-link p-0 text-white" type="button" data-toggle="dropdown" aria-expanded="false" style="font-size: 1.1rem; line-height: 1; padding: 4px 8px;">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right" style="min-width: 140px; font-size: 0.9rem;">
+                                <a class="dropdown-item btn-edit-message" href="#" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}">
+                                    <i class="fas fa-edit mr-2"></i> Editar
+                                </a>
+                                <a class="dropdown-item text-danger btn-delete-message" href="#" data-msg-id="${msg.id}">
+                                    <i class="fas fa-trash mr-2"></i> Eliminar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let attachmentsHtml = '';
+            if (msg.attachments && msg.attachments.length > 0) {
+                msg.attachments.forEach(att => {
+                    // Determine icon
+                    let iconClass = 'fa-file-pdf';
+                    if (att.file_type) {
+                        if (att.file_type.includes('image')) iconClass = 'fa-file-image';
+                        else if (att.file_type.includes('word') || att.file_type.includes('document')) iconClass = 'fa-file-word';
+                        else if (att.file_type.includes('sheet') || att.file_type.includes('excel')) iconClass = 'fa-file-excel';
+                    }
+
+                    // Check if user can delete this attachment
+                    const canDeleteAtt = isMe && isWithin30Minutes(att.created_at) && currentTicketStatus !== 'closed';
+
+                    const marginStyle = isMe ? 'margin: 8px 50px 0 0' : 'margin: 8px 0 0 50px';
+                    const bgColor = isMe ? 'rgba(0,123,255,0.1)' : '#f8f9fa';
+                    const borderColor = isMe ? '#007bff' : '#d2d6de';
+                    const linkColor = isMe ? 'class="text-primary"' : 'style="color: #444;"';
+                    const buttonBorderColor = isMe ? 'rgba(0, 123, 255, 0.4)' : 'rgba(68, 68, 68, 0.4)';
+                    const buttonColor = isMe ? 'rgba(0, 123, 255, 0.6)' : 'rgba(68, 68, 68, 0.6)';
+                    const buttonHoverBorder = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
+                    const buttonHoverColor = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
+
+                    // Delete button for own attachments (not for pending)
+                    let deleteButtonHtml = '';
+                    if (canDeleteAtt && !isPending) {
+                        deleteButtonHtml = `
+                            <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}"
+                                style="position: absolute; top: 50%; right: 60px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid rgba(220, 53, 69, 0.4); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.6); padding: 0; transition: all 0.2s ease; opacity: 0;"
+                                title="Eliminar adjunto">
+                                <i class="fas fa-times" style="font-size: 0.9rem;"></i>
+                            </button>
+                        `;
+                    }
+
+                    attachmentsHtml += `
+                        <div class="attachment-card" data-att-id="${att.id}" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
+                            <div style="margin-bottom: 10px;">
+                                <a href="${att.file_url}" target="_blank" style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
+                                    <i class="fas ${iconClass} mr-2"></i>
+                                    <strong>${att.file_name}</strong>
+                                </a>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #999; margin-bottom: 8px;">
+                                <span>Tamaño: ${formatBytes(att.file_size_bytes)}</span>
+                                <span class="mx-2">•</span>
+                                <span>Tipo: ${att.file_type || 'application/octet-stream'}</span>
+                            </div>
+                            ${deleteButtonHtml}
+                            <button type="button" onclick="window.open('${att.file_url}', '_blank')" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid ${buttonBorderColor}; background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: ${buttonColor}; padding: 0; transition: all 0.2s ease;" onmouseover="this.style.borderColor='${buttonHoverBorder}'; this.style.color='${buttonHoverColor}';" onmouseout="this.style.borderColor='${buttonBorderColor}'; this.style.color='${buttonColor}';">
+                                <i class="fas fa-download" style="font-size: 0.9rem;"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            const html = `
+                <div class="direct-chat-msg ${alignClass}" data-msg-id="${msg.id}" style="${opacityStyle}">
+                    <div class="direct-chat-infos clearfix">
+                        <span class="direct-chat-name ${nameFloat}">${displayName}</span>
+                        <span class="direct-chat-timestamp ${timeFloat}">${formatDate(msg.created_at)}</span>
+                    </div>
+                    <img class="direct-chat-img" src="${avatarUrl}" alt="${authorName}">
+                    <div class="direct-chat-text" style="${bgClass}; position: relative; padding-right: 85px;">
+                        ${actionsHtml}
+                        <span class="message-content">${msg.content}</span>
+                    </div>
+                    ${attachmentsHtml}
+                </div>
+            `;
+            return html;
+        }
+
+        /**
+         * Add a message to the DOM (optimistic UI)
+         * @param {Object} message - Message object
+         * @param {Array} attachments - Array of attachment objects
+         * @param {boolean} isPending - Whether message is pending
+         */
+        function addMessageToDOM(message, attachments = [], isPending = false) {
+            const currentUserId = getCurrentUserId();
+
+            // 🔴 FIX: Remove "Sé el primero en escribir!" message if it exists
+            const $emptyMessage = $msgList.find('p.text-center.text-muted');
+            if ($emptyMessage.length > 0) {
+                $emptyMessage.remove();
+            }
+
+            // Add attachments to message object
+            message.attachments = attachments;
+
+            const html = renderSingleMessage(message, currentUserId, isPending);
+            $msgList.append(html);
+
+            // Update message count
+            const currentCount = parseInt($msgCount.text()) || 0;
+            $msgCount.text(currentCount + 1);
+
+            // Bind hover events for new message
+            const $newMsg = $(`.direct-chat-msg[data-msg-id="${message.id}"]`);
+            $newMsg.hover(
+                function() {
+                    $(this).find('.message-actions').css('opacity', '1');
+                },
+                function() {
+                    $(this).find('.message-actions').css('opacity', '0');
+                }
+            );
+
+            // Scroll to bottom
+            $msgList.scrollTop($msgList[0].scrollHeight);
+        }
+
+        /**
+         * Update message content in DOM
+         * @param {string} msgId - Message ID
+         * @param {string} newContent - New content
+         */
+        function updateMessageContentInDOM(msgId, newContent) {
+            const $msg = $(`.direct-chat-msg[data-msg-id="${msgId}"]`);
+            if ($msg.length === 0) return;
+
+            $msg.find('.message-content').text(newContent);
+            $msg.find('.btn-edit-message').attr('data-msg-content', newContent);
+        }
+
+        /**
+         * Set message pending state (opacity)
+         * @param {string} msgId - Message ID
+         * @param {boolean} isPending - Whether pending
+         */
+        function setMessagePendingState(msgId, isPending) {
+            const $msg = $(`.direct-chat-msg[data-msg-id="${msgId}"]`);
+            if ($msg.length === 0) return;
+
+            $msg.css('opacity', isPending ? '0.4' : '1');
+        }
+
+        /**
+         * Remove message from DOM with fadeOut
+         * @param {string} msgId - Message ID
+         */
+        function removeMessageFromDOM(msgId) {
+            const $msg = $(`.direct-chat-msg[data-msg-id="${msgId}"]`);
+            if ($msg.length === 0) return;
+
+            $msg.fadeOut(300, function() {
+                $(this).remove();
+
+                // Update message count
+                const currentCount = parseInt($msgCount.text()) || 0;
+                if (currentCount > 0) $msgCount.text(currentCount - 1);
+            });
         }
 
         // ==============================================================
@@ -816,12 +1019,20 @@
             const $confirmBtn = $('#btn-confirm-edit');
             const $cancelBtn = $('#btn-cancel-edit');
 
-            // Store original content for rollback
-            const originalContent = $confirmBtn.html();
+            // Store original button content for rollback
+            const originalBtnContent = $confirmBtn.html();
+
+            // 🔴 OPTIMISTIC UI: Get original message content for rollback
+            const $msg = $(`.direct-chat-msg[data-msg-id="${msgId}"]`);
+            const originalMessageContent = $msg.find('.message-content').text();
 
             // Disable both buttons and show loading state
             $confirmBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
             $cancelBtn.prop('disabled', true);
+
+            // 🔴 OPTIMISTIC UI: Update content in DOM immediately with pending state
+            updateMessageContentInDOM(msgId, newContent);
+            setMessagePendingState(msgId, true);
 
             try {
                 const token = window.tokenManager.getAccessToken();
@@ -836,7 +1047,9 @@
                     data: JSON.stringify({ content: newContent })
                 });
 
-                // Success
+                // 🔴 OPTIMISTIC UI: Success - remove pending state
+                setMessagePendingState(msgId, false);
+
                 $(document).Toasts('create', {
                     class: 'bg-success',
                     title: 'Éxito',
@@ -845,12 +1058,16 @@
                     delay: 2000
                 });
 
-                // Reset UI and reload messages
+                // Reset UI (exit edit mode)
                 cancelEdit();
-                loadMessages();
 
             } catch (error) {
                 console.error('[Chat] Error updating message:', error);
+
+                // 🔴 OPTIMISTIC UI ROLLBACK: Revert to original content
+                updateMessageContentInDOM(msgId, originalMessageContent);
+                setMessagePendingState(msgId, false);
+
                 $(document).Toasts('create', {
                     class: 'bg-danger',
                     title: 'Error',
@@ -859,8 +1076,8 @@
                     delay: 3000
                 });
 
-                // Restore button state on error
-                $confirmBtn.prop('disabled', false).html(originalContent);
+                // Restore button state on error (keep edit mode active)
+                $confirmBtn.prop('disabled', false).html(originalBtnContent);
                 $cancelBtn.prop('disabled', false);
             } finally {
                 // 🔴 SPAM PROTECTION: Mark operation as complete
@@ -900,18 +1117,12 @@
                 // 🔴 PROFESSIONAL: Remove message from DOM immediately (no API call needed)
                 $(`.direct-chat-msg[data-msg-id="${msgId}"]`).fadeOut(300, function() {
                     $(this).remove();
-                    console.log(`[Chat] Message ${msgId} removed from DOM`);
                 });
 
-                // 🔴 PROFESSIONAL: Emit event for other components to update (detail view counter, etc.)
+                // 🔴 PROFESSIONAL: Emit event for other components to update counters
                 $(document).trigger('tickets:message-deleted', {
                     messageId: msgId
                 });
-
-                // Update response count in detail view locally (no API call)
-                const $count = $('#t-info-responses');
-                let current = parseInt($count.text()) || 0;
-                if (current > 0) $count.text(current - 1);
 
             } catch (error) {
                 console.error('[Chat] Error deleting message:', error);
@@ -949,6 +1160,13 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                // 🔴 ALWAYS emit attachment deleted event (for attachment list panel)
+                $(document).trigger('tickets:attachment-deleted', {
+                    attachmentId: attId,
+                    messageId: msgId
+                });
+                console.log(`[Chat] Event dispatched: tickets:attachment-deleted (attId: ${attId})`);
+
                 // 2. 🔴 FIX: If message content is "Archivo adjunto.", also delete the message (silent operation)
                 if (msgContent === 'Archivo adjunto.') {
                     console.log(`[Chat] Message content is "Archivo adjunto." - deleting message ${msgId} in background`);
@@ -966,15 +1184,11 @@
                             console.log(`[Chat] Message ${msgId} removed from DOM (contained "Archivo adjunto.")`);
                         });
 
-                        // 🔴 PROFESSIONAL: Emit event for detail view to update counter
+                        // 🔴 PROFESSIONAL: Emit event for message deletion
                         $(document).trigger('tickets:message-deleted', {
                             messageId: msgId
                         });
-
-                        // Update response count
-                        const $count = $('#t-info-responses');
-                        let current = parseInt($count.text()) || 0;
-                        if (current > 0) $count.text(current - 1);
+                        console.log(`[Chat] Event dispatched: tickets:message-deleted (msgId: ${msgId})`);
                     } catch (deleteError) {
                         console.error('[Chat] Error deleting message:', deleteError);
                         // Silent fail - message deletion is background operation
@@ -984,12 +1198,6 @@
                     $(`.attachment-card[data-att-id="${attId}"]`).fadeOut(300, function() {
                         $(this).remove();
                         console.log(`[Chat] Attachment ${attId} removed from DOM`);
-                    });
-
-                    // 🔴 PROFESSIONAL: Emit event for other components
-                    $(document).trigger('tickets:attachment-deleted', {
-                        attachmentId: attId,
-                        messageId: msgId
                     });
                 }
 
@@ -1001,11 +1209,6 @@
                     autohide: true,
                     delay: 2000
                 });
-
-                // Update attachment count in detail view (no API call)
-                const $countAtt = $('#t-attachments-count');
-                let currentAttCount = parseInt($countAtt.text()) || 0;
-                if (currentAttCount > 0) $countAtt.text(currentAttCount - 1);
 
             } catch (error) {
                 console.error('[Chat] Error deleting attachment:', error);
@@ -1023,8 +1226,6 @@
         }
 
         function editLastOwnMessage() {
-            console.log('[Chat] Arrow up pressed - finding last editable message');
-
             // Get all messages
             const $messages = $('.direct-chat-msg[data-msg-id]');
 
@@ -1034,16 +1235,12 @@
                 const $editBtn = $msg.find('.btn-edit-message');
 
                 if ($editBtn.length > 0) {
-                    // Found an editable message
                     const msgId = $editBtn.data('msg-id');
                     const msgContent = $editBtn.data('msg-content');
                     startEditMessage(msgId, msgContent);
                     return;
                 }
             }
-
-            // No editable message found
-            console.log('[Chat] No editable messages found');
         }
     }
 

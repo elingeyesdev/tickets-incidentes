@@ -211,6 +211,9 @@ class TicketResponseController extends Controller
         // Refrescar el ticket para obtener cambios del trigger
         $ticket->refresh();
 
+        // 🔴 FIX: Load author relationship for frontend (optimistic UI needs author.name)
+        $response->load('author');
+
         // Disparar evento ResponseAdded
         event(new ResponseAdded($response));
 

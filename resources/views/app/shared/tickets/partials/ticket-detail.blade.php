@@ -72,7 +72,7 @@
         // 4. Message Sent Event (Payload Response Strategy)
         $(document).on('tickets:message-sent', function(e, data) {
             console.log('[Ticket Detail] Message sent event received', data);
-            
+
             // Update Response Count
             const $count = $('#t-info-responses');
             let current = parseInt($count.text()) || 0;
@@ -83,15 +83,15 @@
                 const $list = $('#t-attachments-list');
                 const $countAtt = $('#t-attachments-count');
                 const $empty = $('#t-attachments-empty');
-                
+
                 let currentAttCount = parseInt($countAtt.text()) || 0;
                 $countAtt.text(currentAttCount + data.attachments.length);
                 $empty.addClass('d-none');
-                
+
                 data.attachments.forEach(att => {
                     let iconClass = 'far fa-file text-muted';
                     let iconColorClass = 'text-muted';
-                    
+
                     if (att.file_type) {
                         if (att.file_type.includes('pdf')) { iconClass = 'far fa-file-pdf'; iconColorClass = 'text-danger'; }
                         else if (att.file_type.includes('word') || att.file_type.includes('doc')) { iconClass = 'far fa-file-word'; iconColorClass = 'text-primary'; }
@@ -100,11 +100,11 @@
                     }
 
                     const html = `
-                        <li class="mb-2 pb-2 border-bottom">
+                        <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
                                     <a href="${att.file_url}" target="_blank" class="text-dark" title="${att.file_name}">
-                                        <i class="${iconClass} ${iconColorClass} mr-1"></i> 
+                                        <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                         ${att.file_name}
                                     </a>
                                 </div>
@@ -117,6 +117,43 @@
                     `;
                     $list.append(html);
                 });
+            }
+        });
+
+        // 5. Attachment Deleted Event
+        $(document).on('tickets:attachment-deleted', function(e, data) {
+            console.log('[Ticket Detail] Attachment deleted event received', data);
+
+            const $list = $('#t-attachments-list');
+            const $countAtt = $('#t-attachments-count');
+            const $empty = $('#t-attachments-empty');
+
+            // Remove attachment from list
+            $list.find(`li[data-att-id="${data.attachmentId}"]`).fadeOut(300, function() {
+                $(this).remove();
+
+                // Check if list is empty
+                if ($list.find('li').length === 0) {
+                    $empty.removeClass('d-none');
+                }
+            });
+
+            // Update counter
+            let currentAttCount = parseInt($countAtt.text()) || 0;
+            if (currentAttCount > 0) {
+                $countAtt.text(currentAttCount - 1);
+            }
+        });
+
+        // 6. Message Deleted Event
+        $(document).on('tickets:message-deleted', function(e, data) {
+            console.log('[Ticket Detail] Message deleted event received', data);
+
+            // Update Response Count
+            const $count = $('#t-info-responses');
+            let current = parseInt($count.text()) || 0;
+            if (current > 0) {
+                $count.text(current - 1);
             }
         });
 
@@ -295,11 +332,11 @@
                 }
 
                 const html = `
-                    <li class="mb-2 pb-2 border-bottom">
+                    <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                         <div class="d-flex justify-content-between align-items-center">
                             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
                                 <a href="${att.file_url}" target="_blank" class="text-dark" title="${att.file_name}">
-                                    <i class="${iconClass} ${iconColorClass} mr-1"></i> 
+                                    <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                     ${att.file_name}
                                 </a>
                             </div>
