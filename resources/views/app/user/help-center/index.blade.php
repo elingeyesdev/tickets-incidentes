@@ -38,13 +38,11 @@
             <!-- ========== CATEGORIES SECTION ========== -->
             <div class="row mb-5">
                 <div class="col-md-12">
-                    <h4 class="mb-3">
+                    <h4 class="mb-4">
                         <i class="fas fa-tags mr-2 text-muted"></i>Busca por categoría
                     </h4>
-                    <div style="overflow-x: auto; overflow-y: hidden; padding-bottom: 10px;">
-                        <div id="categories-container" style="display: flex; gap: 15px; min-width: max-content;">
-                            <!-- Categories will be loaded here via JavaScript -->
-                        </div>
+                    <div class="row" id="categories-container">
+                        <!-- Categories will be loaded here via JavaScript -->
                     </div>
                 </div>
             </div>
@@ -244,13 +242,15 @@
 
         Object.entries(categoryConfig).forEach(function([code, cat]) {
             const categoryHtml = `
-                <div class="card card-outline card-${cat.color} category-card cursor-pointer"
-                     data-category-code="${code}"
-                     style="transition: all 0.3s ease; cursor: pointer; min-width: 250px; flex-shrink: 0;">
-                    <div class="card-body text-center py-4 px-3">
-                        <i class="${cat.icon} fa-2x text-${cat.color} mb-2"></i>
-                        <h6 class="card-title mb-1">${cat.label}</h6>
-                        <p class="card-text text-muted small mb-0">${cat.description}</p>
+                <div class="col-12 col-sm-6 col-md-3 mb-4 d-flex align-items-stretch flex-column">
+                    <div class="card card-outline card-${cat.color} category-card cursor-pointer"
+                         data-category-code="${code}"
+                         style="transition: all 0.3s ease; cursor: pointer; flex-grow: 1;">
+                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                            <i class="${cat.icon} fa-3x text-${cat.color} mb-3"></i>
+                            <h5 class="card-title mb-2">${cat.label}</h5>
+                            <p class="card-text text-muted small mb-0">${cat.description}</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -263,10 +263,10 @@
             console.log('[Help Center] Category clicked:', categoryCode);
 
             // Remove active state from all categories
-            $('.category-card').removeClass('border-left-4');
+            $('.category-card').removeClass('border-left-4 border-4');
 
             // Add active state to clicked category
-            $(this).addClass('border-left-4');
+            $(this).addClass('border-left-4 border-4');
 
             // Set current category and load articles
             currentCategory = categoryCode;
@@ -279,9 +279,11 @@
 
         // Add hover effect
         $('.category-card').on('mouseenter', function() {
-            $(this).css('box-shadow', '0 0 10px rgba(0, 0, 0, 0.15)');
+            $(this).css('box-shadow', '0 0 15px rgba(0, 0, 0, 0.1)');
+            $(this).css('transform', 'translateY(-2px)');
         }).on('mouseleave', function() {
             $(this).css('box-shadow', '');
+            $(this).css('transform', 'translateY(0)');
         });
     }
 
