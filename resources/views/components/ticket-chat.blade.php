@@ -651,10 +651,13 @@
             const $sendBtn = $('#btn-send-message');
             $sendBtn.text('Actualizar').removeClass('btn-primary').addClass('btn-warning');
 
+            // Ensure send button has consistent padding
+            $sendBtn.css('padding', '0 20px');
+
             // Add cancel button if it doesn't exist
             if ($('#btn-cancel-edit').length === 0) {
                 const cancelBtn = `
-                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="margin-left: 8px; height: 38px; padding: 0 15px; display: flex; align-items: center; justify-content: center;">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="margin-left: 8px; height: 38px; padding: 0 20px; display: flex; align-items: center; justify-content: center; white-space: nowrap;">
                         Cancelar
                     </button>
                 `;
@@ -686,6 +689,7 @@
             // Reset UI
             const $sendBtn = $('#btn-send-message');
             $sendBtn.text('Enviar').removeClass('btn-warning').addClass('btn-primary');
+            $sendBtn.css('padding', '0 20px'); // Restore original padding
             $('#btn-cancel-edit').remove();
             $('#editing-indicator').remove();
 
