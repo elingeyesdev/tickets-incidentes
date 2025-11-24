@@ -32,15 +32,15 @@
             <!-- End attachments preview -->
             
             <div class="input-group">
-                <span class="input-group-prepend">
-                    <button class="btn btn-light border" type="button" id="btn-attach-file" data-toggle="tooltip" title="Adjuntar Archivo" style="border-color: #ced4da; background-color: #e9ecef; color: #495057;">
+                <span class="input-group-prepend" style="display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch;">
+                    <button class="btn btn-light border" type="button" id="btn-attach-file" data-toggle="tooltip" title="Adjuntar Archivo" style="border-color: #ced4da; background-color: #e9ecef; color: #495057; flex-shrink: 0;">
                         <i class="fas fa-paperclip"></i>
                     </button>
                     <input type="file" id="chat-file-input" multiple style="display: none;" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif">
                 </span>
                 <textarea name="message" id="chat-message-input" placeholder="Escribe un mensaje..." class="form-control" rows="1" style="resize: none; height: 38px; line-height: 24px; min-height: 38px; max-height: 150px; overflow-y: auto;"></textarea>
-                <span class="input-group-append">
-                    <button type="submit" class="btn btn-primary" id="btn-send-message">Enviar</button>
+                <span class="input-group-append" style="display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch;">
+                    <button type="submit" class="btn btn-primary" id="btn-send-message" style="white-space: nowrap; flex-shrink: 0;">Enviar</button>
                 </span>
             </div>
         </form>
