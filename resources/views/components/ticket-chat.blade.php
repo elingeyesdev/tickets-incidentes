@@ -33,14 +33,14 @@
             
             <div class="input-group">
                 <span class="input-group-prepend">
-                    <button class="btn btn-light border" type="button" id="btn-attach-file" data-toggle="tooltip" title="Attach File" style="border-color: #ced4da; background-color: #e9ecef; color: #495057;">
+                    <button class="btn btn-light border" type="button" id="btn-attach-file" data-toggle="tooltip" title="Adjuntar Archivo" style="border-color: #ced4da; background-color: #e9ecef; color: #495057;">
                         <i class="fas fa-paperclip"></i>
                     </button>
                     <input type="file" id="chat-file-input" multiple style="display: none;" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif">
                 </span>
-                <input type="text" name="content" id="chat-input-content" placeholder="Type Message ..." class="form-control" required>
+                <textarea name="message" id="chat-message-input" placeholder="Escribe un mensaje..." class="form-control" rows="1" style="resize: none; height: 38px; line-height: 24px;"></textarea>
                 <span class="input-group-append">
-                    <button type="submit" class="btn btn-primary" id="btn-send-message">Send</button>
+                    <button type="submit" class="btn btn-primary" id="btn-send-message">Enviar</button>
                 </span>
             </div>
         </form>
@@ -63,7 +63,7 @@
         const $chatCard = $('#ticket-chat-card');
         const $msgList = $('#chat-messages-list');
         const $form = $('#chat-form');
-        const $input = $('#chat-input-content');
+        const $input = $('#chat-message-input'); // Updated selector for textarea
         const $fileInput = $('#chat-file-input');
         const $previewContainer = $('#chat-attachments-preview');
         const $btnAttach = $('#btn-attach-file');
@@ -162,7 +162,15 @@
         });
 
         // 4. Send Message
-        $form.on('submit', async function(e) {
+            // Handle Enter to Send (Shift+Enter for new line)
+            $input.on('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    $form.submit();
+                }
+            });
+
+            $form.on('submit', async function(e) {
             e.preventDefault();
             if (!$form.valid()) return;
 
@@ -334,6 +342,7 @@
                 });
 
                 const responseId = responseData.data.id;
+                const uploadedAttachments = [];
 
                 // 2. Upload Attachments (if any)
                 if (selectedFiles.length > 0) {
@@ -342,7 +351,7 @@
                         formData.append('file', file);
 
                         try {
-                            await $.ajax({
+                            const attResponse = await $.ajax({
                                 url: `/api/tickets/${currentTicketCode}/responses/${responseId}/attachments`,
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${token}` },
@@ -350,6 +359,11 @@
                                 processData: false,
                                 contentType: false
                             });
+                            
+                            // Capture uploaded attachment data
+                            if (attResponse.data) {
+                                uploadedAttachments.push(attResponse.data);
+                            }
                         } catch (uploadError) {
                             console.error('Error uploading file:', file.name, uploadError);
                             $(document).Toasts('create', {
@@ -365,11 +379,20 @@
                 $input.val('');
                 selectedFiles = [];
                 renderFilePreviews();
-                loadMessages();
+                loadMessages(); // Reload chat to show new message
+                
+                // 4. Emit Event for other components (Payload Response Strategy)
+                $(document).trigger('tickets:message-sent', {
+                    message: responseData.data,
+                    attachments: uploadedAttachments
+                });
+
                 $(document).Toasts('create', {
                     class: 'bg-success',
                     title: 'Éxito',
-                    body: 'Mensaje enviado correctamente.'
+                    body: 'Mensaje enviado correctamente.',
+                    autohide: true,
+                    delay: 3000
                 });
 
             } catch (error) {
@@ -377,7 +400,9 @@
                 $(document).Toasts('create', {
                     class: 'bg-danger',
                     title: 'Error',
-                    body: error.responseJSON?.message || 'Error al enviar el mensaje.'
+                    body: error.responseJSON?.message || 'Error al enviar el mensaje.',
+                    autohide: true,
+                    delay: 3000
                 });
             } finally {
                 $btn.prop('disabled', false).text(originalBtnText);
