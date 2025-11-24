@@ -33,6 +33,31 @@
                         </div>
                     </div>
 
+                    <!-- Filters (visible only in Explore tab) -->
+                    <div id="explore-filters" class="row mb-4" style="display: none;">
+                        <div class="col-md-3 offset-md-1">
+                            <label class="small text-muted mb-1">Filtrar por industria</label>
+                            <select id="industry-filter" class="form-control">
+                                <option value="">Todas las industrias</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Ordenar por</label>
+                            <select id="sort-filter" class="form-control">
+                                <option value="name|asc">Nombre (A-Z)</option>
+                                <option value="name|desc">Nombre (Z-A)</option>
+                                <option value="followers_count|desc" selected>Más seguidores</option>
+                                <option value="followers_count|asc">Menos seguidores</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">&nbsp;</label>
+                            <button id="clear-filters-btn" class="btn btn-secondary btn-block">
+                                <i class="fas fa-redo mr-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="tab-content" id="companies-tabs-content">
                         <!-- Following Tab -->
                         <div class="tab-pane fade show active" id="following" role="tabpanel" aria-labelledby="following-tab">
@@ -78,27 +103,76 @@
 
 <!-- Template for Company Card -->
 <div id="company-card-template" style="display: none;">
-    <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch flex-column">
-        <div class="card bg-light d-flex flex-fill">
-            <div class="card-header text-muted border-bottom-0 company-industry">
-                Industry Name
+    <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch flex-column mb-4">
+        <div class="card d-flex flex-fill company-card-item">
+            <!-- Industry Badge Header -->
+            <div class="card-header border-bottom-0 company-industry-header" style="background-color: #f8f9fa;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge badge-info company-industry-badge">
+                        <i class="fas fa-industry mr-1"></i>
+                        <span class="company-industry">Industry</span>
+                    </span>
+                    <span class="badge badge-secondary company-code-badge">
+                        <span class="company-code">CODE</span>
+                    </span>
+                </div>
             </div>
-            <div class="card-body pt-0">
+
+            <!-- Card Body -->
+            <div class="card-body">
                 <div class="row">
-                    <div class="col-7">
-                        <h2 class="lead"><b class="company-name">Company Name</b></h2>
-                        <p class="text-muted text-sm company-description"><b>About: </b> Description... </p>
-                        <ul class="ml-4 mb-0 fa-ul text-muted">
-                            <li class="small"><span class="fa-li"><i class="fas fa-lg fa-map-marker-alt"></i></span> <span class="company-location">Location</span></li>
-                            <li class="small mt-1"><span class="fa-li"><i class="fas fa-lg fa-users"></i></span> <span class="company-followers">0</span> seguidores</li>
+                    <!-- Company Info -->
+                    <div class="col-8">
+                        <h5 class="mb-2">
+                            <b class="company-name">Company Name</b>
+                        </h5>
+                        <p class="text-muted small company-description mb-3">
+                            Description...
+                        </p>
+
+                        <!-- Company Details -->
+                        <ul class="list-unstyled mb-0">
+                            <!-- Location -->
+                            <li class="small mb-2">
+                                <i class="fas fa-map-marker-alt text-primary fa-fw mr-1"></i>
+                                <span class="company-location text-muted">Location</span>
+                            </li>
+
+                            <!-- Followers -->
+                            <li class="small mb-2">
+                                <i class="fas fa-users text-success fa-fw mr-1"></i>
+                                <span class="company-followers">0</span>
+                                <span class="text-muted">seguidores</span>
+                            </li>
+
+                            <!-- Status Badge -->
+                            <li class="small mb-2 company-status-item">
+                                <i class="fas fa-check-circle text-success fa-fw mr-1"></i>
+                                <span class="badge badge-success badge-sm company-status">ACTIVE</span>
+                            </li>
+
+                            <!-- Following Since (only for followed tab) -->
+                            <li class="small mb-0 company-following-since" style="display: none;">
+                                <i class="fas fa-calendar-check text-info fa-fw mr-1"></i>
+                                <span class="text-muted">Siguiendo desde</span>
+                                <span class="following-date">01 Ene 2025</span>
+                            </li>
                         </ul>
                     </div>
-                    <div class="col-5 text-center">
-                        <img src="" alt="logo" class="img-circle img-fluid company-logo" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.onerror=null; this.src='/vendor/adminlte/dist/img/AdminLTELogo.png'">
+
+                    <!-- Logo -->
+                    <div class="col-4 text-center d-flex align-items-center justify-content-center">
+                        <img src=""
+                             alt="logo"
+                             class="img-fluid rounded company-logo"
+                             style="width: 90px; height: 90px; object-fit: contain; border: 2px solid #dee2e6;"
+                             onerror="this.onerror=null; this.src='/vendor/adminlte/dist/img/AdminLTELogo.png'">
                     </div>
                 </div>
             </div>
-            <div class="card-footer">
+
+            <!-- Card Footer -->
+            <div class="card-footer bg-white border-top">
                 <div class="text-right">
                     <button class="btn btn-sm btn-primary btn-action">
                         <i class="fas fa-user-plus"></i> Seguir
@@ -122,7 +196,7 @@
         // State
         const state = {
             following: { page: 1, search: '', loaded: false },
-            explore: { page: 1, search: '', loaded: false },
+            explore: { page: 1, search: '', loaded: false, industryId: '', sortBy: 'followers_count', sortDirection: 'desc' },
             activeTab: 'following'
         };
 
@@ -135,19 +209,27 @@
 
         // Initial Load
         loadFollowing();
+        loadIndustries();
 
         // Tab Switching
         $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
             const target = $(e.target).attr('href'); // #following or #explore
             state.activeTab = target.replace('#', '');
-            
+
             // Clear search when switching tabs (optional, but cleaner)
             $('#search-input').val(state[state.activeTab].search);
 
-            if (state.activeTab === 'explore' && !state.explore.loaded) {
-                loadExplore();
-            } else if (state.activeTab === 'following' && !state.following.loaded) {
-                loadFollowing();
+            // Show/hide filters
+            if (state.activeTab === 'explore') {
+                $('#explore-filters').slideDown();
+                if (!state.explore.loaded) {
+                    loadExplore();
+                }
+            } else {
+                $('#explore-filters').slideUp();
+                if (!state.following.loaded) {
+                    loadFollowing();
+                }
             }
         });
 
@@ -164,13 +246,45 @@
             const query = $('#search-input').val();
             state[state.activeTab].search = query;
             state[state.activeTab].page = 1;
-            
+
             if (state.activeTab === 'following') {
                 loadFollowing();
             } else {
                 loadExplore();
             }
         }
+
+        // Filter Handlers
+        $('#industry-filter').on('change', function() {
+            state.explore.industryId = $(this).val();
+            state.explore.page = 1;
+            loadExplore();
+        });
+
+        $('#sort-filter').on('change', function() {
+            const sortValue = $(this).val().split('|');
+            state.explore.sortBy = sortValue[0];
+            state.explore.sortDirection = sortValue[1];
+            state.explore.page = 1;
+            loadExplore();
+        });
+
+        $('#clear-filters-btn').on('click', function() {
+            // Reset filters
+            state.explore.search = '';
+            state.explore.industryId = '';
+            state.explore.sortBy = 'followers_count';
+            state.explore.sortDirection = 'desc';
+            state.explore.page = 1;
+
+            // Reset UI
+            $('#search-input').val('');
+            $('#industry-filter').val('');
+            $('#sort-filter').val('followers_count|desc');
+
+            // Reload
+            loadExplore();
+        });
 
         // Load Following
         function loadFollowing() {
@@ -221,9 +335,14 @@
             $('#explore-empty').hide();
             $('#explore-pagination').empty();
 
-            let url = `/api/companies/explore?page=${state.explore.page}&per_page=9&sort_by=followers_count&sort_direction=desc`;
+            let url = `/api/companies/explore?page=${state.explore.page}&per_page=9&sort_by=${state.explore.sortBy}&sort_direction=${state.explore.sortDirection}`;
+
             if (state.explore.search) {
-                url += `&search=${state.explore.search}`;
+                url += `&search=${encodeURIComponent(state.explore.search)}`;
+            }
+
+            if (state.explore.industryId) {
+                url += `&industry_id=${state.explore.industryId}`;
             }
 
             $.ajax({
@@ -250,37 +369,99 @@
             });
         }
 
+        // Load Industries for Filter
+        function loadIndustries() {
+            $.ajax({
+                url: '/api/industries',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: function(response) {
+                    const industries = response.data || response.items || [];
+                    const $select = $('#industry-filter');
+
+                    industries.forEach(function(industry) {
+                        const option = $('<option></option>')
+                            .val(industry.id)
+                            .text(industry.name);
+                        $select.append(option);
+                    });
+                },
+                error: function(xhr) {
+                    console.error('Error loading industries:', xhr);
+                }
+            });
+        }
+
         // Render Companies
         function renderCompanies(items, containerId, isFollowedList) {
             const container = $(containerId);
-            
+
             items.forEach(item => {
                 // Normalize data structure
-                // Followed list returns: { company: { ... }, ... }
+                // Followed list returns: { company: { ... }, followedAt: '...', ... }
                 // Explore list returns: { ... } (company details directly)
                 let company = isFollowedList ? item.company : item;
-                
+                let followedAt = isFollowedList ? item.followedAt : null;
+
                 // If it's the followed list, we know we follow them.
                 // If it's explore list, we check isFollowedByMe (camelCase from resource)
                 let isFollowing = isFollowedList ? true : (company.isFollowedByMe || false);
 
                 // Clone template
                 const $card = $('#company-card-template').children().first().clone();
-                
-                // Populate data
-                $card.find('.company-name').text(company.name);
-                $card.find('.company-industry').text(company.industry ? company.industry.name : 'General');
+
+                // Populate Basic Data
+                $card.find('.company-name').text(company.name || 'Sin nombre');
                 $card.find('.company-description').text(company.description || 'Sin descripción disponible.');
-                $card.find('.company-location').text([company.city, company.country].filter(Boolean).join(', ') || 'Ubicación no disponible');
-                $card.find('.company-followers').text(company.followersCount || 0); // camelCase from resource
-                
+
+                // Industry
+                const industryName = company.industry ? company.industry.name : 'General';
+                $card.find('.company-industry').text(industryName);
+
+                // Company Code
+                $card.find('.company-code').text(company.companyCode || 'N/A');
+
+                // Location
+                const location = [company.city, company.country].filter(Boolean).join(', ') || 'Ubicación no especificada';
+                $card.find('.company-location').text(location);
+
+                // Followers Count
+                $card.find('.company-followers').text(company.followersCount || 0);
+
+                // Status Badge
+                const status = company.status || 'ACTIVE';
+                const statusClass = status === 'ACTIVE' ? 'success' : 'secondary';
+                const statusIcon = status === 'ACTIVE' ? 'check-circle' : 'info-circle';
+                $card.find('.company-status').text(status).removeClass('badge-success badge-secondary').addClass('badge-' + statusClass);
+                $card.find('.company-status-item i').removeClass('text-success text-secondary').addClass('text-' + statusClass);
+                $card.find('.company-status-item i').removeClass('fa-check-circle fa-info-circle').addClass('fa-' + statusIcon);
+
+                // Logo
                 const logoUrl = company.logoUrl || '/vendor/adminlte/dist/img/AdminLTELogo.png';
                 $card.find('.company-logo').attr('src', logoUrl);
+
+                // Primary Color (customize card border if available)
+                if (company.primaryColor) {
+                    $card.find('.company-card-item').css('border-left', '4px solid ' + company.primaryColor);
+                    $card.find('.company-industry-badge').css('background-color', company.primaryColor);
+                }
+
+                // Following Since (only for followed tab)
+                if (isFollowedList && followedAt) {
+                    const followedDate = new Date(followedAt);
+                    const formattedDate = followedDate.toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    $card.find('.following-date').text(formattedDate);
+                    $card.find('.company-following-since').show();
+                }
 
                 // Action Button
                 const $btn = $card.find('.btn-action');
                 $btn.attr('data-id', company.id);
-                
+
                 updateButtonState($btn, isFollowing);
 
                 // Bind Click

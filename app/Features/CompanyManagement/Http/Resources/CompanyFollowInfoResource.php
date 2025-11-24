@@ -9,8 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Propósito: Información de seguimiento de empresas para el usuario autenticado
  * Modelo base: CompanyFollower
- * Campos: id, company (nested CompanyMinimalResource), followed_at, my_tickets_count, last_ticket_created_at, has_unread_announcements
- * Eager loading: Requiere 'company' relation
+ * Campos: id, company (nested CompanyExploreResource), followed_at, my_tickets_count, last_ticket_created_at, has_unread_announcements
+ * Eager loading: Requiere 'company.industry' relation
  */
 class CompanyFollowInfoResource extends JsonResource
 {
@@ -24,7 +24,7 @@ class CompanyFollowInfoResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'company' => new CompanyMinimalResource($this->whenLoaded('company')),
+            'company' => new CompanyExploreResource($this->whenLoaded('company')),
             'followedAt' => $this->followed_at?->toIso8601String(),
             'myTicketsCount' => $this->my_tickets_count ?? 0,
             'lastTicketCreatedAt' => $this->last_ticket_created_at ?? null,
