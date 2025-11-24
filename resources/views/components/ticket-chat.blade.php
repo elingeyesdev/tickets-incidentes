@@ -198,6 +198,13 @@
 
         // 4. Arrow Up to Edit Last Message
         $input.on('keydown', function(e) {
+            // Escape to Cancel Edit
+            if (e.key === 'Escape' && editingMessageId) {
+                e.preventDefault();
+                cancelEdit();
+                return;
+            }
+
             // Enter to Send (Shift+Enter for new line)
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -205,7 +212,7 @@
                 return;
             }
 
-            // Arrow Up to Edit Last Message (only if input is empty)
+            // Arrow Up to Edit Last Message (only if input is empty and NOT editing)
             if (e.key === 'ArrowUp' && $(this).val().trim() === '' && !editingMessageId) {
                 e.preventDefault();
                 editLastOwnMessage();
@@ -635,6 +642,9 @@
 
             // Load message content into input
             $input.val(msgContent);
+
+            // Trigger input event to auto-expand textarea
+            $input.trigger('input');
             $input.focus();
 
             // Update UI: Change button text and show cancel button
@@ -644,7 +654,7 @@
             // Add cancel button if it doesn't exist
             if ($('#btn-cancel-edit').length === 0) {
                 const cancelBtn = `
-                    <button type="button" class="btn btn-secondary ml-2" id="btn-cancel-edit">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="margin-left: 8px; height: 38px; display: flex; align-items: center; justify-content: center;">
                         Cancelar
                     </button>
                 `;
