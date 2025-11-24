@@ -81,12 +81,6 @@
                                 <p>Categorías</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="/app/company/agents" class="nav-link">
-                                <i class="nav-icon fas fa-user-tie"></i>
-                                <p>Agentes</p>
-                            </a>
-                        </li>
                         <li class="nav-header">CONTENIDO</li>
                         <li class="nav-item">
                             <a href="/app/company/announcements" class="nav-link">
@@ -124,13 +118,6 @@
                             <a href="/app/agent/tickets" class="nav-link">
                                 <i class="nav-icon fas fa-ticket-alt"></i>
                                 <p>Tickets</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">RECURSOS</li>
-                        <li class="nav-item">
-                            <a href="/app/agent/help-center" class="nav-link">
-                                <i class="nav-icon fas fa-question-circle"></i>
-                                <p>Centro de Ayuda</p>
                             </a>
                         </li>
                         <li class="nav-header">CUENTA</li>
