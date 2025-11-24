@@ -71,8 +71,11 @@
 
         let currentTicketCode = null;
         let currentTicketId = null;
+        let currentTicketStatus = null; // Track ticket status for validations
         let selectedFiles = [];
         let currentUser = null; // Will be set from token or API
+        let editingMessageId = null; // Track if we're editing a message
+        let editingMessageContent = null; // Original content backup
 
         // ==============================================================
         // INITIALIZATION
@@ -116,6 +119,8 @@
         $(document).on('tickets:details-loaded', function(e, ticket) {
             currentTicketCode = ticket.ticket_code;
             currentTicketId = ticket.id;
+            currentTicketStatus = ticket.status; // Store status for validations
+            cancelEdit(); // Reset editing state when switching tickets
             loadMessages();
         });
 
@@ -161,23 +166,59 @@
             $(this).val('');
         });
 
-        // 4. Send Message
-            // Handle Enter to Send (Shift+Enter for new line)
-            $input.on('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    $form.submit();
-                }
-            });
+        // 4. Arrow Up to Edit Last Message
+        $input.on('keydown', function(e) {
+            // Enter to Send (Shift+Enter for new line)
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $form.submit();
+                return;
+            }
 
-            $form.on('submit', async function(e) {
+            // Arrow Up to Edit Last Message (only if input is empty)
+            if (e.key === 'ArrowUp' && $(this).val().trim() === '' && !editingMessageId) {
+                e.preventDefault();
+                editLastOwnMessage();
+            }
+        });
+
+        // 5. Message Actions (Edit/Delete) - Delegated Events
+        $msgList.on('click', '.btn-edit-message', function() {
+            const msgId = $(this).data('msg-id');
+            const msgContent = $(this).data('msg-content');
+            startEditMessage(msgId, msgContent);
+        });
+
+        $msgList.on('click', '.btn-delete-message', function() {
+            const msgId = $(this).data('msg-id');
+            confirmDeleteMessage(msgId);
+        });
+
+        $msgList.on('click', '.btn-delete-attachment', function() {
+            const attId = $(this).data('att-id');
+            const attName = $(this).data('att-name');
+            confirmDeleteAttachment(attId, attName);
+        });
+
+        // 6. Cancel Edit Button
+        $(document).on('click', '#btn-cancel-edit', function() {
+            cancelEdit();
+        });
+
+        // 7. Form Submit Handler
+        $form.on('submit', async function(e) {
             e.preventDefault();
             if (!$form.valid()) return;
 
             const content = $input.val();
             if (!content.trim() && selectedFiles.length === 0) return;
 
-            await sendMessage(content);
+            // Check if we're editing or sending new message
+            if (editingMessageId) {
+                await updateMessage(editingMessageId, content);
+            } else {
+                await sendMessage(content);
+            }
         });
 
         // ==============================================================
@@ -263,6 +304,31 @@
                 // Avatar (UI Avatars)
                 const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&size=128&background=${isMe ? '007bff' : '6c757d'}&color=fff&bold=true`;
 
+                // Check if user can edit/delete this message
+                const canModify = isMe && isWithin30Minutes(msg.created_at) && currentTicketStatus !== 'closed';
+
+                // Message Actions Dropdown (Only for own messages)
+                let actionsHtml = '';
+                if (canModify) {
+                    actionsHtml = `
+                        <div class="message-actions" style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s ease;">
+                            <div class="dropdown">
+                                <button class="btn btn-link p-0 text-white" type="button" data-toggle="dropdown" aria-expanded="false" style="font-size: 1.1rem; line-height: 1; padding: 4px 8px;">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right" style="min-width: 140px; font-size: 0.9rem;">
+                                    <a class="dropdown-item btn-edit-message" href="#" data-msg-id="${msg.id}" data-msg-content="${escapeHtml(msg.content)}">
+                                        <i class="fas fa-edit mr-2"></i> Editar
+                                    </a>
+                                    <a class="dropdown-item text-danger btn-delete-message" href="#" data-msg-id="${msg.id}">
+                                        <i class="fas fa-trash mr-2"></i> Eliminar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 let attachmentsHtml = '';
                 if (msg.attachments && msg.attachments.length > 0) {
                     msg.attachments.forEach(att => {
@@ -274,6 +340,9 @@
                             else if (att.file_type.includes('sheet') || att.file_type.includes('excel')) iconClass = 'fa-file-excel';
                         }
 
+                        // Check if user can delete this attachment
+                        const canDeleteAtt = isMe && isWithin30Minutes(att.created_at) && currentTicketStatus !== 'closed';
+
                         // EXACT MOCK DESIGN - Different styles for user vs agent
                         const marginStyle = isMe ? 'margin: 8px 50px 0 0' : 'margin: 8px 0 0 50px';
                         const bgColor = isMe ? 'rgba(0,123,255,0.1)' : '#f8f9fa';
@@ -283,6 +352,20 @@
                         const buttonColor = isMe ? 'rgba(0, 123, 255, 0.6)' : 'rgba(68, 68, 68, 0.6)';
                         const buttonHoverBorder = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
                         const buttonHoverColor = isMe ? 'rgba(0, 123, 255, 1)' : 'rgba(68, 68, 68, 1)';
+
+                        // Delete button for own attachments (conditionally shown)
+                        let deleteButtonHtml = '';
+                        if (canDeleteAtt) {
+                            deleteButtonHtml = `
+                                <button type="button" class="btn-delete-attachment" data-att-id="${att.id}" data-att-name="${att.file_name}"
+                                    style="position: absolute; top: 8px; right: 65px; width: 28px; height: 28px; border: 1px solid rgba(220, 53, 69, 0.5); background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: rgba(220, 53, 69, 0.7); padding: 0; transition: all 0.2s ease;"
+                                    onmouseover="this.style.borderColor='#dc3545'; this.style.color='#dc3545'; this.style.backgroundColor='rgba(220, 53, 69, 0.1)';"
+                                    onmouseout="this.style.borderColor='rgba(220, 53, 69, 0.5)'; this.style.color='rgba(220, 53, 69, 0.7)'; this.style.backgroundColor='transparent';"
+                                    title="Eliminar adjunto">
+                                    <i class="fas fa-times" style="font-size: 0.75rem;"></i>
+                                </button>
+                            `;
+                        }
 
                         attachmentsHtml += `
                             <div style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
@@ -297,6 +380,7 @@
                                     <span class="mx-2">•</span>
                                     <span>Tipo: ${att.file_type || 'application/octet-stream'}</span>
                                 </div>
+                                ${deleteButtonHtml}
                                 <button type="button" onclick="window.open('${att.file_url}', '_blank')" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid ${buttonBorderColor}; background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: ${buttonColor}; padding: 0; transition: all 0.2s ease;" onmouseover="this.style.borderColor='${buttonHoverBorder}'; this.style.color='${buttonHoverColor}';" onmouseout="this.style.borderColor='${buttonBorderColor}'; this.style.color='${buttonColor}';">
                                     <i class="fas fa-download" style="font-size: 0.9rem;"></i>
                                 </button>
@@ -306,13 +390,14 @@
                 }
 
                 const html = `
-                    <div class="direct-chat-msg ${alignClass}">
+                    <div class="direct-chat-msg ${alignClass}" data-msg-id="${msg.id}">
                         <div class="direct-chat-infos clearfix">
                             <span class="direct-chat-name ${nameFloat}">${displayName}</span>
                             <span class="direct-chat-timestamp ${timeFloat}">${formatDate(msg.created_at)}</span>
                         </div>
                         <img class="direct-chat-img" src="${avatarUrl}" alt="${authorName}">
-                        <div class="direct-chat-text" style="${bgClass}">
+                        <div class="direct-chat-text" style="${bgClass}; position: relative; padding-right: 85px;">
+                            ${actionsHtml}
                             ${msg.content}
                         </div>
                         ${attachmentsHtml}
@@ -320,7 +405,17 @@
                 `;
                 $msgList.append(html);
             });
-            
+
+            // Show actions on hover
+            $('.direct-chat-msg').hover(
+                function() {
+                    $(this).find('.message-actions').css('opacity', '1');
+                },
+                function() {
+                    $(this).find('.message-actions').css('opacity', '0');
+                }
+            );
+
             // Scroll to bottom
             $msgList.scrollTop($msgList[0].scrollHeight);
         }
@@ -451,6 +546,235 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        function isWithin30Minutes(dateString) {
+            const createdAt = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - createdAt;
+            const diffMins = diffMs / (1000 * 60);
+            return diffMins <= 30;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ==============================================================
+        // MESSAGE EDITING FUNCTIONS
+        // ==============================================================
+
+        function startEditMessage(msgId, msgContent) {
+            console.log('[Chat] Starting edit for message:', msgId);
+
+            // Store editing state
+            editingMessageId = msgId;
+            editingMessageContent = $input.val(); // Backup current input (in case user was typing)
+
+            // Load message content into input
+            $input.val(msgContent);
+            $input.focus();
+
+            // Update UI: Change button text and show cancel button
+            const $sendBtn = $('#btn-send-message');
+            $sendBtn.text('Actualizar').removeClass('btn-primary').addClass('btn-warning');
+
+            // Add cancel button if it doesn't exist
+            if ($('#btn-cancel-edit').length === 0) {
+                const cancelBtn = `
+                    <button type="button" class="btn btn-secondary ml-2" id="btn-cancel-edit">
+                        Cancelar
+                    </button>
+                `;
+                $sendBtn.after(cancelBtn);
+            }
+
+            // Show editing indicator
+            const $editingIndicator = $('<div class="alert alert-info mb-2 py-1 px-2" id="editing-indicator" style="font-size: 0.85rem;"><i class="fas fa-edit mr-1"></i> Editando mensaje...</div>');
+            $('#chat-attachments-preview').before($editingIndicator);
+        }
+
+        function cancelEdit() {
+            console.log('[Chat] Canceling edit');
+
+            // Restore original state
+            if (editingMessageContent !== null) {
+                $input.val(editingMessageContent);
+            } else {
+                $input.val('');
+            }
+
+            // Reset editing state
+            editingMessageId = null;
+            editingMessageContent = null;
+
+            // Reset UI
+            const $sendBtn = $('#btn-send-message');
+            $sendBtn.text('Enviar').removeClass('btn-warning').addClass('btn-primary');
+            $('#btn-cancel-edit').remove();
+            $('#editing-indicator').remove();
+        }
+
+        async function updateMessage(msgId, newContent) {
+            const $btn = $('#btn-send-message');
+            const originalBtnText = $btn.text();
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                await $.ajax({
+                    url: `/api/tickets/${currentTicketCode}/responses/${msgId}`,
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({ content: newContent })
+                });
+
+                // Success
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Éxito',
+                    body: 'Mensaje actualizado correctamente.',
+                    autohide: true,
+                    delay: 2000
+                });
+
+                // Reset UI and reload messages
+                cancelEdit();
+                loadMessages();
+
+            } catch (error) {
+                console.error('[Chat] Error updating message:', error);
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error',
+                    body: error.responseJSON?.message || 'Error al actualizar el mensaje.',
+                    autohide: true,
+                    delay: 3000
+                });
+            } finally {
+                $btn.prop('disabled', false).text(originalBtnText);
+            }
+        }
+
+        async function confirmDeleteMessage(msgId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este mensaje? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                await $.ajax({
+                    url: `/api/tickets/${currentTicketCode}/responses/${msgId}`,
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                // Success
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Éxito',
+                    body: 'Mensaje eliminado correctamente.',
+                    autohide: true,
+                    delay: 2000
+                });
+
+                // Reload messages
+                loadMessages();
+
+                // Update response count in detail view
+                const $count = $('#t-info-responses');
+                let current = parseInt($count.text()) || 0;
+                if (current > 0) $count.text(current - 1);
+
+            } catch (error) {
+                console.error('[Chat] Error deleting message:', error);
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error',
+                    body: error.responseJSON?.message || 'Error al eliminar el mensaje.',
+                    autohide: true,
+                    delay: 3000
+                });
+            }
+        }
+
+        async function confirmDeleteAttachment(attId, attName) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar el archivo "${attName}"? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+
+                await $.ajax({
+                    url: `/api/tickets/${currentTicketCode}/attachments/${attId}`,
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                // Success
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Éxito',
+                    body: 'Adjunto eliminado correctamente.',
+                    autohide: true,
+                    delay: 2000
+                });
+
+                // Reload messages to reflect changes
+                loadMessages();
+
+                // Update attachment count in detail view
+                const $countAtt = $('#t-attachments-count');
+                let currentAttCount = parseInt($countAtt.text()) || 0;
+                if (currentAttCount > 0) $countAtt.text(currentAttCount - 1);
+
+            } catch (error) {
+                console.error('[Chat] Error deleting attachment:', error);
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error',
+                    body: error.responseJSON?.message || 'Error al eliminar el adjunto.',
+                    autohide: true,
+                    delay: 3000
+                });
+            }
+        }
+
+        function editLastOwnMessage() {
+            console.log('[Chat] Arrow up pressed - finding last editable message');
+
+            // Get all messages
+            const $messages = $('.direct-chat-msg[data-msg-id]');
+
+            // Find the last message that has edit button (own message + within 30 mins + not closed)
+            for (let i = $messages.length - 1; i >= 0; i--) {
+                const $msg = $messages.eq(i);
+                const $editBtn = $msg.find('.btn-edit-message');
+
+                if ($editBtn.length > 0) {
+                    // Found an editable message
+                    const msgId = $editBtn.data('msg-id');
+                    const msgContent = $editBtn.data('msg-content');
+                    startEditMessage(msgId, msgContent);
+                    return;
+                }
+            }
+
+            // No editable message found
+            console.log('[Chat] No editable messages found');
         }
     }
 
