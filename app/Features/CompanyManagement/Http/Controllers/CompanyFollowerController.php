@@ -94,7 +94,7 @@ class CompanyFollowerController extends Controller
     public function followed()
     {
         $follows = CompanyFollower::where('user_id', JWTHelper::getUserId())
-            ->with(['company'])  // Eager load company para evitar N+1
+            ->with(['company.industry'])  // Eager load company and industry para evitar N+1
             ->orderBy('followed_at', 'desc')
             ->get();
 
@@ -227,6 +227,9 @@ class CompanyFollowerController extends Controller
     )]
     public function follow(Company $company, FollowCompanyRequest $request, CompanyFollowService $followService): JsonResponse
     {
+        // Load industry relationship for CompanyMinimalResource
+        $company->load('industry');
+
         // Llamar al Service para seguir la empresa
         $follower = $followService->follow(JWTHelper::getAuthenticatedUser(), $company);
 

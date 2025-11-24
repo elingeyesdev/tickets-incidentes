@@ -77,9 +77,10 @@ class CompanyController extends Controller
                             items: new OA\Items(
                                 properties: [
                                     new OA\Property(property: 'id', type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000'),
-                                    new OA\Property(property: 'company_code', type: 'string', example: 'CMP-2025-00001'),
+                                    new OA\Property(property: 'companyCode', type: 'string', example: 'CMP-2025-00001'),
                                     new OA\Property(property: 'name', type: 'string', example: 'Acme Corporation'),
-                                    new OA\Property(property: 'logo_url', type: 'string', nullable: true, example: 'https://example.com/logo.png'),
+                                    new OA\Property(property: 'logoUrl', type: 'string', nullable: true, example: 'https://example.com/logo.png'),
+                                    new OA\Property(property: 'industryName', type: 'string', nullable: true, example: 'Technology'),
                                 ],
                                 type: 'object'
                             )
@@ -116,7 +117,8 @@ class CompanyController extends Controller
     public function minimal(ListCompaniesRequest $request): JsonResponse
     {
         $query = Company::query()
-            ->select(['id', 'company_code', 'name', 'logo_url'])
+            ->select(['id', 'company_code', 'name', 'logo_url', 'industry_id'])
+            ->with('industry:id,name')
             ->where('status', 'active')
             ->orderBy('name');
 

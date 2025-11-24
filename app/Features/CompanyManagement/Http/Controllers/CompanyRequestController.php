@@ -180,7 +180,7 @@ class CompanyRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = CompanyRequest::query()
-            ->with(['reviewer.profile', 'createdCompany', 'industry']);
+            ->with(['reviewer.profile', 'createdCompany.industry', 'industry']);
 
         // Filtro por status (convertir a lowercase para compatibilidad con DB)
         if ($request->filled('status')) {

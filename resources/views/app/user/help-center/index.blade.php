@@ -18,18 +18,59 @@
                 </div>
             </div>
 
-            <!-- ========== SEARCH SECTION ========== -->
+            <!-- ========== ENHANCED SEARCH SECTION ========== -->
             <div class="row mb-5">
-                <div class="col-md-8 mx-auto">
-                    <div class="input-group input-group-lg">
-                        <input type="text"
-                               id="help-search-input"
-                               class="form-control"
-                               placeholder="¿Qué necesitas encontrar?">
-                        <div class="input-group-append">
-                            <button class="btn btn-primary" type="button" id="help-search-btn">
-                                <i class="fas fa-search"></i> Buscar
-                            </button>
+                <div class="col-md-10 mx-auto">
+                    <!-- Filter dropdowns row -->
+                    <div class="row mb-3">
+                        <!-- Company Filter -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Filtrar por Empresa:</label>
+                                <select id="company-filter" class="form-control select2" style="width: 100%;">
+                                    <option value="">Todas las empresas</option>
+                                    <!-- Companies loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Sort Order Filter -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Ordenar por:</label>
+                                <select id="sort-filter" class="form-control select2" style="width: 100%;">
+                                    <option value="-created_at">Más recientes</option>
+                                    <option value="created_at">Más antiguos</option>
+                                    <option value="title">Título (A-Z)</option>
+                                    <option value="-title">Título (Z-A)</option>
+                                    <option value="-views">Más vistos</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Reset Button -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button id="reset-filters-btn" class="btn btn-secondary btn-block">
+                                    <i class="fas fa-redo mr-1"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Search Input -->
+                    <div class="form-group">
+                        <div class="input-group input-group-lg">
+                            <input type="search"
+                                   id="help-search-input"
+                                   class="form-control form-control-lg"
+                                   placeholder="¿Qué necesitas encontrar?">
+                            <div class="input-group-append">
+                                <button type="button" id="help-search-btn" class="btn btn-lg btn-primary">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -174,6 +215,8 @@
     let currentPage = 1;
     let currentCategory = '';
     let currentSearch = '';
+    let currentCompanyId = '';
+    let currentSort = '-created_at';
     let token = null;
     let userFollowsCompanies = false;
 
@@ -225,6 +268,12 @@
             return;
         }
 
+        // Initialize Select2
+        initializeSelect2();
+
+        // Load followed companies for filter
+        loadFollowedCompanies();
+
         // Render categories
         renderCategories();
 
@@ -233,6 +282,60 @@
 
         // Attach event listeners
         attachEventListeners();
+    }
+
+    // ========== INITIALIZE SELECT2 ==========
+    function initializeSelect2() {
+        console.log('[Help Center] Initializing Select2');
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        } else {
+            console.warn('[Help Center] Select2 not available, using standard selects');
+        }
+    }
+
+    // ========== LOAD FOLLOWED COMPANIES ==========
+    function loadFollowedCompanies() {
+        console.log('[Help Center] Loading followed companies for filter');
+
+        $.ajax({
+            url: '/api/companies/followed',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Accept': 'application/json'
+            },
+            success: function(response) {
+                const companies = response.data || response.items || [];
+                console.log('[Help Center] Followed companies loaded:', companies.length);
+
+                const companySelect = $('#company-filter');
+
+                companies.forEach(function(follow) {
+                    const company = follow.company;
+                    if (company) {
+                        const option = $('<option></option>')
+                            .val(company.id)
+                            .text(company.name);
+                        companySelect.append(option);
+                    }
+                });
+
+                // Refresh Select2 if available
+                if (typeof $.fn.select2 !== 'undefined') {
+                    companySelect.select2('destroy').select2({
+                        theme: 'bootstrap4',
+                        width: '100%'
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('[Help Center] Error loading companies:', xhr);
+            }
+        });
     }
 
     // ========== RENDER CATEGORIES ==========
@@ -361,7 +464,7 @@
 
     // ========== LOAD ARTICLES ==========
     function loadArticles() {
-        console.log('[Help Center] Loading articles - Page:', currentPage, 'Category:', currentCategory, 'Search:', currentSearch);
+        console.log('[Help Center] Loading articles - Page:', currentPage, 'Category:', currentCategory, 'Search:', currentSearch, 'Company:', currentCompanyId, 'Sort:', currentSort);
 
         $('#loading-spinner').show();
         $('#articles-container').hide().empty();
@@ -374,6 +477,12 @@
         }
         if (currentSearch) {
             url += '&search=' + encodeURIComponent(currentSearch);
+        }
+        if (currentCompanyId) {
+            url += '&company_id=' + encodeURIComponent(currentCompanyId);
+        }
+        if (currentSort) {
+            url += '&sort=' + encodeURIComponent(currentSort);
         }
 
         $.ajax({
@@ -414,7 +523,10 @@
         const articlesGrid = $('#articles-grid');
 
         articles.forEach(function(article) {
-            const config = categoryConfig[article.category_id] || categoryConfig['ACCOUNT_PROFILE'];
+            // Get category config from API response (new structure)
+            const categoryCode = article.category?.code || 'ACCOUNT_PROFILE';
+            const config = categoryConfig[categoryCode] || categoryConfig['ACCOUNT_PROFILE'];
+
             const publishDate = new Date(article.published_at).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'short',
@@ -426,10 +538,11 @@
                 ? article.excerpt.substring(0, 150) + (article.excerpt.length > 150 ? '...' : '')
                 : article.content.substring(0, 150) + '...';
 
-            // Get company logo with fallback
-            const companyLogo = article.company_logo
-                ? article.company_logo
-                : '/vendor/adminlte/dist/img/AdminLTELogo.png';
+            // Get company data from API response (new structure)
+            const companyLogo = article.company?.logoUrl || '/vendor/adminlte/dist/img/AdminLTELogo.png';
+            const companyName = article.company?.name || 'Empresa';
+            const companyCode = article.company?.companyCode || '';
+            const industryName = article.company?.industryName || '';
 
             const cardHtml = `
                 <div class="col-12 col-sm-6 col-md-4 mb-4">
@@ -438,13 +551,13 @@
                         <div class="card-header bg-light border-bottom">
                             <div class="d-flex align-items-center">
                                 <img src="${companyLogo}"
-                                     alt="${article.company_name}"
+                                     alt="${companyName}"
                                      class="rounded-circle mr-2"
                                      style="width: 40px; height: 40px; object-fit: cover;"
                                      onerror="this.src='/vendor/adminlte/dist/img/AdminLTELogo.png'">
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-0 small text-dark font-weight-bold">${article.company_name || 'Empresa'}</h6>
-                                    <small class="text-muted">${article.company_code || ''}</small>
+                                    <h6 class="mb-0 small text-dark font-weight-bold">${companyName}</h6>
+                                    <small class="text-muted">${industryName}</small>
                                 </div>
                             </div>
                         </div>
@@ -537,17 +650,20 @@
 
                 if (response.data) {
                     const article = response.data;
-                    const config = categoryConfig[article.category_id] || categoryConfig['ACCOUNT_PROFILE'];
+
+                    // Get category from new structure
+                    const categoryCode = article.category?.code || 'ACCOUNT_PROFILE';
+                    const config = categoryConfig[categoryCode] || categoryConfig['ACCOUNT_PROFILE'];
                     const publishDate = new Date(article.published_at).toLocaleDateString('es-ES', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
                     });
 
-                    // Populate modal fields
-                    $('#modal-company-logo').attr('src', article.company_logo || '/vendor/adminlte/dist/img/AdminLTELogo.png');
-                    $('#modal-company-name').text(article.company_name || 'Empresa');
-                    $('#modal-company-code').text(article.company_code || '');
+                    // Populate modal fields with new company structure
+                    $('#modal-company-logo').attr('src', article.company?.logoUrl || '/vendor/adminlte/dist/img/AdminLTELogo.png');
+                    $('#modal-company-name').text(article.company?.name || 'Empresa');
+                    $('#modal-company-code').text(article.company?.industryName || '');
 
                     // Category badge
                     const badgeHtml = `<i class="${config.icon} mr-1"></i>${config.label}`;
@@ -597,6 +713,43 @@
                 console.log('[Help Center] Search via Enter:', currentSearch);
                 loadArticles();
             }
+        });
+
+        // Company filter change
+        $('#company-filter').on('change', function() {
+            currentCompanyId = $(this).val();
+            currentPage = 1;
+            console.log('[Help Center] Company filter changed:', currentCompanyId);
+            loadArticles();
+        });
+
+        // Sort filter change
+        $('#sort-filter').on('change', function() {
+            currentSort = $(this).val();
+            currentPage = 1;
+            console.log('[Help Center] Sort changed:', currentSort);
+            loadArticles();
+        });
+
+        // Reset filters button
+        $('#reset-filters-btn').on('click', function() {
+            console.log('[Help Center] Resetting all filters');
+
+            // Reset all filters
+            currentSearch = '';
+            currentCategory = '';
+            currentCompanyId = '';
+            currentSort = '-created_at';
+            currentPage = 1;
+
+            // Reset UI elements
+            $('#help-search-input').val('');
+            $('#company-filter').val('').trigger('change');
+            $('#sort-filter').val('-created_at').trigger('change');
+            $('.category-card').removeClass('border-left-4 border-4');
+
+            // Reload articles
+            loadArticles();
         });
     }
 

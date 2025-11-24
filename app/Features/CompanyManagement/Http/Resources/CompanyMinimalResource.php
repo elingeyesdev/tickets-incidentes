@@ -8,9 +8,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * CompanyMinimalResource
  *
  * Contexto: MINIMAL
- * Propósito: Selectores, referencias rápidas
- * Campos: 4 campos básicos (id, companyCode, name, logoUrl)
- * V8.0: Minimal context remains at 4 fields (no industry data)
+ * Propósito: Selectores, referencias rápidas, cards de contenido
+ * Campos: 5 campos básicos (id, companyCode, name, logoUrl, industryName)
+ * V8.1: Added industryName for content cards display
  */
 class CompanyMinimalResource extends JsonResource
 {
@@ -27,6 +27,7 @@ class CompanyMinimalResource extends JsonResource
             'companyCode' => $this->company_code,
             'name' => $this->name,
             'logoUrl' => $this->logo_url,
+            'industryName' => $this->industry?->name,
         ];
     }
 }

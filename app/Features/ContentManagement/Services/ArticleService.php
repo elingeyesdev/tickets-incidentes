@@ -275,8 +275,9 @@ class ArticleService
             throw new Exception('Unauthenticated', 401);
         }
 
-        // 2. BUSCAR ARTÍCULO (sin soft-deletes)
-        $article = HelpCenterArticle::find($articleId);
+        // 2. BUSCAR ARTÍCULO (sin soft-deletes) + Eager Loading
+        $article = HelpCenterArticle::with(['company.industry', 'author', 'category'])
+            ->find($articleId);
 
         if (!$article) {
             throw new Exception('Article not found', 404);
@@ -508,7 +509,10 @@ class ArticleService
             $query->orderBy('created_at', 'DESC');
         }
 
-        // 6. PAGINACIÓN
+        // 6. EAGER LOADING - Evitar N+1 queries
+        $query->with(['company.industry', 'author', 'category']);
+
+        // 7. PAGINACIÓN
         $perPage = (int) ($filters['per_page'] ?? 20);
         $perPage = min($perPage, 100); // Max 100
 
