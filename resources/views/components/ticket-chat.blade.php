@@ -526,6 +526,7 @@
 
                 // 3. Cleanup & Reload
                 $input.val('');
+                $input.css('height', '38px'); // Reset textarea height to original
                 selectedFiles = [];
                 renderFilePreviews();
                 loadMessages(); // Reload chat to show new message
@@ -664,6 +665,9 @@
             } else {
                 $input.val('');
             }
+
+            // Reset textarea height
+            $input.css('height', '38px');
 
             // Reset editing state
             editingMessageId = null;
