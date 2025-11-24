@@ -237,12 +237,19 @@
             confirmDeleteAttachment(attId, attName);
         });
 
-        // 6. Cancel Edit Button
-        $(document).on('click', '#btn-cancel-edit', function() {
+        // 6. Confirm Edit Button
+        $(document).on('click', '#btn-confirm-edit', function(e) {
+            e.preventDefault();
+            $form.submit();
+        });
+
+        // 7. Cancel Edit Button
+        $(document).on('click', '#btn-cancel-edit', function(e) {
+            e.preventDefault();
             cancelEdit();
         });
 
-        // 7. Form Submit Handler
+        // 8. Form Submit Handler
         $form.on('submit', async function(e) {
             e.preventDefault();
             if (!$form.valid()) return;
@@ -647,30 +654,25 @@
             $input.trigger('input');
             $input.focus();
 
-            // Update UI: Change button text and show cancel button
+            // Hide original send button and show edit action buttons
             const $sendBtn = $('#btn-send-message');
-            $sendBtn.text('Actualizar').removeClass('btn-primary').addClass('btn-warning');
+            const $container = $sendBtn.closest('.input-group-append');
+            $sendBtn.hide();
 
-            // Ensure send button has consistent padding and width
-            $sendBtn.css({
-                'padding': '0 20px',
-                'min-width': '100px',
-                'white-space': 'nowrap',
-                'flex-shrink': '0',
-                'height': '38px',
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'center'
-            });
+            // Change container to row flex for buttons to be side by side
+            $container.css('flex-direction', 'row');
 
-            // Add cancel button if it doesn't exist
-            if ($('#btn-cancel-edit').length === 0) {
-                const cancelBtn = `
-                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit" style="white-space: nowrap; flex-shrink: 0; height: 38px; padding: 0 20px; min-width: 100px; display: flex; align-items: center; justify-content: center; margin-left: 4px;">
-                        Cancelar
+            // Add edit action buttons if they don't exist
+            if ($('#btn-confirm-edit').length === 0) {
+                const editButtons = `
+                    <button type="button" class="btn btn-sm btn-success" id="btn-confirm-edit" title="Guardar cambios (Enter)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center; margin-right: 4px;">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-cancel-edit" title="Cancelar (Esc)" style="flex-shrink: 0; height: 38px; width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times"></i>
                     </button>
                 `;
-                $sendBtn.after(cancelBtn);
+                $sendBtn.after(editButtons);
             }
 
             // Show editing indicator
@@ -695,13 +697,12 @@
             editingMessageId = null;
             editingMessageContent = null;
 
-            // Reset UI
+            // Reset UI - Show original send button, hide edit buttons
             const $sendBtn = $('#btn-send-message');
-            $sendBtn.text('Enviar').removeClass('btn-warning').addClass('btn-primary');
-            $sendBtn.css({
-                'padding': '0 20px',
-                'min-width': 'auto'
-            });
+            const $container = $sendBtn.closest('.input-group-append');
+            $sendBtn.show();
+            $container.css('flex-direction', 'column'); // Reset to column layout
+            $('#btn-confirm-edit').remove();
             $('#btn-cancel-edit').remove();
             $('#editing-indicator').remove();
 
