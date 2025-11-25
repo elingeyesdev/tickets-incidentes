@@ -99,11 +99,17 @@
                         else if (att.file_type.includes('image')) { iconClass = 'far fa-file-image'; iconColorClass = 'text-primary'; }
                     }
 
+                    // Determine if it's an image for lightbox
+                    const isImage = att.file_type && att.file_type.includes('image');
+                    const lightboxAttrs = isImage
+                        ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
+                        : `target="_blank"`;
+
                     const html = `
                         <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
-                                    <a href="${att.file_url}" target="_blank" class="text-dark" title="${att.file_name}">
+                                    <a href="${att.file_url}" ${lightboxAttrs} class="text-dark" title="${att.file_name}">
                                         <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                         ${att.file_name}
                                     </a>
@@ -323,7 +329,7 @@
             attachments.forEach(att => {
                 let iconClass = 'far fa-file text-muted';
                 let iconColorClass = 'text-muted';
-                
+
                 if (att.file_type) {
                     if (att.file_type.includes('pdf')) { iconClass = 'far fa-file-pdf'; iconColorClass = 'text-danger'; }
                     else if (att.file_type.includes('word') || att.file_type.includes('doc')) { iconClass = 'far fa-file-word'; iconColorClass = 'text-primary'; }
@@ -331,11 +337,17 @@
                     else if (att.file_type.includes('image')) { iconClass = 'far fa-file-image'; iconColorClass = 'text-primary'; }
                 }
 
+                // Determine if it's an image for lightbox
+                const isImage = att.file_type && att.file_type.includes('image');
+                const lightboxAttrs = isImage
+                    ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
+                    : `target="_blank"`;
+
                 const html = `
                     <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                         <div class="d-flex justify-content-between align-items-center">
                             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
-                                <a href="${att.file_url}" target="_blank" class="text-dark" title="${att.file_name}">
+                                <a href="${att.file_url}" ${lightboxAttrs} class="text-dark" title="${att.file_name}">
                                     <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                     ${att.file_name}
                                 </a>

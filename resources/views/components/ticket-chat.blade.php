@@ -813,10 +813,16 @@
                         `;
                     }
 
+                    // Determine if it's an image for lightbox
+                    const isImage = att.file_type && att.file_type.includes('image');
+                    const lightboxAttrs = isImage
+                        ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
+                        : `target="_blank"`;
+
                     attachmentsHtml += `
                         <div class="attachment-card" data-att-id="${att.id}" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
                             <div style="margin-bottom: 10px;">
-                                <a href="${att.file_url}" target="_blank" style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
+                                <a href="${att.file_url}" ${lightboxAttrs} style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
                                     <i class="fas ${iconClass} mr-2"></i>
                                     <strong>${att.file_name}</strong>
                                 </a>

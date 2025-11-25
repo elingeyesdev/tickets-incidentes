@@ -18,7 +18,7 @@ class TicketAttachmentResource extends JsonResource
                 return $this->uploader->profile?->full_name ?? $this->uploader->email;
             }),
             'file_name' => $this->file_name,
-            'file_url' => $this->file_path,
+            'file_url' => route('tickets.attachments.download', ['attachment' => $this->id]),
             'file_type' => $this->file_type,
             'file_size_bytes' => $this->file_size_bytes,
             'created_at' => $this->created_at->toIso8601String(),
