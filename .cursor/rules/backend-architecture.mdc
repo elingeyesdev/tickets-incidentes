@@ -2,12 +2,28 @@
 alwaysApply: false
 ---
 
-# Backend Architecture - Laravel + GraphQL + PostgreSQL
+# Backend Architecture - Laravel + REST API + PostgreSQL
 
 ## Complete Feature-First Structure
 
 ```
 app/Features/[FeatureName]/
+├── Http/
+│   ├── Controllers/
+│   │   ├── [Feature]Controller.php      # Main CRUD controller
+│   │   ├── [Action]Controller.php       # Action-specific controllers
+│   │   └── .gitkeep
+│   ├── Requests/
+│   │   ├── Store[Model]Request.php      # Creation validation
+│   │   ├── Update[Model]Request.php     # Update validation
+│   │   └── .gitkeep
+│   ├── Resources/
+│   │   ├── [Model]Resource.php          # Single entity response
+│   │   ├── [Model]MinimalResource.php   # Minimal data for selectors
+│   │   └── .gitkeep
+│   └── Middleware/
+│       ├── [Custom]Middleware.php       # Feature-specific middleware
+│       └── .gitkeep
 ├── Services/
 │   ├── [Feature]Service.php       # Main business logic
 │   ├── [Related]Service.php       # Additional services
@@ -16,23 +32,6 @@ app/Features/[FeatureName]/
 │   ├── [Model].php                # Main model
 │   ├── [Related].php              # Related models
 │   └── .gitkeep
-├── GraphQL/
-│   ├── Schema/
-│   │   └── [feature].graphql      # Feature schema
-│   ├── Queries/
-│   │   ├── [Name]Query.php
-│   │   └── .gitkeep
-│   ├── Mutations/
-│   │   ├── [Name]Mutation.php
-│   │   └── .gitkeep
-│   ├── Types/
-│   │   ├── [Type]Type.php         # Field resolvers
-│   │   └── .gitkeep
-│   ├── DataLoaders/
-│   │   ├── [Model]ByIdLoader.php
-│   │   └── .gitkeep
-│   └── Errors/                     # Feature-specific errors
-│       └── .gitkeep
 ├── Policies/
 │   ├── [Model]Policy.php
 │   └── .gitkeep
@@ -52,6 +51,9 @@ app/Features/[FeatureName]/
 ├── Exceptions/
 │   ├── [Feature]Exception.php
 │   └── .gitkeep
+├── Enums/
+│   ├── [Type]Enum.php                   # Enumerations (PHP 8.3)
+│   └── .gitkeep
 ├── Database/
 │   ├── Migrations/
 │   │   └── YYYY_MM_DD_HHMMSS_[description].php
@@ -62,6 +64,12 @@ app/Features/[FeatureName]/
 └── [Feature]ServiceProvider.php
 
 app/Shared/
+├── Http/
+│   ├── Controllers/
+│   │   └── .gitkeep
+│   └── Middleware/
+│       ├── ApiExceptionHandler.php      # Global exception handler
+│       └── .gitkeep
 ├── Services/
 │   └── .gitkeep
 ├── Traits/
@@ -85,49 +93,10 @@ app/Shared/
 ├── Constants/
 │   └── .gitkeep
 ├── Helpers/
+│   ├── JWTHelper.php              # JWT utilities
 │   ├── CodeGenerator.php
 │   ├── DeviceInfoParser.php
 │   └── .gitkeep
-├── GraphQL/
-│   ├── Scalars/
-│   │   ├── UUID.php
-│   │   ├── Email.php
-│   │   ├── PhoneNumber.php
-│   │   ├── HexColor.php
-│   │   ├── URL.php
-│   │   ├── JSON.php
-│   │   └── DateTimeScalar.php
-│   ├── Directives/
-│   │   ├── JwtDirective.php       # @jwt
-│   │   ├── CompanyDirective.php   # @company
-│   │   ├── AuditDirective.php     # @audit
-│   │   └── RateLimitDirective.php # @rateLimit
-│   ├── DataLoaders/
-│   │   ├── UserByIdLoader.php
-│   │   ├── CompanyByIdLoader.php
-│   │   ├── UserProfileByUserIdLoader.php
-│   │   └── .gitkeep
-│   ├── Queries/
-│   │   ├── BaseQuery.php
-│   │   ├── PingQuery.php
-│   │   ├── VersionQuery.php
-│   │   ├── HealthQuery.php
-│   │   └── .gitkeep
-│   ├── Mutations/
-│   │   ├── BaseMutation.php
-│   │   └── .gitkeep
-│   ├── Errors/
-│   │   ├── BaseErrorHandler.php
-│   │   ├── GraphQLErrorFormatter.php
-│   │   ├── ErrorCodeRegistry.php
-│   │   ├── EnvironmentErrorFormatter.php
-│   │   └── .gitkeep
-│   ├── Types/
-│   │   └── .gitkeep
-│   ├── Unions/
-│   │   └── .gitkeep
-│   └── Interfaces/
-│       └── .gitkeep
 ├── Models/
 │   └── .gitkeep
 └── Database/
@@ -137,98 +106,132 @@ app/Shared/
         ├── YYYY_MM_DD_000002_create_audit_schema.php
         └── YYYY_MM_DD_000003_create_audit_log_changes_function.php
 
+app/Http/
+├── Middleware/
+│   ├── JWT/
+│   │   ├── JWTAuthenticationMiddleware.php    # Optional JWT parsing
+│   │   ├── JWTRequiredMiddleware.php          # Enforce authentication
+│   │   └── JWTRoleMiddleware.php              # Role-based access
+│   └── ApiExceptionHandler.php
+└── Kernel.php
+
+routes/
+├── api.php                              # ALL API routes (centralized)
+├── web.php
+└── console.php
+
+config/
+├── jwt.php                              # JWT configuration
+├── cors.php                             # CORS settings
+└── ...
+
 tests/                              # ONLY exception to Feature-First
 ├── Feature/
 │   ├── [FeatureName]/
 │   │   ├── [Name]Test.php
 │   │   └── .gitkeep
-│   └── GraphQL/
-│       └── ErrorFormattingTest.php
+│   └── Api/
+│       └── [Endpoint]Test.php
 ├── Unit/
 │   └── [FeatureName]/
 │       └── [Name]Test.php
 └── TestCase.php
-
-graphql/
-├── schema.graphql                  # Main entry point
-└── shared/
-    ├── scalars.graphql
-    ├── directives.graphql
-    ├── enums.graphql
-    ├── inputs.graphql
-    ├── interfaces.graphql
-    ├── base-types.graphql          # Anti-loop types
-    └── pagination.graphql
 ```
 
 ## Core Rules
 
 ### Separation of Concerns (CRITICAL)
 - **Services** → ALL business logic
-- **Models** → ONLY data, relationships, scopes
-- **Resolvers** → ONLY delegate to services
+- **Models** → ONLY data, relationships, scopes, casts
+- **Controllers** → ONLY validate input, delegate to services, return responses
+- **Resources** → ONLY transform data for API responses
 - **Policies** → ONLY authorization
 - **Events** → ONLY data, no logic
+- **Form Requests** → ONLY validation rules and authorization
 
 ### File Placement
 - Feature code → `app/Features/[Feature]/`
 - Shared code (2+ features) → `app/Shared/`
 - Tests → `tests/Feature/[Feature]/` (exception)
-- GraphQL schema → `[Feature]/GraphQL/Schema/[feature].graphql`
+- All routes → `routes/api.php` (centralized)
 
-### Naming
-- Classes: PascalCase (UserService, LoginMutation)
+### Naming Conventions
+- Classes: PascalCase (UserService, LoginController)
 - Methods: camelCase (createUser, findById)
 - Variables: camelCase ($userId)
 - Constants: UPPER_SNAKE_CASE
-- DB tables: snake_case plural (users)
-- DB columns: snake_case (created_at)
+- DB tables: snake_case plural (users, tickets)
+- DB columns: snake_case (created_at, company_id)
+- Routes: kebab-case (/api/ticket-categories)
+- JSON keys: camelCase (userId, createdAt)
 
 ### Database
-- Schemas: `ticketing` (business), `audit` (logs)
+- Schemas: `ticketing` (business data), `audit` (logs)
 - Primary keys: UUID (use HasUuid trait)
 - Auditing: Use Auditable trait
-- Foreign keys: [table]_id
+- Foreign keys: [table]_id (singular)
+- Soft deletes: Use SoftDeletes trait
 
 ### Type Safety
-- `declare(strict_types=1);` in ALL files
+- `declare(strict_types=1);` in ALL PHP files
 - Type hint ALL parameters and returns
 - Use `final` classes by default
-- Use PHP 8.3 features (readonly, enums)
+- Use PHP 8.3 features (readonly, enums, typed properties)
+- Use strict comparison operators (===, !==)
 
-### GraphQL
-- DataLoaders for ALL related data in lists
-- Resolvers only delegate to Services
-- Use directives: @jwt, @can, @audit
-- Schema in Feature's GraphQL/Schema/
+### REST API Standards
+- Use proper HTTP verbs (GET, POST, PUT/PATCH, DELETE)
+- Use proper status codes (200, 201, 204, 400, 401, 403, 404, 422, 500)
+- Resource-based URLs (/api/tickets, /api/companies)
+- Actions as sub-resources (/api/tickets/{id}/resolve)
+- Consistent JSON response format
+- Pagination for list endpoints
+- Filter and search via query parameters
 
 ## Key Principles
 
 1. **Feature-First PURE**: ALL code in `Features/[Feature]/` (except tests)
-2. **NO business logic** in Models, Resolvers, Events
-3. **ALWAYS use DataLoaders** for GraphQL relationships
-4. **Type everything**: strict types, type hints
-5. **Event-Driven**: Fire events, handle in Listeners
-6. **Eloquent only**: No raw SQL
+2. **NO business logic** in Models, Controllers, Resources, Policies
+3. **Centralized routes** in `routes/api.php` organized by feature
+4. **Form Requests** for ALL validation
+5. **Resources** for ALL response transformation
+6. **Policies** for ALL authorization
+7. **Type everything**: strict types, type hints
+8. **Event-Driven**: Fire events, handle in Listeners
+9. **Eloquent only**: No raw SQL (except complex queries)
+10. **Consistent JSON**: camelCase keys, ISO 8601 dates
 
 ## Common Mistakes
 
-- ❌ Logic in Models/Resolvers → ✅ Services
-- ❌ N+1 queries → ✅ DataLoaders
+- ❌ Logic in Controllers/Models → ✅ Services only
+- ❌ Validation in Controllers → ✅ Form Requests
+- ❌ Direct model transformation → ✅ API Resources
+- ❌ Authorization in Controllers → ✅ Policies
 - ❌ Missing types → ✅ Type everything
 - ❌ Files outside Features → ✅ In Features/
-- ❌ Auto-increment → ✅ UUIDs
+- ❌ Auto-increment IDs → ✅ UUIDs
+- ❌ snake_case in JSON → ✅ camelCase
+- ❌ Scattered routes → ✅ Centralized api.php
 
 ## Quick Reference
 
 - Business logic → `Services/[Name]Service.php`
 - Model → `Models/[Name].php`
-- Query → `GraphQL/Queries/[Name]Query.php`
-- Mutation → `GraphQL/Mutations/[Name]Mutation.php`
-- DataLoader → `GraphQL/DataLoaders/[Name]Loader.php`
-- Policy → `Policies/[Name]Policy.php`
+- Controller → `Http/Controllers/[Name]Controller.php`
+- Validation → `Http/Requests/[Action][Model]Request.php`
+- Response → `Http/Resources/[Model]Resource.php`
+- Authorization → `Policies/[Model]Policy.php`
+- Middleware → `Http/Middleware/[Name]Middleware.php`
 - Event → `Events/[Name].php`
 - Listener → `Listeners/[Name].php`
 - Job → `Jobs/[Name]Job.php`
+- Exception → `Exceptions/[Name]Exception.php`
 - Migration → `Database/Migrations/YYYY_MM_DD_[name].php`
 - Test → `tests/Feature/[Feature]/[Test]Test.php`
+- Routes → `routes/api.php` (centralized)
+
+## Important Notes
+
+- **ALWAYS use Docker** (never PHP Herd)
+- **Clear route cache** after adding new routes: `docker compose exec app php artisan route:clear`
+- **Use `description` field** (not `initial_description`) - standardized across all features
