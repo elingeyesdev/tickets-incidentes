@@ -35,6 +35,13 @@ class TicketManagementServiceProvider extends ServiceProvider
     {
         $events = $this->app['events'];
 
+        // Auto-crear 5 categorías por defecto cuando se crea una empresa
+        // Las categorías específicas dependen del industry_type de la empresa
+        $events->listen(
+            \App\Features\CompanyManagement\Events\CompanyCreated::class,
+            \App\Features\TicketManagement\Listeners\CreateDefaultCategoriesListener::class
+        );
+
         // Cuando se agrega una respuesta a un ticket, enviar email al usuario
         // (solo si la respuesta es de un agente)
         $events->listen(

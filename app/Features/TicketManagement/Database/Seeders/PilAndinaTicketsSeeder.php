@@ -15,19 +15,20 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * PIL Andina Tickets Seeder
+ * PIL Andina Tickets Seeder (Manufacturing)
  *
- * Crea tickets realistas para PIL Andina con:
- * - Usuarios con @gmail.com que crean tickets
+ * Crea tickets realistas para PIL Andina como empresa de MANUFACTURA con:
+ * - Empleados/supervisores que reportan problemas de producción
  * - Tickets en diferentes estados (open, pending, resolved, closed)
- * - Respuestas entre usuarios y agentes
- * - Attachments simulados
+ * - Respuestas entre supervisores y coordinadores técnicos
+ * - Attachments (reportes, fotos de daños, etc)
  *
  * Escenarios simulados:
- * - Problemas con productos (calidad, vencimiento, empaque)
- * - Consultas sobre pedidos y distribución
- * - Problemas técnicos con el sistema
- * - Facturación y pagos
+ * - Problemas con equipos (máquinas, refrigeradores)
+ * - Retrasos en producción
+ * - Problemas de calidad
+ * - Supply chain (proveedores, materias primas)
+ * - Seguridad industrial
  */
 class PilAndinaTicketsSeeder extends Seeder
 {
@@ -43,7 +44,7 @@ class PilAndinaTicketsSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('🎫 Creando tickets realistas para PIL Andina...');
+        $this->command->info('🏭 Creando tickets realistas para PIL Andina (Manufacturing)...');
 
         // Find PIL Andina company
         $this->company = Company::where('name', 'PIL Andina S.A.')->first();
@@ -64,10 +65,10 @@ class PilAndinaTicketsSeeder extends Seeder
         // Get agents
         $this->loadAgents();
 
-        // Create users with @gmail.com
+        // Create internal users (supervisors, coordinators)
         $this->createUsers();
 
-        // Create tickets with different scenarios
+        // Create tickets with manufacturing scenarios
         $this->createTickets();
 
         $this->command->info('✅ Seeder de tickets PIL Andina completado!');
@@ -79,17 +80,19 @@ class PilAndinaTicketsSeeder extends Seeder
             ->where('is_active', true)
             ->get();
 
+        // PIL Andina es manufacturing, usa categorías de esa industria
         $this->categories = [
-            'soporte_tecnico' => $categories->firstWhere('name', 'Soporte Técnico'),
-            'facturacion' => $categories->firstWhere('name', 'Facturación'),
-            'cuenta' => $categories->firstWhere('name', 'Cuenta y Perfil'),
-            'reportes' => $categories->firstWhere('name', 'Reportes y Analíticas'),
-            'general' => $categories->firstWhere('name', 'General'),
+            'equipment_issue' => $categories->firstWhere('name', 'Equipment Issue'),
+            'production_delay' => $categories->firstWhere('name', 'Production Delay'),
+            'quality_problem' => $categories->firstWhere('name', 'Quality Problem'),
+            'supply_chain' => $categories->firstWhere('name', 'Supply Chain'),
+            'safety_concern' => $categories->firstWhere('name', 'Safety Concern'),
         ];
     }
 
     private function loadAgents(): void
     {
+        // Los agentes son coordinadores técnicos/supervisores de turno
         $this->agents = [
             'maria' => User::where('email', 'maria.condori@pilandina.com.bo')->first(),
             'roberto' => User::where('email', 'roberto.flores@pilandina.com.bo')->first(),
@@ -100,52 +103,40 @@ class PilAndinaTicketsSeeder extends Seeder
     {
         $usersData = [
             [
-                'first_name' => 'Carlos',
-                'last_name' => 'Mamani',
-                'email' => 'carlos.mamani.distribuidor@gmail.com',
-                'business' => 'Distribuidora La Esperanza',
+                'first_name' => 'Diego',
+                'last_name' => 'Huanca',
+                'email' => 'diego.huanca.supervisor@gmail.com',
+                'role' => 'Supervisor Línea de Pasteurización',
             ],
             [
-                'first_name' => 'Ana',
+                'first_name' => 'Carmen',
                 'last_name' => 'López',
-                'email' => 'ana.lopez.ventas@gmail.com',
-                'business' => 'Supermercado El Ahorro',
+                'email' => 'carmen.lopez.control.calidad@gmail.com',
+                'role' => 'Jefe Control de Calidad',
             ],
             [
-                'first_name' => 'Pedro',
+                'first_name' => 'Fernando',
                 'last_name' => 'Quispe',
-                'email' => 'pedro.quispe.tienda@gmail.com',
-                'business' => 'Tienda Don Pedro',
+                'email' => 'fernando.quispe.mantenimiento@gmail.com',
+                'role' => 'Coordinador Mantenimiento',
             ],
             [
-                'first_name' => 'Rosa',
-                'last_name' => 'Fernández',
-                'email' => 'rosa.fernandez.minimarket@gmail.com',
-                'business' => 'Minimarket Rosita',
+                'first_name' => 'Leticia',
+                'last_name' => 'Morales',
+                'email' => 'leticia.morales.almacen@gmail.com',
+                'role' => 'Responsable Almacén Materias Primas',
             ],
             [
-                'first_name' => 'Luis',
-                'last_name' => 'Torrez',
-                'email' => 'luis.torrez.distribuciones@gmail.com',
-                'business' => 'Distribuciones LT',
-            ],
-            [
-                'first_name' => 'María',
-                'last_name' => 'Gutiérrez',
-                'email' => 'maria.gutierrez.abarrotes@gmail.com',
-                'business' => 'Abarrotes María',
-            ],
-            [
-                'first_name' => 'Jorge',
+                'first_name' => 'Marcos',
                 'last_name' => 'Vargas',
-                'email' => 'jorge.vargas.comercial@gmail.com',
-                'business' => 'Comercial Vargas',
+                'email' => 'marcos.vargas.produccion@gmail.com',
+                'role' => 'Supervisor Turno Noche',
             ],
             [
-                'first_name' => 'Silvia',
-                'last_name' => 'Mendoza',
-                'email' => 'silvia.mendoza.lacteos@gmail.com',
-                'business' => 'Lácteos del Valle',
+                'first_name' => 'Patricia',
+                'last_name' => 'Gutiérrez',
+                'email' => 'patricia.gutierrez.seguridad@gmail.com',
+                'role' => 'Oficial Seguridad Industrial',
             ],
         ];
 
@@ -194,68 +185,68 @@ class PilAndinaTicketsSeeder extends Seeder
             ]);
 
             $this->users[$userData['first_name']] = $user;
-            $this->command->info("  ✓ Usuario creado: {$email} ({$userData['business']})");
+            $this->command->info("  ✓ Usuario creado: {$email} ({$userData['role']})");
         }
     }
 
     private function createTickets(): void
     {
-        // Ticket 1: CLOSED - Problema con producto vencido (resuelto satisfactoriamente)
+        // Ticket 1: CLOSED - Máquina pasteurizadora dañada (resuelto)
         $this->createTicket1Closed();
 
-        // Ticket 2: RESOLVED - Consulta sobre pedido retrasado
+        // Ticket 2: RESOLVED - Retraso en producción por personal
         $this->createTicket2Resolved();
 
-        // Ticket 3: PENDING - Error en facturación (en proceso)
+        // Ticket 3: PENDING - Lotes con bajo contenido de grasa
         $this->createTicket3Pending();
 
-        // Ticket 4: PENDING - Problema con el sistema de pedidos
+        // Ticket 4: PENDING - Proveedor de envases retrasado
         $this->createTicket4Pending();
 
-        // Ticket 5: OPEN - Nueva consulta sobre productos
+        // Ticket 5: OPEN - Temperatura anómala en refrigerador
         $this->createTicket5Open();
 
-        // Ticket 6: CLOSED - Problema con empaque dañado
+        // Ticket 6: CLOSED - Fuga en sistema de bombeo
         $this->createTicket6Closed();
 
-        // Ticket 7: RESOLVED - Consulta sobre descuentos
+        // Ticket 7: RESOLVED - Falla de enfriamiento en turno noche
         $this->createTicket7Resolved();
 
-        // Ticket 8: PENDING - Error al exportar reportes
+        // Ticket 8: PENDING - Yogur con sabor extraño en lote
         $this->createTicket8Pending();
 
-        // Ticket 9: CLOSED - Cambio de datos de facturación
+        // Ticket 9: CLOSED - Incidente de seguridad en área de frío
         $this->createTicket9Closed();
 
-        // Ticket 10: OPEN - Consulta sobre nuevos productos
+        // Ticket 10: OPEN - Repuesto de válvula urgente
         $this->createTicket10Open();
 
-        // Ticket 11: PENDING - Problema con entrega de pedido
+        // Ticket 11: PENDING - Problema con sistema HVAC
         $this->createTicket11Pending();
 
-        // Ticket 12: RESOLVED - Consulta sobre fechas de vencimiento
+        // Ticket 12: RESOLVED - Auditoría de calidad con hallazgos
         $this->createTicket12Resolved();
     }
 
     // ==================== TICKET 1: CLOSED ====================
     private function createTicket1Closed(): void
     {
-        $user = $this->users['Carlos'];
+        $user = $this->users['Diego'];
         $agent = $this->agents['maria'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00001',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Producto con fecha de vencimiento muy cercana',
-            'description' => "Hola, recibí un lote de yogur PIL de 1 litro sabor frutilla (Lote: 25A1045) y la fecha de vencimiento es en 3 días. Esto me preocupa porque mis clientes no van a querer comprar productos tan cerca del vencimiento.\n\n¿Es normal recibir productos con tan poco tiempo? ¿Podrían hacer un cambio del lote?",
+            'category_id' => $this->categories['equipment_issue']->id,
+            'title' => 'Máquina pasteurizadora presenta fugas en válvulas',
+            'description' => "Buenos días,\n\nDurante el turno de hoy detecté fugas en las válvulas de la máquina pasteurizadora PLT-3000. El producto se está perdiendo y hay riesgo de contaminación cruzada.\n\nLa máquina está parcialmente operativa pero necesita reparación urgente. He parado la línea como medida preventiva.\n\n¿Pueden contactar al servicio técnico?",
             'status' => 'closed',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(15),
             'updated_at' => now()->subDays(13),
-            'first_response_at' => now()->subDays(15)->addHours(2),
+            'first_response_at' => now()->subDays(15)->addHours(1),
             'resolved_at' => now()->subDays(14),
             'closed_at' => now()->subDays(13),
         ]);
@@ -265,39 +256,29 @@ class PilAndinaTicketsSeeder extends Seeder
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Carlos, gracias por contactarnos.\n\nEntiendo su preocupación sobre la fecha de vencimiento del lote 25A1045. Déjeme verificar la información del envío y coordinar con el área de logística para solucionar este inconveniente.\n\n¿Podría proporcionarme el número de su pedido o factura para hacer el seguimiento?",
-            'created_at' => now()->subDays(15)->addHours(2),
-            'updated_at' => now()->subDays(15)->addHours(2),
+            'content' => "Diego, gracias por el reporte inmediato.\n\nHe contactado al proveedor de mantenimiento Industrias TecniLar. Llegan mañana a las 8:00 AM con los repuestos necesarios para reemplazar las válvulas dañadas.\n\nMientras tanto, mantén la línea parada. Coordina con el turno de noche para aprovechar el tiempo muerto.",
+            'created_at' => now()->subDays(15)->addHours(1),
+            'updated_at' => now()->subDays(15)->addHours(1),
         ]);
 
-        // Response 2: User provides info
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'author_type' => 'user',
-            'content' => "Claro María, el número de pedido es PED-2025-00156 y la factura es FAC-000789. Recibí el envío ayer por la mañana.",
-            'created_at' => now()->subDays(15)->addHours(4),
-            'updated_at' => now()->subDays(15)->addHours(4),
-        ]);
-
-        // Response 3: Agent confirms solution
+        // Response 2: Technician confirms repair
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Gracias Carlos. He verificado su pedido y efectivamente hubo un error en el despacho de ese lote.\n\nYa coordiné con logística y mañana mismo le estaremos enviando un lote nuevo con fecha de vencimiento de 30 días. El envío no tiene costo adicional y pueden conservar el lote anterior para venta rápida o devolverlo si lo prefieren.\n\nDisculpe las molestias ocasionadas.",
+            'content' => "Actualización: El equipo técnico de TecniLar completó la reparación exitosamente.\n\n✓ Reemplazadas 4 válvulas de presión\n✓ Pruebas de presión realizadas correctamente\n✓ Máquina calibrada y lista para operación\n\nLa línea PLT-3000 puede reanudarse operaciones. Favor coordinar con producción.",
             'created_at' => now()->subDays(14)->addHours(10),
             'updated_at' => now()->subDays(14)->addHours(10),
         ]);
 
-        // Response 4: User confirms satisfaction
+        // Response 3: User confirms
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'content' => "Perfecto María, muchas gracias por la solución rápida. Recibiré el nuevo lote mañana. Pueden cerrar el ticket.",
-            'created_at' => now()->subDays(13)->addHours(8),
-            'updated_at' => now()->subDays(13)->addHours(8),
+            'content' => "Perfecto María. He verificado personalmente que la máquina está operativa. Reiniciamos producción a las 14:00. Gracias por la gestión rápida.",
+            'created_at' => now()->subDays(13)->addHours(12),
+            'updated_at' => now()->subDays(13)->addHours(12),
         ]);
 
         $this->command->info("  ✓ Ticket CLOSED creado: {$ticket->ticket_code}");
@@ -306,64 +287,54 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 2: RESOLVED ====================
     private function createTicket2Resolved(): void
     {
-        $user = $this->users['Ana'];
+        $user = $this->users['Marcos'];
         $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00002',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Pedido retrasado - Urgente para promoción',
-            'description' => "Buenos días,\n\nTengo un pedido programado para el día de hoy (PED-2025-00178) que incluye leche PIL y yogur que necesito urgentemente para una promoción que arranca mañana.\n\nEl pedido debía llegar a las 8:00 AM y ya son las 11:00 AM. ¿Pueden darme información sobre el estado?",
+            'category_id' => $this->categories['production_delay']->id,
+            'title' => 'Retraso en producción - Falta de personal en turno noche',
+            'description' => "Roberto,\n\nHoy en el turno de noche llegaron solo 3 de 8 operadores previstos. Dos llamaron tarde diciendo que estaban enfermos y no confirmaron asistencia.\n\nLa línea de yogur está parada desde las 22:00. Hemos perdido aproximadamente 2 horas de producción.\n\n¿Hay algún procedimiento para estos casos o necesito algo del área de RRHH?",
             'status' => 'resolved',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(5),
-            'updated_at' => now()->subDays(5)->addHours(7),
-            'first_response_at' => now()->subDays(5)->addMinutes(30),
-            'resolved_at' => now()->subDays(5)->addHours(7),
+            'updated_at' => now()->subDays(5)->addHours(8),
+            'first_response_at' => now()->subDays(5)->addHours(2),
+            'resolved_at' => now()->subDays(5)->addHours(8),
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent investigates
+        // Response 1: Agent provides guidance
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimada Ana, disculpe el retraso.\n\nEstoy verificando el estado de su pedido PED-2025-00178 con el área de logística. Le confirmo en los próximos 15 minutos.",
-            'created_at' => now()->subDays(5)->addMinutes(30),
-            'updated_at' => now()->subDays(5)->addMinutes(30),
+            'content' => "Marcos, esto es importante. Para futuras ocasiones:\n\n1. Contacta inmediatamente a coordinador de turno (número en cartelera)\n2. RRHH puede derivar personal de otras áreas\n3. Documenta ausencias para análisis\n\nEsta vez: He hablado con RRHH. Pueden cubrir con 2 personas del área de empaque mañana. Reinicia la línea cuando sea posible.",
+            'created_at' => now()->subDays(5)->addHours(2),
+            'updated_at' => now()->subDays(5)->addHours(2),
         ]);
 
-        // Response 2: Agent provides update
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent->id,
-            'author_type' => 'agent',
-            'content' => "Ana, he verificado con logística:\n\nEl camión de reparto tuvo un inconveniente mecánico menor en ruta, pero ya está resuelto. Su pedido llegará aproximadamente a las 13:30 PM (en 2 horas).\n\nComo disculpa por el retraso, le estamos agregando 10 litros de leche PIL de cortesía en su próximo pedido.\n\n¿Le parece bien esta solución?",
-            'created_at' => now()->subDays(5)->addHours(1),
-            'updated_at' => now()->subDays(5)->addHours(1),
-        ]);
-
-        // Response 3: User accepts
+        // Response 2: User confirms action
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'content' => "Gracias Roberto por el seguimiento. Está bien, esperaré hasta las 13:30. El detalle de la leche de cortesía es muy apreciado.",
-            'created_at' => now()->subDays(5)->addHours(1)->addMinutes(15),
-            'updated_at' => now()->subDays(5)->addHours(1)->addMinutes(15),
+            'content' => "Gracias Roberto. He anotado los procedimientos. Logré reanimar la línea a las 23:45 con el personal disponible. La producción se recuperó parcialmente.",
+            'created_at' => now()->subDays(5)->addHours(3),
+            'updated_at' => now()->subDays(5)->addHours(3),
         ]);
 
-        // Response 4: Agent confirms resolution
+        // Response 3: Agent closes
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Perfecto Ana. He confirmado con el conductor que su pedido está en camino y llegará en el horario indicado.\n\nMarco este ticket como resuelto. Si el pedido no llega o tiene algún problema, no dude en reabrir el ticket o contactarnos.",
-            'created_at' => now()->subDays(5)->addHours(7),
-            'updated_at' => now()->subDays(5)->addHours(7),
+            'content' => "Bien gestionado. Escalé el tema a RRHH para implementar protocolo de ausencias de último minuto. Marco como resuelto.",
+            'created_at' => now()->subDays(5)->addHours(8),
+            'updated_at' => now()->subDays(5)->addHours(8),
         ]);
 
         $this->command->info("  ✓ Ticket RESOLVED creado: {$ticket->ticket_code}");
@@ -372,54 +343,54 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 3: PENDING ====================
     private function createTicket3Pending(): void
     {
-        $user = $this->users['Pedro'];
+        $user = $this->users['Carmen'];
         $agent = $this->agents['maria'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00003',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['facturacion']->id,
-            'title' => 'Error en factura - Monto duplicado',
-            'description' => "Hola,\n\nRevisando mi factura FAC-001234 del mes pasado, noto que me están cobrando dos veces el mismo pedido PED-2025-00145.\n\nEl pedido fue por 50 unidades de leche PIL de 1L, pero en la factura aparece duplicado (100 unidades en total). Adjunto captura de pantalla de mi pedido y la factura.\n\n¿Pueden revisar y corregir esto?",
+            'category_id' => $this->categories['quality_problem']->id,
+            'title' => 'Análisis de calidad: Lotes con contenido de grasa por debajo de especificación',
+            'description' => "María,\n\nEn el análisis de hoy detecté que 3 lotes de leche fresca (códigos LF-2025-0145, LF-2025-0146, LF-2025-0147) tienen contenido de grasa de 3.1% cuando la especificación requiere mínimo 3.6%.\n\nLos lotes fueron producidos ayer entre 14:00 y 16:00 en la línea PLT-2000.\n\nAdjunto reporte de laboratorio completo. ¿Es rechazable?",
             'status' => 'pending',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(2),
             'updated_at' => now()->subDays(1),
-            'first_response_at' => now()->subDays(2)->addHours(4),
+            'first_response_at' => now()->subDays(2)->addHours(3),
             'resolved_at' => null,
             'closed_at' => null,
         ]);
 
-        // Attachment: Screenshot of invoice
+        // Attachment: Quality report
         TicketAttachment::create([
             'ticket_id' => $ticket->id,
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
-            'file_name' => 'factura_duplicada_captura.png',
-            'file_path' => 'tickets/' . $ticket->id . '/factura_duplicada_captura.png',
-            'file_type' => 'image/png',
+            'file_name' => 'reporte_analisis_grasa_2025-11-24.pdf',
+            'file_path' => 'tickets/' . $ticket->id . '/reporte_analisis_grasa.pdf',
+            'file_type' => 'application/pdf',
             'file_size_bytes' => 234567,
             'created_at' => now()->subDays(2),
         ]);
 
-        // Response 1: Agent acknowledges
+        // Response 1: Agent asks for investigation
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Pedro, gracias por reportar este problema.\n\nHe recibido su captura y efectivamente veo que hay una inconsistencia. Estoy derivando este caso al área de facturación para que revisen y emitan una nota de crédito si corresponde.\n\nLe responderé en máximo 24 horas con la solución.",
-            'created_at' => now()->subDays(2)->addHours(4),
-            'updated_at' => now()->subDays(2)->addHours(4),
+            'content' => "Carmen, gracias por el reporte detallado.\n\nPor desviación de 0.5%, estos lotes son RECHAZABLES según norma técnica.\n\nEstoy investigando qué pasó en la línea PLT-2000 entre 14:00-16:00 ayer:\n- Verificación de calibración de sensores\n- Revisión de temperatura de pasteurización\n- Análisis de leche cruda entrante\n\nTe reporto en 2 horas con hallazgos.",
+            'created_at' => now()->subDays(2)->addHours(3),
+            'updated_at' => now()->subDays(2)->addHours(3),
         ]);
 
-        // Response 2: Agent provides update
+        // Response 2: Agent provides findings
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Pedro, el área de facturación ha confirmado el error. Efectivamente hubo una duplicación en el sistema.\n\nYa están generando la nota de crédito NC-000456 por el monto duplicado (Bs. 250). La nota de crédito estará disponible mañana y se aplicará automáticamente a su próxima factura.\n\n¿Está de acuerdo con esta solución?",
+            'content' => "Hallazgos:\n\n1. El proveedor de leche cruda (Ganadería \"Los Andes\") entregó leche con 3.2% grasa ese día\n2. La línea está correctamente calibrada\n3. La desviación viene de la materia prima\n\nAcciones:\n- Rechazar los 3 lotes\n- Contactar al proveedor para análisis\n- Solicitar certificado de análisis previo a entregas futuras\n\n¿Apruebas rechazo de lotes?",
             'created_at' => now()->subDays(1),
             'updated_at' => now()->subDays(1),
         ]);
@@ -430,16 +401,16 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 4: PENDING ====================
     private function createTicket4Pending(): void
     {
-        $user = $this->users['Rosa'];
+        $user = $this->users['Leticia'];
         $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00004',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['soporte_tecnico']->id,
-            'title' => 'No puedo realizar pedidos en el sistema',
-            'description' => "Buenas tardes,\n\nDesde ayer estoy intentando realizar un pedido a través del portal web pero me aparece un error cuando intento confirmar:\n\n\"Error: No se pudo procesar su pedido. Intente nuevamente más tarde.\"\n\nYa intenté desde dos navegadores diferentes (Chrome y Firefox) y el error persiste. ¿Hay algún problema con el sistema?",
+            'category_id' => $this->categories['supply_chain']->id,
+            'title' => 'Proveedor de envases de tetra pak no entrega en tiempo acordado',
+            'description' => "Roberto,\n\nEl proveedor Envases Plus debía entregar 50,000 unidades de envases tetra pak 1L para yogur hoy 25 de noviembre.\n\nHastalas 17:00 aún no llega el envío. Sin estos envases tendremos que parar la línea de yogur mañana.\n\nLlamé al proveedor y dicen que estiman llegada para mañana 10:00 AM, pero esto va a afectar la producción planificada.\n\n¿Hay algún acuerdo de penalización por retraso o qué acciones tomar?",
             'status' => 'pending',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
@@ -450,44 +421,22 @@ class PilAndinaTicketsSeeder extends Seeder
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent asks for details
+        // Response 1: Agent investigates
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimada Rosa, lamento este inconveniente.\n\nPara ayudarla mejor, necesito algunos detalles:\n\n1. ¿En qué paso del proceso aparece el error? (Al agregar productos, al confirmar, al pagar?)\n2. ¿Podría tomar una captura de pantalla del error?\n3. ¿Cuál es su usuario en el portal?\n\nMientras tanto, verificaré si hay algún problema reportado en el sistema.",
+            'content' => "Leticia,\n\nHe verificado el contrato con Envases Plus. Hay cláusula de entrega garantizada con penalización de 0.5% del valor del pedido por cada día de retraso.\n\nEste retraso de 1 día = penalización de Bs. 850 aproximadamente.\n\nYa envié comunicación formal al proveedor citando cláusula y notificándoles de la penalización.",
             'created_at' => now()->subHours(16),
             'updated_at' => now()->subHours(16),
         ]);
 
-        // Response 2: User provides details
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'author_type' => 'user',
-            'content' => "Gracias Roberto. Le respondo:\n\n1. El error aparece cuando hago clic en 'Confirmar Pedido' después de revisar el resumen.\n2. Adjunto captura del error.\n3. Mi usuario es: rosa.minimarket\n\nEl pedido que quiero hacer incluye 30 litros de leche PIL y 20 yogures.",
-            'created_at' => now()->subHours(15),
-            'updated_at' => now()->subHours(15),
-        ]);
-
-        // Attachment: Error screenshot
-        TicketAttachment::create([
-            'ticket_id' => $ticket->id,
-            'response_id' => null,
-            'uploaded_by_user_id' => $user->id,
-            'file_name' => 'error_sistema_pedidos.png',
-            'file_path' => 'tickets/' . $ticket->id . '/error_sistema_pedidos.png',
-            'file_type' => 'image/png',
-            'file_size_bytes' => 156789,
-            'created_at' => now()->subHours(15),
-        ]);
-
-        // Response 3: Agent investigating
+        // Response 2: Agent provides alternative
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Gracias por la información Rosa.\n\nHe verificado su cuenta y encontré el problema: hay un límite de crédito pendiente de actualizar en su perfil que está bloqueando pedidos nuevos.\n\nEstoy escalando esto al área de créditos para que actualicen su límite. Le confirmo la solución en las próximas horas.",
+            'content' => "Alternativa mientras tanto:\n\nHe contactado a Envases Industriales Bolivia (proveedor backup). Pueden entregar 30,000 unidades mañana 9:00 AM para cubrir demanda crítica.\n\nEsto nos permite mantener la línea de yogur operativa sin paros.\n\nAutoriza esta compra emergente para no perder producción?",
             'created_at' => now()->subHours(5),
             'updated_at' => now()->subHours(5),
         ]);
@@ -498,15 +447,15 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 5: OPEN ====================
     private function createTicket5Open(): void
     {
-        $user = $this->users['Luis'];
+        $user = $this->users['Fernando'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00005',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => '¿Tienen disponibilidad de leche deslactosada?',
-            'description' => "Hola,\n\nVarios de mis clientes me han estado preguntando por leche deslactosada PIL. He visto que lanzaron una nueva línea de productos deslactosados.\n\n¿Cuándo estará disponible para distribuidores? ¿Cuáles son los precios y presentaciones?\n\nEstoy muy interesado en incluirla en mi catálogo.",
+            'category_id' => $this->categories['equipment_issue']->id,
+            'title' => 'Alarma de temperatura anómala en refrigerador almacén PLT-REF-04',
+            'description' => "Equipo de coordinación,\n\nA las 06:30 AM activó alarma en refrigerador PLT-REF-04 del almacén de productos terminados.\n\nTemperatura interna: 8°C (rango normal: 2-4°C)\nEstatus: Alarma activa, desconocemos causa\n\nProducto en riesgo: 2,000L de leche fresca (producción de ayer)\n\nNecesito diagnóstico urgente. ¿Es problema del compresor o del termostato?",
             'status' => 'open',
             'owner_agent_id' => null,
             'last_response_author_type' => 'none',
@@ -523,19 +472,19 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 6: CLOSED ====================
     private function createTicket6Closed(): void
     {
-        $user = $this->users['María'];
+        $user = $this->users['Diego'];
         $agent = $this->agents['maria'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00006',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Cajas de yogur llegaron dañadas',
-            'description' => "Buenos días,\n\nAcabo de recibir mi pedido PED-2025-00289 y 3 cajas de yogur PIL de frutilla llegaron con el cartón dañado y algunos envases rotos.\n\nAdjunto fotos del daño. ¿Pueden hacer el cambio de estas cajas?",
+            'category_id' => $this->categories['equipment_issue']->id,
+            'title' => 'Fuga de producto en sistema de bombeo línea PLT-2000',
+            'description' => "Equipo de mantenimiento,\n\nEn la línea PLT-2000 detecté fuga de leche pasteurizada en la conexión de la bomba hacia el enfriador.\n\nLa pérdida es aproximadamente 50L/hora. He reducido velocidad de la línea para minimizar pérdidas.\n\nAdjunto foto del área con fuga.\n\n¿Es reparable en sitio o necesita cambio de componente?",
             'status' => 'closed',
             'owner_agent_id' => $agent->id,
-            'last_response_author_type' => 'user',
+            'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(8),
             'updated_at' => now()->subDays(6),
             'first_response_at' => now()->subDays(8)->addHours(1),
@@ -543,65 +492,44 @@ class PilAndinaTicketsSeeder extends Seeder
             'closed_at' => now()->subDays(6),
         ]);
 
-        // Attachment: Damaged boxes photos
+        // Attachment: Photo of leak
         TicketAttachment::create([
             'ticket_id' => $ticket->id,
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
-            'file_name' => 'cajas_danadas_foto1.jpg',
-            'file_path' => 'tickets/' . $ticket->id . '/cajas_danadas_foto1.jpg',
+            'file_name' => 'fuga_bomba_plt2000.jpg',
+            'file_path' => 'tickets/' . $ticket->id . '/fuga_bomba.jpg',
             'file_type' => 'image/jpeg',
             'file_size_bytes' => 567890,
             'created_at' => now()->subDays(8),
         ]);
 
-        TicketAttachment::create([
-            'ticket_id' => $ticket->id,
-            'response_id' => null,
-            'uploaded_by_user_id' => $user->id,
-            'file_name' => 'cajas_danadas_foto2.jpg',
-            'file_path' => 'tickets/' . $ticket->id . '/cajas_danadas_foto2.jpg',
-            'file_type' => 'image/jpeg',
-            'file_size_bytes' => 523456,
-            'created_at' => now()->subDays(8),
-        ]);
-
-        // Response 1: Agent apologizes and arranges replacement
+        // Response 1: Agent diagnoses
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimada María, lamento mucho este inconveniente.\n\nHe visto las fotos y efectivamente el daño es considerable. Esto no debería suceder y vamos a investigar qué pasó en el transporte.\n\nMañana mismo le estaremos enviando 3 cajas nuevas de reemplazo sin costo adicional. Las cajas dañadas pueden conservarlas para productos que aún estén en buen estado o devolverlas cuando llegue el nuevo envío.\n\n¿Le parece bien?",
+            'content' => "Diego, he revisado la foto.\n\nLa fuga es en la junta de la conexión. Necesita reemplazo de O-ring y sellos.\n\nEs reparable en sitio: ~20 minutos de trabajo. He desprogramado la línea PLT-2000 para mañana 08:00-09:00 AM.\n\nCoordin con turno para parada programada.",
             'created_at' => now()->subDays(8)->addHours(1),
             'updated_at' => now()->subDays(8)->addHours(1),
         ]);
 
-        // Response 2: User thanks
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'author_type' => 'user',
-            'content' => "Perfecto María, muchas gracias por la solución rápida. Voy a separar los envases que están bien y devolveré los rotos con el conductor mañana.",
-            'created_at' => now()->subDays(8)->addHours(2),
-            'updated_at' => now()->subDays(8)->addHours(2),
-        ]);
-
-        // Response 3: Agent confirms delivery
+        // Response 2: Repair completed
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "María, confirmo que las 3 cajas de reemplazo fueron entregadas hoy. El conductor también recogió las unidades dañadas.\n\n¿Todo llegó en orden? Si está conforme, marco el ticket como resuelto.",
+            'content' => "Reparación completada exitosamente:\n\n✓ Reemplazados O-rings y sellos de la junta\n✓ Sistema presurizado y probado\n✓ Cero fugas detectadas\n✓ Línea PLT-2000 operativa\n\nTiempo de reparación: 18 minutos (eficiente).\n\nMarco como cerrado.",
             'created_at' => now()->subDays(7),
             'updated_at' => now()->subDays(7),
         ]);
 
-        // Response 4: User confirms
+        // Response 3: User confirms
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'content' => "Sí María, todo perfecto. Las cajas llegaron en excelente estado esta vez. Gracias por la atención, pueden cerrar el ticket.",
+            'content' => "Verificado personalmente. La línea está funcionando perfectamente sin fugas. Excelente trabajo del equipo de mantenimiento.",
             'created_at' => now()->subDays(6),
             'updated_at' => now()->subDays(6),
         ]);
@@ -612,74 +540,54 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 7: RESOLVED ====================
     private function createTicket7Resolved(): void
     {
-        $user = $this->users['Jorge'];
+        $user = $this->users['Marcos'];
         $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00007',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['facturacion']->id,
-            'title' => 'Consulta sobre descuentos por volumen',
-            'description' => "Buenas tardes,\n\nEstoy interesado en aumentar mi volumen de pedidos mensuales. Actualmente pido alrededor de 500 unidades al mes.\n\n¿Qué descuentos por volumen manejan? ¿A partir de qué cantidad aplican?\n\nMe gustaría conocer las opciones para planificar mejor mis pedidos.",
+            'category_id' => $this->categories['production_delay']->id,
+            'title' => 'Sistema de enfriamiento falla en turno noche - Línea PLT-3000 sin control de temperatura',
+            'description' => "Roberto,\n\nEl sistema de enfriamiento de la línea PLT-3000 falló durante el turno noche (23:30).\n\nTemperatura del producto subió de 4°C a 18°C en 45 minutos.\n\nPause la línea como medida preventiva. El producto en proceso podría no ser recuperable.\n\n¿Cuál es el status del compresor? ¿Hay repuesto disponible?",
             'status' => 'resolved',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(4),
             'updated_at' => now()->subDays(3),
-            'first_response_at' => now()->subDays(4)->addHours(3),
+            'first_response_at' => now()->subDays(4)->addHours(2),
             'resolved_at' => now()->subDays(3),
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent provides discount info
+        // Response 1: Emergency response
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Jorge, gracias por su interés en aumentar su volumen de compras.\n\nNuestros descuentos por volumen son:\n\n- 500-999 unidades/mes: 3% de descuento\n- 1,000-1,999 unidades/mes: 5% de descuento\n- 2,000-4,999 unidades/mes: 7% de descuento\n- 5,000+ unidades/mes: 10% de descuento (+ beneficios adicionales)\n\nEstos descuentos se aplican sobre el precio de lista y se calculan mensualmente.\n\nSi está interesado en un contrato de volumen, puedo conectarlo con nuestro equipo comercial para negociar condiciones especiales.\n\n¿Le gustaría más información?",
-            'created_at' => now()->subDays(4)->addHours(3),
-            'updated_at' => now()->subDays(4)->addHours(3),
+            'content' => "Marcos, activé protocolo de emergencia.\n\nDiagnóstico preliminar: Compresor comprimidor falló completamente (error sensor de presión).\n\nAcciones:\n- Producto en línea: RECHAZABLE por temperatura\n- Compresor de repuesto: En almacén disponible\n- Tiempo estimado de cambio: 2 horas\n\nAutoriza descargar la línea y proceder con cambio?",
+            'created_at' => now()->subDays(4)->addHours(2),
+            'updated_at' => now()->subDays(4)->addHours(2),
         ]);
 
-        // Response 2: User asks for more details
+        // Response 2: Procedure completed
+        TicketResponse::create([
+            'ticket_id' => $ticket->id,
+            'author_id' => $agent->id,
+            'author_type' => 'agent',
+            'content' => "Cambio de compresor completado:\n\n✓ Compresor defectuoso desmontado\n✓ Compresor de repuesto instalado y conectado\n✓ Sistema presurizado y calibrado\n✓ Pruebas de temperatura: 3.8°C (dentro de especificación)\n\nLínea lista para reanudación.\n\nPérdida de producción: ~6 horas",
+            'created_at' => now()->subDays(3)->addHours(8),
+            'updated_at' => now()->subDays(3)->addHours(8),
+        ]);
+
+        // Response 3: User confirms
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'content' => "Gracias Roberto por la información. Me interesa mucho el rango de 1,000-1,999 unidades.\n\n¿Los descuentos se aplican automáticamente en el sistema o hay que solicitarlos cada mes?\n\nY sí, me gustaría hablar con el equipo comercial sobre un contrato.",
-            'created_at' => now()->subDays(4)->addHours(5),
-            'updated_at' => now()->subDays(4)->addHours(5),
-        ]);
-
-        // Response 3: Agent explains and connects
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent->id,
-            'author_type' => 'agent',
-            'content' => "Jorge, los descuentos se aplican automáticamente en el sistema al cierre de mes. Cuando alcanza el volumen correspondiente, el descuento se refleja en su factura mensual.\n\nHe enviado sus datos a nuestro ejecutivo comercial, Carlos Moreno. Él lo contactará en las próximas 24 horas para coordinar una reunión y discutir un posible contrato de volumen.\n\nSu email es: carlos.moreno@pilandina.com.bo\n\n¿Hay algo más en lo que pueda ayudarle?",
-            'created_at' => now()->subDays(3),
-            'updated_at' => now()->subDays(3),
-        ]);
-
-        // Response 4: User satisfied
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'author_type' => 'user',
-            'content' => "Perfecto Roberto, quedo a la espera del contacto de Carlos. Muchas gracias por toda la información y la gestión.",
-            'created_at' => now()->subDays(3)->addHours(1),
-            'updated_at' => now()->subDays(3)->addHours(1),
-        ]);
-
-        // Response 5: Agent marks resolved
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $agent->id,
-            'author_type' => 'agent',
-            'content' => "Un gusto ayudarle Jorge. Marco este ticket como resuelto. Si tiene más consultas, no dude en abrir un nuevo ticket o contactarnos directamente.",
-            'created_at' => now()->subDays(3)->addHours(2),
-            'updated_at' => now()->subDays(3)->addHours(2),
+            'content' => "Verificado. El equipo respondió rápidamente en plena madrugada. Rearrancamos la línea a las 06:00 AM.",
+            'created_at' => now()->subDays(3)->addHours(9),
+            'updated_at' => now()->subDays(3)->addHours(9),
         ]);
 
         $this->command->info("  ✓ Ticket RESOLVED creado: {$ticket->ticket_code}");
@@ -688,16 +596,16 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 8: PENDING ====================
     private function createTicket8Pending(): void
     {
-        $user = $this->users['Silvia'];
+        $user = $this->users['Carmen'];
         $agent = $this->agents['maria'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00008',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['reportes']->id,
-            'title' => 'No se puede exportar reporte de ventas a Excel',
-            'description' => "Hola,\n\nEstoy intentando exportar mi reporte de ventas del mes de octubre a Excel desde el portal, pero cuando hago clic en 'Exportar' no pasa nada.\n\nIntentélvarias veces y con diferentes rangos de fechas, pero el problema persiste. Necesito ese reporte para mi contador.\n\n¿Pueden ayudarme?",
+            'category_id' => $this->categories['quality_problem']->id,
+            'title' => 'Lote de yogur con sabor anómalo - Investigación requerida',
+            'description' => "María,\n\nDurante control organoléptico hoy, 3 muestras del lote YG-2025-0234 (sabor frutilla) presentaron sabor extraño: amargo y astringente.\n\nEl lote: 5,000 unidades producidas ayer 22:00-23:30 en línea PLT-YOGUR.\n\nCausas posibles:\n- Contaminación de ingredientes\n- Error en concentración de cultivo láctico\n- Temperatura de fermentación incorrecta\n\nAdjunto análisis microbiológico preliminar.\n\n¿Este lote es recuperable o debe descartarse completamente?",
             'status' => 'pending',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
@@ -708,32 +616,34 @@ class PilAndinaTicketsSeeder extends Seeder
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent asks for details
+        // Attachment: Lab analysis
+        TicketAttachment::create([
+            'ticket_id' => $ticket->id,
+            'response_id' => null,
+            'uploaded_by_user_id' => $user->id,
+            'file_name' => 'analisis_microbiologico_yg0234.pdf',
+            'file_path' => 'tickets/' . $ticket->id . '/analisis_micro.pdf',
+            'file_type' => 'application/pdf',
+            'file_size_bytes' => 345678,
+            'created_at' => now()->subHours(12),
+        ]);
+
+        // Response 1: Initial assessment
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimada Silvia, lamento este inconveniente.\n\nPara ayudarla mejor, ¿podría indicarme:\n\n1. ¿Qué navegador está utilizando?\n2. ¿Ve algún mensaje de error, o simplemente no pasa nada?\n3. ¿El botón de exportar se ve deshabilitado o activo?\n\nMientras tanto, voy a verificar si hay algún problema reportado en el sistema de reportes.",
+            'content' => "Carmen, he revisado el análisis microbiológico.\n\nRezultados:\n- Recuento total de aerobios: NORMAL\n- Bacterias lácticas: BAJA (3.5M en vez de 8M esperadas)\n- Patógenos: NEGATIVO\n\nCausa probable: Error en inoculación del cultivo madre.\n\nDecisión: El lote NO es pérdida total. Puede ser:",
             'created_at' => now()->subHours(10),
             'updated_at' => now()->subHours(10),
         ]);
 
-        // Response 2: User provides info
-        TicketResponse::create([
-            'ticket_id' => $ticket->id,
-            'author_id' => $user->id,
-            'author_type' => 'user',
-            'content' => "Gracias María. Le respondo:\n\n1. Estoy usando Google Chrome (versión más reciente)\n2. No aparece ningún mensaje de error, solo que no descarga nada\n3. El botón se ve activo y cuando hago clic se pone en gris por un segundo, pero luego vuelve a normal y no pasa nada\n\nNecesito urgente ese reporte porque mi contador lo necesita para mañana.",
-            'created_at' => now()->subHours(9),
-            'updated_at' => now()->subHours(9),
-        ]);
-
-        // Response 3: Agent investigating
+        // Response 2: Action plan
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Silvia, he reportado esto al equipo técnico. Parece que hay un problema con la generación de reportes de fechas antiguas.\n\nComo solución temporal, ¿podría enviarme por correo el rango de fechas exacto que necesita? Yo puedo generar el reporte manualmente desde el sistema administrativo y enviárselo en las próximas 2 horas.\n\nMientras tanto, el equipo técnico está trabajando en solucionar el problema del portal.",
+            'content' => "Plan de acción:\n\nOpción 1 (Recomendada): Vender como \"producto promocional\" con 40% descuento. Microbiológicamente seguro, solo tiene defecto sensorial menor.\n\nOpción 2: Descartar 5,000 unidades por pérdida total.\n\n¿Qué autoriza?",
             'created_at' => now()->subHours(3),
             'updated_at' => now()->subHours(3),
         ]);
@@ -744,56 +654,56 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 9: CLOSED ====================
     private function createTicket9Closed(): void
     {
-        $user = $this->users['Carlos'];
+        $user = $this->users['Patricia'];
         $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00009',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['cuenta']->id,
-            'title' => 'Actualización de NIT y razón social',
-            'description' => "Buenos días,\n\nNecesito actualizar los datos de facturación de mi cuenta. Cambié mi NIT y razón social.\n\nDatos nuevos:\n- NIT: 1234567890\n- Razón Social: Distribuidora La Esperanza SRL\n\nAdjunto certificado del nuevo NIT.",
+            'category_id' => $this->categories['safety_concern']->id,
+            'title' => 'Incidente de seguridad: Empleado resbaló en piso mojado área de frío',
+            'description' => "Equipo de gestión,\n\nA las 15:30 hubo un incidente en el área de almacén refrigerado.\n\nEmpleado: Juan Condori (operario de almacén)\nIncidente: Resbaló en piso mojado por condensación\nResultado: Caída, golpe en muñeca derecha (sin fractura aparente)\n\nHe documentado el incidente según protocolo y derivé a empleado a médico de empresa.\n\nAcciones inmediatas:\n- Colocadas señales de \"Piso mojado\"\n- Mejora drenaje en área\n\nNecesito reporte formal para expediente y evaluación de causa raíz.",
             'status' => 'closed',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
             'created_at' => now()->subDays(10),
             'updated_at' => now()->subDays(9),
             'first_response_at' => now()->subDays(10)->addHours(2),
-            'resolved_at' => now()->subDays(9)->addHours(10),
-            'closed_at' => now()->subDays(9)->addHours(10),
+            'resolved_at' => now()->subDays(9)->addHours(14),
+            'closed_at' => now()->subDays(9)->addHours(14),
         ]);
 
-        // Attachment: NIT certificate
+        // Attachment: Incident report
         TicketAttachment::create([
             'ticket_id' => $ticket->id,
             'response_id' => null,
             'uploaded_by_user_id' => $user->id,
-            'file_name' => 'certificado_nit_nuevo.pdf',
-            'file_path' => 'tickets/' . $ticket->id . '/certificado_nit_nuevo.pdf',
+            'file_name' => 'reporte_incidente_seguridad_2025-11-15.pdf',
+            'file_path' => 'tickets/' . $ticket->id . '/reporte_incidente.pdf',
             'file_type' => 'application/pdf',
-            'file_size_bytes' => 345678,
+            'file_size_bytes' => 234567,
             'created_at' => now()->subDays(10),
         ]);
 
-        // Response 1: Agent confirms receipt
+        // Response 1: Investigation initiated
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Carlos, he recibido su solicitud y el certificado del nuevo NIT.\n\nEstoy procesando el cambio en el sistema. La actualización estará lista en máximo 24 horas.\n\nLe confirmaré cuando esté completado.",
+            'content' => "Patricia, gracias por la documentación detallada.\n\nHe completado investigación de causa raíz:\n\nProblema raíz: Sistema de drenaje insuficiente en almacén refrigerado.\n\nAcciones correctivas:\n1. Mantenimiento: Mejorar drenaje (presupuesto: Bs. 2,500)\n2. Capacitación: Protocolos de seguridad en pisos mojados\n3. Equipamiento: Botas antideslizantes para personal de frío\n\nEmpleado: En recuperación, sin secuelas.",
             'created_at' => now()->subDays(10)->addHours(2),
             'updated_at' => now()->subDays(10)->addHours(2),
         ]);
 
-        // Response 2: Agent confirms completion
+        // Response 2: Actions completed
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Carlos, los datos de facturación han sido actualizados exitosamente:\n\n✓ NIT: 1234567890\n✓ Razón Social: Distribuidora La Esperanza SRL\n\nA partir de su próxima factura, aparecerán los nuevos datos. Si necesita una factura rectificativa de facturas anteriores, por favor indíqueme los números de factura.\n\nMarco este ticket como resuelto y cerrado.",
-            'created_at' => now()->subDays(9)->addHours(10),
-            'updated_at' => now()->subDays(9)->addHours(10),
+            'content' => "Acciones completadas:\n\n✓ Drenaje mejorado en almacén refrigerado\n✓ Sistema de señalización reforzado\n✓ Capacitación de seguridad realizada (14 empleados)\n✓ Botas antideslizantes entregadas\n\nIncidente cerrado. Expediente enviado a RRHH para compensación.",
+            'created_at' => now()->subDays(9)->addHours(14),
+            'updated_at' => now()->subDays(9)->addHours(14),
         ]);
 
         $this->command->info("  ✓ Ticket CLOSED creado: {$ticket->ticket_code}");
@@ -802,15 +712,15 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 10: OPEN ====================
     private function createTicket10Open(): void
     {
-        $user = $this->users['Ana'];
+        $user = $this->users['Fernando'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00010',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Información sobre quesos PIL - Nuevas variedades',
-            'description' => "Hola,\n\nHe visto en redes sociales que PIL lanzó nuevas variedades de quesos (queso andino y queso light).\n\n¿Ya están disponibles para distribuidores? ¿Cuáles son los precios y presentaciones?\n\nMis clientes han estado preguntando por estas novedades.",
+            'category_id' => $this->categories['equipment_issue']->id,
+            'title' => 'Repuesto urgente: Válvula de alivio de presión línea PLT-2000',
+            'description' => "Equipo de mantenimiento,\n\nDurante inspección programada hoy detecté que la válvula de alivio de presión (PRV-1202) en línea PLT-2000 está desgastada.\n\nRiesgo: Pérdida de control de presión que podría dañar equipos o causar accidente.\n\nNecesito:\n- Referencia: PRV-1202 SKF (marca alemana)\n- Cantidad: 1 unidad\n- Prioridad: ALTA\n\n¿Disponibilidad en almacén o necesito solicitar a proveedor?",
             'status' => 'open',
             'owner_agent_id' => null,
             'last_response_author_type' => 'none',
@@ -827,16 +737,16 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 11: PENDING ====================
     private function createTicket11Pending(): void
     {
-        $user = $this->users['Pedro'];
+        $user = $this->users['Marcos'];
         $agent = $this->agents['maria'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00011',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Pedido llegó incompleto - Faltan productos',
-            'description' => "Buenas tardes,\n\nRecibí hoy mi pedido PED-2025-00312 pero está incompleto. Faltan:\n\n- 10 litros de leche PIL entera\n- 5 kg de queso mozzarella\n\nEn la factura aparecen cobrados pero no vinieron en el envío. El conductor dijo que eso era todo lo que tenía para entregar.\n\n¿Pueden verificar qué pasó y enviar los productos faltantes?",
+            'category_id' => $this->categories['safety_concern']->id,
+            'title' => 'Sistema HVAC falla - Temperatura en área de producción llega a 35°C',
+            'description' => "María,\n\nDurante turno noche el sistema de aire acondicionado (HVAC) de la sala de producción falló.\n\nTemperatura subió a 35°C. Fue una situación incómoda pero no peligrosa (turno de noche con menos carga térmica).\n\nSin embargo, si esto ocurre en turno día (máxima producción) sería insostenible para:\n- Personal (riesgo de golpe de calor)\n- Producto (especialmente yogur que necesita frío)\n\n¿Qué urgencia para reparación del HVAC?",
             'status' => 'pending',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
@@ -847,22 +757,22 @@ class PilAndinaTicketsSeeder extends Seeder
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent acknowledges and investigates
+        // Response 1: Priority assessment
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Pedro, lamento este problema.\n\nEstoy verificando su pedido PED-2025-00312 con el almacén y logística para entender qué ocurrió.\n\nLe responderé en máximo 1 hora con la solución.",
+            'content' => "Marcos, es CRÍTICA.\n\nRiesgo:\n- Salud laboral (temperatura > 32°C causa estrés térmico)\n- Seguridad alimentaria (yogur requiere control de temperatura)\n- Continuidad operativa\n\nTengo 2 opciones:\n1. Reparación HVAC existente: 3-4 días\n2. Arrendar unidad mobile: 1 día (costo: Bs. 800/día)\n\nRecomiendo opción 2 mientras reparamos la principal. ¿Aprobado?",
             'created_at' => now()->subHours(5),
             'updated_at' => now()->subHours(5),
         ]);
 
-        // Response 2: Agent provides solution
+        // Response 2: Interim solution
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Pedro, he verificado con logística:\n\nEfectivamente hubo un error en el despacho. Los productos faltantes quedaron en el almacén por error del operador.\n\nMañana a primera hora (antes de las 10:00 AM) le estaremos enviando:\n- 10 litros de leche PIL entera\n- 5 kg de queso mozzarella\n\nSin costo adicional de envío. Como disculpa, también le estamos agregando 3 litros de yogur PIL de cortesía.\n\nDisculpe las molestias. ¿Le parece bien esta solución?",
+            'content' => "Acción tomada:\n\nYa contraté unidad mobile HVAC que llega mañana 08:00 AM.\n\nParalelo: Técnico especializado comenzará reparación de sistema principal mañana.\n\nEstimado: Sistema principal listo dentro de 3 días.",
             'created_at' => now()->subHours(2),
             'updated_at' => now()->subHours(2),
         ]);
@@ -873,16 +783,16 @@ class PilAndinaTicketsSeeder extends Seeder
     // ==================== TICKET 12: RESOLVED ====================
     private function createTicket12Resolved(): void
     {
-        $user = $this->users['Luis'];
+        $user = $this->users['Carmen'];
         $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00012',
             'created_by_user_id' => $user->id,
             'company_id' => $this->company->id,
-            'category_id' => $this->categories['general']->id,
-            'title' => 'Consulta sobre almacenamiento y vida útil de productos',
-            'description' => "Hola,\n\nTengo algunas dudas sobre el almacenamiento correcto de los productos PIL:\n\n1. ¿A qué temperatura debo mantener la leche y yogures?\n2. ¿Cuánto tiempo después de abrir un envase es seguro venderlo?\n3. ¿Los quesos también necesitan refrigeración?\n\nQuiero asegurarme de que estoy manejando correctamente los productos para mantener su calidad.",
+            'category_id' => $this->categories['quality_problem']->id,
+            'title' => 'Auditoría de calidad - Hallazgos para seguimiento',
+            'description' => "Roberto,\n\nCompletamos auditoría interna de calidad con los siguientes hallazgos:\n\nDEFICIENCIAS (requieren acción):\n1. Registros de temperatura incompletos en línea PLT-3000\n2. Muestras de validación no documentadas apropiadamente\n3. Capacitación de personal de calidad vencida\n\nPUNTOS FUERTES:\n- Protocolo de limpieza excelente\n- Documentación microbiológica completa\n- Trazabilidad de lotes perfecta\n\nAdjunto informe detallado.\n\n¿Cuando podemos definir plan de acción para deficiencias?",
             'status' => 'resolved',
             'owner_agent_id' => $agent->id,
             'last_response_author_type' => 'agent',
@@ -893,32 +803,44 @@ class PilAndinaTicketsSeeder extends Seeder
             'closed_at' => null,
         ]);
 
-        // Response 1: Agent provides detailed answer
+        // Attachment: Audit report
+        TicketAttachment::create([
+            'ticket_id' => $ticket->id,
+            'response_id' => null,
+            'uploaded_by_user_id' => $user->id,
+            'file_name' => 'informe_auditoria_calidad_2025-11.pdf',
+            'file_path' => 'tickets/' . $ticket->id . '/informe_auditoria.pdf',
+            'file_type' => 'application/pdf',
+            'file_size_bytes' => 567890,
+            'created_at' => now()->subDays(1),
+        ]);
+
+        // Response 1: Action plan
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "Estimado Luis, excelentes preguntas. Le proporciono la información detallada:\n\n**1. Temperatura de almacenamiento:**\n- Leche fresca: 2°C a 4°C (refrigeración)\n- Yogur: 2°C a 6°C (refrigeración)\n- Leche larga vida sin abrir: Temperatura ambiente (max 25°C)\n- Leche larga vida abierta: 2°C a 4°C (refrigeración)\n\n**2. Vida útil después de abrir:**\n- Leche fresca: 2-3 días refrigerada\n- Leche larga vida: 3-5 días refrigerada\n- Yogur: Hasta la fecha de vencimiento si se mantiene refrigerado\n\n**3. Quesos:**\nSÍ, todos nuestros quesos requieren refrigeración continua a 2°C-6°C:\n- Queso fresco: Consumir antes de la fecha de vencimiento\n- Queso mozzarella: Mantener en su líquido original\n- Queso maduro: Puede durar más tiempo pero siempre refrigerado\n\n**Recomendaciones adicionales:**\n✓ Nunca romper la cadena de frío\n✓ Verificar sellos y empaques antes de vender\n✓ Rotar productos: PEPS (Primero en Entrar, Primero en Salir)\n✓ Limpiar refrigeradores semanalmente\n\n¿Tiene alguna otra consulta?",
+            'content' => "Carmen, gracias por la auditoría completa.\n\nHe preparado plan de acción para las 3 deficiencias:\n\n1. Registros PLT-3000: Implementar sistema digital de logging\n   - Plazo: 2 semanas\n   - Responsable: Fernando (Mantenimiento)\n\n2. Muestras de validación: Capacitación del equipo\n   - Plazo: 1 semana\n   - Responsable: Tú (Carmen)\n\n3. Capacitación vencida: Programar cursos\n   - Plazo: 3 semanas\n   - Responsable: RRHH + Tú\n\n¿Apruebas este timeline?",
             'created_at' => now()->subDays(1)->addHours(4),
             'updated_at' => now()->subDays(1)->addHours(4),
         ]);
 
-        // Response 2: User thanks and asks follow-up
+        // Response 2: User confirms
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $user->id,
             'author_type' => 'user',
-            'content' => "Muchas gracias Roberto, información muy clara y útil.\n\nUna última pregunta: ¿Tienen algún manual o guía descargable sobre esto que pueda compartir con mi personal?",
+            'content' => "Perfecto Roberto. El timeline es realista. Me comprometo a cumplir los puntos que me corresponden.\n\nPropongo seguimiento mensual con auditorías internas cada trimestre.",
             'created_at' => now()->subDays(1)->addHours(6),
             'updated_at' => now()->subDays(1)->addHours(6),
         ]);
 
-        // Response 3: Agent provides resource
+        // Response 3: Confirmation
         TicketResponse::create([
             'ticket_id' => $ticket->id,
             'author_id' => $agent->id,
             'author_type' => 'agent',
-            'content' => "¡Por supuesto Luis!\n\nTenemos una \"Guía de Buenas Prácticas de Almacenamiento\" disponible en nuestro portal:\n\n👉 Portal > Recursos > Guías y Manuales > Almacenamiento de Productos\n\nTambién le envío el link directo por correo electrónico. Es un PDF descargable que puede imprimir y compartir con su equipo.\n\nSi necesita capacitación presencial para su personal, también ofrecemos ese servicio. Avíseme si le interesa.\n\nMarco este ticket como resuelto. ¡Que tenga un excelente día!",
+            'content' => "Excelente propuesta Carmen. Auditorías trimestrales mejora continuidad.\n\nMarco este ticket como resuelto. El plan de acción está en movimiento.",
             'created_at' => now()->subHours(8),
             'updated_at' => now()->subHours(8),
         ]);

@@ -142,6 +142,24 @@
     padding: 0 !important;     /* ← Sobrescribir padding de AdminLTE */
 }
 
+/* Ekko Lightbox - Link en thumbnail debe ser clickeable */
+.mailbox-attachment-icon.has-img a[data-toggle="lightbox"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* Hover effect para indicar que es clickeable */
+.mailbox-attachment-icon.has-img a[data-toggle="lightbox"]:hover img {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.mailbox-attachment-icon.has-img > a > img,
 .mailbox-attachment-icon.has-img > img {
     width: 100% !important;           /* ← Llenar todo el ancho del contenedor */
     height: 100% !important;          /* ← Llenar toda la altura del contenedor */
@@ -374,12 +392,21 @@
 
         // Icon mapping según AdminLTE v3 mailbox
         if (['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext)) {
-            // Para imágenes, usar has-img class con thumbnail
+            // Para imágenes, usar has-img class con thumbnail + preview lightbox
             const reader = new FileReader();
             reader.onload = function(e) {
+                const imageDataUrl = e.target.result;
                 $item.find('.mailbox-attachment-icon')
                     .addClass('has-img')
-                    .html(`<img src="${e.target.result}" alt="${file.name}">`);
+                    .html(`
+                        <a href="${imageDataUrl}"
+                           data-toggle="lightbox"
+                           data-title="${file.name}"
+                           data-gallery="ticket-attachments"
+                           class="w-100 h-100 d-flex align-items-center justify-content-center">
+                            <img src="${imageDataUrl}" alt="${file.name}" class="w-100 h-100">
+                        </a>
+                    `);
             };
             reader.readAsDataURL(file);
         } else if (ext === 'pdf') {

@@ -4,6 +4,7 @@ namespace App\Features\CompanyManagement\Database\Seeders;
 
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyIndustry;
+use App\Features\CompanyManagement\Services\CompanyService;
 use App\Features\ContentManagement\Models\HelpCenterArticle;
 use App\Features\ContentManagement\Models\ArticleCategory;
 use App\Features\UserManagement\Models\User;
@@ -283,30 +284,25 @@ class RealBolivianCompaniesSeeder extends Seeder
 
         foreach (self::COMPANIES as $companyData) {
             try {
-                // Crear Company Admin
-                $adminEmail = $companyData['company_admin']['email'];
-                if (User::where('email', $adminEmail)->exists()) {
-                    $this->command->warn("⚠ Admin ya existe: {$adminEmail}");
-                    continue;
-                }
-
+                // 1. Crear Company Admin
                 $admin = $this->createUser(
                     $companyData['company_admin']['first_name'],
                     $companyData['company_admin']['last_name'],
-                    $adminEmail,
+                    $companyData['company_admin']['email'],
                 );
 
-                // Obtener industry_id
+                // 2. Obtener industry_id
                 $industry = CompanyIndustry::where('code', $companyData['industry_code'])->first();
                 if (!$industry) {
                     $this->command->error("❌ Industria no encontrada: {$companyData['industry_code']}");
                     continue;
                 }
 
-                // Crear Empresa
+                // 3. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
                 $companyCode = CodeGenerator::generate('business.companies', CodeGenerator::COMPANY, 'company_code');
 
-                $company = Company::create([
+                $companyService = app(CompanyService::class);
+                $company = $companyService->create([
                     'company_code' => $companyCode,
                     'name' => $companyData['name'],
                     'legal_name' => $companyData['legal_name'],
@@ -330,11 +326,12 @@ class RealBolivianCompaniesSeeder extends Seeder
                     ],
                     'timezone' => 'America/La_Paz',
                     'status' => 'active',
-                    'admin_user_id' => $admin->id,
                     'industry_id' => $industry->id,
-                ]);
+                ], $admin);
 
-                // Asignar rol COMPANY_ADMIN
+                $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
+
+                // 4. Asignar rol COMPANY_ADMIN
                 UserRole::create([
                     'user_id' => $admin->id,
                     'role_code' => 'COMPANY_ADMIN',
@@ -342,21 +339,12 @@ class RealBolivianCompaniesSeeder extends Seeder
                     'is_active' => true,
                 ]);
 
-                $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$adminEmail}");
-
-                // Crear 2 Agentes
+                // 5. Crear 2 Agentes
                 foreach ($companyData['agents'] as $agentData) {
-                    $agentEmail = $agentData['email'];
-
-                    if (User::where('email', $agentEmail)->exists()) {
-                        $this->command->warn("⚠ Agente ya existe: {$agentEmail}");
-                        continue;
-                    }
-
                     $agent = $this->createUser(
                         $agentData['first_name'],
                         $agentData['last_name'],
-                        $agentEmail,
+                        $agentData['email'],
                     );
 
                     UserRole::create([
@@ -366,10 +354,10 @@ class RealBolivianCompaniesSeeder extends Seeder
                         'is_active' => true,
                     ]);
 
-                    $this->command->info("  └─ Agente creado: {$agentEmail}");
+                    $this->command->info("  └─ Agente creado: {$agent->email}");
                 }
 
-                // Crear 3 artículos de Help Center
+                // 6. Crear 3 artículos de Help Center
                 $this->createHelpCenterArticles($company, $companyData['articles']);
 
             } catch (\Exception $e) {
