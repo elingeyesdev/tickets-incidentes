@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Features\ContentManagement\Database\Seeders;
 
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\ContentManagement\Models\Announcement;
