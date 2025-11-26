@@ -1,7 +1,7 @@
 import { View, FlatList, Text, RefreshControl, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
-import { IconButton, useTheme } from 'react-native-paper';
+import { IconButton } from 'react-native-paper';
 import { useCompanyStore } from '@/stores/companyStore';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { CompanyCard } from '@/components/companies/CompanyCard';
 import { debounce } from 'lodash';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CompanyCardSkeleton } from '@/components/Skeleton';
 
 export default function ExploreCompaniesScreen() {
-    const theme = useTheme();
     const { companies, industries, fetchCompanies, fetchIndustries, companiesLoading, setFilter, filters, clearFilters } = useCompanyStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showIndustryModal, setShowIndustryModal] = useState(false);

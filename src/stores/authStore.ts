@@ -163,14 +163,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     invalidateToken: async () => {
-        // Use a valid token that has been revoked on the backend
-        // This token should be obtained from the backend and already invalidated
-        // It will trigger a 401, causing the interceptor to attempt a refresh
-        const revokedToken = 'REPLACE_WITH_BACKEND_REVOKED_TOKEN';
+        // Expired access token from backend testing command
+        // Refresh token in HttpOnly cookie is still valid
+        // This will trigger 401 → refresh flow → retry ✅
+        const expiredAccessToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJoZWxwZGVzay1hcGkiLCJhdWQiOiJoZWxwZGVzay1mcm9udGVuZCIsImlhdCI6MTc2NDE0NDA3OCwiZXhwIjoxNzY0MTQ3Njc4LCJzdWIiOiJjMTUyZDJiMC02YTA1LTQ5MjctYTk5Mi0yZWY1MTcyMTVjNjkiLCJ1c2VyX2lkIjoiYzE1MmQyYjAtNmEwNS00OTI3LWE5OTItMmVmNTE3MjE1YzY5IiwiZW1haWwiOiJkbHFtQGdtYWlsLmNvbSIsInNlc3Npb25faWQiOiI0NGNhZDcyMS1jY2IzLTQ5MDAtYTNiMy01ZjRjYzg5YWMzYjAiLCJyb2xlcyI6W3siY29kZSI6IlVTRVIiLCJjb21wYW55X2lkIjpudWxsfV19.1gke4jE_lf_tbAFWg82mgMDNS4x8rmqVseHocreEkcw';
 
-        console.log('Testing auto-refresh with revoked token - any API request will trigger 401 and refresh flow');
+        console.log('Testing auto-refresh with expired access token - refresh token in cookie is still valid');
 
-        await tokenStorage.setAccessToken(revokedToken);
-        set({ accessToken: revokedToken });
+        await tokenStorage.setAccessToken(expiredAccessToken);
+        set({ accessToken: expiredAccessToken });
     },
 }));
