@@ -1,5 +1,5 @@
-import { View, FlatList, Text, RefreshControl, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Searchbar, Chip, Button, Divider, IconButton } from 'react-native-paper';
+import { View, FlatList, Text, RefreshControl, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { IconButton, useTheme } from 'react-native-paper';
 import { useCompanyStore } from '@/stores/companyStore';
 import { useEffect, useState, useCallback } from 'react';
 import { CompanyCard } from '@/components/companies/CompanyCard';
@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CompanyCardSkeleton } from '@/components/Skeleton';
 
 export default function ExploreCompaniesScreen() {
+    const theme = useTheme();
     const { companies, industries, fetchCompanies, fetchIndustries, companiesLoading, setFilter, filters, clearFilters } = useCompanyStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showIndustryModal, setShowIndustryModal] = useState(false);
@@ -54,35 +55,36 @@ export default function ExploreCompaniesScreen() {
     };
 
     const renderHeader = () => (
-        <View className="bg-white px-4 pb-4 border-b border-gray-100">
+        <View className="px-4 pt-4 pb-2">
             {/* Title & Subtitle */}
             <View className="mb-4">
                 <Text className="text-2xl font-bold text-gray-900 mb-1">Explorar Empresas</Text>
                 <Text className="text-gray-500">Encuentra empresas para obtener soporte</Text>
             </View>
 
-            {/* Search */}
-            <Searchbar
-                placeholder="Buscar empresas..."
-                onChangeText={onChangeSearch}
-                value={undefined}
-                className="bg-gray-50 border border-gray-200 rounded-xl mb-4 elevation-0"
-                inputStyle={{ fontSize: 16, color: '#1f2937' }}
-                iconColor="#6b7280"
-                placeholderTextColor="#9ca3af"
-            />
+            {/* Search - Custom Implementation */}
+            <View className="flex-row items-center bg-white border border-gray-200 rounded-xl mb-4 px-3 h-12 shadow-sm">
+                <MaterialCommunityIcons name="magnify" size={24} color="#9CA3AF" />
+                <TextInput
+                    placeholder="Buscar empresas..."
+                    placeholderTextColor="#9CA3AF"
+                    onChangeText={onChangeSearch}
+                    className="flex-1 ml-2 text-base text-gray-900 h-full"
+                    style={{ fontFamily: 'System' }}
+                />
+            </View>
 
             {/* Filters Row */}
-            <View className="flex-row items-center">
+            <View className="flex-row items-center mb-2">
                 {/* Filter Button */}
                 <TouchableOpacity
                     onPress={() => setShowIndustryModal(true)}
-                    className="bg-gray-100 p-2 rounded-full mr-3 border border-gray-200"
+                    className="bg-white items-center justify-center rounded-xl mr-3 border border-gray-200 h-10 w-10 shadow-sm"
                 >
                     <MaterialCommunityIcons name="filter-variant" size={20} color="#374151" />
                 </TouchableOpacity>
 
-                {/* Chips List */}
+                {/* Chips List - Custom Pills */}
                 <FlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -92,7 +94,7 @@ export default function ExploreCompaniesScreen() {
                         ...industries.map(i => ({ id: i.id, label: i.name }))
                     ]}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingRight: 16 }}
+                    contentContainerStyle={{ paddingRight: 16, alignItems: 'center' }}
                     renderItem={({ item }) => {
                         const isSelected =
                             (item.id === 'all' && !filters.followedByMe && !filters.industryId) ||
@@ -100,8 +102,7 @@ export default function ExploreCompaniesScreen() {
                             (item.id === filters.industryId);
 
                         return (
-                            <Chip
-                                selected={isSelected}
+                            <TouchableOpacity
                                 onPress={() => {
                                     if (item.id === 'all') {
                                         clearFilters();
@@ -113,12 +114,18 @@ export default function ExploreCompaniesScreen() {
                                         setFilter('industryId', item.id);
                                     }
                                 }}
-                                className={`mr-2 border ${isSelected ? 'bg-[#7C3AED] border-[#7C3AED]' : 'bg-white border-gray-200'}`}
-                                textStyle={{ color: isSelected ? 'white' : '#374151', fontWeight: isSelected ? 'bold' : 'normal' }}
-                                showSelectedOverlay={true}
+                                className={`mr-2 px-4 h-10 rounded-lg justify-center items-center border ${isSelected
+                                        ? 'border-blue-500 bg-white'
+                                        : 'border-gray-300 bg-white'
+                                    }`}
                             >
-                                {item.label}
-                            </Chip>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+                                        {item.label}
+                                    </Text>
+                                    {isSelected && <MaterialCommunityIcons name="check" size={16} color="#2563EB" />}
+                                </View>
+                            </TouchableOpacity>
                         );
                     }}
                 />
@@ -127,17 +134,17 @@ export default function ExploreCompaniesScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+        <SafeAreaView className="flex-1 bg-gray-50" edges={['left', 'right', 'bottom']}>
             <FlatList
                 data={companies}
                 renderItem={({ item }) => <CompanyCard company={item} />}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 80 }}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80, paddingTop: 0 }}
                 ListHeaderComponent={renderHeader}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 ListEmptyComponent={() => (
                     companiesLoading && !refreshing ? (
-                        <View>
+                        <View className="px-4">
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <CompanyCardSkeleton key={i} />
                             ))}
