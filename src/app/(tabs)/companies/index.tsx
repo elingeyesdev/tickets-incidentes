@@ -1,7 +1,7 @@
 import { View, FlatList, Text, RefreshControl, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { IconButton, useTheme } from 'react-native-paper';
 import { useCompanyStore } from '@/stores/companyStore';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { CompanyCard } from '@/components/companies/CompanyCard';
 import { debounce } from 'lodash';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,7 +54,7 @@ export default function ExploreCompaniesScreen() {
         loadData();
     };
 
-    const renderHeader = () => (
+    const renderHeader = useCallback(() => (
         <View className="px-4 pt-4 pb-2">
             {/* Title & Subtitle */}
             <View className="mb-4">
@@ -69,6 +69,7 @@ export default function ExploreCompaniesScreen() {
                     placeholder="Buscar empresas..."
                     placeholderTextColor="#9CA3AF"
                     onChangeText={onChangeSearch}
+                    value={filters.search || ''}
                     className="flex-1 ml-2 text-base text-gray-900 h-full"
                     style={{ fontFamily: 'System' }}
                 />
@@ -131,7 +132,7 @@ export default function ExploreCompaniesScreen() {
                 />
             </View>
         </View>
-    );
+    ), [filters.search, filters.industryId, filters.followedByMe, industries, onChangeSearch, clearFilters, setFilter]);
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50" edges={['left', 'right', 'bottom']}>
@@ -142,6 +143,7 @@ export default function ExploreCompaniesScreen() {
                 contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80, paddingTop: 0 }}
                 ListHeaderComponent={renderHeader}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                 ListEmptyComponent={() => (
                     companiesLoading && !refreshing ? (
                         <View className="px-4">
