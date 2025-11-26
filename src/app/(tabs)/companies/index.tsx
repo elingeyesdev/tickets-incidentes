@@ -54,85 +54,88 @@ export default function ExploreCompaniesScreen() {
         loadData();
     };
 
-    const renderHeader = useCallback(() => (
-        <View className="px-4 pt-4 pb-2">
-            {/* Title & Subtitle */}
-            <View className="mb-4">
-                <Text className="text-2xl font-bold text-gray-900 mb-1">Explorar Empresas</Text>
-                <Text className="text-gray-500">Encuentra empresas para obtener soporte</Text>
+    const renderHeader = useCallback(
+        () => (
+            <View className="px-4 pt-4 pb-2">
+                {/* Title & Subtitle */}
+                <View className="mb-4">
+                    <Text className="text-2xl font-bold text-gray-900 mb-1">Explorar Empresas</Text>
+                    <Text className="text-gray-500">Encuentra empresas para obtener soporte</Text>
+                </View>
+
+                {/* Search - Custom Implementation */}
+                <View className="flex-row items-center bg-white border border-gray-200 rounded-xl mb-4 px-3 h-12 shadow-sm">
+                    <MaterialCommunityIcons name="magnify" size={24} color="#9CA3AF" />
+                    <TextInput
+                        placeholder="Buscar empresas..."
+                        placeholderTextColor="#9CA3AF"
+                        onChangeText={onChangeSearch}
+                        value={filters.search || ''}
+                        className="flex-1 ml-2 text-base text-gray-900 h-full"
+                        style={{ fontFamily: 'System' }}
+                    />
+                </View>
+
+                {/* Filters Row */}
+                <View className="flex-row items-center mb-2">
+                    {/* Filter Button */}
+                    <TouchableOpacity
+                        onPress={() => setShowIndustryModal(true)}
+                        className="bg-white items-center justify-center rounded-xl mr-3 border border-gray-200 h-10 w-10 shadow-sm"
+                    >
+                        <MaterialCommunityIcons name="filter-variant" size={20} color="#374151" />
+                    </TouchableOpacity>
+
+                    {/* Chips List - Custom Pills */}
+                    <FlatList
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        data={[
+                            { id: 'all', label: 'Todas' },
+                            { id: 'following', label: 'Siguiendo' },
+                            ...industries.map(i => ({ id: i.id, label: i.name }))
+                        ]}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={{ paddingRight: 16, alignItems: 'center' }}
+                        renderItem={({ item }) => {
+                            const isSelected =
+                                (item.id === 'all' && !filters.followedByMe && !filters.industryId) ||
+                                (item.id === 'following' && filters.followedByMe) ||
+                                (item.id === filters.industryId);
+
+                            return (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (item.id === 'all') {
+                                            clearFilters();
+                                        } else if (item.id === 'following') {
+                                            setFilter('followedByMe', true);
+                                            setFilter('industryId', null);
+                                        } else {
+                                            setFilter('followedByMe', false);
+                                            setFilter('industryId', item.id);
+                                        }
+                                    }}
+                                    className={`mr-2 px-4 h-10 rounded-lg justify-center items-center border ${isSelected
+                                            ? 'border-blue-500 bg-white'
+                                            : 'border-gray-300 bg-white'
+                                        }`}
+                                >
+                                    <View className="flex-row items-center gap-1">
+                                        <Text className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+                                            {item.label}
+                                        </Text>
+                                        {isSelected && <MaterialCommunityIcons name="check" size={12} color="#2563EB" />}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        }}
+                    />
+                </View>
             </View>
-
-            {/* Search - Custom Implementation */}
-            <View className="flex-row items-center bg-white border border-gray-200 rounded-xl mb-4 px-3 h-12 shadow-sm">
-                <MaterialCommunityIcons name="magnify" size={24} color="#9CA3AF" />
-                <TextInput
-                    placeholder="Buscar empresas..."
-                    placeholderTextColor="#9CA3AF"
-                    onChangeText={onChangeSearch}
-                    value={filters.search || ''}
-                    className="flex-1 ml-2 text-base text-gray-900 h-full"
-                    style={{ fontFamily: 'System' }}
-                />
-            </View>
-
-            {/* Filters Row */}
-            <View className="flex-row items-center mb-2">
-                {/* Filter Button */}
-                <TouchableOpacity
-                    onPress={() => setShowIndustryModal(true)}
-                    className="bg-white items-center justify-center rounded-xl mr-3 border border-gray-200 h-10 w-10 shadow-sm"
-                >
-                    <MaterialCommunityIcons name="filter-variant" size={20} color="#374151" />
-                </TouchableOpacity>
-
-                {/* Chips List - Custom Pills */}
-                <FlatList
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={[
-                        { id: 'all', label: 'Todas' },
-                        { id: 'following', label: 'Siguiendo' },
-                        ...industries.map(i => ({ id: i.id, label: i.name }))
-                    ]}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingRight: 16, alignItems: 'center' }}
-                    renderItem={({ item }) => {
-                        const isSelected =
-                            (item.id === 'all' && !filters.followedByMe && !filters.industryId) ||
-                            (item.id === 'following' && filters.followedByMe) ||
-                            (item.id === filters.industryId);
-
-                        return (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (item.id === 'all') {
-                                        clearFilters();
-                                    } else if (item.id === 'following') {
-                                        setFilter('followedByMe', true);
-                                        setFilter('industryId', null);
-                                    } else {
-                                        setFilter('followedByMe', false);
-                                        setFilter('industryId', item.id);
-                                    }
-                                }}
-                                className={`mr-2 px-4 h-10 rounded-lg justify-center items-center border ${isSelected
-                                        ? 'border-blue-500 bg-white'
-                                        : 'border-gray-300 bg-white'
-                                    }`}
-                            >
-                                <View className="flex-row items-center gap-1">
-                                    <Text className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
-                                        {item.label}
-                                    </Text>
-                                    {isSelected && <MaterialCommunityIcons name="check" size={12} color="#2563EB" />}
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    }}
-                />
-            </View>
-        </View>
-    ), [filters.search, filters.industryId, filters.followedByMe, industries, onChangeSearch, clearFilters, setFilter]);
+        ),
+        [filters.search, filters.industryId, filters.followedByMe, industries, onChangeSearch, clearFilters, setFilter]
+    );
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50" edges={['left', 'right', 'bottom']}>
