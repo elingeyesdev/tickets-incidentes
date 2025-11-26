@@ -39,8 +39,19 @@ class AuthenticateJwt
         }
 
         try {
-            // Validar token usando TokenService existente
-            $user = $this->tokenService->validateToken($token);
+            // Validar token - esto chequea:
+            // 1. Firma JWT válida
+            // 2. Claims requeridos presentes
+            // 3. No está blacklisteado (logout)
+            // 4. Usuario no está blacklisteado globalmente
+            $payload = $this->tokenService->validateAccessToken($token);
+
+            // Obtener usuario desde BD usando el user_id del token
+            $user = \App\Features\UserManagement\Models\User::find($payload->user_id);
+
+            if (!$user) {
+                throw new AuthenticationException('Usuario no encontrado');
+            }
 
             // Establecer usuario autenticado en request
             $request->setUserResolver(fn() => $user);
