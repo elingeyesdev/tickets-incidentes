@@ -54,6 +54,8 @@ export const theme = {
 
         // Custom color extensions
         ...customColors,
+        announcement,
+        urgency,
     },
 
     // Ensure elevation is present (MD3)
