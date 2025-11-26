@@ -9,8 +9,8 @@ export default function HomeScreen() {
     const user = useAuthStore((state) => state.user);
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
-    const playWaveAnimation = () => {
-        Animated.sequence([
+    const waveAnimationSequence = () => {
+        return Animated.sequence([
             Animated.timing(rotateAnim, {
                 toValue: 20,
                 duration: 100,
@@ -31,7 +31,19 @@ export default function HomeScreen() {
                 duration: 100,
                 useNativeDriver: false,
             }),
-        ]).start();
+        ]);
+    };
+
+    const playWaveAnimation = () => {
+        waveAnimationSequence().start();
+    };
+
+    const playDoubleWaveAnimation = () => {
+        waveAnimationSequence().start(() => {
+            setTimeout(() => {
+                waveAnimationSequence().start();
+            }, 2000);
+        });
     };
 
     useEffect(() => {
@@ -93,20 +105,22 @@ export default function HomeScreen() {
                             {user?.firstName}
                         </Text>
                     </View>
-                    <Animated.View
-                        style={{
-                            transform: [
-                                {
-                                    rotate: rotateAnim.interpolate({
-                                        inputRange: [-20, 20],
-                                        outputRange: ['-20deg', '20deg'],
-                                    }),
-                                },
-                            ],
-                        }}
-                    >
-                        <MaterialCommunityIcons name="hand-wave" size={48} color="#2563eb" />
-                    </Animated.View>
+                    <TouchableOpacity onPress={playDoubleWaveAnimation}>
+                        <Animated.View
+                            style={{
+                                transform: [
+                                    {
+                                        rotate: rotateAnim.interpolate({
+                                            inputRange: [-20, 20],
+                                            outputRange: ['-20deg', '20deg'],
+                                        }),
+                                    },
+                                ],
+                            }}
+                        >
+                            <MaterialCommunityIcons name="hand-wave" size={48} color="#2563eb" />
+                        </Animated.View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Quick Actions */}
