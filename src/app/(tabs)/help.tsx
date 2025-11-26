@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Text } from 'react-native';
-import { useTheme, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { useTheme, Searchbar } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useArticleStore } from '../../stores/articleStore';
 import { CategoryGrid } from '../../components/help/CategoryGrid';
 import { ArticleCard } from '../../components/help/ArticleCard';
 import { ArticleCategory } from '../../types/article';
+import { CategoryGridSkeleton, ListItemSkeleton } from '../../components/Skeleton';
 
 export default function HelpScreen() {
     const theme = useTheme();
@@ -59,7 +60,27 @@ export default function HelpScreen() {
             </View>
 
             {isLoading ? (
-                <ActivityIndicator style={{ marginTop: 32 }} color={theme.colors.primary[600]} />
+                <>
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+                            CATEGORÍAS
+                        </Text>
+                        <View style={{ paddingHorizontal: 16 }}>
+                            <CategoryGridSkeleton />
+                        </View>
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+                            ARTÍCULOS POPULARES
+                        </Text>
+                        <View style={[styles.popularList, { backgroundColor: theme.colors.surface }]}>
+                            <ListItemSkeleton lines={2} withAvatar={false} />
+                            <ListItemSkeleton lines={2} withAvatar={false} />
+                            <ListItemSkeleton lines={2} withAvatar={false} />
+                        </View>
+                    </View>
+                </>
             ) : (
                 <>
                     <View style={styles.section}>

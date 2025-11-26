@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Text, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useTheme, Button, ActivityIndicator } from 'react-native-paper';
+import { useTheme, Button } from 'react-native-paper';
 import { ScreenHeader } from '../../components/layout/ScreenHeader';
 import { useAnnouncementStore } from '../../stores/announcementStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Markdown from 'react-native-markdown-display';
+import { AnnouncementDetailSkeleton } from '../../components/Skeleton';
 
 export default function AnnouncementDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -31,11 +32,7 @@ export default function AnnouncementDetailScreen() {
     };
 
     if (isLoading || !currentAnnouncement) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary[600]} />
-            </View>
-        );
+        return <AnnouncementDetailSkeleton />;
     }
 
     if (error) {

@@ -1,6 +1,6 @@
 import { View, ScrollView, Text, Alert, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Avatar, Button, Chip, Divider, ActivityIndicator, FAB } from 'react-native-paper';
+import { Avatar, Button, Chip, Divider, FAB } from 'react-native-paper';
 import { useTicketStore } from '@/stores/ticketStore';
 import { useEffect, useState } from 'react';
 import { Ticket } from '@/types/ticket';
@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { TicketConversation } from '@/components/tickets/TicketConversation';
 import { TicketAttachments } from '@/components/tickets/TicketAttachments';
+import { TicketDetailSkeleton } from '@/components/Skeleton';
 
 export default function TicketDetailScreen() {
     const { ticketCode } = useLocalSearchParams();
@@ -48,11 +49,7 @@ export default function TicketDetailScreen() {
     };
 
     if (isLoading || !currentTicket) {
-        return (
-            <View className="flex-1 justify-center items-center bg-white">
-                <ActivityIndicator size="large" color="#2563eb" />
-            </View>
-        );
+        return <TicketDetailSkeleton />;
     }
 
     const getStatusColor = (status: string) => {

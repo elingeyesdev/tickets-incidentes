@@ -1,85 +1,197 @@
 import { create } from 'zustand';
-import { Company, CompanyExploreFilters, Industry } from '../types/company';
+import { CompanyExploreItem, CompanyDetail, CompanyExploreFilters, Industry } from '../types/company';
 import { client } from '../services/api/client';
 
 interface CompanyState {
-    companies: Company[];
-    followedCompanies: Company[];
-    industries: Industry[];
-    isLoading: boolean;
+    // Lista
+    companies: CompanyExploreItem[];
+    companiesLoading: boolean;
+    companiesError: string | null;
+    filters: {
+        search: string;
+        industryId: string | null;
+        followedByMe: boolean;
+    };
+    pagination: {
+        currentPage: number;
+        lastPage: number;
+        total: number;
+    };
 
-    fetchCompanies: (filters?: CompanyExploreFilters) => Promise<void>;
-    fetchFollowedCompanies: () => Promise<void>;
-    fetchCompany: (id: string) => Promise<Company>;
+    // Detalle
+    selectedCompany: CompanyDetail | null;
+    selectedCompanyLoading: boolean;
+    selectedCompanyError: string | null;
+
+    // Data auxiliar
+    industries: Industry[];
+
+    // Acciones
+    fetchCompanies: (page?: number) => Promise<void>;
+    fetchCompanyDetail: (id: string) => Promise<void>;
     fetchIndustries: () => Promise<void>;
     followCompany: (id: string) => Promise<void>;
     unfollowCompany: (id: string) => Promise<void>;
+    setFilter: (key: keyof CompanyState['filters'], value: any) => void;
+    clearFilters: () => void;
+
+    // Optimistic updates
+    updateCompanyFollowStatus: (id: string, isFollowing: boolean) => void;
 }
 
 export const useCompanyStore = create<CompanyState>((set, get) => ({
     companies: [],
-    followedCompanies: [],
+    companiesLoading: false,
+    companiesError: null,
+    filters: {
+        search: '',
+        industryId: null,
+        followedByMe: false,
+    },
+    pagination: {
+        currentPage: 1,
+        lastPage: 1,
+        total: 0,
+    },
+
+    selectedCompany: null,
+    selectedCompanyLoading: false,
+    selectedCompanyError: null,
+
     industries: [],
-    isLoading: false,
 
-    fetchCompanies: async (filters = {}) => {
-        set({ isLoading: true });
-        try {
-            const response = await client.get('/api/companies/explore', { params: filters });
-            set({ companies: response.data.data, isLoading: false });
-        } catch (error) {
-            set({ isLoading: false });
-            throw error;
-        }
-    },
+    fetchCompanies: async (page = 1) => {
+        set({ companiesLoading: true, companiesError: null });
+        const { filters } = get();
 
-    fetchFollowedCompanies: async () => {
-        set({ isLoading: true });
         try {
-            // Assuming endpoint exists or we filter explore
-            // Prompt says: "3.3 My Followed Companies Screen ... Lista filtrada de empresas que el usuario sigue"
-            // And "GET /api/companies/explore" has "followed_by_me" filter.
-            // But also "GET /api/companies/explore" is for "Explorar empresas con filtros".
-            // Let's use the filter.
-            const response = await client.get('/api/companies/explore', {
-                params: { followed_by_me: true }
+            const params: any = {
+                page,
+                per_page: 20, // Default per page
+            };
+
+            if (filters.search) params.search = filters.search;
+            if (filters.industryId) params.industry_id = filters.industryId;
+            if (filters.followedByMe) params.followed_by_me = true;
+
+            const response = await client.get('/api/companies/explore', { params });
+
+            set({
+                companies: page === 1 ? response.data.data : [...get().companies, ...response.data.data],
+                companiesLoading: false,
+                pagination: {
+                    currentPage: response.data.meta.current_page,
+                    lastPage: response.data.meta.last_page,
+                    total: response.data.meta.total,
+                },
             });
-            set({ followedCompanies: response.data.data, isLoading: false });
         } catch (error) {
-            set({ isLoading: false });
-            throw error;
+            set({ companiesLoading: false, companiesError: 'Error al cargar empresas' });
+            console.error(error);
         }
     },
 
-    fetchCompany: async (id) => {
-        const response = await client.get(`/api/companies/${id}`);
-        return response.data.data;
+    fetchCompanyDetail: async (id: string) => {
+        set({ selectedCompanyLoading: true, selectedCompanyError: null });
+        try {
+            const response = await client.get(`/api/companies/${id}`);
+            set({ selectedCompany: response.data.data, selectedCompanyLoading: false });
+        } catch (error) {
+            set({ selectedCompanyLoading: false, selectedCompanyError: 'Error al cargar detalle de empresa' });
+            console.error(error);
+        }
     },
 
     fetchIndustries: async () => {
-        const response = await client.get('/api/company-industries');
-        set({ industries: response.data.data });
+        try {
+            const response = await client.get('/api/company-industries');
+            set({ industries: response.data.data });
+        } catch (error) {
+            console.error(error);
+        }
     },
 
-    followCompany: async (id) => {
-        await client.post(`/api/companies/${id}/follow`);
+    followCompany: async (id: string) => {
         // Optimistic update
+        get().updateCompanyFollowStatus(id, true);
+
+        try {
+            await client.post(`/api/companies/${id}/follow`);
+        } catch (error: any) {
+            // Revert if error (unless it's 409 - already following)
+            if (error.response?.status !== 409) {
+                get().updateCompanyFollowStatus(id, false);
+                throw error;
+            }
+        }
+    },
+
+    unfollowCompany: async (id: string) => {
+        // Optimistic update
+        get().updateCompanyFollowStatus(id, false);
+
+        try {
+            await client.delete(`/api/companies/${id}/unfollow`);
+        } catch (error: any) {
+            // Revert if error (unless it's 409 - not following)
+            if (error.response?.status !== 409) {
+                get().updateCompanyFollowStatus(id, true);
+                throw error;
+            }
+        }
+    },
+
+    setFilter: (key, value) => {
         set((state) => ({
-            companies: state.companies.map((c) =>
-                c.id === id ? { ...c, isFollowing: true } : c
-            ),
-            followedCompanies: [...state.followedCompanies, { ...state.companies.find(c => c.id === id)!, isFollowing: true }]
+            filters: { ...state.filters, [key]: value },
+            // Reset pagination when filter changes
+            pagination: { ...state.pagination, currentPage: 1 }
         }));
     },
 
-    unfollowCompany: async (id) => {
-        await client.delete(`/api/companies/${id}/unfollow`);
-        // Optimistic update
-        set((state) => ({
-            companies: state.companies.map((c) =>
-                c.id === id ? { ...c, isFollowing: false } : c
-            ),
-            followedCompanies: state.followedCompanies.filter((c) => c.id !== id)
-        }));
+    clearFilters: () => {
+        set({
+            filters: {
+                search: '',
+                industryId: null,
+                followedByMe: false,
+            },
+            pagination: {
+                currentPage: 1,
+                lastPage: 1,
+                total: 0,
+            }
+        });
     },
+
+    updateCompanyFollowStatus: (id: string, isFollowing: boolean) => {
+        set((state) => {
+            // Update in list
+            const updatedCompanies = state.companies.map((c) => {
+                if (c.id === id) {
+                    return {
+                        ...c,
+                        isFollowedByMe: isFollowing,
+                        followersCount: isFollowing ? c.followersCount + 1 : Math.max(0, c.followersCount - 1)
+                    };
+                }
+                return c;
+            });
+
+            // Update in detail if selected
+            let updatedSelectedCompany = state.selectedCompany;
+            if (state.selectedCompany && state.selectedCompany.id === id) {
+                updatedSelectedCompany = {
+                    ...state.selectedCompany,
+                    isFollowedByMe: isFollowing,
+                    followersCount: isFollowing ? state.selectedCompany.followersCount + 1 : Math.max(0, state.selectedCompany.followersCount - 1)
+                };
+            }
+
+            return {
+                companies: updatedCompanies,
+                selectedCompany: updatedSelectedCompany
+            };
+        });
+    }
 }));

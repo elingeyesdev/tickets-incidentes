@@ -3,13 +3,11 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../stores/authStore';
 import { useEffect, useRef } from 'react';
+import { HomeSkeleton } from '../../../components/Skeleton';
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user } = useAuthStore();
-
-    // Debug log to check user data
-    console.log('HomeScreen User:', JSON.stringify(user, null, 2));
+    const { user, isLoading } = useAuthStore();
 
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -18,7 +16,7 @@ export default function HomeScreen() {
             Animated.timing(rotateAnim, {
                 toValue: 20,
                 duration: 100,
-                useNativeDriver: true, // Changed to true for better performance if possible, or keep false if transform requires it
+                useNativeDriver: true,
             }),
             Animated.timing(rotateAnim, {
                 toValue: -20,
@@ -51,21 +49,27 @@ export default function HomeScreen() {
     };
 
     useEffect(() => {
-        // Primera animación después de 1 segundo
-        const firstTimeout = setTimeout(() => {
-            playWaveAnimation();
-        }, 1000);
+        if (!isLoading) {
+            // Primera animación después de 1 segundo
+            const firstTimeout = setTimeout(() => {
+                playWaveAnimation();
+            }, 1000);
 
-        // Segunda animación después de 3 segundos totales (2 segundos más)
-        const secondTimeout = setTimeout(() => {
-            playWaveAnimation();
-        }, 3000);
+            // Segunda animación después de 3 segundos totales (2 segundos más)
+            const secondTimeout = setTimeout(() => {
+                playWaveAnimation();
+            }, 3000);
 
-        return () => {
-            clearTimeout(firstTimeout);
-            clearTimeout(secondTimeout);
-        };
-    }, []);
+            return () => {
+                clearTimeout(firstTimeout);
+                clearTimeout(secondTimeout);
+            };
+        }
+    }, [isLoading]);
+
+    if (isLoading) {
+        return <HomeSkeleton />;
+    }
 
     const quickActions = [
         {

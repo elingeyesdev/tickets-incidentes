@@ -1,5 +1,5 @@
 import { View, FlatList, Text, RefreshControl, TouchableOpacity } from 'react-native';
-import { Searchbar, SegmentedButtons, FAB, ActivityIndicator } from 'react-native-paper';
+import { Searchbar, SegmentedButtons, FAB } from 'react-native-paper';
 import { useTicketStore } from '@/stores/ticketStore';
 import { useEffect, useState, useCallback } from 'react';
 import { TicketCard } from '@/components/tickets/TicketCard';
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { TicketCardSkeleton } from '@/components/Skeleton';
 
 export default function MyTicketsScreen() {
     const router = useRouter();
@@ -57,7 +58,6 @@ export default function MyTicketsScreen() {
     };
 
     // Stats calculation
-    // Stats calculation
     const stats = {
         total: user?.ticketsCount || 0,
         open: (user?.ticketsCount || 0) - (user?.resolvedTicketsCount || 0),
@@ -105,8 +105,10 @@ export default function MyTicketsScreen() {
             </View>
 
             {isLoading && !refreshing ? (
-                <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#2563eb" />
+                <View style={{ padding: 16 }}>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                        <TicketCardSkeleton key={index} />
+                    ))}
                 </View>
             ) : (
                 <FlatList

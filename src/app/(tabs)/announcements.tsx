@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, ScrollView } from 'react-native';
-import { useTheme, Chip, Searchbar, ActivityIndicator, Text } from 'react-native-paper';
+import { useTheme, Chip, Searchbar, Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAnnouncementStore } from '../../stores/announcementStore';
 import { AnnouncementCard } from '../../components/announcements/AnnouncementCard';
 import { AnnouncementType } from '../../types/announcement';
+import { AnnouncementCardSkeleton } from '../../components/Skeleton';
 
 const FILTERS: { label: string; value: AnnouncementType | 'ALL' }[] = [
     { label: 'Todos', value: 'ALL' },
@@ -68,8 +69,10 @@ export default function AnnouncementsScreen() {
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+                <View style={styles.listContent}>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                        <AnnouncementCardSkeleton key={index} />
+                    ))}
                 </View>
             ) : (
                 <FlatList

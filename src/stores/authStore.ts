@@ -111,7 +111,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     refreshToken: async () => {
         try {
             const response = await client.post('/api/auth/refresh');
-            const { accessToken } = response.data.data;
+            const accessToken = response.data.data?.accessToken || response.data.accessToken;
+            if (!accessToken) {
+                throw new Error('No access token in refresh response');
+            }
             await tokenStorage.setAccessToken(accessToken);
             set({ accessToken });
             return true;

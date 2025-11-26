@@ -1,64 +1,83 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Avatar, Chip, Button } from 'react-native-paper';
-import { Company } from '../../types/company';
+import { Avatar, Chip } from 'react-native-paper';
+import { CompanyExploreItem } from '@/types/company';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface CompanyCardProps {
-    company: Company;
-    onFollow?: () => void;
-    onUnfollow?: () => void;
+    company: CompanyExploreItem;
 }
 
-export function CompanyCard({ company, onFollow, onUnfollow }: CompanyCardProps) {
+export function CompanyCard({ company }: CompanyCardProps) {
     const router = useRouter();
 
     return (
         <TouchableOpacity
             className="bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100"
             onPress={() => router.push(`/(tabs)/companies/${company.id}`)}
+            activeOpacity={0.7}
         >
-            <View className="flex-row items-center">
-                {company.logoUrl ? (
-                    <Avatar.Image size={50} source={{ uri: company.logoUrl }} />
-                ) : (
-                    <Avatar.Text
-                        size={50}
-                        label={company.name.substring(0, 2).toUpperCase()}
-                        style={{ backgroundColor: company.primaryColor || '#007bff' }}
-                    />
-                )}
-
-                <View className="flex-1 ml-3">
-                    <Text className="font-bold text-lg text-gray-900">{company.name}</Text>
-                    {company.industry && (
-                        <Text className="text-gray-500 text-xs">{company.industry.name}</Text>
+            <View className="flex-row">
+                {/* Avatar */}
+                <View className="mr-4">
+                    {company.logoUrl ? (
+                        <Avatar.Image
+                            size={56}
+                            source={{ uri: company.logoUrl }}
+                            style={{ borderRadius: 12, backgroundColor: 'transparent' }}
+                        />
+                    ) : (
+                        <View
+                            style={{
+                                width: 56,
+                                height: 56,
+                                borderRadius: 12,
+                                backgroundColor: company.primaryColor || '#007bff',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <Text className="text-white font-bold text-xl">
+                                {company.name.substring(0, 2).toUpperCase()}
+                            </Text>
+                        </View>
                     )}
                 </View>
 
-                {company.isFollowing ? (
-                    <Chip
-                        icon="check"
-                        className="bg-green-100"
-                        textStyle={{ color: '#166534', fontSize: 10 }}
-                    >
-                        Siguiendo
-                    </Chip>
-                ) : null}
-            </View>
+                {/* Content */}
+                <View className="flex-1 justify-center">
+                    <View className="flex-row justify-between items-start">
+                        <Text className="font-bold text-lg text-gray-900 flex-1 mr-2" numberOfLines={2}>
+                            {company.name}
+                        </Text>
 
-            {company.description && (
-                <Text className="text-gray-600 mt-3 text-sm" numberOfLines={2}>
-                    {company.description}
-                </Text>
-            )}
+                        {company.isFollowedByMe && (
+                            <View className="bg-green-100 px-2 py-1 rounded-full flex-row items-center">
+                                <MaterialCommunityIcons name="check" size={12} color="#16A34A" />
+                                <Text className="text-green-600 text-[10px] font-bold ml-1">
+                                    Siguiendo
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
-            {company.isFollowing && company.statistics && (
-                <View className="mt-3 flex-row items-center bg-gray-50 p-2 rounded-lg">
-                    <Text className="text-xs text-gray-500">
-                        {company.statistics.myTicketsCount} tickets creados
+                    <Text className="text-gray-500 text-sm font-medium mt-1">
+                        {company.industry.name}
                     </Text>
+
+                    <View className="flex-row items-center mt-2">
+                        <MaterialCommunityIcons name="map-marker-outline" size={14} color="#6B7280" />
+                        <Text className="text-gray-500 text-xs ml-1 mr-3">
+                            {company.city}, {company.country}
+                        </Text>
+
+                        <MaterialCommunityIcons name="account-group-outline" size={14} color="#6B7280" />
+                        <Text className="text-gray-500 text-xs ml-1">
+                            {company.followersCount} seguidores
+                        </Text>
+                    </View>
                 </View>
-            )}
+            </View>
         </TouchableOpacity>
     );
 }
