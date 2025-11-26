@@ -8,17 +8,19 @@ use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\TokenService;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Enums\UserStatus;
+use Firebase\JWT\JWT;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class GenerateTestRefreshTokenCommand extends Command
 {
     protected $signature = 'test:refresh-token
                             {email : Email del usuario}
-                            {--revoke : Revocar el token}
-                            {--expired : Generar token expirado (para testing)}';
+                            {--revoke : Revocar el refresh token}
+                            {--expired-access : Generar access token expirado (para testing)}';
 
-    protected $description = 'Generar un refresh token de prueba para testing en aplicación móvil';
+    protected $description = 'Generar tokens (access + refresh) para testing en aplicación móvil';
 
     public function __construct(
         protected TokenService $tokenService,
@@ -30,7 +32,7 @@ class GenerateTestRefreshTokenCommand extends Command
     {
         $email = $this->argument('email');
         $shouldRevoke = $this->option('revoke');
-        $shouldExpire = $this->option('expired');
+        $shouldExpireAccess = $this->option('expired-access');
 
         // Buscar usuario
         $user = User::where('email', $email)->first();
@@ -45,9 +47,9 @@ class GenerateTestRefreshTokenCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info("Generando refresh token para: {$user->email}");
+        $this->info("Generando tokens para: {$user->email}");
 
-        // Generar token
+        // Generar refresh token
         $deviceInfo = [
             'device_name' => 'Mobile Test Device',
             'ip_address' => '192.168.1.1',
@@ -55,29 +57,26 @@ class GenerateTestRefreshTokenCommand extends Command
         ];
 
         $result = $this->tokenService->createRefreshToken($user, $deviceInfo);
-        $plainToken = $result['token'];
-        $tokenModel = $result['model'];
+        $refreshTokenPlain = $result['token'];
+        $refreshTokenModel = $result['model'];
 
-        // Si se solicita un token expirado, crear con fecha muy cercana
-        // Esto cumple con la constraint (expires_at > created_at) pero expira casi inmediatamente
-        if ($shouldExpire) {
-            // Sobrescribir el modelo para usar una fecha que expira en 1 segundo
-            // Usar SQL UPDATE directo para saltarse validaciones de Eloquent
-            DB::table('auth.refresh_tokens')
-                ->where('id', $tokenModel->id)
-                ->update([
-                    'expires_at' => now()->subMinutes(1),
-                    'created_at' => now()->subMinutes(2), // Hacer que created_at sea más antiguo
-                ]);
+        // Generar access token con el refresh token ID como session_id
+        $accessToken = $this->tokenService->generateAccessToken($user, $refreshTokenModel->id);
 
-            // Recargar el modelo desde la BD
-            $tokenModel->refresh();
+        // Si se solicita, crear un access token expirado
+        if ($shouldExpireAccess) {
+            $accessToken = $this->generateExpiredAccessToken($user, $refreshTokenModel->id);
+        }
+
+        // Si se solicita, revocar el refresh token
+        if ($shouldRevoke) {
+            $refreshTokenModel->revoke('Revoked by test command');
         }
 
         // Mostrar información
         $this->newLine();
         $this->info('╔════════════════════════════════════════════════════════════════════╗');
-        $this->info('║                   REFRESH TOKEN GENERADO                           ║');
+        $this->info('║                     TOKENS GENERADOS PARA TESTING                  ║');
         $this->info('╚════════════════════════════════════════════════════════════════════╝');
         $this->newLine();
 
@@ -85,48 +84,69 @@ class GenerateTestRefreshTokenCommand extends Command
         $this->line("<fg=cyan>🆔 User ID:</> <fg=yellow>{$user->id}</>");
         $this->line("<fg=cyan>📱 Device:</> <fg=yellow>{$deviceInfo['device_name']}</>");
 
-        $expirationStatus = $shouldExpire ? '<fg=red>EXPIRADO</>' : "<fg=yellow>{$tokenModel->expires_at->diffForHumans()}</>";
-        $daysStatus = $shouldExpire ? '<fg=red>-1 días (expirado)</>' : "<fg=yellow>{$tokenModel->getDaysUntilExpiration()} días</>";
-
-        $this->line("<fg=cyan>🕐 Expira en:</> {$expirationStatus}");
-        $this->line("<fg=cyan>⏰ Estado:</> {$daysStatus}");
+        $refreshStatus = $shouldRevoke ? '<fg=red>REVOCADO</>' : '<fg=green>✓ VÁLIDO</>';
+        $accessStatus = $shouldExpireAccess ? '<fg=red>EXPIRADO</>' : '<fg=green>✓ VÁLIDO</>';
 
         $this->newLine();
+        $this->line("<fg=cyan>🔄 Refresh Token:</> {$refreshStatus}");
+        $this->line("<fg=cyan>⏰ Refresh Expira:</> <fg=yellow>{$refreshTokenModel->expires_at->diffForHumans()}</>");
+        $this->newLine();
+        $this->line("<fg=cyan>🎫 Access Token:</> {$accessStatus}");
+        $this->line("<fg=cyan>⏰ Access Expira:</> " . ($shouldExpireAccess ? '<fg=red>HACE 1 HORA</>' : '<fg=yellow>en 60 minutos</>'));
+
+        $this->newLine();
+        $this->newLine();
+
+        // Mostrar REFRESH TOKEN
         $this->warn('═══════════════════════════════════════════════════════════════════');
-        $this->line('<fg=green;options=bold>TOKEN (cópialo para testing):</>');
+        $this->line('<fg=green;options=bold>REFRESH TOKEN (cópialo para testing):</>');
         $this->warn('═══════════════════════════════════════════════════════════════════');
         $this->newLine();
-        $this->line("<fg=yellow>{$plainToken}</>");
+        $this->line("<fg=yellow>{$refreshTokenPlain}</>");
+        $this->newLine();
+
+        // Mostrar ACCESS TOKEN
+        $this->warn('═══════════════════════════════════════════════════════════════════');
+        $this->line('<fg=green;options=bold>ACCESS TOKEN (JWT):</>');
+        $this->warn('═══════════════════════════════════════════════════════════════════');
+        $this->newLine();
+        $this->line("<fg=yellow>{$accessToken}</>");
         $this->newLine();
         $this->warn('═══════════════════════════════════════════════════════════════════');
 
         $this->newLine();
         $this->info('💡 Instrucciones para testing:');
-        $this->line('1. Copia el token anterior');
-        $this->line('2. En tu app móvil, usa este token en el header o cookie');
-        $this->line('3. Para pasar el token en header (recomendado):');
-        $this->line('   <fg=cyan>X-Refresh-Token: ' . substr($plainToken, 0, 20) . '...</>');
-        $this->line('4. Para validar que funciona, haz un POST a: /api/auth/refresh');
         $this->newLine();
 
+        $this->line('1️⃣  <fg=cyan>Para testear refresh con access token expirado:</>');
+        $this->line('   • Usa el ACCESS TOKEN en el header Authorization: Bearer [token]');
+        $this->line('   • Luego usa el REFRESH TOKEN para refrescar');
         $this->newLine();
 
-        if ($shouldExpire) {
-            $this->info('✓ Token expirado generado exitosamente');
-            $this->line('Intenta usarlo en /api/auth/refresh para testear error 401');
+        $this->line('2️⃣  <fg=cyan>En tu app móvil, envía a POST /api/auth/refresh:</>');
+        $this->line('   • Header: <fg=cyan>X-Refresh-Token: ' . substr($refreshTokenPlain, 0, 20) . '...</>');
+        $this->line('   • O en Cookie: <fg=cyan>refresh_token: [token]</>');
+        $this->newLine();
+
+        $this->line('3️⃣  <fg=cyan>Response esperado (si todo funciona):</>');
+        $this->line('   • Status: <fg=green>200 OK</>');
+        $this->line('   • Body: <fg=cyan>{accessToken, tokenType, expiresIn}</>');
+
+        $this->newLine();
+        $this->newLine();
+
+        if ($shouldExpireAccess) {
+            $this->info('✓ Access Token <fg=red>EXPIRADO</> generado');
+            $this->line('Úsalo en header Authorization para simular token expirado');
         } elseif ($shouldRevoke) {
-            $this->warn('Revocando el token...');
-            $tokenModel->revoke('Revoked by test command');
-            $this->info('✓ Token revocado exitosamente');
-            $this->line('Ahora puedes testear el comportamiento con un token inválido');
+            $this->info('✓ Refresh Token <fg=red>REVOCADO</> generado');
+            $this->line('Intenta refrescar con este token para testear error 401');
         } else {
-            $this->info('✓ Token válido generado exitosamente');
-            $this->line('Puedes usarlo inmediatamente en /api/auth/refresh');
+            $this->info('✓ Tokens <fg=green>VÁLIDOS</> generados');
+            $this->line('Puedes usarlos inmediatamente para testing');
             $this->newLine();
-            $this->info('Para generar uno expirado:');
-            $this->line("<fg=cyan>docker compose exec app php artisan test:refresh-token {$email} --expired</>");
-            $this->newLine();
-            $this->info('Para generar uno y revocarlo:');
+            $this->info('Variantes disponibles:');
+            $this->line("<fg=cyan>docker compose exec app php artisan test:refresh-token {$email} --expired-access</>");
             $this->line("<fg=cyan>docker compose exec app php artisan test:refresh-token {$email} --revoke</>");
         }
 
@@ -134,5 +154,29 @@ class GenerateTestRefreshTokenCommand extends Command
         $this->info('═══════════════════════════════════════════════════════════════════');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Generar un JWT con fecha de expiración en el pasado
+     */
+    private function generateExpiredAccessToken(User $user, string $sessionId): string
+    {
+        $now = time();
+        // Access token que expiró hace 1 hora
+        $expiredTime = $now - 3600;
+
+        $payload = [
+            'iss' => config('jwt.issuer'),
+            'aud' => config('jwt.audience'),
+            'iat' => $expiredTime - 3600, // Generado hace 2 horas
+            'exp' => $expiredTime, // Expiró hace 1 hora
+            'sub' => $user->id,
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'session_id' => $sessionId,
+            'roles' => $user->getAllRolesForJWT(),
+        ];
+
+        return JWT::encode($payload, config('jwt.secret'), config('jwt.algo'));
     }
 }
