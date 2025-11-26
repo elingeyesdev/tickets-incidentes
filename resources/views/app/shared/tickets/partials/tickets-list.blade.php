@@ -77,11 +77,6 @@
 {{-- Template for Ticket Row --}}
 <template id="template-ticket-row">
     <tr class="ticket-row" style="cursor: pointer;">
-        <td style="width: 40px;" class="ticket-expand-cell">
-            <button class="btn btn-sm btn-link btn-expand-ticket p-0" style="color: #666;" title="Expandir detalles">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </td>
         <td class="mailbox-name">
             <!-- Status Badge will go here -->
         </td>
@@ -90,34 +85,6 @@
         </td>
         <td class="mailbox-attachment"></td>
         <td class="mailbox-date"></td>
-    </tr>
-</template>
-
-{{-- Template for Expanded Ticket Details --}}
-<template id="template-ticket-expanded">
-    <tr class="ticket-expanded-row" style="display: none;">
-        <td colspan="5" class="p-0">
-            <div class="bg-light border-top" style="padding: 15px 20px;">
-                <div class="row">
-                    <div class="col-md-3">
-                        <small class="text-muted d-block mb-1"><strong>Prioridad</strong></small>
-                        <div class="ticket-priority-badge"></div>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted d-block mb-1"><strong>Categoría</strong></small>
-                        <small class="text-dark" style="display: block; word-break: break-word;"></small>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted d-block mb-1"><strong>Agente Asignado</strong></small>
-                        <small class="text-dark agent-name" style="display: block; word-break: break-word;">Sin Asignar</small>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted d-block mb-1"><strong>Respuestas</strong></small>
-                        <small class="text-dark responses-count" style="display: block;">0</small>
-                    </div>
-                </div>
-            </div>
-        </td>
     </tr>
 </template>
 
@@ -158,18 +125,8 @@
             'closed': { label: 'Cerrado', icon: 'fa-times-circle', color: 'text-secondary' }
         };
 
-        const priorityMap = {
-            'low': { label: 'Baja', badgeClass: 'badge badge-info' },
-            'medium': { label: 'Media', badgeClass: 'badge badge-warning' },
-            'high': { label: 'Alta', badgeClass: 'badge badge-danger' }
-        };
-
         function getStatusConfig(status) {
             return statusMap[status] || { label: status, icon: 'fa-circle', color: 'text-secondary' };
-        }
-
-        function getPriorityConfig(priority) {
-            return priorityMap[priority] || { label: priority, badgeClass: 'badge badge-secondary' };
         }
 
         function formatRelativeTime(dateString) {
@@ -268,9 +225,7 @@
 
             tickets.forEach(ticket => {
                 const $clone = $($template.html());
-                const $expandedTemplate = $('#template-ticket-expanded');
-                const $expandedClone = $($expandedTemplate.html());
-
+                
                 // 1. Status (Icon + Text)
                 const statusConfig = getStatusConfig(ticket.status);
                 const statusHtml = `<i class="fas ${statusConfig.icon} ${statusConfig.color} mr-2"></i> <span class="text-dark">${statusConfig.label}</span>`;
@@ -278,13 +233,13 @@
 
                 // 2. Subject (Code + Title + Response Count)
                 let subjectHtml = `<b>${ticket.code || ticket.ticket_code}</b> - ${ticket.title}`;
-
+                
                 if (ticket.responses_count > 0) {
                     subjectHtml += `<span class="float-right text-dark text-sm" style="width: 50px; text-align: right;">
                         <small>${ticket.responses_count}</small> <i class="far fa-comments ml-1 text-dark"></i>
                     </span>`;
                 }
-
+                
                 $clone.find('.mailbox-subject').html(subjectHtml);
 
                 // 3. Attachments (Icon Only)
@@ -297,48 +252,15 @@
                 // 4. Date (Relative Format)
                 $clone.find('.mailbox-date').text(formatRelativeTime(ticket.created_at));
 
-                // 5. Expand Button Handler
-                const $expandBtn = $clone.find('.btn-expand-ticket');
-                $expandBtn.on('click', function(e) {
-                    e.stopPropagation(); // Prevent row click
-                    const $expandedRow = $clone.next('.ticket-expanded-row');
-
-                    if ($expandedRow.is(':visible')) {
-                        // Close
-                        $expandedRow.slideUp(200);
-                        $(this).find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
-                    } else {
-                        // Open
-                        $expandedRow.slideDown(200);
-                        $(this).find('i').removeClass('fa-chevron-right').addClass('fa-chevron-down');
-                    }
-                });
-
-                // 6. Populate Expanded Details
-                const priorityConfig = getPriorityConfig(ticket.priority);
-                const categoryName = ticket.category_name || 'Sin Categoría';
-                const agentName = ticket.owner_agent_name || 'Sin Asignar';
-                const responsesCount = ticket.responses_count || 0;
-
-                $expandedClone.find('.ticket-priority-badge').html(
-                    `<span class="${priorityConfig.badgeClass}">${priorityConfig.label}</span>`
-                );
-                $expandedClone.find('.col-md-3:nth-child(2) small.text-dark').text(categoryName);
-                $expandedClone.find('.agent-name').text(agentName);
-                $expandedClone.find('.responses-count').text(responsesCount);
-
-                // Click Event on Main Row -> View Details
+                // Click Event -> View Details
                 $clone.on('click', function(e) {
-                    if ($(e.target).is('a, button, .btn') || $(e.target).closest('button').length) {
-                        return; // Don't trigger if clicking a button
-                    }
+                    if ($(e.target).is('a')) return; // Don't trigger if clicking a link
                     const code = ticket.ticket_code || ticket.code;
                     console.log(`[Tickets List] Opening ticket ${code}`);
                     $(document).trigger('tickets:view-details', [code]);
                 });
 
                 $tableBody.append($clone);
-                $tableBody.append($expandedClone);
             });
         }
 
