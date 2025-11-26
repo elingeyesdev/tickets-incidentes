@@ -8,7 +8,7 @@ interface FilterPillProps extends TouchableOpacityProps {
     showCheck?: boolean;
 }
 
-export const FilterPill = memo(function FilterPill({
+function FilterPillComponent({
     label,
     isSelected = false,
     showCheck = true,
@@ -33,4 +33,6 @@ export const FilterPill = memo(function FilterPill({
             </View>
         </TouchableOpacity>
     );
-});
+}
+
+export const FilterPill = memo(FilterPillComponent);
