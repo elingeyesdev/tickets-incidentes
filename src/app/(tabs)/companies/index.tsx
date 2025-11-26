@@ -54,7 +54,7 @@ export default function ExploreCompaniesScreen() {
     };
 
     const renderHeader = () => (
-        <View className="bg-white px-4 pt-4 pb-4 border-b border-gray-100">
+        <View className="bg-white px-4 pb-4 border-b border-gray-100">
             {/* Title & Subtitle */}
             <View className="mb-4">
                 <Text className="text-2xl font-bold text-gray-900 mb-1">Explorar Empresas</Text>
