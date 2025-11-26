@@ -1,11 +1,55 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../stores/authStore';
+import { useEffect, useRef } from 'react';
 
 export default function HomeScreen() {
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
+    const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    const playWaveAnimation = () => {
+        Animated.sequence([
+            Animated.timing(rotateAnim, {
+                toValue: 20,
+                duration: 100,
+                useNativeDriver: false,
+            }),
+            Animated.timing(rotateAnim, {
+                toValue: -20,
+                duration: 100,
+                useNativeDriver: false,
+            }),
+            Animated.timing(rotateAnim, {
+                toValue: 20,
+                duration: 100,
+                useNativeDriver: false,
+            }),
+            Animated.timing(rotateAnim, {
+                toValue: 0,
+                duration: 100,
+                useNativeDriver: false,
+            }),
+        ]).start();
+    };
+
+    useEffect(() => {
+        // Primera animación después de 1 segundo
+        const firstTimeout = setTimeout(() => {
+            playWaveAnimation();
+        }, 1000);
+
+        // Segunda animación después de 3 segundos totales (2 segundos más)
+        const secondTimeout = setTimeout(() => {
+            playWaveAnimation();
+        }, 3000);
+
+        return () => {
+            clearTimeout(firstTimeout);
+            clearTimeout(secondTimeout);
+        };
+    }, [rotateAnim]);
 
     const quickActions = [
         {
@@ -42,16 +86,27 @@ export default function HomeScreen() {
         <View className="flex-1 bg-gray-50">
             <ScrollView contentContainerStyle={{ padding: 24 }}>
                 {/* Header */}
-                <View className="mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-                    <View className="flex-row items-center justify-between">
-                        <View className="flex-1">
-                            <Text className="text-blue-600 text-sm font-semibold mb-1">Bienvenido,</Text>
-                            <Text className="text-3xl font-bold text-gray-900">
-                                {user?.firstName}
-                            </Text>
-                        </View>
-                        <MaterialCommunityIcons name="hand-wave" size={40} color="#2563eb" />
+                <View className="mb-8 flex-row items-end gap-3">
+                    <View>
+                        <Text className="text-blue-600 text-lg font-semibold">Bienvenido,</Text>
+                        <Text className="text-4xl font-bold text-gray-900">
+                            {user?.firstName}
+                        </Text>
                     </View>
+                    <Animated.View
+                        style={{
+                            transform: [
+                                {
+                                    rotate: rotateAnim.interpolate({
+                                        inputRange: [-20, 20],
+                                        outputRange: ['-20deg', '20deg'],
+                                    }),
+                                },
+                            ],
+                        }}
+                    >
+                        <MaterialCommunityIcons name="hand-wave" size={48} color="#2563eb" />
+                    </Animated.View>
                 </View>
 
                 {/* Quick Actions */}
