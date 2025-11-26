@@ -35,6 +35,10 @@
 /storage/app/public/*
 !/storage/app/public/.gitkeep
 
+# Pero SÍ trackear feature resources (logos, seeds, etc)
+!app/Features/*/resources/
+!app/Features/*/resources/**
+
 /storage/framework/cache/*
 !/storage/framework/cache/.gitkeep
 !/storage/framework/cache/data/
