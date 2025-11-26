@@ -21,6 +21,12 @@
         </div>
         <hr class="my-1">
 
+        <div class="mb-2">
+            <strong><i class="fas fa-exclamation-triangle mr-1"></i> Prioridad</strong>
+            <p class="mb-0" id="t-info-priority">...</p>
+        </div>
+        <hr class="my-1">
+
         <!-- Company Info (Visible for Agents/Admins mainly, but structure is here) -->
         <div class="mb-2" id="t-info-company-container">
             <strong><i class="fas fa-building mr-1"></i> Empresa</strong>

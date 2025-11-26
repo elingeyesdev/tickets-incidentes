@@ -34,7 +34,8 @@
             resolve: '/api/tickets/', // + code + /resolve
             close: '/api/tickets/', // + code + /close
             reopen: '/api/tickets/', // + code + /reopen
-            assign: '/api/tickets/' // + code + /assign
+            assign: '/api/tickets/', // + code + /assign
+            remind: '/api/tickets/' // + code + /remind
         };
 
         let currentTicket = null;
@@ -67,6 +68,11 @@
         $('#btn-action-reopen').on('click', function() {
             if (!currentTicket) return;
             performAction('reopen', currentTicket.ticket_code);
+        });
+
+        $('#btn-action-remind').on('click', function() {
+            if (!currentTicket) return;
+            sendReminder(currentTicket.ticket_code);
         });
 
         // 4. Message Sent Event (Payload Response Strategy)
@@ -266,6 +272,11 @@
             // --- Info Card ---
             $('#t-info-code').text(ticket.ticket_code);
             $('#t-info-status').html(`<span class="badge ${statusConfig.badgeClass}">${statusConfig.label}</span>`);
+
+            // Priority Badge
+            const priorityConfig = getPriorityConfig(ticket.priority);
+            $('#t-info-priority').html(`<span class="badge ${priorityConfig.badgeClass}">${priorityConfig.label}</span>`);
+
             $('#t-info-category').text(ticket.category?.name || 'Sin Categoría');
             $('#t-info-created').text(formatDate(ticket.created_at));
             $('#t-info-updated').text(formatRelativeTime(ticket.updated_at));
@@ -368,25 +379,43 @@
             const status = ticket.status;
 
             // Reset visibility
-            $('#btn-action-resolve, #btn-action-close, #btn-action-reopen, #action-section-assign').addClass('d-none');
+            $('#btn-action-resolve, #btn-action-close, #btn-action-reopen, #action-section-assign, #action-section-remind').addClass('d-none');
 
             // --- USER Logic ---
             if (role === 'USER') {
                 // Close: Only if Resolved
                 if (status === 'resolved') $('#btn-action-close').removeClass('d-none');
-                
+
                 // Reopen: If Resolved or Closed (check date logic in backend, here just show)
                 if (status === 'resolved' || status === 'closed') $('#btn-action-reopen').removeClass('d-none');
             }
-            
+
             // --- AGENT / ADMIN Logic ---
-            else {
+            else if (role === 'AGENT') {
                 // Resolve: Open or Pending
                 if (status === 'open' || status === 'pending') $('#btn-action-resolve').removeClass('d-none');
-                
+
                 // Close: Always unless already closed
                 if (status !== 'closed') $('#btn-action-close').removeClass('d-none');
-                
+
+                // Reopen: If Resolved or Closed
+                if (status === 'resolved' || status === 'closed') $('#btn-action-reopen').removeClass('d-none');
+
+                // Assign: Always visible
+                $('#action-section-assign').removeClass('d-none');
+
+                // Remind: Always visible for AGENT
+                $('#action-section-remind').removeClass('d-none');
+            }
+
+            // --- ADMIN Logic ---
+            else if (role === 'COMPANY_ADMIN' || role === 'PLATFORM_ADMIN') {
+                // Resolve: Open or Pending
+                if (status === 'open' || status === 'pending') $('#btn-action-resolve').removeClass('d-none');
+
+                // Close: Always unless already closed
+                if (status !== 'closed') $('#btn-action-close').removeClass('d-none');
+
                 // Reopen: If Resolved or Closed
                 if (status === 'resolved' || status === 'closed') $('#btn-action-reopen').removeClass('d-none');
 
@@ -438,6 +467,49 @@
             }
         }
 
+        async function sendReminder(ticketCode) {
+            if (!confirm('¿Enviar recordatorio al creador del ticket?')) return;
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+                const url = `${endpoints.remind}${ticketCode}/remind`;
+
+                // Disable button during request
+                $('#btn-action-remind').prop('disabled', true);
+
+                const response = await $.ajax({
+                    url: url,
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                // Success
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Éxito',
+                    body: 'Recordatorio enviado exitosamente al creador del ticket.',
+                    autohide: true,
+                    delay: 3000
+                });
+
+            } catch (error) {
+                console.error('[Ticket Detail] Send reminder failed:', error);
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error',
+                    body: error.responseJSON?.message || 'Error al enviar el recordatorio.',
+                    autohide: true,
+                    delay: 3000
+                });
+            } finally {
+                // Re-enable button
+                $('#btn-action-remind').prop('disabled', false);
+            }
+        }
+
         // ==============================================================
         // HELPERS
         // ==============================================================
@@ -450,6 +522,15 @@
                 'closed': { label: 'Cerrado', badgeClass: 'badge-secondary' }
             };
             return map[status] || { label: status, badgeClass: 'badge-secondary' };
+        }
+
+        function getPriorityConfig(priority) {
+            const map = {
+                'low': { label: 'Baja', badgeClass: 'badge-info' },
+                'medium': { label: 'Media', badgeClass: 'badge-warning' },
+                'high': { label: 'Alta', badgeClass: 'badge-danger' }
+            };
+            return map[priority] || { label: priority, badgeClass: 'badge-secondary' };
         }
 
         function formatDate(dateString) {

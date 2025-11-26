@@ -54,5 +54,16 @@
                 <i class="fas fa-user-plus mr-1"></i> <span id="lbl-action-assign">Asignar / Reasignar</span>
             </button>
         </div>
+
+        <!-- Recordatorio (Agent Only) -->
+        <div class="border-top pt-3 d-none" id="action-section-remind">
+            <small class="text-muted d-block mb-2">
+                <i class="fas fa-bell mr-1"></i> Notificación
+            </small>
+            <!-- Enviar Recordatorio: Solo AGENT -->
+            <button type="button" class="btn btn-warning" id="btn-action-remind">
+                <i class="fas fa-envelope mr-1"></i> Enviar Recordatorio por Email
+            </button>
+        </div>
     </div>
 </div>
