@@ -119,11 +119,11 @@ export default function ExploreCompaniesScreen() {
                                         : 'border-gray-300 bg-white'
                                     }`}
                             >
-                                <View className="flex-row items-center gap-2">
+                                <View className="flex-row items-center gap-1">
                                     <Text className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
                                         {item.label}
                                     </Text>
-                                    {isSelected && <MaterialCommunityIcons name="check" size={16} color="#2563EB" />}
+                                    {isSelected && <MaterialCommunityIcons name="check" size={12} color="#2563EB" />}
                                 </View>
                             </TouchableOpacity>
                         );
