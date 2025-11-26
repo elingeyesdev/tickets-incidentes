@@ -13,10 +13,13 @@ interface UserState {
 
 export interface Session {
     id: string;
-    deviceName: string;
-    ipAddress: string;
+    deviceName: string | null;
+    ipAddress: string | null;
+    userAgent: string | null;
     lastUsedAt: string;
+    expiresAt: string;
     isCurrent: boolean;
+    location: string | null;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -49,7 +52,17 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     fetchSessions: async () => {
         const response = await client.get('/api/auth/sessions');
-        return response.data.data;
+        const sessions = response.data.sessions || [];
+        return sessions.map((session: any) => ({
+            id: session.sessionId,
+            deviceName: session.deviceName,
+            ipAddress: session.ipAddress,
+            userAgent: session.userAgent,
+            lastUsedAt: session.lastUsedAt,
+            expiresAt: session.expiresAt,
+            isCurrent: session.isCurrent,
+            location: session.location,
+        }));
     },
 
     revokeSession: async (sessionId) => {

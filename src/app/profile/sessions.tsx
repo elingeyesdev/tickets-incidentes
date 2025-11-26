@@ -1,12 +1,12 @@
-import { View, FlatList, Text, Alert, RefreshControl } from 'react-native';
+import { View, FlatList, Text, Alert, RefreshControl, TouchableOpacity, ScrollView } from 'react-native';
 import { ScreenHeader } from '../../components/layout/ScreenHeader';
-import { List, Button, Chip } from 'react-native-paper';
+import { Card, Button, Chip, Divider } from 'react-native-paper';
 import { useUserStore, Session } from '../../stores/userStore';
 import { useEffect, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Swipeable } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function SessionsScreen() {
     const fetchSessions = useUserStore((state) => state.fetchSessions);
@@ -16,6 +16,7 @@ export default function SessionsScreen() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
     const loadSessions = async () => {
         try {
@@ -72,7 +73,7 @@ export default function SessionsScreen() {
                     onPress: async () => {
                         try {
                             await revokeAllOtherSessions();
-                            loadSessions(); // Reload to verify
+                            loadSessions();
                         } catch (error) {
                             Alert.alert('Error', 'No se pudieron cerrar las sesiones');
                         }
@@ -82,74 +83,183 @@ export default function SessionsScreen() {
         );
     };
 
-    const renderRightActions = (id: string, isCurrent: boolean) => {
-        if (isCurrent) return null;
+    const getDeviceIcon = (deviceName: string | null) => {
+        if (!deviceName) return 'devices';
+        const lower = deviceName.toLowerCase();
+        if (lower.includes('mobile') || lower.includes('android') || lower.includes('ios')) {
+            return 'cellphone';
+        }
+        if (lower.includes('chrome') || lower.includes('firefox') || lower.includes('safari') || lower.includes('edge')) {
+            return 'web';
+        }
+        return 'monitor';
+    };
+
+    const toggleExpand = (sessionId: string) => {
+        setExpandedSession(expandedSession === sessionId ? null : sessionId);
+    };
+
+    const renderItem = ({ item }: { item: Session }) => {
+        const isExpanded = expandedSession === item.id;
+
         return (
-            <View className="bg-red-600 justify-center items-center w-20 h-full">
-                <MaterialCommunityIcons
-                    name="delete"
-                    size={24}
-                    color="white"
-                    onPress={() => handleRevoke(id)}
-                />
-            </View>
+            <Card className="mx-4 mb-3 bg-white" elevation={1}>
+                <TouchableOpacity onPress={() => toggleExpand(item.id)}>
+                    <Card.Content>
+                        {/* Header */}
+                        <View className="flex-row items-center justify-between mb-2">
+                            <View className="flex-row items-center flex-1">
+                                <MaterialCommunityIcons
+                                    name={getDeviceIcon(item.deviceName)}
+                                    size={32}
+                                    color="#4B5563"
+                                    style={{ marginRight: 12 }}
+                                />
+                                <View className="flex-1">
+                                    <Text className="text-base font-semibold text-gray-800">
+                                        {item.deviceName || 'Dispositivo Desconocido'}
+                                    </Text>
+                                    <Text className="text-xs text-gray-500">
+                                        {item.ipAddress || 'N/A'}
+                                    </Text>
+                                </View>
+                            </View>
+                            {item.isCurrent && (
+                                <Chip
+                                    mode="flat"
+                                    style={{ backgroundColor: '#D1FAE5', height: 28 }}
+                                    textStyle={{ color: '#065F46', fontSize: 11 }}
+                                >
+                                    Actual
+                                </Chip>
+                            )}
+                        </View>
+
+                        {/* Quick Info */}
+                        <View className="mt-2">
+                            <View className="flex-row items-center mb-1">
+                                <MaterialCommunityIcons name="clock-outline" size={14} color="#6B7280" />
+                                <Text className="text-xs text-gray-600 ml-2">
+                                    Último uso: {formatDistanceToNow(new Date(item.lastUsedAt), { addSuffix: true, locale: es })}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center">
+                                <MaterialCommunityIcons name="calendar-clock" size={14} color="#6B7280" />
+                                <Text className="text-xs text-gray-600 ml-2">
+                                    Expira: {formatDistanceToNow(new Date(item.expiresAt), { addSuffix: true, locale: es })}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                            <>
+                                <Divider className="my-3" />
+                                <View>
+                                    <Text className="text-xs font-semibold text-gray-700 mb-2">Detalles Completos</Text>
+
+                                    {/* Session ID */}
+                                    <View className="mb-2">
+                                        <Text className="text-xs text-gray-500">ID de Sesión:</Text>
+                                        <Text className="text-xs text-gray-800 font-mono">{item.id}</Text>
+                                    </View>
+
+                                    {/* User Agent */}
+                                    {item.userAgent && (
+                                        <View className="mb-2">
+                                            <Text className="text-xs text-gray-500">User Agent:</Text>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                                <Text className="text-xs text-gray-800 font-mono">{item.userAgent}</Text>
+                                            </ScrollView>
+                                        </View>
+                                    )}
+
+                                    {/* Last Used Date */}
+                                    <View className="mb-2">
+                                        <Text className="text-xs text-gray-500">Último uso:</Text>
+                                        <Text className="text-xs text-gray-800">{format(new Date(item.lastUsedAt), "PPpp", { locale: es })}</Text>
+                                    </View>
+
+                                    {/* Expiration Date */}
+                                    <View className="mb-2">
+                                        <Text className="text-xs text-gray-500">Fecha de expiración:</Text>
+                                        <Text className="text-xs text-gray-800">{format(new Date(item.expiresAt), "PPpp", { locale: es })}</Text>
+                                    </View>
+
+                                    {/* Location */}
+                                    {item.location && (
+                                        <View className="mb-2">
+                                            <Text className="text-xs text-gray-500">Ubicación:</Text>
+                                            <Text className="text-xs text-gray-800">{item.location}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </>
+                        )}
+
+                        {/* Expand/Collapse Indicator */}
+                        <View className="flex-row items-center justify-center mt-3">
+                            <MaterialCommunityIcons
+                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                size={20}
+                                color="#9CA3AF"
+                            />
+                        </View>
+                    </Card.Content>
+                </TouchableOpacity>
+
+                {/* Revoke Button */}
+                {!item.isCurrent && (
+                    <Card.Actions>
+                        <Button
+                            mode="text"
+                            textColor="#DC2626"
+                            onPress={() => handleRevoke(item.id)}
+                            icon="close-circle-outline"
+                        >
+                            Cerrar Sesión
+                        </Button>
+                    </Card.Actions>
+                )}
+            </Card>
         );
     };
 
-    const renderItem = ({ item }: { item: Session }) => (
-        <Swipeable renderRightActions={() => renderRightActions(item.id, item.isCurrent)}>
-            <List.Item
-                title={item.deviceName}
-                description={() => (
-                    <View className="mt-1">
-                        <Text className="text-gray-500 text-xs">
-                            IP: {item.ipAddress}
-                        </Text>
-                        <Text className="text-gray-400 text-xs">
-                            Último uso: {formatDistanceToNow(new Date(item.lastUsedAt), { addSuffix: true, locale: es })}
-                        </Text>
-                    </View>
-                )}
-                left={(props) => (
-                    <List.Icon {...props} icon={item.deviceName.toLowerCase().includes('mobile') ? 'cellphone' : 'monitor'} />
-                )}
-                right={() => item.isCurrent ? (
-                    <Chip className="bg-green-100" textStyle={{ color: '#166534', fontSize: 10 }}>Actual</Chip>
-                ) : null}
-                className="bg-white border-b border-gray-100"
-            />
-        </Swipeable>
-    );
-
     return (
-        <View className="flex-1 bg-gray-50">
-            <ScreenHeader title="Sesiones Activas" showBack={true} />
-            <FlatList
-                data={sessions}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                ListHeaderComponent={() => (
-                    <View className="p-4">
-                        <Text className="text-gray-500 text-sm mb-2">
-                            Desliza a la izquierda para cerrar una sesión específica.
-                        </Text>
-                    </View>
-                )}
-                ListFooterComponent={() => (
-                    <View className="p-4">
-                        <Button
-                            mode="outlined"
-                            onPress={handleRevokeAllOthers}
-                            textColor="#dc2626"
-                            className="border-red-200 bg-white"
-                        >
-                            Cerrar todas las demás sesiones
-                        </Button>
-                    </View>
-                )}
-                contentContainerStyle={{ paddingBottom: 20 }}
-            />
-        </View>
+        <GestureHandlerRootView className="flex-1">
+            <View className="flex-1 bg-gray-50">
+                <ScreenHeader title="Sesiones Activas" showBack={true} />
+                <FlatList
+                    data={sessions}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    ListHeaderComponent={() => (
+                        <View className="px-4 pt-4 pb-2">
+                            <View className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex-row items-start">
+                                <MaterialCommunityIcons name="information" size={20} color="#2563EB" style={{ marginRight: 8, marginTop: 2 }} />
+                                <Text className="text-sm text-blue-800 flex-1">
+                                    Toca una sesión para ver más detalles. Las sesiones inactivas pueden ser cerradas.
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                    ListFooterComponent={() => (
+                        <View className="p-4">
+                            <Button
+                                mode="outlined"
+                                onPress={handleRevokeAllOthers}
+                                textColor="#DC2626"
+                                style={{ borderColor: '#FEE2E2', backgroundColor: '#FFF' }}
+                                icon="delete-sweep"
+                            >
+                                Cerrar todas las demás sesiones
+                            </Button>
+                        </View>
+                    )}
+                    contentContainerStyle={{ paddingBottom: 20, paddingTop: 8 }}
+                />
+            </View>
+        </GestureHandlerRootView>
     );
 }
