@@ -22,14 +22,15 @@ use Illuminate\Support\Str;
 class PublishBolivianCompanyLogosSeeder extends Seeder
 {
     /**
-     * Mapeo de archivos a empresas
+     * Mapeo de archivos a nombres de empresa
+     * Los IDs se obtienen dinámicamente de la BD
      */
     private array $logoMap = [
-        'pil-andina-logo.png' => 'b6916ab4-9c64-4305-8054-958c97131ea3',
-        'fassil-logo.png' => 'ec198568-b237-432b-81ae-76d263596471',
-        'ypfb-logo.png' => '4dfda053-4bfa-42a0-ae58-cc8e96bebf0c',
-        'tigo-logo.png' => 'd5e69850-ba31-4e28-bb99-f97468bd72c5',
-        'cbn-logo.png' => 'dea3f6fe-d906-414c-b4b3-d72f729492f8',
+        'pil-andina-logo.png' => 'PIL Andina S.A.',
+        'fassil-logo.png' => 'Banco Fassil S.A.',
+        'ypfb-logo.png' => 'YPFB Corporación',
+        'tigo-logo.png' => 'Tigo Bolivia S.A.',
+        'cbn-logo.png' => 'Cervecería Boliviana Nacional S.A.',
     ];
 
     public function run(): void
@@ -50,12 +51,16 @@ class PublishBolivianCompanyLogosSeeder extends Seeder
             return;
         }
 
-        foreach ($this->logoMap as $fileName => $companyId) {
+        foreach ($this->logoMap as $fileName => $companyName) {
             $sourceFile = "{$baseDir}/{$fileName}";
-            $company = Company::find($companyId);
+
+            // Obtener empresa por nombre (dinámico)
+            $company = Company::where('name', $companyName)
+                ->where('status', 'active')
+                ->first();
 
             if (!$company) {
-                echo "⚠️  Empresa no encontrada (ID: {$companyId})\n";
+                echo "⚠️  Empresa no encontrada: {$companyName}\n";
                 $failed++;
                 continue;
             }
