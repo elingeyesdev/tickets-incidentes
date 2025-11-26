@@ -9,7 +9,10 @@ use App\Features\CompanyManagement\Events\CompanyUpdated;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\CodeGenerator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CompanyService
 {
@@ -232,5 +235,67 @@ class CompanyService
     public function isAdmin(Company $company, User $user): bool
     {
         return $company->admin_user_id === $user->id;
+    }
+
+    /**
+     * Subir archivo de logo de la empresa
+     *
+     * @param Company $company
+     * @param UploadedFile $file
+     * @return string Logo URL
+     */
+    public function uploadLogo(Company $company, UploadedFile $file): string
+    {
+        // Generar nombre único: company-logos/{companyId}/{timestamp}_{slug_filename}
+        $timestamp = now()->timestamp;
+        $originalName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $extension = $file->getClientOriginalExtension();
+        $fileName = "{$timestamp}_{$originalName}.{$extension}";
+
+        // Almacenar en disco público
+        $path = Storage::disk('public')->putFileAs(
+            "company-logos/{$company->id}",
+            $file,
+            $fileName
+        );
+
+        // Generar URL completa
+        $logoUrl = asset('storage/' . $path);
+
+        // Actualizar empresa con URL del logo
+        $company->update(['logo_url' => $logoUrl]);
+
+        return $logoUrl;
+    }
+
+    /**
+     * Subir archivo de favicon de la empresa
+     *
+     * @param Company $company
+     * @param UploadedFile $file
+     * @return string Favicon URL
+     */
+    public function uploadFavicon(Company $company, UploadedFile $file): string
+    {
+        // Generar nombre único: favicons/{companyId}/{timestamp}_{slug_filename}
+        $timestamp = now()->timestamp;
+        $originalName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $extension = $file->getClientOriginalExtension();
+        $fileName = "{$timestamp}_{$originalName}.{$extension}";
+
+        // Almacenar en disco público
+        $path = Storage::disk('public')->putFileAs(
+            "favicons/{$company->id}",
+            $file,
+            $fileName
+        );
+
+        // Generar URL completa
+        $faviconUrl = asset('storage/' . $path);
+
+        // Actualizar empresa con URL del favicon
+        $company->update(['favicon_url' => $faviconUrl]);
+
+        return $faviconUrl;
     }
 }

@@ -125,7 +125,7 @@ trait JWTAuthenticationTrait
     protected function processJWTToken(Request $request, string $token): User
     {
         $tokenService = app(TokenService::class);
-        
+
         // Validate token and get payload
         $payload = $tokenService->validateAccessToken($token);
 

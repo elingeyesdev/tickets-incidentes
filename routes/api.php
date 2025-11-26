@@ -96,6 +96,10 @@ Route::middleware('jwt.require')->group(function () {
         ->middleware('throttle:50,60')  // 50 requests per hour
         ->name('users.preferences.update');
 
+    Route::post('/users/me/avatar', [ProfileController::class, 'uploadAvatar'])
+        ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
+        ->name('users.avatar.upload');
+
     // ========== User Viewing (Any Authenticated User can view themselves, admins can view others) ==========
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 
@@ -177,6 +181,15 @@ Route::middleware('jwt.require')->group(function () {
     // Update company (PLATFORM_ADMIN or COMPANY_ADMIN owner with policy)
     Route::match(['put', 'patch'], '/companies/{company}', [CompanyController::class, 'update'])
         ->name('companies.update');
+
+    // Upload company branding (PLATFORM_ADMIN or COMPANY_ADMIN owner)
+    Route::post('/companies/{company}/logo', [CompanyController::class, 'uploadLogo'])
+        ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
+        ->name('companies.logo.upload');
+
+    Route::post('/companies/{company}/favicon', [CompanyController::class, 'uploadFavicon'])
+        ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
+        ->name('companies.favicon.upload');
 
     // ========== COMPANY REQUESTS - Admin Endpoints ==========
 

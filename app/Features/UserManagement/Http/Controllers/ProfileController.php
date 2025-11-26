@@ -6,6 +6,7 @@ namespace App\Features\UserManagement\Http\Controllers;
 
 use App\Features\UserManagement\Http\Requests\UpdatePreferencesRequest;
 use App\Features\UserManagement\Http\Requests\UpdateProfileRequest;
+use App\Features\UserManagement\Http\Requests\UploadAvatarRequest;
 use App\Features\UserManagement\Http\Resources\PreferencesResource;
 use App\Features\UserManagement\Http\Resources\ProfileResource;
 use App\Features\UserManagement\Services\ProfileService;
@@ -406,5 +407,103 @@ class ProfileController
                 'updatedAt' => $user->updated_at->toIso8601String(),
             ]
         ]);
+    }
+
+    /**
+     * Upload authenticated user's avatar image. Throttled: 10 requests/hour.
+     */
+    #[OA\Post(
+        path: '/api/users/me/avatar',
+        operationId: 'upload_my_avatar',
+        summary: 'Upload user avatar image',
+        description: 'Upload and store avatar image for the authenticated user. Throttled: 10 requests/hour. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5 MB.',
+        tags: ['User Profile'],
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Avatar image file (multipart/form-data)',
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    type: 'object',
+                    required: ['avatar'],
+                    properties: [
+                        new OA\Property(
+                            property: 'avatar',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Avatar image file'
+                        ),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Avatar uploaded successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'Avatar uploaded successfully'
+                        ),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(
+                                    property: 'avatarUrl',
+                                    type: 'string',
+                                    format: 'uri',
+                                    example: 'http://localhost:8000/storage/avatars/550e8400-e29b-41d4-a716-446655440000/1731774123_profile.jpg'
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['avatar' => ['Avatar must not exceed 5 MB']]
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
+    {
+        $user = JWTHelper::getAuthenticatedUser();
+
+        try {
+            $avatarUrl = $this->profileService->uploadAvatarFile(
+                $user->id,
+                $request->file('avatar')
+            );
+
+            return response()->json([
+                'message' => 'Avatar uploaded successfully',
+                'data' => [
+                    'avatarUrl' => $avatarUrl,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error uploading avatar',
+                'errors' => ['avatar' => [$e->getMessage()]]
+            ], 422);
+        }
     }
 }

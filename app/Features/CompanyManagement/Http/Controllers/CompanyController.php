@@ -5,6 +5,8 @@ namespace App\Features\CompanyManagement\Http\Controllers;
 use App\Features\CompanyManagement\Http\Requests\CreateCompanyRequest;
 use App\Features\CompanyManagement\Http\Requests\ListCompaniesRequest;
 use App\Features\CompanyManagement\Http\Requests\UpdateCompanyRequest;
+use App\Features\CompanyManagement\Http\Requests\UploadCompanyLogoRequest;
+use App\Features\CompanyManagement\Http\Requests\UploadCompanyFaviconRequest;
 use App\Features\CompanyManagement\Http\Resources\CompanyExploreResource;
 use App\Features\CompanyManagement\Http\Resources\CompanyMinimalResource;
 use App\Features\CompanyManagement\Http\Resources\CompanyResource;
@@ -14,6 +16,7 @@ use App\Features\CompanyManagement\Services\CompanyService;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
 use App\Shared\Helpers\JWTHelper;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +39,8 @@ use OpenApi\Attributes as OA;
  */
 class CompanyController extends Controller
 {
+    use AuthorizesRequests;
+
     #[OA\Get(
         path: '/api/companies/minimal',
         operationId: 'list_companies_minimal',
@@ -1011,5 +1016,225 @@ class CompanyController extends Controller
             ->exists();
 
         return new CompanyResource($updated);
+    }
+
+    /**
+     * Upload company logo image. Throttled: 10 requests/hour.
+     */
+    #[OA\Post(
+        path: '/api/companies/{company}/logo',
+        operationId: 'upload_company_logo',
+        summary: 'Upload company logo image',
+        description: 'Upload and store logo image for a company. Throttled: 10 requests/hour. Supported formats: JPEG, PNG, GIF, WebP, SVG. Max size: 5 MB.',
+        tags: ['Companies'],
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                description: 'Company UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Logo image file (multipart/form-data)',
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    type: 'object',
+                    required: ['logo'],
+                    properties: [
+                        new OA\Property(
+                            property: 'logo',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Logo image file'
+                        ),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Logo uploaded successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'Logo uploaded successfully'
+                        ),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(
+                                    property: 'logoUrl',
+                                    type: 'string',
+                                    format: 'uri',
+                                    example: 'http://localhost:8000/storage/company-logos/550e8400-e29b-41d4-a716-446655440000/1731774123_acme-logo.png'
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Forbidden - Only company admin can upload logo'),
+            new OA\Response(response: 404, description: 'Company not found'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['logo' => ['Logo must not exceed 5 MB']]
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function uploadLogo(UploadCompanyLogoRequest $request, Company $company, CompanyService $companyService): JsonResponse
+    {
+        // Authorization: Only PLATFORM_ADMIN or COMPANY_ADMIN of this company can upload
+        $this->authorize('update', $company);
+
+        try {
+            $logoUrl = $companyService->uploadLogo(
+                $company,
+                $request->file('logo')
+            );
+
+            return response()->json([
+                'message' => 'Logo uploaded successfully',
+                'data' => [
+                    'logoUrl' => $logoUrl,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error uploading logo',
+                'errors' => ['logo' => [$e->getMessage()]]
+            ], 422);
+        }
+    }
+
+    /**
+     * Upload company favicon image. Throttled: 10 requests/hour.
+     */
+    #[OA\Post(
+        path: '/api/companies/{company}/favicon',
+        operationId: 'upload_company_favicon',
+        summary: 'Upload company favicon image',
+        description: 'Upload and store favicon image for a company. Throttled: 10 requests/hour. Supported formats: ICO, PNG, JPEG. Max size: 1 MB.',
+        tags: ['Companies'],
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'company',
+                description: 'Company UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Favicon image file (multipart/form-data)',
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    type: 'object',
+                    required: ['favicon'],
+                    properties: [
+                        new OA\Property(
+                            property: 'favicon',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Favicon image file'
+                        ),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Favicon uploaded successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'Favicon uploaded successfully'
+                        ),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(
+                                    property: 'faviconUrl',
+                                    type: 'string',
+                                    format: 'uri',
+                                    example: 'http://localhost:8000/storage/favicons/550e8400-e29b-41d4-a716-446655440000/1731774123_favicon.ico'
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 403, description: 'Forbidden - Only company admin can upload favicon'),
+            new OA\Response(response: 404, description: 'Company not found'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            example: ['favicon' => ['Favicon must not exceed 1 MB']]
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function uploadFavicon(UploadCompanyFaviconRequest $request, Company $company, CompanyService $companyService): JsonResponse
+    {
+        // Authorization: Only PLATFORM_ADMIN or COMPANY_ADMIN of this company can upload
+        $this->authorize('update', $company);
+
+        try {
+            $faviconUrl = $companyService->uploadFavicon(
+                $company,
+                $request->file('favicon')
+            );
+
+            return response()->json([
+                'message' => 'Favicon uploaded successfully',
+                'data' => [
+                    'faviconUrl' => $faviconUrl,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error uploading favicon',
+                'errors' => ['favicon' => [$e->getMessage()]]
+            ], 422);
+        }
     }
 }

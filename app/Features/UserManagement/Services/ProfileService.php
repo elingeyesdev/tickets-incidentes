@@ -5,6 +5,9 @@ namespace App\Features\UserManagement\Services;
 use App\Features\UserManagement\Models\UserProfile;
 use App\Shared\Exceptions\NotFoundException;
 use App\Shared\Exceptions\ValidationException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Profile Service
@@ -149,6 +152,40 @@ class ProfileService
         $profile->updateAvatar($avatarUrl);
 
         return $profile->fresh();
+    }
+
+    /**
+     * Subir archivo de avatar del usuario
+     *
+     * @param string $userId
+     * @param UploadedFile $file
+     * @return string Avatar URL
+     * @throws NotFoundException
+     */
+    public function uploadAvatarFile(string $userId, UploadedFile $file): string
+    {
+        $profile = $this->getProfileByUserId($userId);
+
+        // Generar nombre único: avatars/{userId}/{timestamp}_{slug_filename}
+        $timestamp = now()->timestamp;
+        $originalName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $extension = $file->getClientOriginalExtension();
+        $fileName = "{$timestamp}_{$originalName}.{$extension}";
+
+        // Almacenar en disco público
+        $path = Storage::disk('public')->putFileAs(
+            "avatars/{$userId}",
+            $file,
+            $fileName
+        );
+
+        // Generar URL completa
+        $avatarUrl = asset('storage/' . $path);
+
+        // Actualizar perfil con URL del avatar
+        $profile->update(['avatar_url' => $avatarUrl]);
+
+        return $avatarUrl;
     }
 
     /**
