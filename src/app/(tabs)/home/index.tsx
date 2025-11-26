@@ -1,6 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -14,7 +13,7 @@ export default function HomeScreen() {
             icon: 'plus-circle' as const,
             color: 'bg-blue-100',
             iconColor: '#2563eb',
-            route: '/(tabs)/tickets/create',
+            route: '/(tabs)/tickets/create', // Verify this route exists or update
         },
         {
             title: 'Mis Tickets',
@@ -24,30 +23,35 @@ export default function HomeScreen() {
             route: '/(tabs)/tickets',
         },
         {
-            title: 'Empresas',
-            icon: 'domain' as const,
-            color: 'bg-green-100',
-            iconColor: '#16a34a',
-            route: '/(tabs)/companies',
+            title: 'Anuncios Recientes',
+            icon: 'bullhorn' as const,
+            color: 'bg-orange-100',
+            iconColor: '#f97316',
+            route: '/(tabs)/announcements',
         },
         {
-            title: 'Ayuda',
+            title: 'Centro de Ayuda',
             icon: 'help-circle' as const,
-            color: 'bg-orange-100',
-            iconColor: '#ea580c',
-            route: '/(tabs)/content',
+            color: 'bg-teal-100',
+            iconColor: '#14b8a6',
+            route: '/(tabs)/help',
         },
     ];
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-gray-50">
             <ScrollView contentContainerStyle={{ padding: 24 }}>
                 {/* Header */}
-                <View className="mb-8">
-                    <Text className="text-gray-500 text-lg">Hola,</Text>
-                    <Text className="text-3xl font-bold text-gray-900">
-                        {user?.profile.displayName || 'Usuario'}
-                    </Text>
+                <View className="mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+                    <View className="flex-row items-center justify-between">
+                        <View className="flex-1">
+                            <Text className="text-blue-600 text-sm font-semibold mb-1">Bienvenido,</Text>
+                            <Text className="text-3xl font-bold text-gray-900">
+                                {user?.firstName}
+                            </Text>
+                        </View>
+                        <MaterialCommunityIcons name="hand-wave" size={40} color="#2563eb" />
+                    </View>
                 </View>
 
                 {/* Quick Actions */}
@@ -88,6 +92,6 @@ export default function HomeScreen() {
                     </View>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
