@@ -82,6 +82,9 @@ class AppServiceProvider extends ServiceProvider
             \App\Features\TicketManagement\Policies\TicketPolicy::class
         );
 
+        // NOTA: Area no necesita policy propia, usa CompanyPolicy->manageAreas()
+        // ya que áreas son parte de la configuración de la empresa
+
         Gate::policy(
             \App\Features\TicketManagement\Models\TicketResponse::class,
             \App\Features\TicketManagement\Policies\TicketResponsePolicy::class

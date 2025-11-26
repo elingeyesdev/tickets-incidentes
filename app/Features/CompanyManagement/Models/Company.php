@@ -185,6 +185,14 @@ class Company extends Model
     }
 
     /**
+     * Verificar si la empresa tiene áreas habilitadas.
+     */
+    public function hasAreasEnabled(): bool
+    {
+        return ($this->settings['areas_enabled'] ?? false) === true;
+    }
+
+    /**
      * Obtener conteo de agentes activos (calculado).
      */
     public function getActiveAgentsCountAttribute(): int

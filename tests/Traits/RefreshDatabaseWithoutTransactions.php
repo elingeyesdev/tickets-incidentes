@@ -4,6 +4,7 @@ namespace Tests\Traits;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Fresh Database Without Transactions Trait
@@ -37,46 +38,131 @@ trait RefreshDatabaseWithoutTransactions
     use RefreshDatabase;
 
     /**
-     * Disable the transaction-based refresh
+     * Disable transactions - we'll truncate tables instead
      *
-     * This overrides RefreshDatabase to NOT use transactions.
-     * Instead, we use migrate:fresh which clears and rebuilds the database
-     * without transaction wrapping.
-     *
-     * CRITICAL: This method must be COMPLETELY EMPTY.
-     * Laravel's RefreshDatabase::refreshTestDatabase() calls this method but
-     * doesn't check the return value. If we have ANY code here (even return false),
-     * Laravel will still execute its transaction logic in the parent trait.
+     * HTTP requests use separate database connections that can't see data
+     * in the main test transaction. Instead of transactions, we truncate
+     * tables before each test to ensure a clean state.
      *
      * @return void
      */
     public function beginDatabaseTransaction()
     {
-        // INTENTIONALLY EMPTY
-        // Do NOT add any code here, not even "return false"
-        // This prevents Laravel from starting database transactions
+        // DON'T start a transaction - HTTP requests won't see the data anyway
+        // Table truncation in refreshDatabase() handles cleanup instead
     }
 
     /**
-     * Override refresh to not use transactions
+     * Clear data via table truncation instead of transactions
      *
-     * Called by RefreshDatabase before each test
+     * Run migrations on first test, then truncate tables for data isolation.
      *
-     * PROFESSIONAL PARALLEL TESTING APPROACH:
-     * - migrate:fresh causes race conditions in parallel because it does DROP CASCADE
-     * - Multiple workers dropping/creating schemas simultaneously = conflicts
-     *
-     * Solution: Use migrate (idempotent) + truncate tables (parallel-safe)
-     * - migrate: Creates tables if missing (no-op if already exists)
-     * - truncate: Clears data safely even with parallel workers
-     * - seed: Populates fresh data
+     * This approach:
+     * - Works with HTTP requests (separate database connections)
+     * - Supports parallel tests (each test truncates, not drops)
+     * - Avoids migrate:fresh conflicts
      *
      * @return void
      */
     protected function refreshDatabase(): void
     {
-        // Run migrate:fresh to clear and rebuild database
-        // This is NOT wrapped in a transaction
-        Artisan::call('migrate:fresh', ['--seed' => true, '--quiet' => true]);
+        // Run migrate:fresh only if migrations table doesn't exist (first test)
+        if (! $this->migrationsDone()) {
+            \Illuminate\Support\Facades\Artisan::call('migrate:fresh', [
+                '--env' => 'testing',
+                '--quiet' => true,
+            ]);
+            if ($this->seed) {
+                $this->seed();
+            }
+        } else {
+            // For subsequent tests, truncate tables to clear data
+            // This is faster than migrate:fresh and supports parallel execution
+            $this->truncateDatabaseTables();
+            if ($this->seed) {
+                $this->seed();
+            }
+        }
+    }
+
+    /**
+     * Truncate all tables to clear test data
+     *
+     * Uses RESTART IDENTITY CASCADE to reset sequences and foreign keys
+     *
+     * @return void
+     */
+    protected function truncateDatabaseTables(): void
+    {
+        // For most thorough cleaning, use DELETE instead of TRUNCATE
+        // (slower but guaranteed to remove all data, especially with complex constraints)
+
+        $tables = [
+            // Ticket Management (children first)
+            'ticketing.ticket_responses',
+            'ticketing.ticket_attachments',
+            'ticketing.tickets',
+            'ticketing.categories',
+
+            // Company Management (children first)
+            'business.areas',
+            'business.company_requests',
+            'business.company_followers',
+            'business.companies',
+            'business.industries',
+
+            // User Management (children first)
+            'auth.user_roles',
+            'auth.user_profiles',
+            'auth.refresh_tokens',
+            'auth.users',
+
+            // Core tables last
+            'auth.roles',
+            'auth.permissions',
+        ];
+
+        try {
+            // Disable constraint checking temporarily
+            DB::statement('SET session_replication_role = replica');
+
+            // Delete all data from each table
+            foreach ($tables as $tableName) {
+                try {
+                    DB::table($tableName)->delete();
+                    // Reset sequences
+                    $sequenceName = $tableName.'_id_seq';
+                    DB::statement("ALTER SEQUENCE \"{$tableName}_id_seq\" RESTART WITH 1");
+                } catch (\Exception $e) {
+                    // Some tables might not have sequences or might fail, skip them
+                    logger()->debug("Could not clear table $tableName: ".$e->getMessage());
+                }
+            }
+
+            // Re-enable constraint checking
+            DB::statement('SET session_replication_role = default');
+        } catch (\Exception $e) {
+            try {
+                DB::statement('SET session_replication_role = default');
+            } catch (\Exception $e2) {
+                logger()->error('Failed to restore role: '.$e2->getMessage());
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Check if migrations have already been run
+     *
+     * @return bool
+     */
+    private function migrationsDone(): bool
+    {
+        try {
+            $count = DB::table('migrations')->count();
+            return $count > 0;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

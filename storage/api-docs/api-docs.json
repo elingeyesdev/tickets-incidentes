@@ -1837,6 +1837,734 @@
                 ]
             }
         },
+        "/api/areas": {
+            "get": {
+                "tags": [
+                    "Areas"
+                ],
+                "summary": "List areas by company",
+                "description": "Returns paginated list of areas for a specific company with optional filtering by is_active status. Includes count of active tickets (status: open, pending, resolved) for each area. Requires JWT authentication and valid company_id parameter.",
+                "operationId": "list_areas",
+                "parameters": [
+                    {
+                        "name": "company_id",
+                        "in": "query",
+                        "description": "UUID of the company (required)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "description": "Filter by active status (optional, accepts: true, false, 1, 0)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "true",
+                                "false",
+                                "1",
+                                "0"
+                            ],
+                            "example": "true"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (default: 15, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination (default: 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Areas list retrieved successfully with pagination",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                                                    },
+                                                    "company_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Soporte Técnico"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Equipo de soporte técnico especializado",
+                                                        "nullable": true
+                                                    },
+                                                    "is_active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "active_tickets_count": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-11-16T10:30:00+00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 45
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/api/areas?page=1"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/api/areas?page=3"
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/api/areas?page=2"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The company id field is required."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "company_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The company id field is required."
+                                                    }
+                                                },
+                                                "is_active": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The is_active field must be one of: true, false, 1, 0."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Areas"
+                ],
+                "summary": "Create a new area",
+                "description": "Creates a new area for the authenticated COMPANY_ADMIN's company. The company_id is automatically extracted from the JWT token. Only COMPANY_ADMIN role can create areas. Area name must be unique within the company.",
+                "operationId": "create_area",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Area name (2-100 characters, must be unique within company)",
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "minLength": 2,
+                                        "example": "Soporte Técnico"
+                                    },
+                                    "description": {
+                                        "description": "Area description (optional, max 500 characters)",
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "example": "Equipo de soporte técnico especializado en resolver problemas técnicos",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Area created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area created successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                                                },
+                                                "company_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Soporte Técnico"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Equipo de soporte técnico especializado en resolver problemas técnicos",
+                                                    "nullable": true
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-16T10:30:00+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (user does not have COMPANY_ADMIN role or invalid company context)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid company context"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The name field is required."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The name field is required."
+                                                    }
+                                                },
+                                                "description": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The description field must not exceed 500 characters."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/areas/{id}": {
+            "put": {
+                "tags": [
+                    "Areas"
+                ],
+                "summary": "Update an area",
+                "description": "Updates an existing area. Only COMPANY_ADMIN role of the same company can update areas. Supports partial updates (send only fields to update). The area must belong to the authenticated user's company.",
+                "operationId": "update_area",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Area UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "description": "Area name (2-100 characters, optional)",
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "minLength": 2,
+                                        "example": "Soporte Técnico Mejorado"
+                                    },
+                                    "description": {
+                                        "description": "Area description (optional, max 500 characters)",
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "example": "Equipo de soporte técnico especializado en resolver problemas complejos",
+                                        "nullable": true
+                                    },
+                                    "is_active": {
+                                        "description": "Area active status (optional, boolean)",
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Area updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area updated successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                                                },
+                                                "company_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Soporte Técnico Mejorado"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Equipo de soporte técnico especializado en resolver problemas complejos",
+                                                    "nullable": true
+                                                },
+                                                "is_active": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2025-11-16T10:30:00+00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (user does not have COMPANY_ADMIN role or area belongs to different company)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You do not have permission to update this area"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Area not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The name must be at least 2 characters."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The name must be at least 2 characters."
+                                                    }
+                                                },
+                                                "description": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The description field must not exceed 500 characters."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Areas"
+                ],
+                "summary": "Delete an area",
+                "description": "Permanently deletes an area. Only COMPANY_ADMIN role of the same company can delete areas. Cannot delete an area that has active tickets (status: open, pending, resolved). The area must belong to the authenticated user's company.",
+                "operationId": "delete_area",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Area UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Area deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cannot delete area with active tickets",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cannot delete area with active tickets"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (user does not have COMPANY_ADMIN role or area belongs to different company)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You do not have permission to delete this area"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Area not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Area not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/companies/minimal": {
             "get": {
                 "tags": [
@@ -1893,7 +2621,7 @@
                                                         "format": "uuid",
                                                         "example": "550e8400-e29b-41d4-a716-446655440000"
                                                     },
-                                                    "company_code": {
+                                                    "companyCode": {
                                                         "type": "string",
                                                         "example": "CMP-2025-00001"
                                                     },
@@ -1901,9 +2629,14 @@
                                                         "type": "string",
                                                         "example": "Acme Corporation"
                                                     },
-                                                    "logo_url": {
+                                                    "logoUrl": {
                                                         "type": "string",
                                                         "example": "https://example.com/logo.png",
+                                                        "nullable": true
+                                                    },
+                                                    "industryName": {
+                                                        "type": "string",
+                                                        "example": "Technology",
                                                         "nullable": true
                                                     }
                                                 },
@@ -3108,6 +3841,539 @@
                         "bearerAuth": []
                     }
                 ]
+            }
+        },
+        "/api/companies/{company}/logo": {
+            "post": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Upload company logo image",
+                "description": "Upload and store logo image for a company. Throttled: 10 requests/hour. Supported formats: JPEG, PNG, GIF, WebP, SVG. Max size: 5 MB.",
+                "operationId": "upload_company_logo",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "description": "Company UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Logo image file (multipart/form-data)",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "logo"
+                                ],
+                                "properties": {
+                                    "logo": {
+                                        "description": "Logo image file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logo uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logo uploaded successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "logoUrl": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/storage/company-logos/550e8400-e29b-41d4-a716-446655440000/1731774123_acme-logo.png"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only company admin can upload logo"
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "logo": [
+                                                    "Logo must not exceed 5 MB"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/companies/{company}/favicon": {
+            "post": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Upload company favicon image",
+                "description": "Upload and store favicon image for a company. Throttled: 10 requests/hour. Supported formats: ICO, PNG, JPEG. Max size: 1 MB.",
+                "operationId": "upload_company_favicon",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "description": "Company UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Favicon image file (multipart/form-data)",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "favicon"
+                                ],
+                                "properties": {
+                                    "favicon": {
+                                        "description": "Favicon image file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Favicon uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Favicon uploaded successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "faviconUrl": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/storage/favicons/550e8400-e29b-41d4-a716-446655440000/1731774123_favicon.ico"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only company admin can upload favicon"
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "favicon": [
+                                                    "Favicon must not exceed 1 MB"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/companies/me/settings/areas-enabled": {
+            "get": {
+                "tags": [
+                    "Company Settings"
+                ],
+                "summary": "Get areas feature status",
+                "description": "Returns whether the authenticated COMPANY_ADMIN's company has areas feature enabled. The company ID is automatically extracted from the JWT token.",
+                "operationId": "get_areas_enabled",
+                "responses": {
+                    "200": {
+                        "description": "Areas feature status retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "areas_enabled": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (invalid or missing JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid company context (user is not COMPANY_ADMIN)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid company context"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Company Settings"
+                ],
+                "summary": "Enable or disable areas feature",
+                "description": "Enables or disables the areas feature for the authenticated COMPANY_ADMIN's company. Updates the company.settings JSONB field. Requires manageAreas permission from CompanyPolicy.",
+                "operationId": "toggle_areas_enabled",
+                "requestBody": {
+                    "description": "Areas feature toggle request",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "enabled"
+                                ],
+                                "properties": {
+                                    "enabled": {
+                                        "description": "Enable or disable the areas feature",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Areas feature status updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Areas enabled successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "areas_enabled": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (invalid or missing JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (invalid company context or missing manageAreas permission)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid company context"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (enabled must be boolean)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/companies/{companyId}/settings/areas-enabled": {
+            "get": {
+                "tags": [
+                    "Company Settings"
+                ],
+                "summary": "Get company areas feature status (public)",
+                "description": "Returns whether a company has the areas feature enabled. Public endpoint (no authentication required). Used by frontend to determine if area selection should be displayed when creating tickets.",
+                "operationId": "get_company_areas_enabled_public",
+                "parameters": [
+                    {
+                        "name": "companyId",
+                        "in": "path",
+                        "description": "Company UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Areas feature status retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "areas_enabled": {
+                                                    "description": "Whether the company has areas feature enabled",
+                                                    "type": "boolean",
+                                                    "example": false
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/companies/followed": {
@@ -11388,6 +12654,30 @@
                         }
                     },
                     {
+                        "name": "priority",
+                        "in": "query",
+                        "description": "Filter by ticket priority",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "low",
+                                "medium",
+                                "high"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "area_id",
+                        "in": "query",
+                        "description": "Filter by area UUID",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
                         "name": "owner_agent_id",
                         "in": "query",
                         "description": "Filter by assigned agent UUID. Use \"null\" for unassigned tickets, \"me\" for tickets assigned to authenticated user",
@@ -11568,6 +12858,15 @@
                                                         ],
                                                         "example": "open"
                                                     },
+                                                    "priority": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "low",
+                                                            "medium",
+                                                            "high"
+                                                        ],
+                                                        "example": "medium"
+                                                    },
                                                     "last_response_author_type": {
                                                         "type": "string",
                                                         "enum": [
@@ -11584,6 +12883,11 @@
                                                     "category_id": {
                                                         "type": "string",
                                                         "format": "uuid"
+                                                    },
+                                                    "area_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "nullable": true
                                                     },
                                                     "created_by_user_id": {
                                                         "type": "string",
@@ -11642,6 +12946,19 @@
                                                         "nullable": true
                                                     },
                                                     "category": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "type": "object",
+                                                        "nullable": true
+                                                    },
+                                                    "area": {
                                                         "properties": {
                                                             "id": {
                                                                 "type": "string",
@@ -11783,6 +13100,24 @@
                                         "type": "string",
                                         "format": "uuid",
                                         "example": "9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a"
+                                    },
+                                    "priority": {
+                                        "description": "Ticket priority level (optional, defaults to medium)",
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ],
+                                        "example": "medium",
+                                        "nullable": true
+                                    },
+                                    "area_id": {
+                                        "description": "UUID of the area/department (optional, must be active and belong to the ticket company)",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -11850,6 +13185,15 @@
                                                         "closed"
                                                     ],
                                                     "example": "open"
+                                                },
+                                                "priority": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "low",
+                                                        "medium",
+                                                        "high"
+                                                    ],
+                                                    "example": "medium"
                                                 },
                                                 "last_response_author_type": {
                                                     "type": "string",
@@ -11919,6 +13263,26 @@
                                                         "name": {
                                                             "type": "string",
                                                             "example": "Problemas Técnicos"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "area_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
+                                                "area": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Soporte Técnico"
                                                         }
                                                     },
                                                     "type": "object",
@@ -12050,6 +13414,20 @@
                                                         "type": "string",
                                                         "example": "La categoría seleccionada no está activa."
                                                     }
+                                                },
+                                                "priority": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Priority must be one of: low, medium, high"
+                                                    }
+                                                },
+                                                "area_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The selected area is inactive."
+                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -12141,6 +13519,15 @@
                                                     ],
                                                     "example": "pending"
                                                 },
+                                                "priority": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "low",
+                                                        "medium",
+                                                        "high"
+                                                    ],
+                                                    "example": "high"
+                                                },
                                                 "last_response_author_type": {
                                                     "type": "string",
                                                     "enum": [
@@ -12219,6 +13606,28 @@
                                                         }
                                                     },
                                                     "type": "object"
+                                                },
+                                                "area_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "nullable": true
+                                                },
+                                                "area": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "format": "uuid"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Soporte Técnico"
+                                                        },
+                                                        "is_active": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
                                                 },
                                                 "responses_count": {
                                                     "type": "integer",
@@ -12474,6 +13883,24 @@
                                         "type": "string",
                                         "format": "uuid",
                                         "example": "8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d"
+                                    },
+                                    "priority": {
+                                        "description": "New priority level (optional, must be low/medium/high)",
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ],
+                                        "example": "high",
+                                        "nullable": true
+                                    },
+                                    "area_id": {
+                                        "description": "New area UUID (optional, must be active and belong to ticket company, can be null to remove area)",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -12535,6 +13962,14 @@
                                                         "closed"
                                                     ]
                                                 },
+                                                "priority": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "low",
+                                                        "medium",
+                                                        "high"
+                                                    ]
+                                                },
                                                 "last_response_author_type": {
                                                     "type": "string"
                                                 },
@@ -12570,6 +14005,15 @@
                                                             "type": "string"
                                                         }
                                                     },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "area_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "nullable": true
+                                                },
+                                                "area": {
                                                     "type": "object",
                                                     "nullable": true
                                                 },
@@ -12672,9 +14116,118 @@
                                                         "type": "string",
                                                         "example": "La categoría seleccionada no está activa."
                                                     }
+                                                },
+                                                "priority": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Priority must be one of: low, medium, high"
+                                                    }
+                                                },
+                                                "area_id": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The selected area is inactive."
+                                                    }
                                                 }
                                             },
                                             "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/tickets/{ticket}/remind": {
+            "post": {
+                "tags": [
+                    "Ticket Actions"
+                ],
+                "summary": "Send reminder email to ticket creator",
+                "description": "Sends a reminder email to the ticket creator. Only AGENT role users from the ticket's company can send reminders. The email notifies the user about the ticket status and encourages them to check for updates or respond.",
+                "operationId": "send_ticket_reminder",
+                "parameters": [
+                    {
+                        "name": "ticket",
+                        "in": "path",
+                        "description": "Ticket code (e.g., TKT-2025-00001)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^TKT-\\d{4}-\\d{5}$",
+                            "example": "TKT-2025-00001"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reminder sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "description": "Success message",
+                                            "type": "string",
+                                            "example": "Recordatorio enviado exitosamente"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid JWT token)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - user lacks AGENT role or does not belong to ticket company",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "This action is unauthorized."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Ticket not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No query results for model [Ticket]."
                                         }
                                     },
                                     "type": "object"
@@ -14162,6 +15715,97 @@
                 ]
             }
         },
+        "/api/users/me/avatar": {
+            "post": {
+                "tags": [
+                    "User Profile"
+                ],
+                "summary": "Upload user avatar image",
+                "description": "Upload and store avatar image for the authenticated user. Throttled: 10 requests/hour. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5 MB.",
+                "operationId": "upload_my_avatar",
+                "requestBody": {
+                    "description": "Avatar image file (multipart/form-data)",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "avatar"
+                                ],
+                                "properties": {
+                                    "avatar": {
+                                        "description": "Avatar image file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Avatar uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Avatar uploaded successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "avatarUrl": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "example": "http://localhost:8000/storage/avatars/550e8400-e29b-41d4-a716-446655440000/1731774123_profile.jpg"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "example": {
+                                                "avatar": [
+                                                    "Avatar must not exceed 5 MB"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/roles": {
             "get": {
                 "tags": [
@@ -15091,8 +16735,16 @@
             "description": "Sessions"
         },
         {
+            "name": "Areas",
+            "description": "Areas"
+        },
+        {
             "name": "Companies",
             "description": "Companies"
+        },
+        {
+            "name": "Company Settings",
+            "description": "Company Settings"
         },
         {
             "name": "Company Followers",

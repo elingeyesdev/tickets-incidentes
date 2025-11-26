@@ -137,4 +137,12 @@ class TicketPolicy
     {
         return $user->hasRoleInCompany('AGENT', $ticket->company_id);
     }
+
+    /**
+     * Enviar recordatorio: solo AGENT de la compañía.
+     */
+    public function sendReminder(User $user, Ticket $ticket): bool
+    {
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
+    }
 }

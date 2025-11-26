@@ -14,10 +14,12 @@ class TicketResource extends JsonResource
             'ticket_code' => $this->ticket_code,
             'company_id' => $this->company_id,
             'category_id' => $this->category_id,
+            'area_id' => $this->area_id,
             'created_by_user_id' => $this->created_by_user_id,
             'owner_agent_id' => $this->owner_agent_id,
             'title' => $this->title,
             'description' => $this->description,
+            'priority' => $this->priority->value,
             'status' => $this->status->value,
             'last_response_author_type' => $this->last_response_author_type,
             'resolved_at' => $this->resolved_at?->toIso8601String(),
@@ -50,6 +52,13 @@ class TicketResource extends JsonResource
                     'id' => $this->category->id,
                     'name' => $this->category->name,
                 ];
+            }),
+
+            'area' => $this->whenLoaded('area', function () {
+                return $this->area ? [
+                    'id' => $this->area->id,
+                    'name' => $this->area->name,
+                ] : null;
             }),
 
             'responses_count' => $this->when(isset($this->responses_count), $this->responses_count),

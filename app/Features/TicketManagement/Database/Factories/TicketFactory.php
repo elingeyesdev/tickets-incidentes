@@ -3,6 +3,7 @@
 namespace App\Features\TicketManagement\Database\Factories;
 
 use App\Features\CompanyManagement\Models\Company;
+use App\Features\TicketManagement\Enums\TicketPriority;
 use App\Features\TicketManagement\Enums\TicketStatus;
 use App\Features\TicketManagement\Models\Category;
 use App\Features\TicketManagement\Models\Ticket;
@@ -54,6 +55,8 @@ class TicketFactory extends Factory
             'category_id' => Category::factory(),
             'title' => $this->faker->randomElement($titles),
             'description' => $this->faker->randomElement($descriptions) . ' ' . $this->faker->realText(200),
+            'priority' => TicketPriority::MEDIUM,
+            'area_id' => null,
             'status' => TicketStatus::OPEN,
             'owner_agent_id' => null,  // NULL inicialmente, se asigna con trigger
             'last_response_author_type' => 'none',  // 'none' por defecto, se actualiza con trigger
@@ -158,6 +161,26 @@ class TicketFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'created_at' => now()->subDays($days),
             'updated_at' => now()->subDays($days),
+        ]);
+    }
+
+    /**
+     * Ticket con prioridad específica
+     */
+    public function withPriority(TicketPriority $priority): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'priority' => $priority,
+        ]);
+    }
+
+    /**
+     * Ticket en área específica
+     */
+    public function inArea(string $areaId): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'area_id' => $areaId,
         ]);
     }
 }

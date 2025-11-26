@@ -38,6 +38,32 @@ class UpdateTicketRequest extends FormRequest
                     }
                 },
             ],
+            'priority' => [
+                'sometimes',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!in_array($value, ['low', 'medium', 'high'])) {
+                        $fail('La prioridad debe ser una de: low, medium, high.');
+                    }
+                },
+            ],
+            'area_id' => [
+                'sometimes',
+                'nullable',
+                'uuid',
+                function ($attribute, $value, $fail) use ($ticket) {
+                    if ($value) {
+                        $area = \App\Features\CompanyManagement\Models\Area::find($value);
+                        if (!$area || !$area->is_active) {
+                            $fail('El área seleccionada no existe o no está activa.');
+                            return;
+                        }
+                        if ($area->company_id !== $ticket->company_id) {
+                            $fail('El área no pertenece a la misma compañía del ticket.');
+                        }
+                    }
+                },
+            ],
         ];
     }
 }

@@ -78,6 +78,22 @@ class TicketController extends Controller
                         format: 'uuid',
                         example: '9b8c7d6e-5f4a-3b2c-1d0e-9f8e7d6c5b4a'
                     ),
+                    new OA\Property(
+                        property: 'priority',
+                        description: 'Ticket priority level (optional, defaults to medium)',
+                        type: 'string',
+                        enum: ['low', 'medium', 'high'],
+                        example: 'medium',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'area_id',
+                        description: 'UUID of the area/department (optional, must be active and belong to the ticket company)',
+                        type: 'string',
+                        format: 'uuid',
+                        example: '8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d',
+                        nullable: true
+                    ),
                 ],
                 type: 'object'
             )
@@ -102,6 +118,7 @@ class TicketController extends Controller
                                 new OA\Property(property: 'title', type: 'string', example: 'Error al exportar reporte mensual'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Cuando intento exportar el reporte mensual de ventas...'),
                                 new OA\Property(property: 'status', type: 'string', enum: ['open', 'pending', 'resolved', 'closed'], example: 'open'),
+                                new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high'], example: 'medium'),
                                 new OA\Property(property: 'last_response_author_type', type: 'string', enum: ['none', 'user', 'agent'], example: 'none'),
                                 new OA\Property(property: 'resolved_at', type: 'string', format: 'date-time', example: null, nullable: true),
                                 new OA\Property(property: 'closed_at', type: 'string', format: 'date-time', example: null, nullable: true),
@@ -135,6 +152,16 @@ class TicketController extends Controller
                                     properties: [
                                         new OA\Property(property: 'id', type: 'string', format: 'uuid'),
                                         new OA\Property(property: 'name', type: 'string', example: 'Problemas Técnicos'),
+                                    ],
+                                    type: 'object',
+                                    nullable: true
+                                ),
+                                new OA\Property(property: 'area_id', type: 'string', format: 'uuid', nullable: true, example: null),
+                                new OA\Property(
+                                    property: 'area',
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                        new OA\Property(property: 'name', type: 'string', example: 'Soporte Técnico'),
                                     ],
                                     type: 'object',
                                     nullable: true
@@ -209,6 +236,16 @@ class TicketController extends Controller
                                     type: 'array',
                                     items: new OA\Items(type: 'string', example: 'La categoría seleccionada no está activa.')
                                 ),
+                                new OA\Property(
+                                    property: 'priority',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'Priority must be one of: low, medium, high')
+                                ),
+                                new OA\Property(
+                                    property: 'area_id',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The selected area is inactive.')
+                                ),
                             ],
                             type: 'object'
                         ),
@@ -251,6 +288,20 @@ class TicketController extends Controller
             new OA\Parameter(
                 name: 'category_id',
                 description: 'Filter by category UUID',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            ),
+            new OA\Parameter(
+                name: 'priority',
+                description: 'Filter by ticket priority',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['low', 'medium', 'high'])
+            ),
+            new OA\Parameter(
+                name: 'area_id',
+                description: 'Filter by area UUID',
                 in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'string', format: 'uuid')
@@ -362,9 +413,11 @@ class TicketController extends Controller
                                     new OA\Property(property: 'ticket_code', type: 'string', example: 'TKT-2025-00001'),
                                     new OA\Property(property: 'title', type: 'string', example: 'Error al exportar reporte mensual'),
                                     new OA\Property(property: 'status', type: 'string', enum: ['open', 'pending', 'resolved', 'closed'], example: 'open'),
+                                    new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high'], example: 'medium'),
                                     new OA\Property(property: 'last_response_author_type', type: 'string', enum: ['none', 'user', 'agent'], example: 'none'),
                                     new OA\Property(property: 'company_id', type: 'string', format: 'uuid'),
                                     new OA\Property(property: 'category_id', type: 'string', format: 'uuid'),
+                                    new OA\Property(property: 'area_id', type: 'string', format: 'uuid', nullable: true),
                                     new OA\Property(property: 'created_by_user_id', type: 'string', format: 'uuid'),
                                     new OA\Property(property: 'owner_agent_id', type: 'string', format: 'uuid', nullable: true),
                                     new OA\Property(property: 'creator_name', type: 'string', example: 'Juan Pérez'),
@@ -392,6 +445,15 @@ class TicketController extends Controller
                                     ),
                                     new OA\Property(
                                         property: 'category',
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                        ],
+                                        type: 'object',
+                                        nullable: true
+                                    ),
+                                    new OA\Property(
+                                        property: 'area',
                                         properties: [
                                             new OA\Property(property: 'id', type: 'string', format: 'uuid'),
                                             new OA\Property(property: 'name', type: 'string'),
@@ -452,6 +514,7 @@ class TicketController extends Controller
         $filters = $request->only([
             'status',
             'category_id',
+            'priority',
             'owner_agent_id',
             'created_by_user_id',
             'last_response_author_type',
@@ -519,6 +582,7 @@ class TicketController extends Controller
                                 new OA\Property(property: 'title', type: 'string', example: 'Error al exportar reporte mensual'),
                                 new OA\Property(property: 'description', type: 'string', example: 'Cuando intento exportar el reporte mensual de ventas...'),
                                 new OA\Property(property: 'status', type: 'string', enum: ['open', 'pending', 'resolved', 'closed'], example: 'pending'),
+                                new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high'], example: 'high'),
                                 new OA\Property(property: 'last_response_author_type', type: 'string', enum: ['none', 'user', 'agent'], example: 'agent'),
                                 new OA\Property(property: 'resolved_at', type: 'string', format: 'date-time', example: null, nullable: true),
                                 new OA\Property(property: 'closed_at', type: 'string', format: 'date-time', example: null, nullable: true),
@@ -555,6 +619,17 @@ class TicketController extends Controller
                                         new OA\Property(property: 'name', type: 'string', example: 'Problemas Técnicos'),
                                     ],
                                     type: 'object'
+                                ),
+                                new OA\Property(property: 'area_id', type: 'string', format: 'uuid', nullable: true),
+                                new OA\Property(
+                                    property: 'area',
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                        new OA\Property(property: 'name', type: 'string', example: 'Soporte Técnico'),
+                                        new OA\Property(property: 'is_active', type: 'boolean'),
+                                    ],
+                                    type: 'object',
+                                    nullable: true
                                 ),
                                 new OA\Property(property: 'responses_count', type: 'integer', example: 3),
                                 new OA\Property(property: 'attachments_count', type: 'integer', example: 1),
@@ -654,6 +729,22 @@ class TicketController extends Controller
                         format: 'uuid',
                         example: '8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d'
                     ),
+                    new OA\Property(
+                        property: 'priority',
+                        description: 'New priority level (optional, must be low/medium/high)',
+                        type: 'string',
+                        enum: ['low', 'medium', 'high'],
+                        example: 'high',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'area_id',
+                        description: 'New area UUID (optional, must be active and belong to ticket company, can be null to remove area)',
+                        type: 'string',
+                        format: 'uuid',
+                        example: '8a7b6c5d-4e3f-2a1b-0c9d-8e7f6a5b4c3d',
+                        nullable: true
+                    ),
                 ],
                 type: 'object'
             )
@@ -687,6 +778,7 @@ class TicketController extends Controller
                                 new OA\Property(property: 'title', type: 'string', example: 'Error al exportar reportes - Actualizado'),
                                 new OA\Property(property: 'description', type: 'string'),
                                 new OA\Property(property: 'status', type: 'string', enum: ['open', 'pending', 'resolved', 'closed']),
+                                new OA\Property(property: 'priority', type: 'string', enum: ['low', 'medium', 'high']),
                                 new OA\Property(property: 'last_response_author_type', type: 'string'),
                                 new OA\Property(property: 'resolved_at', type: 'string', format: 'date-time', nullable: true),
                                 new OA\Property(property: 'closed_at', type: 'string', format: 'date-time', nullable: true),
@@ -711,6 +803,12 @@ class TicketController extends Controller
                                         new OA\Property(property: 'id', type: 'string', format: 'uuid'),
                                         new OA\Property(property: 'name', type: 'string'),
                                     ],
+                                    type: 'object',
+                                    nullable: true
+                                ),
+                                new OA\Property(property: 'area_id', type: 'string', format: 'uuid', nullable: true),
+                                new OA\Property(
+                                    property: 'area',
                                     type: 'object',
                                     nullable: true
                                 ),
@@ -777,6 +875,16 @@ class TicketController extends Controller
                                     property: 'category_id',
                                     type: 'array',
                                     items: new OA\Items(type: 'string', example: 'La categoría seleccionada no está activa.')
+                                ),
+                                new OA\Property(
+                                    property: 'priority',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'Priority must be one of: low, medium, high')
+                                ),
+                                new OA\Property(
+                                    property: 'area_id',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'string', example: 'The selected area is inactive.')
                                 ),
                             ],
                             type: 'object'

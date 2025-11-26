@@ -1237,4 +1237,328 @@ class CompanyController extends Controller
             ], 422);
         }
     }
+
+    #[OA\Get(
+        path: '/api/companies/me/settings/areas-enabled',
+        operationId: 'get_areas_enabled',
+        summary: 'Get areas feature status',
+        description: 'Returns whether the authenticated COMPANY_ADMIN\'s company has areas feature enabled. The company ID is automatically extracted from the JWT token.',
+        security: [['bearerAuth' => []]],
+        tags: ['Company Settings'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Areas feature status retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'areas_enabled', type: 'boolean', example: false),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (invalid or missing JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Invalid company context (user is not COMPANY_ADMIN)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Invalid company context'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Company not found',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Company not found'),
+                    ]
+                )
+            ),
+        ]
+    )]
+    /**
+     * GET /api/companies/me/settings/areas-enabled
+     *
+     * Obtiene si la empresa del COMPANY_ADMIN tiene áreas habilitadas.
+     * Company ID se obtiene del JWT.
+     *
+     * @return JsonResponse
+     */
+    public function getAreasEnabled(): JsonResponse
+    {
+        // Obtener company_id del JWT
+        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+        if (!$companyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid company context',
+            ], 403);
+        }
+
+        $company = Company::find($companyId);
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Company not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'areas_enabled' => $company->hasAreasEnabled(),
+            ],
+        ], 200);
+    }
+
+    #[OA\Patch(
+        path: '/api/companies/me/settings/areas-enabled',
+        operationId: 'toggle_areas_enabled',
+        summary: 'Enable or disable areas feature',
+        description: 'Enables or disables the areas feature for the authenticated COMPANY_ADMIN\'s company. Updates the company.settings JSONB field. Requires manageAreas permission from CompanyPolicy.',
+        security: [['bearerAuth' => []]],
+        tags: ['Company Settings'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            description: 'Areas feature toggle request',
+            content: new OA\JsonContent(
+                type: 'object',
+                required: ['enabled'],
+                properties: [
+                    new OA\Property(
+                        property: 'enabled',
+                        type: 'boolean',
+                        description: 'Enable or disable the areas feature',
+                        example: true
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Areas feature status updated successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Areas enabled successfully'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'areas_enabled', type: 'boolean', example: true),
+                            ]
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated (invalid or missing JWT token)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden (invalid company context or missing manageAreas permission)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Invalid company context'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Company not found',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Company not found'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error (enabled must be boolean)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'The given data was invalid.'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\AdditionalProperties(
+                                type: 'array',
+                                items: new OA\Items(type: 'string')
+                            )
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    /**
+     * PATCH /api/companies/me/settings/areas-enabled
+     *
+     * Activa o desactiva las áreas para la empresa del COMPANY_ADMIN.
+     * Company ID se obtiene del JWT.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function toggleAreasEnabled(Request $request): JsonResponse
+    {
+        // Validar input
+        $validated = $request->validate([
+            'enabled' => 'required|boolean',
+        ]);
+
+        // Obtener company_id del JWT
+        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+        if (!$companyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid company context',
+            ], 403);
+        }
+
+        $company = Company::find($companyId);
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Company not found',
+            ], 404);
+        }
+
+        // Autorizar con CompanyPolicy
+        $this->authorize('manageAreas', $company);
+
+        // Actualizar settings
+        $settings = $company->settings ?? [];
+        $settings['areas_enabled'] = $validated['enabled'];
+        $company->settings = $settings;
+        $company->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $validated['enabled']
+                ? 'Areas enabled successfully'
+                : 'Areas disabled successfully',
+            'data' => [
+                'areas_enabled' => $company->hasAreasEnabled(),
+            ],
+        ], 200);
+    }
+
+    #[OA\Get(
+        path: '/api/companies/{companyId}/settings/areas-enabled',
+        operationId: 'get_company_areas_enabled_public',
+        description: 'Returns whether a company has the areas feature enabled. Public endpoint (no authentication required). Used by frontend to determine if area selection should be displayed when creating tickets.',
+        summary: 'Get company areas feature status (public)',
+        tags: ['Company Settings'],
+        parameters: [
+            new OA\Parameter(
+                name: 'companyId',
+                description: 'Company UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Areas feature status retrieved successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(
+                                    property: 'areas_enabled',
+                                    type: 'boolean',
+                                    example: false,
+                                    description: 'Whether the company has areas feature enabled'
+                                ),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Company not found',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Company not found'),
+                    ],
+                    type: 'object'
+                )
+            ),
+        ]
+    )]
+    /**
+     * GET /api/companies/{companyId}/settings/areas-enabled
+     *
+     * Obtiene si una empresa tiene áreas habilitadas (endpoint público).
+     * No requiere autenticación - usado por frontend para mostrar/ocultar select de áreas.
+     *
+     * @param string $companyId
+     * @return JsonResponse
+     */
+    public function getCompanyAreasEnabledPublic(string $companyId): JsonResponse
+    {
+        $company = Company::find($companyId);
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Company not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'areas_enabled' => $company->hasAreasEnabled(),
+            ],
+        ], 200);
+    }
 }

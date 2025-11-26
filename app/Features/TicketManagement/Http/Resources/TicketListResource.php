@@ -13,12 +13,14 @@ class TicketListResource extends JsonResource
             'id' => $this->id,
             'ticket_code' => $this->ticket_code,
             'title' => $this->title,
+            'priority' => $this->priority->value,
             'status' => $this->status->value,
             'last_response_author_type' => $this->last_response_author_type,
 
             // IDs for filtering/relationships
             'company_id' => $this->company_id,
             'category_id' => $this->category_id,
+            'area_id' => $this->area_id,
             'created_by_user_id' => $this->created_by_user_id,
             'owner_agent_id' => $this->owner_agent_id,
 
@@ -26,6 +28,7 @@ class TicketListResource extends JsonResource
             'creator_name' => $this->creator->profile->full_name ?? $this->creator->email,
             'owner_agent_name' => $this->ownerAgent->profile->full_name ?? null,
             'category_name' => $this->category->name,
+            'area_name' => $this->area?->name,
 
             // Related data (loaded when needed)
             'created_by_user' => $this->whenLoaded('creator', function () {
@@ -47,6 +50,12 @@ class TicketListResource extends JsonResource
                     'id' => $this->category->id,
                     'name' => $this->category->name,
                 ];
+            }),
+            'area' => $this->whenLoaded('area', function () {
+                return $this->area ? [
+                    'id' => $this->area->id,
+                    'name' => $this->area->name,
+                ] : null;
             }),
             'company' => $this->whenLoaded('company', function () {
                 return [

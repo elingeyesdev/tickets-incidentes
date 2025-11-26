@@ -55,6 +55,8 @@ class TicketService
             'status' => TicketStatus::OPEN->value,
             'owner_agent_id' => null,
             'last_response_author_type' => 'none',
+            'priority' => $data['priority'] ?? 'medium', // Default 'medium' if not provided
+            'area_id' => $data['area_id'] ?? null, // Optional area_id
         ]);
 
         // Disparar evento de creación
@@ -159,6 +161,21 @@ class TicketService
             $updateData['category_id'] = $data['category_id'];
         }
 
+        // Permitir actualizar descripción
+        if (isset($data['description'])) {
+            $updateData['description'] = $data['description'];
+        }
+
+        // Permitir actualizar prioridad
+        if (isset($data['priority'])) {
+            $updateData['priority'] = $data['priority'];
+        }
+
+        // Permitir actualizar área (including null to clear it)
+        if (array_key_exists('area_id', $data)) {
+            $updateData['area_id'] = $data['area_id'];
+        }
+
         $ticket->update($updateData);
         return $ticket;
     }
@@ -237,6 +254,11 @@ class TicketService
         // Filtrar por categoría
         if (!empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
+        }
+
+        // Filtrar por prioridad
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
         }
 
         // Filtrar por agente asignado

@@ -48,5 +48,12 @@ class TicketManagementServiceProvider extends ServiceProvider
             \App\Features\TicketManagement\Events\ResponseAdded::class,
             \App\Features\TicketManagement\Listeners\SendTicketResponseEmail::class
         );
+
+        // Auto-escalada de prioridad: programa job para 24 horas después
+        // Si el ticket sigue OPEN sin respuesta de agente, se escala a HIGH
+        $events->listen(
+            \App\Features\TicketManagement\Events\TicketCreated::class,
+            \App\Features\TicketManagement\Listeners\DispatchEscalationJob::class
+        );
     }
 }

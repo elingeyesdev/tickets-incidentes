@@ -2,7 +2,9 @@
 
 namespace App\Features\TicketManagement\Models;
 
+use App\Features\CompanyManagement\Models\Area;
 use App\Features\CompanyManagement\Models\Company;
+use App\Features\TicketManagement\Enums\TicketPriority;
 use App\Features\TicketManagement\Enums\TicketStatus;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Traits\HasUuid;
@@ -28,6 +30,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property string|null $category_id
  * @property string $title
  * @property string $description
+ * @property TicketPriority $priority
+ * @property string|null $area_id
  * @property TicketStatus $status
  * @property string|null $owner_agent_id
  * @property string $last_response_author_type
@@ -41,6 +45,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read User|null $ownerAgent
  * @property-read Company $company
  * @property-read Category|null $category
+ * @property-read Area|null $area
  * @property-read \Illuminate\Database\Eloquent\Collection<TicketResponse> $responses
  * @property-read \Illuminate\Database\Eloquent\Collection<TicketInternalNote> $internalNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<TicketAttachment> $attachments
@@ -89,6 +94,8 @@ class Ticket extends Model
         'category_id',
         'title',
         'description',
+        'priority',
+        'area_id',
         'status',
         'owner_agent_id',
         'last_response_author_type',
@@ -106,7 +113,9 @@ class Ticket extends Model
         'company_id' => 'string',
         'category_id' => 'string',
         'owner_agent_id' => 'string',
+        'area_id' => 'string',
         'last_response_author_type' => 'string',
+        'priority' => TicketPriority::class,
         'status' => TicketStatus::class,
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -137,6 +146,14 @@ class Ticket extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    /**
+     * Relación: Pertenece a un área (opcional)
+     */
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class, 'area_id');
     }
 
     /**
@@ -241,6 +258,22 @@ class Ticket extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereIn('status', [TicketStatus::OPEN, TicketStatus::PENDING, TicketStatus::RESOLVED]);
+    }
+
+    /**
+     * Scope: Filtrar por área
+     */
+    public function scopeByArea(Builder $query, string $areaId): Builder
+    {
+        return $query->where('area_id', $areaId);
+    }
+
+    /**
+     * Scope: Filtrar por prioridad
+     */
+    public function scopeByPriority(Builder $query, string $priority): Builder
+    {
+        return $query->where('priority', $priority);
     }
 
     /**

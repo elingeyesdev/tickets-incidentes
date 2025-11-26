@@ -25,6 +25,7 @@ use App\Features\ContentManagement\Http\Controllers\AlertAnnouncementController;
 use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController;
 use App\Features\ContentManagement\Http\Controllers\ArticleController;
 use App\Features\TicketManagement\Http\Controllers\CategoryController;
+use App\Features\CompanyManagement\Http\Controllers\AreaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -132,6 +133,10 @@ Route::middleware('jwt.require')->group(function () {
 // ========== Public Routes (No Authentication Required) ==========
 Route::get('/companies/minimal', [CompanyController::class, 'minimal'])->name('companies.minimal');
 
+// Get company areas enabled status (for frontend ticket creation)
+Route::get('/companies/{companyId}/settings/areas-enabled', [CompanyController::class, 'getCompanyAreasEnabledPublic'])
+    ->name('companies.areas-enabled.public');
+
 // Company Industries (Public - for form selectors)
 Route::get('/company-industries', [CompanyIndustryController::class, 'index'])->name('company-industries.index');
 
@@ -190,6 +195,37 @@ Route::middleware('jwt.require')->group(function () {
     Route::post('/companies/{company}/favicon', [CompanyController::class, 'uploadFavicon'])
         ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
         ->name('companies.favicon.upload');
+
+    // ========== COMPANY SETTINGS - Areas Feature Toggle (COMPANY_ADMIN Only) ==========
+    Route::middleware(['role:COMPANY_ADMIN'])->group(function () {
+        // Get if areas are enabled for the company
+        Route::get('/companies/me/settings/areas-enabled', [CompanyController::class, 'getAreasEnabled'])
+            ->name('companies.settings.areas-enabled.get');
+
+        // Enable/disable areas for the company
+        Route::patch('/companies/me/settings/areas-enabled', [CompanyController::class, 'toggleAreasEnabled'])
+            ->name('companies.settings.areas-enabled.toggle');
+    });
+
+    // ========== AREAS - Read Endpoints (All Authenticated Users) ==========
+    // List areas for a company
+    Route::get('/areas', [AreaController::class, 'index'])
+        ->name('areas.index');
+
+    // ========== AREAS - Management Endpoints (COMPANY_ADMIN or PLATFORM_ADMIN) ==========
+    Route::middleware(['role:COMPANY_ADMIN,PLATFORM_ADMIN'])->group(function () {
+        // Create an area
+        Route::post('/areas', [AreaController::class, 'store'])
+            ->name('areas.store');
+
+        // Update an area
+        Route::put('/areas/{id}', [AreaController::class, 'update'])
+            ->name('areas.update');
+
+        // Delete an area
+        Route::delete('/areas/{id}', [AreaController::class, 'destroy'])
+            ->name('areas.destroy');
+    });
 
     // ========== COMPANY REQUESTS - Admin Endpoints ==========
 
@@ -557,4 +593,8 @@ Route::middleware('jwt.require')->group(function () {
     // Assign ticket to agent (AGENT only, policy-based authorization)
     Route::post('/tickets/{ticket}/assign', [\App\Features\TicketManagement\Http\Controllers\TicketActionController::class, 'assign'])
         ->name('tickets.assign');
+
+    // Send reminder email to ticket creator (AGENT only, policy-based authorization)
+    Route::post('/tickets/{ticket}/remind', [\App\Features\TicketManagement\Http\Controllers\TicketReminderController::class, 'sendReminder'])
+        ->name('tickets.remind');
 });

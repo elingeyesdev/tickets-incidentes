@@ -127,4 +127,24 @@ class CompanyPolicy
 
         return false;
     }
+
+    /**
+     * Determinar si el usuario puede gestionar áreas de una empresa.
+     *
+     * Reutiliza la misma lógica que update: COMPANY_ADMIN de la misma empresa.
+     */
+    public function manageAreas(User $user, Company $company): bool
+    {
+        // PLATFORM_ADMIN puede gestionar áreas de cualquier empresa
+        if ($user->hasRole('PLATFORM_ADMIN')) {
+            return true;
+        }
+
+        // COMPANY_ADMIN puede gestionar áreas de su propia empresa
+        if ($user->hasRole('COMPANY_ADMIN') && $user->hasRoleInCompany('COMPANY_ADMIN', $company->id)) {
+            return true;
+        }
+
+        return false;
+    }
 }
