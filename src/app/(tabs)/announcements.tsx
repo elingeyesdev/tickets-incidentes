@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, ScrollView } from 'react-native';
-import { useTheme, Text } from 'react-native-paper';
+import { View, FlatList } from 'react-native';
+import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAnnouncementStore } from '../../stores/announcementStore';
 import { AnnouncementCard } from '../../components/announcements/AnnouncementCard';
@@ -19,7 +19,6 @@ const FILTERS: { label: string; value: AnnouncementType | 'ALL' }[] = [
 ];
 
 export default function AnnouncementsScreen() {
-    const theme = useTheme();
     const router = useRouter();
     const { announcements, fetchAnnouncements, isLoading } = useAnnouncementStore();
 
@@ -42,8 +41,8 @@ export default function AnnouncementsScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-            <View style={styles.header}>
+        <SafeAreaView className="flex-1 bg-gray-50" edges={['left', 'right', 'bottom']}>
+            <View className="px-4 pt-4 pb-2">
                 <View className="mb-4">
                     <Text className="text-2xl font-bold text-gray-900 mb-1">Anuncios</Text>
                     <Text className="text-gray-500">Mantente informado de las últimas novedades</Text>
@@ -75,7 +74,7 @@ export default function AnnouncementsScreen() {
             </View>
 
             {isLoading ? (
-                <View style={styles.listContent}>
+                <View className="px-4 pb-20">
                     {Array.from({ length: 5 }).map((_, index) => (
                         <AnnouncementCardSkeleton key={index} />
                     ))}
@@ -90,10 +89,10 @@ export default function AnnouncementsScreen() {
                             onPress={() => handlePress(item.id)}
                         />
                     )}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80 }}
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={{ color: theme.colors.onSurfaceVariant }}>
+                        <View className="items-center justify-center mt-8">
+                            <Text className="text-gray-500">
                                 No se encontraron anuncios
                             </Text>
                         </View>
@@ -103,22 +102,3 @@ export default function AnnouncementsScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
-    },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 80,
-    },
-    emptyContainer: {
-        padding: 32,
-        alignItems: 'center',
-    },
-});
