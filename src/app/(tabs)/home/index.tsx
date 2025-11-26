@@ -6,7 +6,11 @@ import { useEffect, useRef } from 'react';
 
 export default function HomeScreen() {
     const router = useRouter();
-    const user = useAuthStore((state) => state.user);
+    const { user } = useAuthStore();
+
+    // Debug log to check user data
+    console.log('HomeScreen User:', JSON.stringify(user, null, 2));
+
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
     const waveAnimationSequence = () => {
@@ -14,22 +18,22 @@ export default function HomeScreen() {
             Animated.timing(rotateAnim, {
                 toValue: 20,
                 duration: 100,
-                useNativeDriver: false,
+                useNativeDriver: true, // Changed to true for better performance if possible, or keep false if transform requires it
             }),
             Animated.timing(rotateAnim, {
                 toValue: -20,
                 duration: 100,
-                useNativeDriver: false,
+                useNativeDriver: true,
             }),
             Animated.timing(rotateAnim, {
                 toValue: 20,
                 duration: 100,
-                useNativeDriver: false,
+                useNativeDriver: true,
             }),
             Animated.timing(rotateAnim, {
                 toValue: 0,
                 duration: 100,
-                useNativeDriver: false,
+                useNativeDriver: true,
             }),
         ]);
     };
@@ -61,7 +65,7 @@ export default function HomeScreen() {
             clearTimeout(firstTimeout);
             clearTimeout(secondTimeout);
         };
-    }, [rotateAnim]);
+    }, []);
 
     const quickActions = [
         {
@@ -69,7 +73,7 @@ export default function HomeScreen() {
             icon: 'plus-circle' as const,
             color: 'bg-blue-100',
             iconColor: '#2563eb',
-            route: '/(tabs)/tickets/create', // Verify this route exists or update
+            route: '/(tabs)/tickets/create',
         },
         {
             title: 'Mis Tickets',
@@ -102,7 +106,7 @@ export default function HomeScreen() {
                     <View>
                         <Text className="text-blue-600 text-lg font-semibold">Bienvenido,</Text>
                         <Text className="text-4xl font-bold text-gray-900">
-                            {user?.firstName}
+                            {user?.firstName || user?.displayName || 'Usuario'}
                         </Text>
                     </View>
                     <TouchableOpacity onPress={playDoubleWaveAnimation}>

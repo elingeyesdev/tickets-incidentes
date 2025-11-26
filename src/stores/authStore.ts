@@ -141,6 +141,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 ? { ...rawData, ...(rawData as any).profile }
                 : rawData;
 
+            console.log('Normalized User Data:', JSON.stringify(userData, null, 2));
+
             set({
                 accessToken: token,
                 user: userData,
