@@ -8,8 +8,8 @@ use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\UserManagement\Models\User;
 use App\Shared\Enums\UserStatus;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite for RefreshTokenController REST endpoint
@@ -26,7 +26,7 @@ use Tests\TestCase;
  */
 class RefreshTokenControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     private User $user;
     private AuthService $authService;

@@ -6,8 +6,8 @@ use App\Features\UserManagement\Models\User;
 use App\Shared\Helpers\JWTHelper;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite para JWT Roles
@@ -23,7 +23,7 @@ use Tests\TestCase;
  */
 class JWTRolesTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     private User $testUser;
 

@@ -3,8 +3,8 @@
 namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * RegisterMutation Feature Tests
@@ -14,7 +14,7 @@ use Tests\TestCase;
  */
 class RegisterTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     /**
      * Test: Usuario puede registrarse exitosamente

@@ -3,11 +3,11 @@
 namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test Completo del Flujo de Verificación de Email
@@ -26,7 +26,7 @@ use Tests\TestCase;
  */
 class EmailVerificationCompleteFlowTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     /**
      * @test

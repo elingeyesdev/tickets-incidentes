@@ -4,8 +4,8 @@ namespace Tests\Feature\Authentication;
 
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Tests Completos para MySessions Query
@@ -20,7 +20,7 @@ use Tests\TestCase;
  */
 class MySessionsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     private User $testUser;
 

@@ -4,9 +4,9 @@ namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
 use App\Shared\Enums\UserStatus;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Test suite completo para LoginMutation
@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class LoginTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     private User $testUser;
     private string $testPassword = 'SecurePass123!';

@@ -42,8 +42,11 @@ trait HandlesTimeTravelWithCache
 {
     /**
      * Timestamp base antes de cualquier time travel
+     *
+     * IMPORTANTE: Variable de instancia (NO estática) para evitar
+     * compartir estado entre workers paralelos
      */
-    private static ?int $baseTime = null;
+    private ?int $baseTime = null;
 
     /**
      * Override de travelTo() que sincroniza Redis con el tiempo mockado
@@ -58,8 +61,8 @@ trait HandlesTimeTravelWithCache
     public function travelTo($date, $callback = null)
     {
         // Registrar el tiempo base al primer travelTo()
-        if (self::$baseTime === null) {
-            self::$baseTime = now()->timestamp;
+        if ($this->baseTime === null) {
+            $this->baseTime = now()->timestamp;
         }
 
         // Llamar al travelTo() original de Laravel
@@ -91,7 +94,7 @@ trait HandlesTimeTravelWithCache
         try {
             $prefix = config('cache.prefix', '');
             $currentTime = now()->timestamp;
-            $timeTraveled = $currentTime - self::$baseTime;
+            $timeTraveled = $currentTime - $this->baseTime;
 
             // Patrones específicos de keys que típicamente usan TTL y son afectadas por time-travel
             $timeSensitivePatterns = [
@@ -156,6 +159,6 @@ trait HandlesTimeTravelWithCache
     protected function setUp(): void
     {
         parent::setUp();
-        self::$baseTime = null;
+        $this->baseTime = null;
     }
 }

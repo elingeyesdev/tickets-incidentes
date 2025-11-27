@@ -1,13 +1,13 @@
 <?php
 
-namespace Authentication;
+namespace Tests\Feature\Authentication;
 
 use App\Features\UserManagement\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
+use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Password Reset Complete Test Suite (36 Tests)
@@ -64,7 +64,7 @@ use Tests\TestCase;
  */
 class PasswordResetCompleteTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabaseWithoutTransactions;
 
     protected function setUp(): void
     {
