@@ -181,8 +181,13 @@ class TokenService
      * Renovar access token usando refresh token
      * Implementa rotación de refresh tokens (invalida el viejo, crea uno nuevo)
      *
+     * PATRÓN PROFESIONAL:
+     * - Reutiliza device_name del token viejo (consistencia a través de refreshes)
+     * - Actualiza IP y user_agent (puede cambiar entre requests)
+     * - Mantiene trazabilidad consistente del dispositivo
+     *
      * @param string $refreshTokenPlain
-     * @param array $deviceInfo
+     * @param array $deviceInfo Información actual del request (IP, user_agent, etc) - usada para actualizar geolocalización
      * @return array ['access_token' => string, 'refresh_token' => string, 'expires_in' => int]
      * @throws AuthenticationException
      */
@@ -196,9 +201,18 @@ class TokenService
 
         $user = $oldRefreshToken->user;
 
+        // PATRÓN PROFESIONAL: Reutilizar información del dispositivo original
+        // Esto mantiene el nombre del dispositivo consistente a través de múltiples refreshes
+        // Solo actualizamos IP (para geolocalización) y user_agent (para logs)
+        $mergedDeviceInfo = [
+            'name' => $oldRefreshToken->device_name ?? $deviceInfo['name'] ?? null,  // Reutilizar original
+            'ip' => $deviceInfo['ip'] ?? $oldRefreshToken->ip_address,               // Actualizar IP
+            'user_agent' => $deviceInfo['user_agent'] ?? $oldRefreshToken->user_agent, // Actualizar user_agent
+        ];
+
         // ROTACIÓN: Invalidar refresh token viejo y crear uno nuevo
         $oldRefreshToken->revoke($user->id);
-        $newRefreshTokenData = $this->createRefreshToken($user, $deviceInfo);
+        $newRefreshTokenData = $this->createRefreshToken($user, $mergedDeviceInfo);
 
         // Generar nuevo access token usando el ID del nuevo RefreshToken como session_id
         $sessionId = $newRefreshTokenData['model']->id;

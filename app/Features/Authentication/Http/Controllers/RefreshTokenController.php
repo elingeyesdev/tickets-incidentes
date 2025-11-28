@@ -152,12 +152,8 @@ class RefreshTokenController
                 throw new RefreshTokenRequiredException();
             }
 
-            // Extraer información del dispositivo
-            $deviceInfo = [
-                'name' => $this->detectDeviceName($request->userAgent()),
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ];
+            // Extraer información del dispositivo (DeviceInfoParser resuelve IP real detrás de load balancer)
+            $deviceInfo = DeviceInfoParser::fromRequest($request);
 
             // Renovar tokens usando el servicio
             $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
@@ -186,7 +182,7 @@ class RefreshTokenController
             );
 
             Log::info('Token refreshed successfully via REST endpoint', [
-                'ip' => $request->ip(),
+                'ip' => $deviceInfo['ip'],
                 'device' => $deviceInfo['name'],
             ]);
 
@@ -215,44 +211,4 @@ class RefreshTokenController
         }
     }
 
-    /**
-     * Detectar nombre del dispositivo desde user agent
-     *
-     * @param string|null $userAgent
-     * @return string
-     */
-    private function detectDeviceName(?string $userAgent): string
-    {
-        if (!$userAgent) {
-            return 'Unknown Device';
-        }
-
-        // Browser detection
-        $browser = 'Unknown Browser';
-        if (str_contains($userAgent, 'Chrome')) {
-            $browser = 'Chrome';
-        } elseif (str_contains($userAgent, 'Safari')) {
-            $browser = 'Safari';
-        } elseif (str_contains($userAgent, 'Firefox')) {
-            $browser = 'Firefox';
-        } elseif (str_contains($userAgent, 'Edge')) {
-            $browser = 'Edge';
-        }
-
-        // OS detection
-        $os = 'Unknown OS';
-        if (str_contains($userAgent, 'Windows')) {
-            $os = 'Windows';
-        } elseif (str_contains($userAgent, 'Mac')) {
-            $os = 'macOS';
-        } elseif (str_contains($userAgent, 'Linux')) {
-            $os = 'Linux';
-        } elseif (str_contains($userAgent, 'Android')) {
-            $os = 'Android';
-        } elseif (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad')) {
-            $os = 'iOS';
-        }
-
-        return "{$browser} on {$os}";
-    }
 }
