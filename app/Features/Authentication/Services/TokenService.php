@@ -75,6 +75,10 @@ class TokenService
         // TTL desde config (en minutos)
         $refreshTtl = (int) config('jwt.refresh_ttl');
 
+        // Resolver geolocalización desde IP
+        $geoip = app(GeoIPService::class);
+        $location = $geoip->getLocationFromIp($deviceInfo['ip'] ?? null);
+
         // Crear registro en DB
         $refreshToken = RefreshToken::create([
             'user_id' => $user->id,
@@ -82,6 +86,7 @@ class TokenService
             'device_name' => $deviceInfo['name'] ?? null,
             'ip_address' => $deviceInfo['ip'] ?? null,
             'user_agent' => $deviceInfo['user_agent'] ?? null,
+            'location' => $location,
             'expires_at' => now()->addMinutes($refreshTtl),
         ]);
 

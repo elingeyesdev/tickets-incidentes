@@ -64,7 +64,7 @@ class SessionController
                                     new OA\Property(property: 'lastUsedAt', type: 'string', format: 'date-time', description: 'Last usage timestamp (ISO 8601)', example: '2025-11-01T12:00:00+00:00'),
                                     new OA\Property(property: 'expiresAt', type: 'string', format: 'date-time', description: 'Expiration timestamp (ISO 8601)', example: '2025-11-08T12:00:00+00:00'),
                                     new OA\Property(property: 'isCurrent', type: 'boolean', description: 'Whether this is the current session', example: true),
-                                    new OA\Property(property: 'location', type: 'string', nullable: true, description: 'GeoIP location (not yet implemented)', example: null),
+                                    new OA\Property(property: 'location', type: 'object', nullable: true, description: 'GeoIP location data from MaxMind GeoLite2', example: ['city' => 'Buenos Aires', 'country' => 'Argentina', 'country_code' => 'AR']),
                                 ],
                                 type: 'object'
                             )
@@ -111,7 +111,7 @@ class SessionController
                     'lastUsedAt' => $session->last_used_at?->toIso8601String() ?? $session->created_at->toIso8601String(),
                     'expiresAt' => $session->expires_at->toIso8601String(),
                     'isCurrent' => $currentTokenHash && $session->token_hash === $currentTokenHash,
-                    'location' => null, // TODO: Implement GeoIP later
+                    'location' => $session->location,
                 ];
             })->toArray();
 

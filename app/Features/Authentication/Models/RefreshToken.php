@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $device_name
  * @property string|null $ip_address
  * @property string|null $user_agent
+ * @property array|null $location
  * @property \DateTime $expires_at
  * @property \DateTime|null $last_used_at
  * @property bool $is_revoked
@@ -57,6 +58,7 @@ class RefreshToken extends Model
         'device_name',
         'ip_address',
         'user_agent',
+        'location',
         'expires_at',
         'last_used_at',
         'is_revoked',
@@ -79,6 +81,7 @@ class RefreshToken extends Model
         'last_used_at' => 'datetime',
         'revoked_at' => 'datetime',
         'is_revoked' => 'boolean',
+        'location' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
