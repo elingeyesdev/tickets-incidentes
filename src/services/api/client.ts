@@ -88,23 +88,33 @@ client.interceptors.response.use(
             isRefreshing = true;
 
             try {
+                console.log('🔄 Auto-refresh triggered (401)...');
                 const response = await axios.post(`${BASE_URL}/api/auth/refresh`, {}, {
                     withCredentials: true,
                 });
 
+                console.log('🔄 Auto-refresh response:', JSON.stringify(response.data, null, 2));
+
                 const { data } = response.data;
-                const newAccessToken = data?.accessToken;
+                const newAccessToken = data?.accessToken || response.data.accessToken;
 
                 if (newAccessToken) {
                     await tokenStorage.setAccessToken(newAccessToken);
                     client.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
                     processQueue(null, newAccessToken);
+                    console.log('✅ Auto-refresh successful');
                     return client(originalRequest);
                 } else {
+                    console.error('❌ No access token in auto-refresh response:', response.data);
                     throw new Error("No access token in refresh response");
                 }
 
-            } catch (refreshError) {
+            } catch (refreshError: any) {
+                console.error('❌ Auto-refresh failed:', {
+                    message: refreshError.message,
+                    status: refreshError.response?.status,
+                    data: refreshError.response?.data,
+                });
                 processQueue(refreshError, null);
                 await tokenStorage.clearAccessToken();
                 router.replace('/(auth)/login');
