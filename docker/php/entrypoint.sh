@@ -15,12 +15,42 @@ echo "✅ PostgreSQL is ready!"
 echo "⏳ Waiting 5 seconds for PostgreSQL stability..."
 sleep 5
 
-# --- 2. Install/Update composer dependencies (as root to avoid permission issues) ---
+# --- 2. Verify/Install composer dependencies (Multi-environment) ---
 if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
-    echo "📦 Installing Composer dependencies..."
-    COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist --optimize-autoloader
+    if [ "$APP_ENV" = "local" ]; then
+        # DEVELOPMENT (Windows): vendor/ should be from Windows mount
+        echo "❌ ERROR: Composer dependencies not found!"
+        echo ""
+        echo "📍 You are in DEVELOPMENT mode (Windows + Docker)"
+        echo ""
+        echo "⚠️  IMPORTANT: Install dependencies on Windows:"
+        echo "   1. Open CMD/PowerShell on Windows"
+        echo "   2. Run: composer install"
+        echo "   3. Restart Docker: docker compose down && docker compose up -d"
+        echo ""
+        exit 1
+    else
+        # PRODUCTION (Linux): auto-install in container
+        echo "📦 Installing Composer dependencies (Production mode)..."
+        composer install \
+            --prefer-dist \
+            --no-dev \
+            --no-interaction \
+            --timeout=2400 \
+            --no-suggest
+
+        if [ ! -f "vendor/autoload.php" ]; then
+            echo "❌ ERROR: Failed to install Composer dependencies!"
+            exit 1
+        fi
+        echo "✅ Composer dependencies installed!"
+    fi
 else
-    echo "✅ Composer dependencies already installed"
+    if [ "$APP_ENV" = "local" ]; then
+        echo "✅ Composer dependencies found (using vendor/ from Windows)"
+    else
+        echo "✅ Composer dependencies found (Production ready)"
+    fi
 fi
 
 # --- 3. Setup storage directories ---
@@ -47,30 +77,34 @@ else
     echo "✅ Application key already set"
 fi
 
-# --- 5. Run migrations ---
-echo "🗄️  Running database migrations..."
-php artisan migrate --force
+# --- 5. Run migrations (only if vendor exists) ---
+if [ -f "vendor/autoload.php" ]; then
+    echo "🗄️  Running database migrations..."
+    php artisan migrate --force
 
-# --- 5.1. Seed database (roles + default user) ---
-echo "🌱 Seeding database..."
-php artisan db:seed --class="Database\\Seeders\\DatabaseSeeder" || true
+    # --- 5.1. Seed database (roles + default user) ---
+    echo "🌱 Seeding database..."
+    php artisan db:seed --class="Database\\Seeders\\DatabaseSeeder" || true
 
-# --- 6. Clear and optimize cache ---
-echo "🧹 Clearing and optimizing cache..."
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-php artisan cache:clear
+    # --- 6. Clear and optimize cache ---
+    echo "🧹 Clearing and optimizing cache..."
+    php artisan config:clear
+    php artisan route:clear
+    php artisan view:clear
+    php artisan cache:clear
 
-echo "⚡ Optimizing application..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+    echo "⚡ Optimizing application..."
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
 
-# --- 7. Create storage link ---
-if [ ! -L "public/storage" ]; then
-    echo "🔗 Creating storage symlink..."
-    php artisan storage:link
+    # --- 7. Create storage link ---
+    if [ ! -L "public/storage" ]; then
+        echo "🔗 Creating storage symlink..."
+        php artisan storage:link
+    fi
+else
+    echo "⚠️  Skipping migrations and cache (vendor not installed)"
 fi
 
 echo "✅ Helpdesk initialization complete!"
