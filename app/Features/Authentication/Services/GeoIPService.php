@@ -29,7 +29,7 @@ final class GeoIPService
      */
     public function __construct()
     {
-        $dbPath = storage_path('geoip/GeoLite2-City.mmdb');
+        $dbPath = storage_path('app/geoip/GeoLite2-City.mmdb');
 
         if (!file_exists($dbPath)) {
             throw new \RuntimeException(

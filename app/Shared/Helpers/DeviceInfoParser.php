@@ -32,8 +32,12 @@ class DeviceInfoParser
 
         $userAgent = $request->userAgent();
 
+        // Get real client IP from X-Forwarded-For header (for proxies/load balancers like GCP CLB)
+        // X-Forwarded-For format: client, proxy1, proxy2, ...
+        $ip = self::getClientIp($request);
+
         return [
-            'ip' => $request->ip() ?? '127.0.0.1',
+            'ip' => $ip ?? '127.0.0.1',
             'user_agent' => $userAgent,
             'name' => self::parseDeviceName($userAgent),
         ];
@@ -207,6 +211,40 @@ class DeviceInfoParser
         }
 
         return 'Unknown';
+    }
+
+    /**
+     * Obtiene la IP real del cliente considerando proxies y load balancers
+     *
+     * Intenta obtener de X-Forwarded-For primero (la IP más a la izquierda es el cliente real),
+     * luego CF-Connecting-IP (Cloudflare), luego X-Real-IP, finalmente $request->ip() como fallback.
+     *
+     * @param Request $request Request de Laravel
+     * @return string|null IP del cliente
+     */
+    private static function getClientIp(Request $request): ?string
+    {
+        // Try X-Forwarded-For (most common with proxies like GCP CLB, AWS ALB, nginx)
+        // Format: client, proxy1, proxy2, ...
+        if ($request->header('X-Forwarded-For')) {
+            $ips = array_map('trim', explode(',', $request->header('X-Forwarded-For')));
+            if (!empty($ips[0]) && filter_var($ips[0], FILTER_VALIDATE_IP)) {
+                return $ips[0];
+            }
+        }
+
+        // Try Cloudflare
+        if ($request->header('CF-Connecting-IP')) {
+            return $request->header('CF-Connecting-IP');
+        }
+
+        // Try X-Real-IP (nginx, some proxies)
+        if ($request->header('X-Real-IP')) {
+            return $request->header('X-Real-IP');
+        }
+
+        // Fallback to standard method (direct connection)
+        return $request->ip();
     }
 
     /**
