@@ -70,6 +70,13 @@ export default function SessionsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            // First, collapse the expanded card if it's the one being deleted
+                            if (expandedSession === id) {
+                                setExpandedSession(null);
+                                // Wait for collapse animation
+                                await new Promise((resolve) => setTimeout(resolve, 100));
+                            }
+
                             // Calculate position from bottom (for animation direction)
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
                             const reversedNonCurrent = [...nonCurrentSessions].reverse();
@@ -121,6 +128,12 @@ export default function SessionsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            // First, collapse any expanded card
+                            if (expandedSession) {
+                                setExpandedSession(null);
+                                await new Promise((resolve) => setTimeout(resolve, 100));
+                            }
+
                             // Get non-current sessions and reverse to start from bottom
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
 
@@ -128,11 +141,11 @@ export default function SessionsScreen() {
                                 return;
                             }
 
-                            // Trigger button animation (zoom in + fade flash)
+                            // Trigger button animation (zoom in + fade flash) - fast
                             setIsDeletingAllMode(true);
 
-                            // Wait for button animation to complete (150ms)
-                            await new Promise((resolve) => setTimeout(resolve, 150));
+                            // Wait for button animation to complete (100ms - flash effect)
+                            await new Promise((resolve) => setTimeout(resolve, 100));
 
                             // Reverse to eliminate from bottom to top
                             const reversedSessions = [...nonCurrentSessions].reverse();
@@ -173,8 +186,13 @@ export default function SessionsScreen() {
                                     continue;
                                 }
                             }
+
+                            // Reset delete all mode so button reappears
+                            setIsDeletingAllMode(false);
                         } catch (error) {
                             Alert.alert('Error', 'No se pudieron cerrar todas las sesiones');
+                            // Reset delete all mode on error too
+                            setIsDeletingAllMode(false);
                         }
                     },
                 },
