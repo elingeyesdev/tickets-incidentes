@@ -23,6 +23,7 @@ export default function SessionsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSession, setExpandedSession] = useState<string | null>(null);
     const [deletingSessionIds, setDeletingSessionIds] = useState<Map<string, number>>(new Map());
+    const [isDeletingAllMode, setIsDeletingAllMode] = useState(false);
 
     const loadSessions = async () => {
         try {
@@ -123,35 +124,53 @@ export default function SessionsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
+                            // Collapse expanded card first
                             if (expandedSession) {
                                 setExpandedSession(null);
-                                await new Promise((resolve) => setTimeout(resolve, 75));
+                                await new Promise((resolve) => setTimeout(resolve, 300));
                             }
 
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
                             if (nonCurrentSessions.length === 0) return;
+
+                            // Hide button before starting animations
+                            setIsDeletingAllMode(true);
+                            await new Promise((resolve) => setTimeout(resolve, 100));
 
                             const reversedSessions = [...nonCurrentSessions].reverse();
 
                             for (let i = 0; i < reversedSessions.length; i++) {
                                 const session = reversedSessions[i];
                                 try {
+                                    // Mark as deleting
                                     setDeletingSessionIds((prev) => new Map(prev).set(session.id, i));
+
+                                    // Wait for slide out animation
                                     await new Promise((resolve) => setTimeout(resolve, 150));
 
+                                    // Revoke on backend
                                     await revokeSession(session.id);
 
+                                    // Remove from state - triggers layout spring
                                     setSessions((prev) => prev.filter((s) => s.id !== session.id));
                                     setDeletingSessionIds((prev) => {
                                         const newMap = new Map(prev);
                                         newMap.delete(session.id);
                                         return newMap;
                                     });
+
+                                    // Wait for layout animation to complete before next deletion
+                                    await new Promise((resolve) => setTimeout(resolve, 750));
                                 } catch (error) {
                                     continue;
                                 }
                             }
+
+                            // All sessions deleted successfully - button won't show anyway
+                            setIsDeletingAllMode(false);
                         } catch (error) {
+                            // Show button again if there's an error
+                            setIsDeletingAllMode(false);
                             Alert.alert('Error', 'No se pudieron cerrar las sesiones');
                         }
                     },
@@ -301,7 +320,7 @@ export default function SessionsScreen() {
                         </View>
                     )}
                     ListFooterComponent={() => (
-                        sessions.length > 1 && (
+                        sessions.length > 1 && !isDeletingAllMode && (
                             <View className="px-4 pb-6 pt-2">
                                 <TouchableOpacity
                                     onPress={handleRevokeAllOthers}
