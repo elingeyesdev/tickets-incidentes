@@ -70,6 +70,10 @@ class CreateCompanyRequest extends FormRequest
             'initial_config.timezone' => ['nullable', 'string', 'timezone'],
             'initial_config.max_agents' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'initial_config.max_tickets_per_month' => ['nullable', 'integer', 'min:1'],
+
+            // Settings (JSONB field)
+            'settings' => ['nullable', 'array'],
+            'settings.areas_enabled' => ['nullable', 'boolean'],
         ];
     }
 

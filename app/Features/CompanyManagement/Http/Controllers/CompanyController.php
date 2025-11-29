@@ -18,6 +18,7 @@ use App\Features\UserManagement\Services\RoleService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -735,7 +736,13 @@ class CompanyController extends Controller
                     new OA\Property(property: 'legal_representative', type: 'string', nullable: true, description: 'Legal representative name', maxLength: 255),
                     new OA\Property(property: 'business_hours', type: 'object', nullable: true, description: 'Business hours (JSONB)', example: ['monday' => ['open' => '09:00', 'close' => '18:00']]),
                     new OA\Property(property: 'timezone', type: 'string', nullable: true, description: 'Timezone (e.g., America/Santiago)', example: 'America/Santiago'),
-                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Additional settings (JSONB)'),
+                    new OA\Property(
+                        property: 'settings',
+                        type: 'object',
+                        nullable: true,
+                        description: 'Additional settings (JSONB). Available settings: areas_enabled (boolean) - Enables/disables the areas feature for ticket management.',
+                        example: ['areas_enabled' => false]
+                    ),
                 ]
             )
         ),
@@ -883,7 +890,13 @@ class CompanyController extends Controller
                     new OA\Property(property: 'favicon_url', type: 'string', format: 'uri', nullable: true, description: 'Favicon URL', maxLength: 255),
                     new OA\Property(property: 'primary_color', type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true, description: 'Primary color in hexadecimal format', example: '#FF5733'),
                     new OA\Property(property: 'secondary_color', type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true, description: 'Secondary color in hexadecimal format', example: '#33FF57'),
-                    new OA\Property(property: 'settings', type: 'object', nullable: true, description: 'Additional settings (JSONB)'),
+                    new OA\Property(
+                        property: 'settings',
+                        type: 'object',
+                        nullable: true,
+                        description: 'Additional settings (JSONB). Available settings: areas_enabled (boolean) - Enables/disables the areas feature for ticket management.',
+                        example: ['areas_enabled' => true]
+                    ),
                 ]
             )
         ),

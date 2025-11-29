@@ -1691,9 +1691,13 @@
                                                         "example": true
                                                     },
                                                     "location": {
-                                                        "description": "GeoIP location (not yet implemented)",
-                                                        "type": "string",
-                                                        "example": null,
+                                                        "description": "GeoIP location data from MaxMind GeoLite2",
+                                                        "type": "object",
+                                                        "example": {
+                                                            "city": "Buenos Aires",
+                                                            "country": "Argentina",
+                                                            "country_code": "AR"
+                                                        },
                                                         "nullable": true
                                                     }
                                                 },
@@ -3281,8 +3285,11 @@
                                         "nullable": true
                                     },
                                     "settings": {
-                                        "description": "Additional settings (JSONB)",
+                                        "description": "Additional settings (JSONB). Available settings: areas_enabled (boolean) - Enables/disables the areas feature for ticket management.",
                                         "type": "object",
+                                        "example": {
+                                            "areas_enabled": false
+                                        },
                                         "nullable": true
                                     }
                                 },
@@ -3707,8 +3714,11 @@
                                         "nullable": true
                                     },
                                     "settings": {
-                                        "description": "Additional settings (JSONB)",
+                                        "description": "Additional settings (JSONB). Available settings: areas_enabled (boolean) - Enables/disables the areas feature for ticket management.",
                                         "type": "object",
+                                        "example": {
+                                            "areas_enabled": true
+                                        },
                                         "nullable": true
                                     }
                                 },

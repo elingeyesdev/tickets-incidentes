@@ -88,6 +88,10 @@ class UpdateCompanyRequest extends FormRequest
             'branding.favicon_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'branding.primary_color' => ['sometimes', 'nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'branding.secondary_color' => ['sometimes', 'nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+
+            // Settings (JSONB field) - Direct format
+            'settings' => ['sometimes', 'nullable', 'array'],
+            'settings.areas_enabled' => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 
