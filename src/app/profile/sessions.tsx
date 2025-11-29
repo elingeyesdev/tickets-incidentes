@@ -335,13 +335,16 @@ export default function SessionsScreen() {
                         </View>
                     )}
                     ListFooterComponent={() => {
-                        if (sessions.length <= 1 || isDeletingAllMode) {
+                        // Only show button if there are multiple sessions
+                        if (sessions.length <= 1) {
                             return null;
                         }
+
                         return (
                             <Animated.View
-                                exiting={new ZoomIn()}
+                                exiting={isDeletingAllMode ? new ZoomIn() : undefined}
                                 className="px-4 pb-6 pt-2"
+                                style={{ opacity: isDeletingAllMode ? 0 : 1, pointerEvents: isDeletingAllMode ? 'none' : 'auto' }}
                             >
                                 <TouchableOpacity
                                     onPress={handleRevokeAllOthers}
