@@ -57,6 +57,10 @@
 /storage/logs/*
 !/storage/logs/.gitkeep
 
+# GeoIP database (large binary file, downloaded per environment)
+/storage/geoip/*
+!/storage/geoip/.gitkeep
+
 /storage/pail
 
 /bootstrap/cache/*
