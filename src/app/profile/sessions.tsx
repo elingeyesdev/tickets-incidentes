@@ -70,34 +70,32 @@ export default function SessionsScreen() {
                             // Mark as deleting to start animation
                             setDeletingSessionIds((prev) => new Set(prev).add(id));
 
-                            // Wait a bit for animation to complete, then make API call
-                            setTimeout(async () => {
-                                try {
-                                    await revokeSession(id);
-                                    setSessions((prev) => prev.filter((s) => s.id !== id));
-                                    setDeletingSessionIds((prev) => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(id);
-                                        return newSet;
-                                    });
-                                } catch (error) {
+                            // Run API call and animation in parallel
+                            // Animation duration is 800ms, so give it that time before removing
+                            const [apiResult] = await Promise.all([
+                                revokeSession(id).catch((error) => {
                                     console.error('Error revoking session:', error);
-                                    // Remove from deleting set if there's an error
-                                    setDeletingSessionIds((prev) => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(id);
-                                        return newSet;
-                                    });
-                                    Alert.alert('Error', 'No se pudo cerrar la sesión');
-                                }
-                            }, 300);
-                        } catch (error) {
-                            Alert.alert('Error', 'No se pudo cerrar la sesión');
+                                    throw error;
+                                }),
+                                new Promise((resolve) => setTimeout(resolve, 800)),
+                            ]);
+
+                            // Only remove from state after both animation and API complete
+                            setSessions((prev) => prev.filter((s) => s.id !== id));
                             setDeletingSessionIds((prev) => {
                                 const newSet = new Set(prev);
                                 newSet.delete(id);
                                 return newSet;
                             });
+                        } catch (error) {
+                            console.error('Error during session revocation:', error);
+                            // Cancel animation if API fails
+                            setDeletingSessionIds((prev) => {
+                                const newSet = new Set(prev);
+                                newSet.delete(id);
+                                return newSet;
+                            });
+                            Alert.alert('Error', 'No se pudo cerrar la sesión');
                         }
                     },
                 },
@@ -122,19 +120,26 @@ export default function SessionsScreen() {
                             );
                             setDeletingSessionIds(nonCurrentIds);
 
-                            // Wait for animations to complete before making API calls
-                            setTimeout(async () => {
-                                try {
-                                    await revokeAllOtherSessions();
-                                    setSessions((prev) => prev.filter((s) => s.isCurrent));
-                                    setDeletingSessionIds(new Set());
-                                } catch (error) {
-                                    console.error('Error revoking sessions:', error);
-                                    // Reload to show correct state
-                                    loadSessions();
-                                    Alert.alert('Error', 'No se pudieron cerrar todas las sesiones');
-                                }
-                            }, 300);
+                            // Run API call and animations in parallel
+                            // Animation duration is 800ms, so ensure at least that much time passes
+                            try {
+                                await Promise.all([
+                                    revokeAllOtherSessions().catch((error) => {
+                                        console.error('Error revoking sessions:', error);
+                                        throw error;
+                                    }),
+                                    new Promise((resolve) => setTimeout(resolve, 800)),
+                                ]);
+
+                                // Only remove from state after both animation and API complete
+                                setSessions((prev) => prev.filter((s) => s.isCurrent));
+                                setDeletingSessionIds(new Set());
+                            } catch (error) {
+                                console.error('Error during bulk session revocation:', error);
+                                // Reload to show correct state
+                                loadSessions();
+                                Alert.alert('Error', 'No se pudieron cerrar todas las sesiones');
+                            }
                         } catch (error) {
                             Alert.alert('Error', 'No se pudieron cerrar las sesiones');
                         }
