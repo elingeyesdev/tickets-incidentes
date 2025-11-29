@@ -27,7 +27,7 @@ class CompanyControllerIndexTest extends TestCase
     use SeedsCompanyIndustries;
 
     /** @test */
-    public function context_minimal_returns_only_4_fields()
+    public function context_minimal_returns_only_5_fields()
     {
         // Arrange
         Company::factory()->count(3)->create();
@@ -44,6 +44,7 @@ class CompanyControllerIndexTest extends TestCase
                         'companyCode',
                         'name',
                         'logoUrl',
+                        'industryName', // Added in v8.1 for content cards display
                     ],
                 ],
                 'meta' => ['total', 'current_page', 'last_page', 'per_page'],
@@ -55,9 +56,9 @@ class CompanyControllerIndexTest extends TestCase
         $this->assertEquals(3, $response->json('meta.total'));
         $this->assertNull($response->json('links.next'));
 
-        // Verificar que solo tiene 4 campos
+        // Verificar que solo tiene 5 campos (updated from 4 in v8.1)
         foreach ($items as $item) {
-            $this->assertCount(4, $item);
+            $this->assertCount(5, $item);
         }
     }
 
