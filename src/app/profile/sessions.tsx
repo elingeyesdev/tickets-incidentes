@@ -20,7 +20,8 @@ export default function SessionsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [expandedSession, setExpandedSession] = useState<string | null>(null);
-    const [deletingSessionIds, setDeletingSessionIds] = useState<Set<string>>(new Set());
+    // Map<sessionId, deletionOrder> - tracks the order of deletion from bottom to top
+    const [deletingSessionIds, setDeletingSessionIds] = useState<Map<string, number>>(new Map());
 
     const loadSessions = async () => {
         try {
@@ -67,8 +68,13 @@ export default function SessionsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            // Mark as deleting to start animation
-                            setDeletingSessionIds((prev) => new Set(prev).add(id));
+                            // Calculate position from bottom (for animation direction)
+                            const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
+                            const reversedNonCurrent = [...nonCurrentSessions].reverse();
+                            const deletionOrder = reversedNonCurrent.findIndex((s) => s.id === id);
+
+                            // Mark as deleting to start animation with deletion order
+                            setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
                             // Wait for animation to complete (400ms to ensure visibility)
                             await new Promise((resolve) => setTimeout(resolve, 400));
@@ -82,17 +88,17 @@ export default function SessionsScreen() {
                             // Remove from state after animation and API complete
                             setSessions((prev) => prev.filter((s) => s.id !== id));
                             setDeletingSessionIds((prev) => {
-                                const newSet = new Set(prev);
-                                newSet.delete(id);
-                                return newSet;
+                                const newMap = new Map(prev);
+                                newMap.delete(id);
+                                return newMap;
                             });
                         } catch (error) {
                             console.error('Error during session revocation:', error);
                             // Cancel animation if API fails
                             setDeletingSessionIds((prev) => {
-                                const newSet = new Set(prev);
-                                newSet.delete(id);
-                                return newSet;
+                                const newMap = new Map(prev);
+                                newMap.delete(id);
+                                return newMap;
                             });
                             Alert.alert('Error', 'No se pudo cerrar la sesión');
                         }
@@ -113,18 +119,22 @@ export default function SessionsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            // Get non-current sessions in order
+                            // Get non-current sessions and reverse to start from bottom
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
 
                             if (nonCurrentSessions.length === 0) {
                                 return;
                             }
 
-                            // Eliminate each session sequentially with animation
-                            for (const session of nonCurrentSessions) {
+                            // Reverse to eliminate from bottom to top
+                            const reversedSessions = [...nonCurrentSessions].reverse();
+
+                            // Eliminate each session sequentially with animation from bottom to top
+                            for (let i = 0; i < reversedSessions.length; i++) {
+                                const session = reversedSessions[i];
                                 try {
-                                    // Mark as deleting to start animation
-                                    setDeletingSessionIds((prev) => new Set(prev).add(session.id));
+                                    // Mark as deleting with deletion order (for alternating direction)
+                                    setDeletingSessionIds((prev) => new Map(prev).set(session.id, i));
 
                                     // Wait for animation to complete (400ms to ensure visibility)
                                     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -138,17 +148,17 @@ export default function SessionsScreen() {
                                     // Remove from state
                                     setSessions((prev) => prev.filter((s) => s.id !== session.id));
                                     setDeletingSessionIds((prev) => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(session.id);
-                                        return newSet;
+                                        const newMap = new Map(prev);
+                                        newMap.delete(session.id);
+                                        return newMap;
                                     });
                                 } catch (error) {
                                     console.error(`Failed to revoke session ${session.id}:`, error);
                                     // Cancel animation if API fails
                                     setDeletingSessionIds((prev) => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(session.id);
-                                        return newSet;
+                                        const newMap = new Map(prev);
+                                        newMap.delete(session.id);
+                                        return newMap;
                                     });
                                     Alert.alert('Error', `No se pudo cerrar sesión ${session.id}`);
                                     // Continue with next session instead of stopping
@@ -170,18 +180,19 @@ export default function SessionsScreen() {
 
     const renderItem = ({ item, index }: { item: Session; index: number }) => {
         const isExpanded = expandedSession === item.id;
-        const isDeleting = deletingSessionIds.has(item.id);
+        const deletionOrder = deletingSessionIds.get(item.id);
+        const isDeleting = deletionOrder !== undefined;
         const deviceInfo = parseUserAgent(item.userAgent, item.deviceName);
         const locationStr = formatLocation(item.location);
         const countryFlag = getCountryFlag(item.location?.country_code || null);
         const timeAgo = formatDistanceToNow(new Date(item.lastUsedAt), { addSuffix: true, locale: es });
         const lastUsedDate = format(new Date(item.lastUsedAt), "d 'de' MMMM 'a las' HH:mm", { locale: es });
 
-        // Alternate animation direction: even index = right, odd index = left
-        // Each animation lasts 333ms (1/3 second)
+        // Alternate animation direction based on deletion order (from bottom to top)
+        // even order = right, odd order = left
         const getExitingAnimation = () => {
-            if (!isDeleting) return undefined;
-            if (index % 2 === 0) {
+            if (deletionOrder === undefined) return undefined;
+            if (deletionOrder % 2 === 0) {
                 return new SlideOutRight();
             } else {
                 return new SlideOutLeft();
