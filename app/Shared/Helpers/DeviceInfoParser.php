@@ -38,9 +38,55 @@ class DeviceInfoParser
 
         return [
             'ip' => $ip ?? '127.0.0.1',
-            'user_agent' => $userAgent,
+            'user_agent' => self::normalizeUserAgent($userAgent),
             'name' => self::parseDeviceName($userAgent),
         ];
+    }
+
+    /**
+     * Normaliza el user agent para detectar y limpiar apps móviles nativas
+     *
+     * Convierte user agents técnicos de apps móviles (okhttp, CFNetwork, Dart)
+     * a valores legibles y consistentes para mejor visualización y analytics.
+     *
+     * Ejemplos:
+     * - "okhttp/4.12.0" → "Mobile App - Android"
+     * - "CFNetwork/1445.104.11 Darwin/22.4.0" → "Mobile App - iOS"
+     * - "Dart/3.0" → "Mobile App - Flutter"
+     * - "Mozilla/5.0..." (browsers) → mantiene original
+     *
+     * @param string|null $userAgent User agent raw del cliente
+     * @return string|null User agent normalizado o null si está vacío
+     */
+    private static function normalizeUserAgent(?string $userAgent): ?string
+    {
+        if (!$userAgent) {
+            return null;
+        }
+
+        $userAgent = trim($userAgent);
+
+        if (empty($userAgent)) {
+            return null;
+        }
+
+        // Detectar React Native / Expo (Android)
+        if (str_contains($userAgent, 'okhttp')) {
+            return 'Mobile App - Android';
+        }
+
+        // Detectar iOS nativo (CFNetwork es lo que usan apps iOS)
+        if (str_contains($userAgent, 'CFNetwork')) {
+            return 'Mobile App - iOS';
+        }
+
+        // Detectar Flutter
+        if (str_contains($userAgent, 'Dart')) {
+            return 'Mobile App - Flutter';
+        }
+
+        // Mantener user agents de browsers tal cual (Chrome, Firefox, Safari, etc.)
+        return $userAgent;
     }
 
     /**
