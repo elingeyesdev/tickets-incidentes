@@ -86,12 +86,12 @@ export default function SessionsScreen() {
                             // Mark as deleting (triggers slide out animation)
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
-                            // Wait for slide out animation to complete (150ms) + layout spring animation
-                            await new Promise((resolve) => setTimeout(resolve, 400));
+                            // Wait for slide out animation (150ms) + layout spring animation (600ms)
+                            await new Promise((resolve) => setTimeout(resolve, 750));
 
                             await revokeSession(id);
 
-                            // Remove from state - other cards will animate up
+                            // Remove from state - other cards will animate up with Layout.springify()
                             setSessions((prev) => prev.filter((s) => s.id !== id));
                             setDeletingSessionIds((prev) => {
                                 const newMap = new Map(prev);
