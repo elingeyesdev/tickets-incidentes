@@ -83,11 +83,18 @@ export default function SessionsScreen() {
                             const reversedNonCurrent = [...nonCurrentSessions].reverse();
                             const deletionOrder = reversedNonCurrent.findIndex((s) => s.id === id);
 
+                            // Store the session in case we need to restore it
+                            const sessionToDelete = sessions.find((s) => s.id === id);
+
                             // Mark as deleting (triggers slide out animation)
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
                             // Launch API call in background without waiting
                             revokeSession(id).catch(() => {
+                                // Restore session if deletion failed
+                                if (sessionToDelete) {
+                                    setSessions((prev) => [...prev, sessionToDelete]);
+                                }
                                 setDeletingSessionIds((prev) => {
                                     const newMap = new Map(prev);
                                     newMap.delete(id);
@@ -159,6 +166,8 @@ export default function SessionsScreen() {
 
                                     // Launch API call in background without waiting
                                     revokeSession(session.id).catch(() => {
+                                        // Restore session if deletion failed
+                                        setSessions((prev) => [...prev, session]);
                                         setDeletingSessionIds((prev) => {
                                             const newMap = new Map(prev);
                                             newMap.delete(session.id);
