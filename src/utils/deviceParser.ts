@@ -54,6 +54,17 @@ export function parseUserAgent(userAgent: string | null, deviceName: string | nu
     } else if (ua.includes('edge')) {
         browser = 'Edge';
         icon = 'microsoft-edge';
+    } else if (ua.includes('mobile app')) {
+        // Backend parsed user agent from mobile apps
+        browser = 'Aplicación Móvil';
+        type = 'mobile';
+        if (ua.includes('- android')) {
+            os = 'Android';
+            icon = 'cellphone';
+        } else if (ua.includes('- ios')) {
+            os = 'iOS';
+            icon = 'cellphone';
+        }
     } else if (ua.includes('okhttp')) {
         browser = 'Aplicación Móvil';
         type = 'mobile';
@@ -105,6 +116,19 @@ export function parseUserAgent(userAgent: string | null, deviceName: string | nu
 
     const displayName = deviceName || `${browser} en ${os}`;
 
+    // Finalize icon based on type if it's still generic or we want "realistic" icons
+    if (type === 'mobile') {
+        icon = 'cellphone';
+        if (os === 'iOS') icon = 'cellphone'; // MCI 'cellphone-iphone' might not be available or 'cellphone' is good enough
+        if (os === 'Android') icon = 'cellphone';
+    } else if (type === 'tablet') {
+        icon = 'tablet';
+        if (os === 'iOS') icon = 'tablet';
+    } else if (type === 'desktop') {
+        if (os === 'macOS') icon = 'laptop'; // Macs are often laptops
+        else icon = 'monitor'; // Windows/Linux usually desktops/monitors
+    }
+
     return {
         type,
         browser,
@@ -124,7 +148,7 @@ export function getDefaultDeviceInfo(deviceName: string | null): DeviceInfo {
         browser: 'Navegador Desconocido',
         os: isAndroid ? 'Android' : isIOS ? 'iOS' : 'SO Desconocido',
         displayName,
-        icon: isAndroid ? 'android' : isIOS ? 'apple' : 'devices',
+        icon: isAndroid ? 'cellphone' : isIOS ? (deviceName?.toLowerCase().includes('ipad') ? 'tablet' : 'cellphone') : 'devices',
     };
 }
 
