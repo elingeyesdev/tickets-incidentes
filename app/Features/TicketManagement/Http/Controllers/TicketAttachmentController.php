@@ -275,7 +275,7 @@ class TicketAttachmentController extends Controller
             return response()->json([
                 'message' => 'Archivo subido exitosamente',
                 'data' => new TicketAttachmentResource($attachment),
-            ], 200);
+            ], 201);
         } catch (\Exception $e) {
             // Handle validation errors from service
             $message = $e->getMessage();
