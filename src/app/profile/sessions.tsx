@@ -11,6 +11,7 @@ import { parseUserAgent, formatLocation, getCountryFlag } from '../../utils/devi
 import Animated, {
     SlideOutRight,
     SlideOutLeft,
+    Layout,
 } from 'react-native-reanimated';
 
 export default function SessionsScreen() {
@@ -179,6 +180,7 @@ export default function SessionsScreen() {
         return (
             <Animated.View
                 exiting={getExitingAnimation()}
+                layout={Layout.springify()}
                 className="px-4 py-2"
             >
                 <View className={`rounded-xl overflow-hidden border ${item.isCurrent ? 'border-blue-200 bg-blue-50/50' : 'border-gray-100 bg-white'}`}>
