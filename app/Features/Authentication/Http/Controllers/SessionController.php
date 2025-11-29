@@ -101,6 +101,15 @@ class SessionController
                 ->orderByRaw('COALESCE(last_used_at, created_at) DESC')
                 ->get();
 
+            // Actualizar last_used_at de la sesión actual cuando se consultan las sesiones
+            // Esto mejora la precisión del timestamp sin sobrecargar la BD
+            if ($currentTokenHash) {
+                $currentSession = $sessions->firstWhere('token_hash', $currentTokenHash);
+                if ($currentSession) {
+                    $currentSession->updateLastUsed();
+                }
+            }
+
             // Mapear a formato SessionInfo (replicar query)
             $sessionsData = $sessions->map(function ($session) use ($currentTokenHash) {
                 return [
