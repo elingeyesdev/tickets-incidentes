@@ -40,8 +40,9 @@ class DeviceInfoParser
         // Normalizar user agent para apps móviles
         $normalizedUserAgent = self::normalizeUserAgent($rawUserAgent);
 
-        // Parseear nombre amigable del dispositivo usando Agent
-        $deviceName = self::parseDeviceName($rawUserAgent);
+        // Parsear nombre amigable del dispositivo usando el user agent normalizado
+        // (o el raw si no fue normalizado, para que Agent pueda parsearlo)
+        $deviceName = self::parseDeviceName($normalizedUserAgent ?? $rawUserAgent);
 
         return [
             'ip' => $ip ?? '127.0.0.1',
@@ -104,13 +105,23 @@ class DeviceInfoParser
      * - Sistemas operativos (Windows, macOS, Linux, iOS, Android)
      * - Tipos de dispositivo (móvil, tablet, escritorio)
      *
-     * @param string|null $userAgent User-Agent del navegador
+     * Nota: Si el user agent está normalizado (ej: "Mobile App - Android"),
+     * se devuelve tal cual sin intentar parsearlo.
+     *
+     * @param string|null $userAgent User-Agent del navegador (puede estar normalizado)
      * @return string Nombre amigable del dispositivo en formato "Browser on OS" o "Device Type"
      */
     public static function parseDeviceName(?string $userAgent): string
     {
         if (!$userAgent) {
             return 'Unknown Device';
+        }
+
+        // Si el user agent ya está normalizado para apps móviles, devolverlo directamente
+        if (str_contains($userAgent, 'Mobile App - Android') ||
+            str_contains($userAgent, 'Mobile App - iOS') ||
+            str_contains($userAgent, 'Mobile App - Flutter')) {
+            return $userAgent;
         }
 
         $agent = new Agent();
