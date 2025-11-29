@@ -1,19 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Shared\Helpers;
 
 use Illuminate\Http\Request;
+use Jenssegers\Agent\Agent;
 
 /**
  * DeviceInfoParser
  *
  * Helper para extraer y parsear información de dispositivos desde requests HTTP.
+ * Utiliza jenssegers/agent para detección robusta de navegadores y dispositivos.
  * Reutilizable en todas las mutations de autenticación (register, login, etc.)
  *
  * @usage
  * ```php
  * $deviceInfo = DeviceInfoParser::fromRequest($request);
- * // ['ip_address' => '192.168.1.1', 'user_agent' => '...', 'device_name' => 'Chrome on Windows']
+ * // ['ip' => '192.168.1.1', 'user_agent' => '...', 'name' => 'Chrome on Windows']
  * ```
  */
 class DeviceInfoParser
@@ -22,7 +26,7 @@ class DeviceInfoParser
      * Extrae información del dispositivo desde un request HTTP
      *
      * @param Request|null $request Request de Laravel
-     * @return array{ip_address: string, user_agent: string|null, device_name: string}
+     * @return array{ip: string, user_agent: string|null, name: string}
      */
     public static function fromRequest(?Request $request): array
     {
@@ -30,16 +34,19 @@ class DeviceInfoParser
             return self::getDefaultDeviceInfo();
         }
 
-        $userAgent = $request->userAgent();
-
-        // Get real client IP from X-Forwarded-For header (for proxies/load balancers like GCP CLB)
-        // X-Forwarded-For format: client, proxy1, proxy2, ...
+        $rawUserAgent = $request->userAgent();
         $ip = self::getClientIp($request);
+
+        // Normalizar user agent para apps móviles
+        $normalizedUserAgent = self::normalizeUserAgent($rawUserAgent);
+
+        // Parseear nombre amigable del dispositivo usando Agent
+        $deviceName = self::parseDeviceName($rawUserAgent);
 
         return [
             'ip' => $ip ?? '127.0.0.1',
-            'user_agent' => self::normalizeUserAgent($userAgent),
-            'name' => self::parseDeviceName($userAgent),
+            'user_agent' => $normalizedUserAgent,
+            'name' => $deviceName,
         ];
     }
 
@@ -92,8 +99,13 @@ class DeviceInfoParser
     /**
      * Parsea el User-Agent a un nombre de dispositivo amigable
      *
+     * Utiliza jenssegers/agent para detección robusta y automática de:
+     * - Navegadores (Chrome, Firefox, Safari, Edge, Brave, Vivaldi, Opera, etc.)
+     * - Sistemas operativos (Windows, macOS, Linux, iOS, Android)
+     * - Tipos de dispositivo (móvil, tablet, escritorio)
+     *
      * @param string|null $userAgent User-Agent del navegador
-     * @return string Nombre amigable del dispositivo
+     * @return string Nombre amigable del dispositivo en formato "Browser on OS" o "Device Type"
      */
     public static function parseDeviceName(?string $userAgent): string
     {
@@ -101,70 +113,55 @@ class DeviceInfoParser
             return 'Unknown Device';
         }
 
-        // Mobile devices
-        if (str_contains($userAgent, 'iPhone')) {
-            return 'iPhone';
+        $agent = new Agent();
+        $agent->setUserAgent($userAgent);
+
+        // Detectar bots y crawlers
+        if ($agent->isBot()) {
+            $browserName = $agent->browser() ?? 'Bot';
+            return "{$browserName} (Bot)";
         }
 
-        if (str_contains($userAgent, 'iPad')) {
-            return 'iPad';
+        // Obtener información base
+        $browser = $agent->browser() ?? 'Unknown Browser';
+        $platform = $agent->platform() ?? 'Unknown OS';
+
+        // Detectar tipo de dispositivo móvil específico
+        if ($agent->isPhone()) {
+            // Para dispositivos específicos, usar marca
+            if (str_contains($userAgent, 'iPhone')) {
+                return 'iPhone';
+            }
+            if (str_contains($userAgent, 'Android')) {
+                return 'Android Phone';
+            }
+            return "{$browser} Phone";
         }
 
-        if (str_contains($userAgent, 'Android') && str_contains($userAgent, 'Mobile')) {
-            return 'Android Phone';
+        if ($agent->isTablet()) {
+            // Para tablets específicas
+            if (str_contains($userAgent, 'iPad')) {
+                return 'iPad';
+            }
+            if (str_contains($userAgent, 'Android')) {
+                return 'Android Tablet';
+            }
+            return "{$browser} Tablet";
         }
 
-        if (str_contains($userAgent, 'Android')) {
-            return 'Android Tablet';
+        // Dispositivos de escritorio
+        if ($agent->isDesktop()) {
+            return "{$browser} on {$platform}";
         }
 
-        // Desktop browsers
-        if (str_contains($userAgent, 'Chrome') && str_contains($userAgent, 'Windows')) {
-            return 'Chrome on Windows';
-        }
-
-        if (str_contains($userAgent, 'Firefox') && str_contains($userAgent, 'Windows')) {
-            return 'Firefox on Windows';
-        }
-
-        if (str_contains($userAgent, 'Edge') && str_contains($userAgent, 'Windows')) {
-            return 'Edge on Windows';
-        }
-
-        if (str_contains($userAgent, 'Safari') && str_contains($userAgent, 'Macintosh')) {
-            return 'Safari on macOS';
-        }
-
-        if (str_contains($userAgent, 'Chrome') && str_contains($userAgent, 'Macintosh')) {
-            return 'Chrome on macOS';
-        }
-
-        if (str_contains($userAgent, 'Firefox') && str_contains($userAgent, 'Linux')) {
-            return 'Firefox on Linux';
-        }
-
-        if (str_contains($userAgent, 'Chrome') && str_contains($userAgent, 'Linux')) {
-            return 'Chrome on Linux';
-        }
-
-        // Generic fallbacks
-        if (str_contains($userAgent, 'Windows')) {
-            return 'Windows Browser';
-        }
-
-        if (str_contains($userAgent, 'Macintosh')) {
-            return 'macOS Browser';
-        }
-
-        if (str_contains($userAgent, 'Linux')) {
-            return 'Linux Browser';
-        }
-
-        return 'Web Browser';
+        // Fallback general
+        return "{$browser} on {$platform}";
     }
 
     /**
-     * Detecta si el dispositivo es móvil
+     * Detecta si el dispositivo es móvil (phone o tablet)
+     *
+     * Utiliza jenssegers/agent para detección precisa y confiable.
      *
      * @param string|null $userAgent User-Agent del navegador
      * @return bool True si es un dispositivo móvil
@@ -175,29 +172,24 @@ class DeviceInfoParser
             return false;
         }
 
-        $mobileKeywords = [
-            'iPhone',
-            'iPad',
-            'Android',
-            'Mobile',
-            'BlackBerry',
-            'Windows Phone',
-        ];
+        $agent = new Agent();
+        $agent->setUserAgent($userAgent);
 
-        foreach ($mobileKeywords as $keyword) {
-            if (str_contains($userAgent, $keyword)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $agent->isPhone() || $agent->isTablet();
     }
 
     /**
      * Detecta el navegador principal
      *
+     * Utiliza jenssegers/agent para detección robusta y precisa.
+     * Resuelve automáticamente conflictos como Edge vs Chrome (Edge usa Chromium).
+     *
+     * Navegadores soportados:
+     * - Chrome, Firefox, Safari, Edge, Brave, Vivaldi, Opera, IE, etc.
+     * - Mobile browsers: Chrome Mobile, Firefox Mobile, Safari (iOS), etc.
+     *
      * @param string|null $userAgent User-Agent del navegador
-     * @return string Nombre del navegador (Chrome, Firefox, Safari, Edge, Unknown)
+     * @return string Nombre del navegador o 'Unknown'
      */
     public static function getBrowser(?string $userAgent): string
     {
@@ -205,30 +197,24 @@ class DeviceInfoParser
             return 'Unknown';
         }
 
-        if (str_contains($userAgent, 'Edge')) {
-            return 'Edge';
-        }
+        $agent = new Agent();
+        $agent->setUserAgent($userAgent);
 
-        if (str_contains($userAgent, 'Chrome')) {
-            return 'Chrome';
-        }
-
-        if (str_contains($userAgent, 'Firefox')) {
-            return 'Firefox';
-        }
-
-        if (str_contains($userAgent, 'Safari')) {
-            return 'Safari';
-        }
-
-        return 'Unknown';
+        return $agent->browser() ?? 'Unknown';
     }
 
     /**
      * Detecta el sistema operativo
      *
+     * Utiliza jenssegers/agent para detección precisa y confiable.
+     *
+     * Sistemas operativos soportados:
+     * - Desktop: Windows, macOS, Linux, Chrome OS
+     * - Mobile: iOS, Android, Windows Phone, BlackBerry
+     * - Other: FreeBSD, OpenBSD, SunOS, etc.
+     *
      * @param string|null $userAgent User-Agent del navegador
-     * @return string Nombre del OS (Windows, macOS, Linux, iOS, Android, Unknown)
+     * @return string Nombre del OS o 'Unknown'
      */
     public static function getOS(?string $userAgent): string
     {
@@ -236,27 +222,10 @@ class DeviceInfoParser
             return 'Unknown';
         }
 
-        if (str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad')) {
-            return 'iOS';
-        }
+        $agent = new Agent();
+        $agent->setUserAgent($userAgent);
 
-        if (str_contains($userAgent, 'Android')) {
-            return 'Android';
-        }
-
-        if (str_contains($userAgent, 'Windows')) {
-            return 'Windows';
-        }
-
-        if (str_contains($userAgent, 'Macintosh')) {
-            return 'macOS';
-        }
-
-        if (str_contains($userAgent, 'Linux')) {
-            return 'Linux';
-        }
-
-        return 'Unknown';
+        return $agent->platform() ?? 'Unknown';
     }
 
     /**
