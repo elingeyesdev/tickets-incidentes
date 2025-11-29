@@ -364,4 +364,36 @@ class CompanyControllerCreateTest extends TestCase
         $response->assertStatus(401)
             ->assertJson(['code' => 'UNAUTHENTICATED']);
     }
+
+    /** @test */
+    public function can_create_company_with_settings_areas_enabled()
+    {
+        // Arrange
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $adminUser = User::factory()->create();
+        $industry = \App\Features\CompanyManagement\Models\CompanyIndustry::inRandomOrder()->first();
+
+        $inputData = [
+            'name' => 'Company with Areas Enabled',
+            'industry_id' => $industry->id,
+            'admin_user_id' => $adminUser->id,
+            'settings' => [
+                'areas_enabled' => true,
+            ],
+        ];
+
+        // Act
+        $response = $this->authenticateWithJWT($admin)
+            ->postJson('/api/companies', $inputData);
+
+        // Assert
+        $response->assertStatus(201);
+
+        $companyId = $response->json('data.id');
+        $company = Company::find($companyId);
+
+        $this->assertNotNull($company);
+        $this->assertTrue($company->hasAreasEnabled());
+        $this->assertTrue($company->settings['areas_enabled']);
+    }
 }

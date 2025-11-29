@@ -342,4 +342,62 @@ class CompanyControllerUpdateTest extends TestCase
         $response->assertStatus(401)
             ->assertJson(['code' => 'UNAUTHENTICATED']);
     }
+
+    /** @test */
+    public function can_update_settings_areas_enabled_directly()
+    {
+        // Arrange
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $company = Company::factory()->create([
+            'settings' => ['areas_enabled' => false],
+        ]);
+
+        $inputData = [
+            'settings' => [
+                'areas_enabled' => true,
+            ],
+        ];
+
+        // Act
+        $response = $this->authenticateWithJWT($admin)
+            ->patchJson("/api/companies/{$company->id}", $inputData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        // Verify in database
+        $company->refresh();
+        $this->assertTrue($company->hasAreasEnabled());
+        $this->assertTrue($company->settings['areas_enabled']);
+    }
+
+    /** @test */
+    public function can_update_settings_areas_enabled_via_config()
+    {
+        // Arrange
+        $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
+        $company = Company::factory()->create([
+            'settings' => ['areas_enabled' => false],
+        ]);
+
+        $inputData = [
+            'config' => [
+                'settings' => [
+                    'areas_enabled' => true,
+                ],
+            ],
+        ];
+
+        // Act
+        $response = $this->authenticateWithJWT($admin)
+            ->patchJson("/api/companies/{$company->id}", $inputData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        // Verify in database
+        $company->refresh();
+        $this->assertTrue($company->hasAreasEnabled());
+        $this->assertTrue($company->settings['areas_enabled']);
+    }
 }
