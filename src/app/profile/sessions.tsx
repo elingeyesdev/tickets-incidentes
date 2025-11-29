@@ -85,8 +85,8 @@ export default function SessionsScreen() {
                             // Mark as deleting to start animation with deletion order
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
-                            // Wait for animation to complete (300ms - 25% faster)
-                            await new Promise((resolve) => setTimeout(resolve, 300));
+                            // Wait for animation to complete (250ms - slide animation duration)
+                            await new Promise((resolve) => setTimeout(resolve, 250));
 
                             // Make API call
                             await revokeSession(id).catch((error) => {
@@ -157,8 +157,8 @@ export default function SessionsScreen() {
                                     // Mark as deleting with deletion order (for alternating direction)
                                     setDeletingSessionIds((prev) => new Map(prev).set(session.id, i));
 
-                                    // Wait for animation to complete (300ms - 25% faster)
-                                    await new Promise((resolve) => setTimeout(resolve, 300));
+                                    // Wait for animation to complete (250ms - slide animation duration)
+                                    await new Promise((resolve) => setTimeout(resolve, 250));
 
                                     // Make API call
                                     await revokeSession(session.id).catch((error) => {
@@ -225,12 +225,13 @@ export default function SessionsScreen() {
 
         // Alternate animation direction based on deletion order (from bottom to top)
         // even order = right, odd order = left
+        // Duration set to 250ms for faster slide animations
         const getExitingAnimation = () => {
             if (deletionOrder === undefined) return undefined;
             if (deletionOrder % 2 === 0) {
-                return new SlideOutRight();
+                return (new SlideOutRight() as any).duration(250);
             } else {
-                return new SlideOutLeft();
+                return (new SlideOutLeft() as any).duration(250);
             }
         };
 
