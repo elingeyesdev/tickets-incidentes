@@ -52,6 +52,94 @@ http://localhost:8000
 
 ---
 
+## 🌍 Configurar GeoIP (Ubicación de Usuarios)
+
+La aplicación captura la **ubicación geográfica** de los usuarios cuando hacen login usando MaxMind GeoLite2.
+
+### Setup GeoIP (Una sola vez)
+
+#### 1️⃣ Registrarse en MaxMind
+
+```
+1. Ir a: https://www.maxmind.com/en/geolite2/signup
+2. Crear cuenta gratis
+3. Confirmar email
+4. Ir a: https://www.maxmind.com/en/account/login
+```
+
+#### 2️⃣ Descargar GeoLite2-City
+
+```
+1. En tu dashboard, click en "Download files"
+2. Buscar "GeoLite City" → GeoIP2 Binary (.mmdb)
+3. Click en "Download GZIP"
+4. Descargar el archivo
+```
+
+#### 3️⃣ Descomprimir y Copiar
+
+```bash
+# El archivo descargado es GeoLite2-City.mmdb.gz
+# Descomprímelo (Windows lo hace automático con WinRAR, 7-Zip, etc.)
+
+# Copia el archivo a:
+storage/geoip/GeoLite2-City.mmdb
+```
+
+**Ejemplo de ruta completa:**
+```
+C:\Users\tu-usuario\Projects\Helpdesk\storage\geoip\GeoLite2-City.mmdb
+```
+
+#### 4️⃣ Verificar
+
+```bash
+docker compose exec app php artisan tinker --execute="echo app(\App\Features\Authentication\Services\GeoIPService::class)->getLocationFromIp('8.8.8.8') ? 'GeoIP Working!' : 'Error';"
+```
+
+Si ves `GeoIP Working!`, está todo bien ✅
+
+### ¿Qué Captura GeoIP?
+
+Cuando un usuario hace login, se captura:
+```json
+{
+  "city": "Buenos Aires",
+  "country": "Argentina",
+  "country_code": "AR",
+  "latitude": -34.6037,
+  "longitude": -58.3816,
+  "timezone": "America/Argentina/Buenos_Aires"
+}
+```
+
+### Ver Datos de Sesiones con Ubicación
+
+```bash
+# Test endpoint de sesiones:
+curl -H "Authorization: Bearer TU_TOKEN" \
+  http://localhost:8000/api/auth/sessions
+```
+
+**Respuesta incluye:**
+```json
+{
+  "sessions": [
+    {
+      "id": "xxx",
+      "device_name": "Chrome",
+      "location": {
+        "city": "Buenos Aires",
+        "country": "Argentina",
+        ...
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## 🛠️ Desarrollo
 
 ### Agregar un Paquete Nuevo
