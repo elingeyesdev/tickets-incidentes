@@ -79,23 +79,20 @@ export const useUserStore = create<UserState>((set, get) => ({
     },
 
     revokeAllOtherSessions: async () => {
-        // Assuming endpoint exists or handled via logout everywhere logic but specific to others
-        // Prompt says: DELETE /api/auth/sessions/{id}
-        // And "Cerrar todas las demás sesiones" button
-        // Usually this is a specific endpoint or loop. 
-        // Let's assume a specific endpoint or we might need to implement it.
-        // Prompt mentions: POST /api/auth/logout with everywhere=true closes ALL.
-        // But for "others", maybe we need to filter.
-        // Let's assume we can pass a flag to logout or a specific endpoint.
-        // For now, I will use a placeholder call.
-        // Actually, looking at the prompt: "POST /api/auth/logout | Cerrar sesión actual o todas"
-        // It doesn't explicitly say "all others".
-        // But in "Active Sessions Screen" it says "Botón: Cerrar todas las demás sesiones".
-        // I'll assume there is an endpoint or I iterate. Iterating is bad.
-        // I'll assume DELETE /api/auth/sessions/others exists or similar.
-        // Or maybe I just revoke one by one in the UI? No.
-        // Let's stick to what's available.
-        // I will leave it as a TODO or mock for now.
-        console.warn("Revoke all others not fully implemented in backend spec");
+        // Revoke all sessions except current one
+        // Since backend doesn't have a specific endpoint for "all others",
+        // we fetch sessions and revoke each non-current one individually
+        const sessions = await get().fetchSessions();
+        const nonCurrentSessions = sessions.filter(s => !s.isCurrent);
+
+        // Revoke each session sequentially
+        for (const session of nonCurrentSessions) {
+            try {
+                await get().revokeSession(session.id);
+            } catch (error) {
+                console.error(`Failed to revoke session ${session.id}:`, error);
+                // Continue with other sessions even if one fails
+            }
+        }
     }
 }));
