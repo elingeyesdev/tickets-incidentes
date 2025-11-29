@@ -46,15 +46,7 @@ class StoreTicketRequest extends FormRequest
                     }
                 },
             ],
-            'priority' => [
-                'sometimes',
-                'string',
-                function ($attribute, $value, $fail) {
-                    if (!in_array($value, ['low', 'medium', 'high'])) {
-                        $fail('La prioridad debe ser una de: low, medium, high.');
-                    }
-                },
-            ],
+            'priority' => 'sometimes|required|string|in:low,medium,high',
             'area_id' => [
                 'nullable',
                 'uuid',

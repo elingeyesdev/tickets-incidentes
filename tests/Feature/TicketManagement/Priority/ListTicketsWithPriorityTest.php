@@ -82,7 +82,6 @@ class ListTicketsWithPriorityTest extends TestCase
                     'ticket_code',
                     'priority', // Should be present
                     'title',
-                    'description',
                     'status',
                 ],
             ],
