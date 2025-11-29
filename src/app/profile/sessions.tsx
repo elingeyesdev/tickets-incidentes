@@ -131,6 +131,9 @@ export default function SessionsScreen() {
                             if (expandedSession) {
                                 setExpandedSession(null);
                                 await new Promise((resolve) => setTimeout(resolve, 300));
+                            } else {
+                                // Small delay to ensure UI updates
+                                await new Promise((resolve) => setTimeout(resolve, 50));
                             }
 
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
