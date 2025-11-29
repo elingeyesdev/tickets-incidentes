@@ -2,9 +2,9 @@ FROM php:8.4-fpm AS base
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev \
+    git curl libpng-dev libjpeg-dev libonig-dev libxml2-dev \
     libpq-dev libzip-dev libicu-dev zip unzip wget \
-    && docker-php-ext-configure gd \
+    && docker-php-ext-configure gd --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo pdo_pgsql pgsql mbstring exif pcntl \
         bcmath gd zip intl opcache \
