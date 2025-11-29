@@ -73,8 +73,8 @@ export default function SessionsScreen() {
                             // First, collapse the expanded card if it's the one being deleted
                             if (expandedSession === id) {
                                 setExpandedSession(null);
-                                // Wait for collapse animation
-                                await new Promise((resolve) => setTimeout(resolve, 100));
+                                // Wait for collapse animation (75ms - 25% faster)
+                                await new Promise((resolve) => setTimeout(resolve, 75));
                             }
 
                             // Calculate position from bottom (for animation direction)
@@ -85,8 +85,8 @@ export default function SessionsScreen() {
                             // Mark as deleting to start animation with deletion order
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
-                            // Wait for animation to complete (400ms to ensure visibility)
-                            await new Promise((resolve) => setTimeout(resolve, 400));
+                            // Wait for animation to complete (300ms - 25% faster)
+                            await new Promise((resolve) => setTimeout(resolve, 300));
 
                             // Make API call
                             await revokeSession(id).catch((error) => {
@@ -131,7 +131,7 @@ export default function SessionsScreen() {
                             // First, collapse any expanded card
                             if (expandedSession) {
                                 setExpandedSession(null);
-                                await new Promise((resolve) => setTimeout(resolve, 100));
+                                await new Promise((resolve) => setTimeout(resolve, 75));
                             }
 
                             // Get non-current sessions and reverse to start from bottom
@@ -144,8 +144,8 @@ export default function SessionsScreen() {
                             // Trigger button animation (zoom in + fade flash) - fast
                             setIsDeletingAllMode(true);
 
-                            // Wait for button animation to complete (100ms - flash effect)
-                            await new Promise((resolve) => setTimeout(resolve, 100));
+                            // Wait for button animation to complete (75ms - flash effect, 25% faster)
+                            await new Promise((resolve) => setTimeout(resolve, 75));
 
                             // Reverse to eliminate from bottom to top
                             const reversedSessions = [...nonCurrentSessions].reverse();
@@ -157,8 +157,8 @@ export default function SessionsScreen() {
                                     // Mark as deleting with deletion order (for alternating direction)
                                     setDeletingSessionIds((prev) => new Map(prev).set(session.id, i));
 
-                                    // Wait for animation to complete (400ms to ensure visibility)
-                                    await new Promise((resolve) => setTimeout(resolve, 400));
+                                    // Wait for animation to complete (300ms - 25% faster)
+                                    await new Promise((resolve) => setTimeout(resolve, 300));
 
                                     // Make API call
                                     await revokeSession(session.id).catch((error) => {
@@ -204,6 +204,13 @@ export default function SessionsScreen() {
         setExpandedSession(expandedSession === sessionId ? null : sessionId);
     };
 
+    // Sort sessions: current session first, then others
+    const sortedSessions = [...sessions].sort((a, b) => {
+        if (a.isCurrent) return -1;
+        if (b.isCurrent) return 1;
+        return 0;
+    });
+
     const renderItem = ({ item, index }: { item: Session; index: number }) => {
         const isExpanded = expandedSession === item.id;
         const deletionOrder = deletingSessionIds.get(item.id);
@@ -211,7 +218,9 @@ export default function SessionsScreen() {
         const deviceInfo = parseUserAgent(item.userAgent, item.deviceName);
         const locationStr = formatLocation(item.location);
         const countryFlag = getCountryFlag(item.location?.country_code || null);
-        const timeAgo = formatDistanceToNow(new Date(item.lastUsedAt), { addSuffix: true, locale: es });
+        // Format time with consistent "hace" prefix to avoid "en menos de un minuto" variation
+        const distance = formatDistanceToNow(new Date(item.lastUsedAt), { addSuffix: false, locale: es });
+        const timeAgo = `hace ${distance}`;
         const lastUsedDate = format(new Date(item.lastUsedAt), "d 'de' MMMM 'a las' HH:mm", { locale: es });
 
         // Alternate animation direction based on deletion order (from bottom to top)
@@ -323,7 +332,7 @@ export default function SessionsScreen() {
             <View className="flex-1 bg-gray-50">
                 <ScreenHeader title="Sesiones Activas" showBack={true} />
                 <FlatList
-                    data={sessions}
+                    data={sortedSessions}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
