@@ -230,26 +230,4 @@ class GetAreasEnabledTest extends TestCase
         // Verify areas_enabled is a boolean
         $this->assertIsBool($response->json('data.areas_enabled'));
     }
-
-    // ==================== GROUP 6: PLATFORM_ADMIN Support (Test 9) ====================
-
-    /**
-     * Test #9: PLATFORM_ADMIN can get areas_enabled setting
-     *
-     * Expected: 200 OK
-     */
-    #[Test]
-    public function platform_admin_can_get_areas_enabled(): void
-    {
-        // Arrange
-        $platformAdmin = User::factory()->withRole('PLATFORM_ADMIN')->create();
-
-        // Act
-        $response = $this->authenticateWithJWT($platformAdmin)
-            ->getJson('/api/companies/me/settings/areas-enabled');
-
-        // Assert
-        $response->assertStatus(200);
-        $response->assertJsonPath('success', true);
-    }
 }

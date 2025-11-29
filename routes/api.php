@@ -134,7 +134,9 @@ Route::middleware('jwt.require')->group(function () {
 Route::get('/companies/minimal', [CompanyController::class, 'minimal'])->name('companies.minimal');
 
 // Get company areas enabled status (for frontend ticket creation)
+// UUID constraint prevents capturing /companies/me/settings/areas-enabled
 Route::get('/companies/{companyId}/settings/areas-enabled', [CompanyController::class, 'getCompanyAreasEnabledPublic'])
+    ->where('companyId', '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
     ->name('companies.areas-enabled.public');
 
 // Company Industries (Public - for form selectors)
@@ -167,6 +169,18 @@ Route::middleware('jwt.require')->group(function () {
     Route::delete('/companies/{company}/unfollow', [CompanyFollowerController::class, 'unfollow'])
         ->name('companies.unfollow');
 
+    // ========== COMPANY SETTINGS - Areas Feature Toggle (COMPANY_ADMIN Only) ==========
+    // IMPORTANT: Must be BEFORE /companies/{company} to avoid route conflict
+    Route::middleware(['role:COMPANY_ADMIN'])->group(function () {
+        // Get if areas are enabled for the company
+        Route::get('/companies/me/settings/areas-enabled', [CompanyController::class, 'getAreasEnabled'])
+            ->name('companies.settings.areas-enabled.get');
+
+        // Enable/disable areas for the company
+        Route::patch('/companies/me/settings/areas-enabled', [CompanyController::class, 'toggleAreasEnabled'])
+            ->name('companies.settings.areas-enabled.toggle');
+    });
+
     // View company details (with policy)
     Route::get('/companies/{company}', [CompanyController::class, 'show'])
         ->name('companies.show');
@@ -195,17 +209,6 @@ Route::middleware('jwt.require')->group(function () {
     Route::post('/companies/{company}/favicon', [CompanyController::class, 'uploadFavicon'])
         ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
         ->name('companies.favicon.upload');
-
-    // ========== COMPANY SETTINGS - Areas Feature Toggle (COMPANY_ADMIN Only) ==========
-    Route::middleware(['role:COMPANY_ADMIN'])->group(function () {
-        // Get if areas are enabled for the company
-        Route::get('/companies/me/settings/areas-enabled', [CompanyController::class, 'getAreasEnabled'])
-            ->name('companies.settings.areas-enabled.get');
-
-        // Enable/disable areas for the company
-        Route::patch('/companies/me/settings/areas-enabled', [CompanyController::class, 'toggleAreasEnabled'])
-            ->name('companies.settings.areas-enabled.toggle');
-    });
 
     // ========== AREAS - Read Endpoints (All Authenticated Users) ==========
     // List areas for a company

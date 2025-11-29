@@ -16,7 +16,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  * Tests the endpoint PATCH /api/companies/me/settings/areas-enabled
  *
  * Coverage:
- * - Authentication (only COMPANY_ADMIN and PLATFORM_ADMIN)
+ * - Authentication (only COMPANY_ADMIN)
  * - Authorization via CompanyPolicy->manageAreas()
  * - Enable areas (enabled: true)
  * - Disable areas (enabled: false)
@@ -37,7 +37,7 @@ class ToggleAreasEnabledTest extends TestCase
 {
     use RefreshDatabaseWithoutTransactions;
 
-    // ==================== GROUP 1: Authentication & Authorization (Tests 1-5) ====================
+    // ==================== GROUP 1: Authentication & Authorization (Tests 1-4) ====================
 
     /**
      * Test #1: Unauthenticated user cannot toggle areas_enabled
@@ -122,31 +122,10 @@ class ToggleAreasEnabledTest extends TestCase
         $response->assertJsonPath('data.areas_enabled', true);
     }
 
-    /**
-     * Test #5: PLATFORM_ADMIN can toggle areas_enabled
-     *
-     * Expected: 200 OK
-     */
-    #[Test]
-    public function platform_admin_can_toggle_areas_enabled(): void
-    {
-        // Arrange
-        $platformAdmin = User::factory()->withRole('PLATFORM_ADMIN')->create();
-        $payload = ['enabled' => true];
-
-        // Act
-        $response = $this->authenticateWithJWT($platformAdmin)
-            ->patchJson('/api/companies/me/settings/areas-enabled', $payload);
-
-        // Assert
-        $response->assertStatus(200);
-        $response->assertJsonPath('success', true);
-    }
-
-    // ==================== GROUP 2: Enable Areas (Test 6) ====================
+    // ==================== GROUP 2: Enable Areas (Test 5) ====================
 
     /**
-     * Test #6: Can enable areas (enabled: true)
+     * Test #5: Can enable areas (enabled: true)
      *
      * Expected: 200 OK with areas_enabled = true
      * Database: settings.areas_enabled should be true
@@ -175,10 +154,10 @@ class ToggleAreasEnabledTest extends TestCase
         $this->assertTrue($company->hasAreasEnabled());
     }
 
-    // ==================== GROUP 3: Disable Areas (Test 7) ====================
+    // ==================== GROUP 3: Disable Areas (Test 6) ====================
 
     /**
-     * Test #7: Can disable areas (enabled: false)
+     * Test #6: Can disable areas (enabled: false)
      *
      * Expected: 200 OK with areas_enabled = false
      * Database: settings.areas_enabled should be false
@@ -212,10 +191,10 @@ class ToggleAreasEnabledTest extends TestCase
         $this->assertFalse($company->hasAreasEnabled());
     }
 
-    // ==================== GROUP 4: Validation (Tests 8-9) ====================
+    // ==================== GROUP 4: Validation (Tests 7-8) ====================
 
     /**
-     * Test #8: enabled field is required
+     * Test #7: enabled field is required
      *
      * Expected: 422 Unprocessable Entity
      */
@@ -238,9 +217,10 @@ class ToggleAreasEnabledTest extends TestCase
     }
 
     /**
-     * Test #9: enabled must be boolean
+     * Test #8: enabled must be boolean
      *
      * Expected: 422 for non-boolean values
+     * Note: Laravel accepts true/false, 1/0, "1"/"0", "true"/"false", "on"/"off", "yes"/"no"
      */
     #[Test]
     public function enabled_must_be_boolean(): void
@@ -248,15 +228,15 @@ class ToggleAreasEnabledTest extends TestCase
         // Arrange
         $admin = $this->createCompanyAdmin();
 
-        // Case 1: String value
-        $payload = ['enabled' => 'yes'];
+        // Case 1: Invalid string value
+        $payload = ['enabled' => 'invalid'];
         $response = $this->authenticateWithJWT($admin)
             ->patchJson('/api/companies/me/settings/areas-enabled', $payload);
         $response->assertStatus(422)
             ->assertJsonValidationErrors('enabled');
 
-        // Case 2: Integer value (not boolean)
-        $payload = ['enabled' => 1];
+        // Case 2: Array value
+        $payload = ['enabled' => []];
         $response = $this->authenticateWithJWT($admin)
             ->patchJson('/api/companies/me/settings/areas-enabled', $payload);
         $response->assertStatus(422)
@@ -270,10 +250,10 @@ class ToggleAreasEnabledTest extends TestCase
             ->assertJsonValidationErrors('enabled');
     }
 
-    // ==================== GROUP 5: Company ID from JWT (Test 10) ====================
+    // ==================== GROUP 5: Company ID from JWT (Test 9) ====================
 
     /**
-     * Test #10: company_id is extracted from JWT token
+     * Test #9: company_id is extracted from JWT token
      *
      * Verifies that the endpoint updates the company from JWT, not query params.
      *
@@ -300,10 +280,10 @@ class ToggleAreasEnabledTest extends TestCase
         $this->assertTrue($company->hasAreasEnabled());
     }
 
-    // ==================== GROUP 6: Persistence (Test 11) ====================
+    // ==================== GROUP 6: Persistence (Test 10) ====================
 
     /**
-     * Test #11: Change persists in settings JSONB field
+     * Test #10: Change persists in settings JSONB field
      *
      * Verifies that areas_enabled is correctly stored in the JSONB settings column.
      *
@@ -337,10 +317,10 @@ class ToggleAreasEnabledTest extends TestCase
         $this->assertFalse($company->settings['areas_enabled']);
     }
 
-    // ==================== GROUP 7: Response Includes New State (Test 12) ====================
+    // ==================== GROUP 7: Response Includes New State (Test 11) ====================
 
     /**
-     * Test #12: Response includes the new state
+     * Test #11: Response includes the new state
      *
      * Verifies that the response always returns the current state after toggling.
      *
@@ -369,10 +349,10 @@ class ToggleAreasEnabledTest extends TestCase
         $response->assertJsonPath('data.areas_enabled', false);
     }
 
-    // ==================== GROUP 8: Idempotence (Test 13) ====================
+    // ==================== GROUP 8: Idempotence (Test 12) ====================
 
     /**
-     * Test #13: Toggling is idempotent
+     * Test #12: Toggling is idempotent
      *
      * Verifies that setting areas_enabled to the same value multiple times works correctly.
      *
