@@ -78,30 +78,16 @@ export default function SessionsScreen() {
                                 await new Promise((resolve) => setTimeout(resolve, 300));
                             }
 
+                            // Call API FIRST - only animate if it succeeds
+                            await revokeSession(id);
+
                             // Calculate position from bottom (for animation direction)
                             const nonCurrentSessions = sessions.filter((s) => !s.isCurrent);
                             const reversedNonCurrent = [...nonCurrentSessions].reverse();
                             const deletionOrder = reversedNonCurrent.findIndex((s) => s.id === id);
 
-                            // Store the session in case we need to restore it
-                            const sessionToDelete = sessions.find((s) => s.id === id);
-
                             // Mark as deleting (triggers slide out animation)
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
-
-                            // Launch API call in background without waiting
-                            revokeSession(id).catch(() => {
-                                // Restore session if deletion failed
-                                if (sessionToDelete) {
-                                    setSessions((prev) => [...prev, sessionToDelete]);
-                                }
-                                setDeletingSessionIds((prev) => {
-                                    const newMap = new Map(prev);
-                                    newMap.delete(id);
-                                    return newMap;
-                                });
-                                Alert.alert('Error', 'No se pudo cerrar la sesión');
-                            });
 
                             // Wait for slide out animation (100ms)
                             await new Promise((resolve) => setTimeout(resolve, 100));
@@ -161,19 +147,11 @@ export default function SessionsScreen() {
                             for (let i = 0; i < reversedSessions.length; i++) {
                                 const session = reversedSessions[i];
                                 try {
+                                    // Call API FIRST - only animate if it succeeds
+                                    await revokeSession(session.id);
+
                                     // Mark as deleting
                                     setDeletingSessionIds((prev) => new Map(prev).set(session.id, i));
-
-                                    // Launch API call in background without waiting
-                                    revokeSession(session.id).catch(() => {
-                                        // Restore session if deletion failed
-                                        setSessions((prev) => [...prev, session]);
-                                        setDeletingSessionIds((prev) => {
-                                            const newMap = new Map(prev);
-                                            newMap.delete(session.id);
-                                            return newMap;
-                                        });
-                                    });
 
                                     // Wait for slide out animation
                                     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -189,6 +167,8 @@ export default function SessionsScreen() {
                                     // Wait for layout animation to complete before next deletion
                                     await new Promise((resolve) => setTimeout(resolve, 150));
                                 } catch (error) {
+                                    // If one session fails, continue with the rest
+                                    console.error(`Failed to revoke session ${session.id}:`, error);
                                     continue;
                                 }
                             }
