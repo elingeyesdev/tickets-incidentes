@@ -74,7 +74,8 @@ export default function SessionsScreen() {
                             // First, collapse the expanded card if it's the one being deleted
                             if (expandedSession === id) {
                                 setExpandedSession(null);
-                                await new Promise((resolve) => setTimeout(resolve, 75));
+                                // Wait for collapse animation to complete
+                                await new Promise((resolve) => setTimeout(resolve, 300));
                             }
 
                             // Calculate position from bottom (for animation direction)
@@ -82,15 +83,15 @@ export default function SessionsScreen() {
                             const reversedNonCurrent = [...nonCurrentSessions].reverse();
                             const deletionOrder = reversedNonCurrent.findIndex((s) => s.id === id);
 
-                            // Mark as deleting (triggers slide out)
+                            // Mark as deleting (triggers slide out animation)
                             setDeletingSessionIds((prev) => new Map(prev).set(id, deletionOrder));
 
-                            // Wait for slide out animation
-                            await new Promise((resolve) => setTimeout(resolve, 150));
+                            // Wait for slide out animation to complete (150ms) + layout spring animation
+                            await new Promise((resolve) => setTimeout(resolve, 400));
 
                             await revokeSession(id);
 
-                            // Remove from state
+                            // Remove from state - other cards will animate up
                             setSessions((prev) => prev.filter((s) => s.id !== id));
                             setDeletingSessionIds((prev) => {
                                 const newMap = new Map(prev);
