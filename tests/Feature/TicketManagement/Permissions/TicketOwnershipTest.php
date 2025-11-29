@@ -10,8 +10,8 @@ use App\Features\TicketManagement\Models\Category;
 use App\Features\TicketManagement\Models\Ticket;
 use App\Features\UserManagement\Models\User;
 use PHPUnit\Framework\Attributes\Test;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
  * Feature Tests for Ticket Ownership Permissions
@@ -37,7 +37,7 @@ use Tests\Traits\RefreshDatabaseWithoutTransactions;
  */
 class TicketOwnershipTest extends TestCase
 {
-    use RefreshDatabaseWithoutTransactions;
+    use RefreshDatabase;
 
     /**
      * Test #1: User can only access own tickets
