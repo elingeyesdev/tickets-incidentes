@@ -105,14 +105,17 @@ class TicketService
      */
     private function getUserRole(User $user): string
     {
-        if (JWTHelper::hasRoleFromJWT('USER')) {
-            return 'USER';
+        if (JWTHelper::hasRoleFromJWT('PLATFORM_ADMIN')) {
+            return 'PLATFORM_ADMIN';
+        }
+        if (JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
+            return 'COMPANY_ADMIN';
         }
         if (JWTHelper::hasRoleFromJWT('AGENT')) {
             return 'AGENT';
         }
-        if (JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
-            return 'COMPANY_ADMIN';
+        if (JWTHelper::hasRoleFromJWT('USER')) {
+            return 'USER';
         }
         return 'USER'; // Fallback
     }
@@ -208,13 +211,21 @@ class TicketService
      *
      * @param Builder $query
      * @param string $userId ID del usuario
-     * @param string $userRole Rol del usuario (USER, AGENT, COMPANY_ADMIN)
+     * @param string $userRole Rol del usuario (PLATFORM_ADMIN, COMPANY_ADMIN, AGENT, USER)
      */
     private function applyVisibilityFilters(Builder $query, string $userId, string $userRole): void
     {
-        // Si es USER: solo ve sus propios tickets
-        if ($userRole === 'USER') {
-            $query->where('created_by_user_id', $userId);
+        // Si es PLATFORM_ADMIN: ve TODO (no aplicar filtros)
+        if ($userRole === 'PLATFORM_ADMIN') {
+            return;
+        }
+
+        // Si es COMPANY_ADMIN: ve todos los tickets de su empresa
+        if ($userRole === 'COMPANY_ADMIN') {
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            if ($companyId) {
+                $query->where('company_id', $companyId);
+            }
             return;
         }
 
@@ -227,12 +238,9 @@ class TicketService
             return;
         }
 
-        // Si es COMPANY_ADMIN: ve todos los tickets de su empresa
-        if ($userRole === 'COMPANY_ADMIN') {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-            if ($companyId) {
-                $query->where('company_id', $companyId);
-            }
+        // Si es USER: solo ve sus propios tickets
+        if ($userRole === 'USER') {
+            $query->where('created_by_user_id', $userId);
             return;
         }
     }

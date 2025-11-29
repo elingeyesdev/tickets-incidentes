@@ -25,7 +25,7 @@ class AnnouncementResource extends JsonResource
         return [
             'id' => $this->id,
             'company_id' => $this->company_id,
-            'company_name' => $this->company->name,
+            'company_name' => $this->company?->name,
             'author_id' => $this->author_id,
             'author_name' => $this->getAuthorName(),
             'title' => $this->title,

@@ -33,10 +33,15 @@ class TicketPolicy
     }
 
     /**
-     * Ver ticket: creador o agent/admin de la misma compañía.
+     * Ver ticket: creador, agent/admin de la misma compañía, o PLATFORM_ADMIN.
      */
     public function view(User $user, Ticket $ticket): bool
     {
+        // PLATFORM_ADMIN puede ver todos los tickets
+        if ($user->hasRole('PLATFORM_ADMIN')) {
+            return true;
+        }
+
         // Creador puede ver siempre
         if ($ticket->created_by_user_id === $user->id) {
             return true;
