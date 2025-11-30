@@ -179,8 +179,23 @@
             const tokenExpiry = localStorage.getItem('helpdesk_token_expiry');
 
             if (rawAccessToken && !tokenExpiry) {
-                // Token exists but without expiry info - compute and store expiry now
-                // This handles the case where login.blade.php saves the token directly
+                // Token exists but without expiry info - try to decode JWT first
+                try {
+                    const payload = JSON.parse(atob(rawAccessToken.split('.')[1]));
+                    if (payload.exp) {
+                        const expiryTimestamp = payload.exp * 1000; // Convert to ms
+                        const now = Date.now();
+                        
+                        localStorage.setItem('helpdesk_token_expiry', expiryTimestamp.toString());
+                        localStorage.setItem('helpdesk_token_issued_at', now.toString()); // Approx
+                        console.log('[TokenManager Setup] Initialized token metadata from JWT exp claim');
+                        return;
+                    }
+                } catch (e) {
+                    console.error('[TokenManager Setup] Failed to decode JWT for expiry:', e);
+                }
+
+                // Fallback if decoding fails
                 const now = Date.now();
                 const defaultTTL = 3600; // 1 hour in seconds
                 const expiryTimestamp = now + (defaultTTL * 1000);
@@ -235,7 +250,9 @@
 
     {{-- JWT Token Manager --}}
     <script type="module">
-        import tokenManager from '/js/lib/auth/TokenManager.js';
+        import tokenManager from '/js/lib/auth/TokenManager.js?v={{ time() }}';
+
+        console.log('[Dashboard] TokenManager module loaded', tokenManager);
 
         // Make tokenManager available globally (already instantiated in module)
         window.tokenManager = tokenManager;

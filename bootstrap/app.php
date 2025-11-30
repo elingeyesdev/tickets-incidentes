@@ -39,6 +39,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrimStrings::class,
         ]);
 
+        // Exclude jwt_token from encryption so JS can set it and Backend can read it
+        $middleware->encryptCookies(except: [
+            'jwt_token',
+        ]);
+
         $middleware->web(append: [
             // Using Laravel Blade templates - no Inertia middleware needed
         ]);

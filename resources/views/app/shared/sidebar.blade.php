@@ -113,6 +113,13 @@
                                 <p>Perfil</p>
                             </a>
                         </li>
+                        <li class="nav-header text-warning">DEBUG</li>
+                        <li class="nav-item">
+                            <a href="#" @click.prevent="testRefresh()" class="nav-link text-warning">
+                                <i class="nav-icon fas fa-sync-alt"></i>
+                                <p>Test Refresh Token</p>
+                            </a>
+                        </li>
                     </div>
                 </template>
 
@@ -272,6 +279,42 @@
                     console.error('Error loading company requests count:', error);
                     // Keep default 0 value on error
                 });
+            },
+
+            async testRefresh() {
+                try {
+                    Swal.fire({
+                        title: 'Refreshing Token...',
+                        text: 'Please wait',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Force refresh
+                    await window.tokenManager.refresh();
+
+                    // Success
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Refresh Successful!',
+                        text: 'Token refreshed and cookie updated. Reloading page to verify...',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                    // Reload to verify auth persistence
+                    window.location.reload();
+
+                } catch (error) {
+                    console.error('Test Refresh Failed:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Refresh Failed',
+                        text: error.message || 'Unknown error occurred'
+                    });
+                }
             }
         };
     }

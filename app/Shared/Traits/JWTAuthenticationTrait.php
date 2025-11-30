@@ -74,13 +74,27 @@ trait JWTAuthenticationTrait
      */
     protected function requireAuthentication(Request $request): User
     {
-        $user = $this->authenticateUser($request);
+        try {
+            $user = $this->authenticateUser($request);
 
-        if (!$user) {
-            throw AuthenticationException::unauthenticated();
+            if (!$user) {
+                throw AuthenticationException::unauthenticated();
+            }
+
+            return $user;
+        } catch (\Exception $e) {
+            // If request expects JSON (API), rethrow to let ExceptionHandler handle it (returns 401 JSON)
+            if ($request->expectsJson()) {
+                throw $e;
+            }
+
+            // If it's a Web request (Browser), redirect to login
+            // This provides a better user experience than a generic error page
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->route('login', ['reason' => 'session_expired'])
+                    ->with('error', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
+            );
         }
-
-        return $user;
     }
 
     /**

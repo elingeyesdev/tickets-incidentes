@@ -153,9 +153,19 @@ Route::get('/auth/prepare-web', function () {
         $tokenService = app(App\Features\Authentication\Services\TokenService::class);
         $payload = $tokenService->validateAccessToken($token);
 
-        // Token is valid, establish JWT cookie and redirect
+        // Get user to generate refresh token
+        $user = \App\Features\UserManagement\Models\User::findOrFail($payload->user_id);
+
+        // Generate Refresh Token
+        $deviceInfo = \App\Shared\Helpers\DeviceInfoParser::fromRequest(request());
+        $refreshTokenData = $tokenService->createRefreshToken($user, $deviceInfo);
+
+        // Token is valid, establish cookies and redirect
         return redirect($redirect)
-            ->cookie('jwt_token', $token, 60, '/', null, false, true); // 60 minutes, HttpOnly, Lax
+            // 3rd Token: Non-HttpOnly so JS can keep it in sync
+            ->cookie('jwt_token', $token, config('jwt.ttl'), '/', null, false, false)
+            // Refresh Token: HttpOnly for security
+            ->cookie('refresh_token', $refreshTokenData['token'], config('jwt.refresh_ttl'), '/', null, !app()->isLocal(), true, false, 'lax');
     } catch (\Exception $e) {
         return redirect('/login')->with('error', 'Token inválido: ' . $e->getMessage());
     }

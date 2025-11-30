@@ -62,14 +62,28 @@ class RequireJWTAuthentication
 
             return $next($request);
 
-        } catch (TokenExpiredException $e) {
-            throw AuthenticationException::tokenExpired();
-        } catch (TokenInvalidException $e) {
-            throw AuthenticationException::tokenInvalid();
-        } catch (AuthenticationException $e) {
-            throw $e;
         } catch (\Exception $e) {
-            throw new AuthenticationException('Authentication failed: ' . $e->getMessage());
+            // If request expects JSON (API), rethrow to let ExceptionHandler handle it (returns 401 JSON)
+            if ($request->expectsJson()) {
+                if ($e instanceof TokenExpiredException) {
+                    throw AuthenticationException::tokenExpired();
+                }
+                if ($e instanceof TokenInvalidException) {
+                    throw AuthenticationException::tokenInvalid();
+                }
+                if ($e instanceof AuthenticationException) {
+                    throw $e;
+                }
+                throw new AuthenticationException('Authentication failed: ' . $e->getMessage());
+            }
+
+            // If it's a Web request (Browser), redirect to login AND CLEAR COOKIE
+            // This prevents the redirect loop
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->route('login', ['reason' => 'session_expired'])
+                    ->with('error', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
+                    ->withCookie(cookie()->forget('jwt_token'))
+            );
         }
     }
 }
