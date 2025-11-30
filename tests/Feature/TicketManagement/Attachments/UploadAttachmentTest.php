@@ -104,7 +104,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
         $response->assertJsonStructure([
             'data' => [
                 'id',
@@ -179,7 +179,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
         $response->assertJsonPath('data.ticket_id', $ticket->id);
         $response->assertJsonPath('data.uploaded_by_user_id', $agent->id);
 
@@ -340,7 +340,7 @@ class UploadAttachmentTest extends TestCase
             ->postJson("/api/tickets/{$ticket->ticket_code}/attachments", [
                 'file' => $validFile,
             ]);
-        $responseValid->assertStatus(200, "PDF should be ACCEPTED");
+        $responseValid->assertStatus(201, "PDF should be ACCEPTED");
     }
 
     /**
@@ -407,7 +407,7 @@ class UploadAttachmentTest extends TestCase
                 ]);
 
             // Assert
-            $response->assertStatus(200, "File type {$fileName} should be ACCEPTED");
+            $response->assertStatus(201, "File type {$fileName} should be ACCEPTED");
             $this->assertDatabaseHas('ticketing.ticket_attachments', [
                 'ticket_id' => $ticket->id,
                 'file_name' => $fileName,
@@ -510,7 +510,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
 
         // Verify file is stored in correct path
         $attachmentId = $response->json('data.id');
@@ -560,7 +560,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
         $response->assertJsonStructure([
             'data' => [
                 'file_name',
@@ -617,7 +617,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
         $response->assertJsonPath('data.uploaded_by_user_id', $user->id);
 
         $this->assertDatabaseHas('ticketing.ticket_attachments', [
@@ -663,7 +663,7 @@ class UploadAttachmentTest extends TestCase
             ]);
 
         // Assert
-        $response->assertStatus(200);
+        $response->assertStatus(201);
         $response->assertJsonPath('data.response_id', null);
 
         $this->assertDatabaseHas('ticketing.ticket_attachments', [

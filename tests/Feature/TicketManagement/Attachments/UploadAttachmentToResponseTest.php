@@ -77,7 +77,7 @@ class UploadAttachmentToResponseTest extends TestCase
             ]);
 
         // Assert
-        $uploadResponse->assertStatus(200);
+        $uploadResponse->assertStatus(201);
         $uploadResponse->assertJsonPath('data.response_id', $response->id);
         $uploadResponse->assertJsonPath('data.ticket_id', $ticket->id);
         $uploadResponse->assertJsonPath('data.file_name', 'test.pdf');
@@ -246,7 +246,7 @@ class UploadAttachmentToResponseTest extends TestCase
             ]);
 
         // Assert - Author succeeds
-        $authorUpload->assertStatus(200);
+        $authorUpload->assertStatus(201);
 
         // Act - Other user tries to upload
         $file2 = UploadedFile::fake()->create('test2.pdf', 100);
@@ -400,7 +400,7 @@ class UploadAttachmentToResponseTest extends TestCase
                     'file' => $file,
                     'response_id' => $response->id,
                 ]);
-            $uploadResponse->assertStatus(200);
+            $uploadResponse->assertStatus(201);
         }
 
         // Act - Try to upload 6th attachment

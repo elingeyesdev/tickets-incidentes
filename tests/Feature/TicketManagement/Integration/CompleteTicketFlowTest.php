@@ -310,7 +310,7 @@ class CompleteTicketFlowTest extends TestCase
             'file' => $agentAttachment,
         ]);
 
-        $uploadResponse->assertStatus(200);
+        $uploadResponse->assertStatus(201);
 
         // Verify attachment count increased
         $ticket->refresh();
