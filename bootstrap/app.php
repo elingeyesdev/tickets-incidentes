@@ -44,8 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt_token',
         ]);
 
-        $middleware->web(append: [
-            // Using Laravel Blade templates - no Inertia middleware needed
+        $middleware->web(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
         ]);
 
         // API middleware for GraphQL endpoint & JWT authentication

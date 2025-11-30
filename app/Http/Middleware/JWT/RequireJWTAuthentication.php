@@ -34,8 +34,10 @@ class RequireJWTAuthentication
     use JWTAuthenticationTrait;
 
     public function __construct(
-        private readonly TokenService $tokenService
-    ) {}
+        private readonly TokenService $tokenService,
+        private readonly \App\Features\Authentication\Services\AuthService $authService
+    ) {
+    }
 
     /**
      * Handle an incoming request.
@@ -77,8 +79,80 @@ class RequireJWTAuthentication
                 throw new AuthenticationException('Authentication failed: ' . $e->getMessage());
             }
 
-            // If it's a Web request (Browser), redirect to login AND CLEAR COOKIE
-            // This prevents the redirect loop
+
+            // SERVER-SIDE AUTO-REFRESH (For Web Requests)
+            // If authentication failed (expired/missing), try to refresh using the HttpOnly cookie
+            $refreshToken = $request->cookie('refresh_token');
+
+            if ($refreshToken) {
+
+                try {
+                    // Attempt to refresh token
+                    $deviceInfo = \App\Shared\Helpers\DeviceInfoParser::fromRequest($request);
+                    $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
+
+                    // If successful, we have a new access token
+                    $newAccessToken = $result['access_token'];
+
+                    \Illuminate\Support\Facades\Log::info('Refresh successful, authenticating with new token');
+
+                    // Manually authenticate the user with the new token so the request can proceed
+                    $this->processJWTToken($request, $newAccessToken);
+
+                    // CRITICAL: Store the refreshed token in request so Blade can inject it into the page
+                    // This prevents the frontend from seeing an expired token in localStorage
+                    $request->attributes->set('server_refreshed_token', [
+                        'access_token' => $newAccessToken,
+                        'expires_in' => $result['expires_in'],
+                    ]);
+
+                    // Proceed with the request
+                    $response = $next($request);
+
+                    // Attach new cookies to the response
+                    $cookieLifetime = (int) config('jwt.refresh_ttl');
+                    $secure = config('app.env') === 'production';
+
+                    // 1. New Access Token Cookie (Not Encrypted, for JS)
+                    $response->withCookie(cookie(
+                        'jwt_token',
+                        $newAccessToken,
+                        $result['expires_in'] / 60, // Minutes
+                        '/',
+                        null,
+                        $secure,
+                        false, // Not HttpOnly (JS needs it)
+                        false, // Raw
+                        'lax'
+                    ));
+
+                    // 2. New Refresh Token Cookie (HttpOnly, Encrypted)
+                    $response->withCookie(cookie(
+                        'refresh_token',
+                        $result['refresh_token'],
+                        $cookieLifetime,
+                        '/',
+                        null,
+                        $secure,
+                        true, // HttpOnly
+                        false,
+                        'strict'
+                    ));
+
+                    return $response;
+
+                } catch (\Exception $refreshError) {
+                    // Refresh failed (invalid/expired refresh token or token validation error)
+                    // Log and fall through to redirect
+                    \Illuminate\Support\Facades\Log::warning('Server-side auto-refresh failed', [
+                        'error' => $refreshError->getMessage(),
+                        'type' => get_class($refreshError)
+                    ]);
+                    // Fall through to redirect below
+                }
+            }
+
+            // If it's a Web request (Browser) and refresh failed, redirect to login AND CLEAR COOKIE
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
                 redirect()->route('login', ['reason' => 'session_expired'])
                     ->with('error', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')

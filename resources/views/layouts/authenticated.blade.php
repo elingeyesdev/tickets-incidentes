@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     {{-- Base Meta Tags --}}
     <meta charset="utf-8">
@@ -27,7 +28,8 @@
 
     {{-- Select2 --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
 
     {{-- SweetAlert2 --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
@@ -36,7 +38,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css">
 
     {{-- Google Font: Source Sans Pro --}}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
 
     {{-- Extra Configured Plugins Stylesheets --}}
     @include('adminlte::plugins', ['type' => 'css'])
@@ -172,6 +175,25 @@
 
     {{-- JWT Token Manager Setup (synchronous) --}}
     <script>
+        // CRITICAL: If server refreshed the token (server-side auto-refresh), inject it immediately
+        // This MUST run before any other scripts to prevent redirect loops
+        @if(request()->attributes->has('server_refreshed_token'))
+            (function injectServerRefreshedToken() {
+                const serverToken = @json(request()->attributes->get('server_refreshed_token'));
+                const now = Date.now();
+                const expiryTimestamp = now + (serverToken.expires_in * 1000);
+
+                localStorage.setItem('access_token', serverToken.access_token);
+                localStorage.setItem('helpdesk_token_expiry', expiryTimestamp.toString());
+                localStorage.setItem('helpdesk_token_issued_at', now.toString());
+
+                console.log('[Server Refresh] Token injected into localStorage', {
+                    expiresIn: serverToken.expires_in,
+                    expiryTimestamp
+                });
+            })();
+        @endif
+
         // IMPORTANT: Handle token from login.blade.php that was saved directly to localStorage
         // without expiry metadata. This ensures TokenManager can properly track and refresh the token.
         (function setupTokenInitial() {
@@ -185,7 +207,7 @@
                     if (payload.exp) {
                         const expiryTimestamp = payload.exp * 1000; // Convert to ms
                         const now = Date.now();
-                        
+
                         localStorage.setItem('helpdesk_token_expiry', expiryTimestamp.toString());
                         localStorage.setItem('helpdesk_token_issued_at', now.toString()); // Approx
                         console.log('[TokenManager Setup] Initialized token metadata from JWT exp claim');
@@ -208,7 +230,7 @@
 
         // IMPORTANT: Define getUserFromJWT globally BEFORE navbar tries to use it
         // This is needed because navbar.blade.php is rendered synchronously
-        window.getUserFromJWT = function() {
+        window.getUserFromJWT = function () {
             const token = localStorage.getItem('access_token');
             const expiryTimestamp = localStorage.getItem('helpdesk_token_expiry');
 
@@ -258,7 +280,7 @@
         window.tokenManager = tokenManager;
 
         // Add global logout function
-        window.logout = async function() {
+        window.logout = async function () {
             try {
                 const token = tokenManager.getAccessToken();
 
@@ -286,7 +308,7 @@
         };
 
         // Check authentication on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const token = tokenManager.getAccessToken();
             console.log('[Auth Check] Token available:', !!token);
             if (!token) {
@@ -298,17 +320,18 @@
 
     {{-- Ekko Lightbox Initialization --}}
     <script>
-    $(document).on('click', '[data-toggle="lightbox"]', function(event) {
-        event.preventDefault();
-        $(this).ekkoLightbox({
-            alwaysShowClose: true,
-            wrapping: true
+        $(document).on('click', '[data-toggle="lightbox"]', function (event) {
+            event.preventDefault();
+            $(this).ekkoLightbox({
+                alwaysShowClose: true,
+                wrapping: true
+            });
         });
-    });
     </script>
 
     {{-- Custom Scripts --}}
     @stack('scripts')
     @yield('js')
 </body>
+
 </html>
