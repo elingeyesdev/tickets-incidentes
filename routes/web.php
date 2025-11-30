@@ -210,6 +210,16 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             ]);
         })->name('company.categories.index');
 
+        // Areas Management
+        Route::get('/areas', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.areas.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.areas.index');
+
         // Settings (Company Configuration)
         Route::get('/settings', function () {
             $user = JWTHelper::getAuthenticatedUser();

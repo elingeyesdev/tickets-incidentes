@@ -81,6 +81,12 @@
                                 <p>Categorías</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="/app/company/areas" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>Áreas</p>
+                            </a>
+                        </li>
                         <li class="nav-header">CONTENIDO</li>
                         <li class="nav-item">
                             <a href="/app/company/announcements" class="nav-link">
