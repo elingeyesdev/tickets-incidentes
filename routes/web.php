@@ -289,6 +289,16 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'COMPANY_ADMIN'
             ]);
         })->name('company.tickets.manage');
+
+        Route::get('/tickets/{any}', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'COMPANY_ADMIN'
+            ]);
+        })->where('any', '.*')->name('company.tickets.wildcard');
     });
 
     // Agent Dashboard (AGENT role)
@@ -316,6 +326,16 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'AGENT'
             ]);
         })->name('agent.tickets.manage');
+
+        Route::get('/tickets/{any}', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'AGENT'
+            ]);
+        })->where('any', '.*')->name('agent.tickets.wildcard');
     });
 
     // User Dashboard (USER role)
@@ -333,6 +353,26 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'USER'
             ]);
         })->name('user.tickets.index');
+
+        Route::get('/tickets/manage', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('USER');
+            return view('app.shared.tickets.manage', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'USER'
+            ]);
+        })->name('user.tickets.manage');
+
+        Route::get('/tickets/{any}', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('USER');
+            return view('app.shared.tickets.index', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'role' => 'USER'
+            ]);
+        })->where('any', '.*')->name('user.tickets.wildcard');
 
         Route::get('/announcements', function () {
             $user = JWTHelper::getAuthenticatedUser();
