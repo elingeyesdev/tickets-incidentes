@@ -127,6 +127,14 @@ class Company extends Model
     }
 
     /**
+     * Obtener todos los tickets de esta empresa.
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(\App\Features\TicketManagement\Models\Ticket::class, 'company_id');
+    }
+
+    /**
      * Scope: Solo empresas activas.
      */
     public function scopeActive($query)

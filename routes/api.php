@@ -606,7 +606,19 @@ Route::middleware('jwt.require')->group(function () {
 // REST API ENDPOINTS - Analytics
 // ================================================================================
 
-Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('analytics')->group(function () {
+Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
     Route::get('/company-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'dashboard'])
+        ->middleware('role:COMPANY_ADMIN')
         ->name('analytics.company-dashboard');
+
+    Route::get('/user-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'userDashboard'])
+        ->name('analytics.user-dashboard');
+
+    Route::get('/agent-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'agentDashboard'])
+        ->middleware('role:AGENT')
+        ->name('analytics.agent-dashboard');
+
+    Route::get('/platform-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'platformDashboard'])
+        ->middleware('role:PLATFORM_ADMIN')
+        ->name('analytics.platform-dashboard');
 });

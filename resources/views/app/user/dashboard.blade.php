@@ -1,125 +1,89 @@
 @extends('layouts.authenticated')
 
-@section('title', 'User Dashboard')
+@section('title', 'Dashboard - Usuario')
 
-@section('content_header', 'My Dashboard')
+@section('content_header', 'Mi Panel de Control')
 
 @section('breadcrumbs')
     <li class="breadcrumb-item active">Dashboard</li>
 @endsection
 
 @section('content')
+
+<!-- Row 1: KPI Statistics -->
 <div class="row">
-    <!-- Open Tickets -->
-    <div class="col-lg-4 col-6">
-        <div class="small-box bg-warning">
+    <!-- Total Tickets -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
             <div class="inner">
-                <h3>{{ $stats['open_tickets'] ?? 0 }}</h3>
-                <p>Open Tickets</p>
+                <h3 id="total-tickets">0</h3>
+                <p>Mis Tickets</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <a href="/app/user/tickets" class="small-box-footer">
+                Ver todos <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Open Tickets -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3 id="open-tickets">0</h3>
+                <p>Abiertos</p>
             </div>
             <div class="icon">
                 <i class="fas fa-folder-open"></i>
             </div>
-            <a href="/app/user/tickets?status=open" class="small-box-footer">
-                View Tickets <i class="fas fa-arrow-circle-right"></i>
+            <a href="/app/user/tickets?status=OPEN" class="small-box-footer">
+                Ver abiertos <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
 
-    <!-- In Progress -->
-    <div class="col-lg-4 col-6">
-        <div class="small-box bg-info">
+    <!-- Pending Tickets -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
             <div class="inner">
-                <h3>{{ $stats['in_progress_tickets'] ?? 0 }}</h3>
-                <p>In Progress</p>
+                <h3 id="pending-tickets">0</h3>
+                <p>Pendientes</p>
             </div>
             <div class="icon">
-                <i class="fas fa-tasks"></i>
+                <i class="fas fa-hourglass-half"></i>
             </div>
-            <a href="/app/user/tickets?status=in_progress" class="small-box-footer">
-                View Tickets <i class="fas fa-arrow-circle-right"></i>
+            <a href="/app/user/tickets?status=PENDING" class="small-box-footer">
+                Ver pendientes <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
 
-    <!-- Closed Tickets -->
-    <div class="col-lg-4 col-6">
+    <!-- Resolved/Closed Tickets -->
+    <div class="col-lg-3 col-6">
         <div class="small-box bg-success">
             <div class="inner">
-                <h3>{{ $stats['closed_tickets'] ?? 0 }}</h3>
-                <p>Closed Tickets</p>
+                <h3 id="resolved-tickets">0</h3>
+                <p>Resueltos/Cerrados</p>
             </div>
             <div class="icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <a href="/app/user/tickets?status=closed" class="small-box-footer">
-                View History <i class="fas fa-arrow-circle-right"></i>
+            <a href="/app/user/tickets?status=RESOLVED" class="small-box-footer">
+                Ver historial <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- My Tickets -->
+    <!-- Left Column: Recent Tickets & Chart -->
     <div class="col-md-8">
-        <div class="card">
+        <!-- Ticket Status Chart -->
+        <div class="card card-outline card-primary">
             <div class="card-header">
-                <h3 class="card-title">My Recent Tickets</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-sm btn-success" onclick="window.location.href='/app/user/tickets/create'">
-                        <i class="fas fa-plus mr-1"></i> New Ticket
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Subject</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Last Updated</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>#T-5001</td>
-                            <td>Cannot reset password</td>
-                            <td><span class="badge badge-info">In Progress</span></td>
-                            <td><span class="badge badge-danger">High</span></td>
-                            <td>1 hour ago</td>
-                            <td><a href="#" class="btn btn-sm btn-primary">View</a></td>
-                        </tr>
-                        <tr>
-                            <td>#T-5002</td>
-                            <td>Question about billing</td>
-                            <td><span class="badge badge-warning">Open</span></td>
-                            <td><span class="badge badge-warning">Medium</span></td>
-                            <td>2 days ago</td>
-                            <td><a href="#" class="btn btn-sm btn-primary">View</a></td>
-                        </tr>
-                        <tr>
-                            <td>#T-4999</td>
-                            <td>Feature request</td>
-                            <td><span class="badge badge-success">Closed</span></td>
-                            <td><span class="badge badge-success">Low</span></td>
-                            <td>1 week ago</td>
-                            <td><a href="#" class="btn btn-sm btn-secondary">View</a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-footer">
-                <a href="/app/user/tickets" class="btn btn-primary">View All My Tickets</a>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Recent Activity</h3>
+                <h3 class="card-title">Estado de mis Solicitudes</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
@@ -127,120 +91,289 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="timeline">
-                    <div class="time-label">
-                        <span class="bg-info">Today</span>
-                    </div>
-                    <div>
-                        <i class="fas fa-comment bg-blue"></i>
-                        <div class="timeline-item">
-                            <span class="time"><i class="fas fa-clock"></i> 1 hour ago</span>
-                            <h3 class="timeline-header">Agent Sarah replied to your ticket #T-5001</h3>
-                            <div class="timeline-body">
-                                "I've sent you a password reset link to your email. Please check your inbox and spam folder."
-                            </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="chart-responsive">
+                            <canvas id="ticketStatusChart" height="150"></canvas>
                         </div>
                     </div>
-                    <div>
-                        <i class="fas fa-ticket-alt bg-green"></i>
-                        <div class="timeline-item">
-                            <span class="time"><i class="fas fa-clock"></i> 2 days ago</span>
-                            <h3 class="timeline-header">You created ticket #T-5002</h3>
-                            <div class="timeline-body">
-                                Question about billing cycle and payment methods.
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <i class="fas fa-check bg-success"></i>
-                        <div class="timeline-item">
-                            <span class="time"><i class="fas fa-clock"></i> 1 week ago</span>
-                            <h3 class="timeline-header">Ticket #T-4999 was resolved</h3>
-                            <div class="timeline-body">
-                                Your feature request has been added to our roadmap. Thank you for your suggestion!
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <i class="fas fa-clock bg-gray"></i>
+                    <div class="col-md-4">
+                        <ul class="chart-legend clearfix">
+                            <li><i class="far fa-circle text-danger"></i> Abiertos</li>
+                            <li><i class="far fa-circle text-warning"></i> Pendientes</li>
+                            <li><i class="far fa-circle text-info"></i> Resueltos</li>
+                            <li><i class="far fa-circle text-success"></i> Cerrados</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Recent Tickets Table -->
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Tickets Recientes</h3>
+                <div class="card-tools">
+                    <a href="/app/user/tickets/create" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus mr-1"></i> Nuevo Ticket
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Asunto</th>
+                            <th>Estado</th>
+                            <th>Actualizado</th>
+                            <th style="width: 40px">Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTicketsBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer clearfix">
+                <a href="/app/user/tickets" class="btn btn-sm btn-default float-right">Ver todos mis tickets</a>
+            </div>
+        </div>
     </div>
 
-    <!-- Quick Actions & Help -->
+    <!-- Right Column: Quick Actions & Help Center -->
     <div class="col-md-4">
         <!-- Quick Actions -->
         <div class="card card-primary">
             <div class="card-header">
-                <h3 class="card-title">Quick Actions</h3>
+                <h3 class="card-title">Acciones Rápidas</h3>
             </div>
             <div class="card-body">
-                <a href="/app/user/tickets/create" class="btn btn-block btn-success mb-2">
-                    <i class="fas fa-plus mr-2"></i> Create New Ticket
+                <a href="/app/user/tickets/create" class="btn btn-block btn-success mb-3">
+                    <i class="fas fa-plus mr-2"></i> Crear Nuevo Ticket
                 </a>
-                <a href="/app/user/tickets" class="btn btn-block btn-primary mb-2">
-                    <i class="fas fa-list mr-2"></i> View All My Tickets
+                <a href="/app/user/tickets" class="btn btn-block btn-primary mb-3">
+                    <i class="fas fa-list mr-2"></i> Mis Tickets
                 </a>
                 <a href="/app/user/profile" class="btn btn-block btn-info">
-                    <i class="fas fa-user mr-2"></i> Edit My Profile
+                    <i class="fas fa-user mr-2"></i> Mi Perfil
                 </a>
             </div>
         </div>
 
-        <!-- Help Center -->
-        <div class="card card-success">
+        <!-- Help Center Suggestions -->
+        <div class="card card-outline card-success">
             <div class="card-header">
-                <h3 class="card-title">Help Center</h3>
+                <h3 class="card-title">Centro de Ayuda</h3>
             </div>
-            <div class="card-body">
-                <p class="text-muted">Find answers to common questions:</p>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item p-2">
-                        <a href="#">
-                            <i class="fas fa-question-circle mr-2 text-primary"></i>
-                            How to create a ticket
-                        </a>
-                    </li>
-                    <li class="list-group-item p-2">
-                        <a href="#">
-                            <i class="fas fa-question-circle mr-2 text-info"></i>
-                            Password reset guide
-                        </a>
-                    </li>
-                    <li class="list-group-item p-2">
-                        <a href="#">
-                            <i class="fas fa-question-circle mr-2 text-success"></i>
-                            Billing FAQs
-                        </a>
-                    </li>
-                    <li class="list-group-item p-2">
-                        <a href="#">
-                            <i class="fas fa-question-circle mr-2 text-warning"></i>
-                            Account settings
-                        </a>
-                    </li>
+            <div class="card-body p-0">
+                <ul class="products-list product-list-in-card pl-2 pr-2" id="helpCenterBody">
+                    <li class="item text-center text-muted py-3">Cargando artículos...</li>
                 </ul>
             </div>
-            <div class="card-footer">
-                <a href="/app/user/help-center" class="btn btn-sm btn-success">Browse All Articles</a>
-            </div>
-        </div>
-
-        <!-- Contact Support -->
-        <div class="card card-info">
-            <div class="card-header">
-                <h3 class="card-title">Need Help?</h3>
-            </div>
-            <div class="card-body text-center">
-                <i class="fas fa-headset fa-3x text-info mb-3"></i>
-                <p>Our support team is here to help you.</p>
-                <a href="/app/user/tickets/create" class="btn btn-primary">
-                    <i class="fas fa-envelope mr-2"></i> Contact Support
-                </a>
+            <div class="card-footer text-center">
+                <a href="/app/user/help-center" class="uppercase">Ver todos los artículos</a>
             </div>
         </div>
     </div>
 </div>
+
 @endsection
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+// =====================================================================
+// UTILITY FUNCTIONS
+// =====================================================================
+
+function getAccessToken() {
+    if (typeof window.tokenManager !== 'undefined') {
+        return window.tokenManager.getAccessToken();
+    }
+    return localStorage.getItem('access_token');
+}
+
+function getStatusBadgeClass(status) {
+    const statusMap = {
+        'OPEN': 'badge-danger',
+        'PENDING': 'badge-warning',
+        'RESOLVED': 'badge-info',
+        'CLOSED': 'badge-success'
+    };
+    return statusMap[status] || 'badge-secondary';
+}
+
+function getStatusLabel(status) {
+    const statusMap = {
+        'OPEN': 'Abierto',
+        'PENDING': 'Pendiente',
+        'RESOLVED': 'Resuelto',
+        'CLOSED': 'Cerrado'
+    };
+    return statusMap[status] || status;
+}
+
+// =====================================================================
+// LOAD DASHBOARD DATA
+// =====================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const token = getAccessToken();
+        const apiUrl = '/api';
+
+        if (!token) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de autenticación',
+                text: 'Por favor inicia sesión de nuevo'
+            }).then(() => {
+                window.location.href = '/login';
+            });
+            return;
+        }
+
+        fetch(`${apiUrl}/analytics/user-dashboard`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.status === 401) {
+                window.location.href = '/login?reason=session_expired';
+                return null;
+            }
+            if (!response.ok) throw new Error('Failed to load dashboard data');
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+
+            // Update KPI cards
+            document.getElementById('total-tickets').textContent = data.kpi.total_tickets;
+            document.getElementById('open-tickets').textContent = data.kpi.open_tickets;
+            document.getElementById('pending-tickets').textContent = data.kpi.pending_tickets;
+            document.getElementById('resolved-tickets').textContent = data.kpi.resolved_tickets + data.kpi.closed_tickets;
+
+            // Render Tables and Lists
+            renderRecentTickets(data.recent_tickets);
+            renderRecentArticles(data.recent_articles);
+
+            // Initialize Chart
+            initializeTicketStatusChart(
+                data.ticket_status.OPEN,
+                data.ticket_status.PENDING,
+                data.ticket_status.RESOLVED,
+                data.ticket_status.CLOSED
+            );
+        })
+        .catch(error => {
+            console.error('[User Dashboard] Error loading dashboard:', error);
+        });
+
+    }, 500);
+});
+
+// =====================================================================
+// RENDER FUNCTIONS
+// =====================================================================
+
+function renderRecentTickets(tickets) {
+    const tbody = document.getElementById('recentTicketsBody');
+    tbody.innerHTML = '';
+
+    if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No tienes tickets recientes</td></tr>';
+        return;
+    }
+
+    tickets.forEach(ticket => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><a href="/app/user/tickets/${ticket.ticket_code}">${ticket.ticket_code}</a></td>
+            <td>${ticket.title}</td>
+            <td>
+                <span class="badge ${getStatusBadgeClass(ticket.status)}">
+                    ${getStatusLabel(ticket.status)}
+                </span>
+            </td>
+            <td><small class="text-muted">${ticket.updated_at}</small></td>
+            <td>
+                <a href="/app/user/tickets/${ticket.ticket_code}" class="text-muted">
+                    <i class="fas fa-search"></i>
+                </a>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function renderRecentArticles(articles) {
+    const list = document.getElementById('helpCenterBody');
+    list.innerHTML = '';
+
+    if (articles.length === 0) {
+        list.innerHTML = '<li class="item text-center text-muted py-3">No hay artículos recientes</li>';
+        return;
+    }
+
+    articles.forEach(article => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+            <div class="product-img">
+                <i class="fas fa-file-alt fa-2x text-primary"></i>
+            </div>
+            <div class="product-info">
+                <a href="/app/user/help-center/articles/${article.slug}" class="product-title">${article.title}</a>
+                <span class="product-description">
+                    ${article.views || 0} vistas
+                </span>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// =====================================================================
+// CHART FUNCTIONS
+// =====================================================================
+
+function initializeTicketStatusChart(open, pending, resolved, closed) {
+    const ctx = document.getElementById('ticketStatusChart');
+    if (!ctx) return;
+
+    if (window.ticketStatusChartInstance) {
+        window.ticketStatusChartInstance.destroy();
+    }
+
+    window.ticketStatusChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Abiertos', 'Pendientes', 'Resueltos', 'Cerrados'],
+            datasets: [{
+                data: [open, pending, resolved, closed],
+                backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Using custom legend
+                }
+            }
+        }
+    });
+}
+
+</script>
+@endpush
