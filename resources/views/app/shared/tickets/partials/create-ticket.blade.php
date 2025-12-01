@@ -624,19 +624,22 @@
         // ==============================================================
 
         $priorityButtons.on('click', function() {
-            const priority = $(this).data('priority');
-            console.log(`[Priority] Prioridad seleccionada: ${priority}`);
+            const $clickedBtn = $(this);
+            const priority = $clickedBtn.data('priority');
+            const isActive = $clickedBtn.hasClass('active');
 
-            // Remove active from all, add to clicked
-            $priorityButtons.removeClass('active');
-            $(this).addClass('active');
-
-            // Set hidden input value
-            $priorityHiddenInput.val(priority);
-
-            // 🔴 FIX: Trigger jQuery Validation re-check
-            $form.validate().element('#createPriority');
-            console.log('[Validation] Re-validando priority');
+            if (isActive) {
+                // Deselect: remove active class and clear value
+                $clickedBtn.removeClass('active');
+                $priorityHiddenInput.val('');
+                console.log('[Priority] Prioridad deseleccionada');
+            } else {
+                // Select: remove active from all, add to clicked
+                $priorityButtons.removeClass('active');
+                $clickedBtn.addClass('active');
+                $priorityHiddenInput.val(priority);
+                console.log(`[Priority] Prioridad seleccionada: ${priority}`);
+            }
         });
 
         // ==============================================================
@@ -786,11 +789,18 @@
 
         // jQuery Validation Rules (AdminLTE v3 Official Pattern)
         $form.validate({
+            ignore: [], // CRITICAL: Validate hidden inputs (priority field)
             errorElement: 'span',
             errorClass: 'invalid-feedback',
             errorPlacement: function(error, element) {
-                error.addClass('invalid-feedback');
-                element.closest('.form-group').append(error);
+                // For hidden inputs, append error to its form-group
+                if (element.attr('type') === 'hidden') {
+                    error.addClass('invalid-feedback');
+                    element.closest('.form-group').append(error);
+                } else {
+                    error.addClass('invalid-feedback');
+                    element.closest('.form-group').append(error);
+                }
             },
             highlight: function(element, errorClass, validClass) {
                 $(element).addClass('is-invalid');
