@@ -727,14 +727,16 @@
             }
         }
 
-        // Category change handler - jQuery Validation Fix
+        // Category change handler
         $categorySelect.on('change', function() {
             const categoryId = $(this).val();
             console.log(`[Categories] Categoría seleccionada: ${categoryId || 'ninguna'}`);
 
-            // 🔴 FIX: Trigger jQuery Validation re-check
-            $form.validate().element('#createCategory');
-            console.log('[Validation] Re-validando category_id');
+            // If a category is selected, validate it to remove any "required" error message.
+            // This prevents showing an error when the field is cleared programmatically.
+            if (categoryId) {
+                $form.validate().element('#createCategory');
+            }
         });
 
         // ==============================================================
@@ -823,15 +825,17 @@
             }
         }
 
-        // Area change handler - jQuery Validation Fix
+        // Area change handler
         $areaSelect.on('change', function() {
             const areaId = $(this).val();
             console.log(`[Areas] Área seleccionada: ${areaId || 'ninguna'}`);
 
-            // 🔴 FIX: Trigger jQuery Validation re-check (only if visible)
-            if ($areaRow.is(':visible')) {
-                $form.validate().element('#createArea');
-                console.log('[Validation] Re-validando area_id');
+            // Hide help text on selection, show it when cleared.
+            const $helpText = $(this).closest('#area-row-inside-card').find('.form-text');
+            if (areaId) {
+                $helpText.hide();
+            } else {
+                $helpText.show();
             }
         });
 
