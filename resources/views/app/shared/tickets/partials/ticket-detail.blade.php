@@ -279,6 +279,17 @@
                 $('#t-info-priority').html(`<span class="badge ${priorityConfig.badgeClass}">${priorityConfig.label}</span>`);
 
                 $('#t-info-category').text(ticket.category?.name || 'Sin Categoría');
+
+                // Area (Conditional)
+                if (ticket.area) {
+                    $('#t-info-area').text(ticket.area.name);
+                    $('#t-info-area-container').show();
+                    $('#t-info-area-divider').show();
+                } else {
+                    $('#t-info-area-container').hide();
+                    $('#t-info-area-divider').hide();
+                }
+
                 $('#t-info-created').text(formatDate(ticket.created_at));
                 $('#t-info-updated').text(formatRelativeTime(ticket.updated_at));
                 $('#t-info-responses').text(ticket.responses_count || 0);
@@ -287,8 +298,8 @@
                 const agentName = ticket.owner_agent ? ticket.owner_agent.name : 'Sin Asignar';
                 $('#t-info-agent').text(agentName);
 
-                // Company (Show if Agent/Admin)
-                if (TicketConfig.role !== 'USER' && ticket.company) {
+                // Company (Always show if available)
+                if (ticket.company) {
                     $('#t-info-company').text(ticket.company.name);
                     $('#t-info-company-container').show();
                     $('#t-info-company-divider').show();
@@ -527,7 +538,7 @@
 
             function getPriorityConfig(priority) {
                 const map = {
-                    'low': { label: 'Baja', badgeClass: 'badge-info' },
+                    'low': { label: 'Baja', badgeClass: 'badge-success' },
                     'medium': { label: 'Media', badgeClass: 'badge-warning' },
                     'high': { label: 'Alta', badgeClass: 'badge-danger' }
                 };

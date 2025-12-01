@@ -40,6 +40,12 @@
         </div>
         <hr class="my-1">
 
+        <div class="mb-2" id="t-info-area-container" style="display: none;">
+            <strong><i class="fas fa-map-marker-alt mr-1"></i> Área</strong>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;" id="t-info-area">...</p>
+        </div>
+        <hr class="my-1" id="t-info-area-divider" style="display: none;">
+
         <div class="mb-2">
             <strong><i class="fas fa-user-shield mr-1"></i> Agente Asignado</strong>
             <p class="text-muted mb-0" style="font-size: 0.9rem;" id="t-info-agent">...</p>

@@ -329,7 +329,7 @@ class TicketController extends Controller
             ),
             new OA\Parameter(
                 name: 'search',
-                description: 'Search in ticket title and description (case-insensitive)',
+                description: 'Search in ticket title, description, area name, and category name (case-insensitive)',
                 in: 'query',
                 required: false,
                 schema: new OA\Schema(type: 'string')
@@ -515,6 +515,7 @@ class TicketController extends Controller
             'status',
             'category_id',
             'priority',
+            'area_id',
             'owner_agent_id',
             'created_by_user_id',
             'last_response_author_type',

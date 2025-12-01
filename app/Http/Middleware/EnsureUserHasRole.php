@@ -49,10 +49,15 @@ class EnsureUserHasRole
             }
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Insufficient permissions',
-            'code' => 'INSUFFICIENT_PERMISSIONS'
-        ], 403);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Insufficient permissions',
+                'code' => 'INSUFFICIENT_PERMISSIONS'
+            ], 403);
+        }
+
+        return redirect()->route('dashboard')
+            ->with('warning', 'No tienes permisos para acceder a esa sección.');
     }
 }

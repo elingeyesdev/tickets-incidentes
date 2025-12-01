@@ -84,44 +84,58 @@
             {{-- Main content --}}
             <section class="content">
                 <div class="container-fluid">
-                    {{-- Error Messages --}}
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <h5><i class="icon fas fa-ban"></i> Validation Errors!</h5>
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+                    {{-- SweetAlert2 Toast Notifications --}}
+                    @if (session('success') || session('warning') || session('info') || session('error') || $errors->any())
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                const Toast = Swal.mixin({
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 4000,
+                                    timerProgressBar: true,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                                    }
+                                });
 
-                    {{-- Success Message --}}
-                    @if (session('success'))
-                        <div class="alert alert-success alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <h5><i class="icon fas fa-check"></i> Success!</h5>
-                            {{ session('success') }}
-                        </div>
-                    @endif
+                                @if (session('success'))
+                                    Toast.fire({
+                                        icon: 'success',
+                                        title: '{{ session('success') }}'
+                                    });
+                                @endif
 
-                    {{-- Warning Message --}}
-                    @if (session('warning'))
-                        <div class="alert alert-warning alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <h5><i class="icon fas fa-exclamation-triangle"></i> Warning!</h5>
-                            {{ session('warning') }}
-                        </div>
-                    @endif
+                                @if (session('warning'))
+                                    Toast.fire({
+                                        icon: 'warning',
+                                        title: '{{ session('warning') }}'
+                                    });
+                                @endif
 
-                    {{-- Info Message --}}
-                    @if (session('info'))
-                        <div class="alert alert-info alert-dismissible">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <h5><i class="icon fas fa-info"></i> Info!</h5>
-                            {{ session('info') }}
-                        </div>
+                                @if (session('info'))
+                                    Toast.fire({
+                                        icon: 'info',
+                                        title: '{{ session('info') }}'
+                                    });
+                                @endif
+
+                                @if (session('error'))
+                                    Toast.fire({
+                                        icon: 'error',
+                                        title: '{{ session('error') }}'
+                                    });
+                                @endif
+
+                                @if ($errors->any())
+                                    Toast.fire({
+                                        icon: 'error',
+                                        title: 'Por favor corrige los errores del formulario.'
+                                    });
+                                @endif
+                                });
+                        </script>
                     @endif
 
                     {{-- Page Content --}}

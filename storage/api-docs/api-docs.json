@@ -12724,7 +12724,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search in ticket title and description (case-insensitive)",
+                        "description": "Search in ticket title, description, area name, and category name (case-insensitive)",
                         "required": false,
                         "schema": {
                             "type": "string"

@@ -269,6 +269,11 @@ class TicketService
             $query->where('priority', $filters['priority']);
         }
 
+        // Filtrar por área
+        if (!empty($filters['area_id'])) {
+            $query->where('area_id', $filters['area_id']);
+        }
+
         // Filtrar por agente asignado
         if (isset($filters['owner_agent_id'])) {
             if ($filters['owner_agent_id'] === 'null') {
@@ -293,12 +298,18 @@ class TicketService
             $query->where('last_response_author_type', $filters['last_response_author_type']);
         }
 
-        // Búsqueda en título y descripción
+        // Búsqueda en título, descripción, nombre de área y nombre de categoría
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function (Builder $q) use ($search) {
                 $q->whereRaw("title ILIKE ?", ["%{$search}%"])
-                    ->orWhereRaw("description ILIKE ?", ["%{$search}%"]);
+                    ->orWhereRaw("description ILIKE ?", ["%{$search}%"])
+                    ->orWhereHas('area', function ($q) use ($search) {
+                        $q->where('name', 'ILIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('category', function ($q) use ($search) {
+                        $q->where('name', 'ILIKE', "%{$search}%");
+                    });
             });
         }
 

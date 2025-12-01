@@ -86,6 +86,9 @@ Route::get('/tests/helpcenter-knowledge-base', function () {
 
 // Welcome / Landing page
 Route::get('/', function () {
+    if (request()->hasCookie('jwt_token')) {
+        return redirect()->route('dashboard');
+    }
     return view('public.welcome');
 })->name('welcome');
 
