@@ -104,11 +104,13 @@ Route::middleware('jwt.require')->group(function () {
     // ========== User Viewing (Any Authenticated User can view themselves, admins can view others) ==========
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 
+    // User listing (Accessible by PLATFORM_ADMIN, COMPANY_ADMIN, AGENT)
+    Route::get('/users', [UserController::class, 'index'])
+        ->middleware('role:PLATFORM_ADMIN,COMPANY_ADMIN,AGENT')
+        ->name('users.index');
+
     // ========== Admin Endpoints (PLATFORM_ADMIN or COMPANY_ADMIN) ==========
     Route::middleware(['role:PLATFORM_ADMIN,COMPANY_ADMIN'])->group(function () {
-        // User listing
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-
         // Role management
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
 

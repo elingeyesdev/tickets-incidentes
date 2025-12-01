@@ -73,7 +73,9 @@
         let currentTicketStatus = null; // Track ticket status for validations
         let selectedFiles = [];
         let editingMessageId = null; // Track if we're editing a message
+
         let editingMessageContent = null; // Original content backup
+        let pollingInterval = null; // Polling interval ID
 
         // 🔴 GLOBAL SPAM PROTECTION: Track all operations in progress
         // Format: "operation:id" (e.g., "send:newMsg", "update:123", "delete:456", "deleteAtt:789")
@@ -221,7 +223,26 @@
             currentTicketCode = ticket.ticket_code;
             currentTicketStatus = ticket.status; // Store status for validations
             cancelEdit(); // Reset editing state when switching tickets
-            loadMessages();
+            
+            // Stop previous polling if any
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+
+            loadMessages().then(() => {
+                // Start Polling after initial load
+                startPolling();
+            });
+        });
+
+        // Stop polling when returning to list
+        $(document).on('tickets:show-list', function() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                console.log('[Ticket Chat] Polling stopped (returned to list)');
+            }
         });
 
 
@@ -350,12 +371,15 @@
         // ==============================================================
 
         async function loadMessages() {
-            $msgList.html(`
-                <div class="text-center text-muted py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p class="mt-2">Cargando mensajes...</p>
-                </div>
-            `);
+            // Only show spinner if NOT polling (initial load)
+            if (!pollingInterval) {
+                $msgList.html(`
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Cargando mensajes...</p>
+                    </div>
+                `);
+            }
 
             try {
                 const token = window.tokenManager.getAccessToken();
@@ -380,20 +404,46 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                renderMessages(response.data, currentUserId);
+                // If polling, pass true to preserve scroll unless at bottom
+                const isPolling = !!pollingInterval;
+                renderMessages(response.data, currentUserId, isPolling);
 
             } catch (error) {
                 console.error('[Ticket Chat] Error loading messages:', error);
-                $msgList.html(`
-                    <div class="text-center text-danger py-5">
-                        <i class="fas fa-exclamation-triangle fa-2x"></i>
-                        <p class="mt-2">Error al cargar la conversación.</p>
-                    </div>
-                `);
+                if (!pollingInterval) {
+                    $msgList.html(`
+                        <div class="text-center text-danger py-5">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                            <p class="mt-2">Error al cargar la conversación.</p>
+                        </div>
+                    `);
+                }
             }
         }
 
-        function renderMessages(messages, currentUserId) {
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            console.log('[Ticket Chat] Starting polling...');
+            pollingInterval = setInterval(() => {
+                if (currentTicketCode && $('#ticket-chat-card').is(':visible')) {
+                    loadMessages();
+                }
+            }, 5000);
+        }
+
+        function renderMessages(messages, currentUserId, preserveScroll = false) {
+            // Calculate scroll position before update
+            const scrollTop = $msgList.scrollTop();
+            const scrollHeight = $msgList[0].scrollHeight;
+            const clientHeight = $msgList[0].clientHeight;
+            const wasAtBottom = (scrollHeight - scrollTop - clientHeight) < 50; // 50px tolerance
+
+            // Check if content actually changed to avoid unnecessary DOM updates (simple check)
+            const currentHtml = $msgList.html();
+            // Note: This check is expensive if HTML is large, but prevents flickering. 
+            // Better: Check message count or last ID.
+            // For now, let's just re-render but manage scroll carefully.
+
             $msgList.empty();
             $msgCount.text(messages.length);
 
@@ -444,8 +494,17 @@
                 });
             });
 
-            // Scroll to bottom
-            $msgList.scrollTop($msgList[0].scrollHeight);
+            // Scroll Management
+            if (preserveScroll) {
+                if (wasAtBottom) {
+                    $msgList.scrollTop($msgList[0].scrollHeight);
+                } else {
+                    $msgList.scrollTop(scrollTop);
+                }
+            } else {
+                // Initial load -> Scroll to bottom
+                $msgList.scrollTop($msgList[0].scrollHeight);
+            }
         }
 
         async function sendMessage(content) {

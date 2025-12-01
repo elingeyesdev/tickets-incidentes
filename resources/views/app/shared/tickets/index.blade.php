@@ -197,6 +197,10 @@
                 @include('app.shared.tickets.partials.ticket-detail')
             </div>
 
+            {{-- MODALS --}}
+            @include('components.tickets.assign-agent-modal')
+            @include('components.tickets.confirm-action-modal')
+
         </div>
     </div>
 @endsection

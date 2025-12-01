@@ -131,7 +131,7 @@ class SeedBolivianCompanyLogosSeeder extends Seeder
             }
 
             // Detectar MIME type
-            $finfo = finfo_open(\FINFO_MIME_TYPE);
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = finfo_buffer($finfo, $response);
             finfo_close($finfo);
 

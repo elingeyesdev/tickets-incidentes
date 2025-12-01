@@ -54,25 +54,21 @@
                 $(document).trigger('tickets:show-list');
             });
 
-            // 3. Action Buttons
-            $('#btn-action-resolve').on('click', function () {
-                if (!currentTicket) return;
-                performAction('resolve', currentTicket.ticket_code);
+            // 3. Action Buttons (Handled via Confirmation Modal Events)
+            $(document).on('tickets:action-confirmed:resolve', function (e, ticketCode) {
+                performAction('resolve', ticketCode);
             });
 
-            $('#btn-action-close').on('click', function () {
-                if (!currentTicket) return;
-                performAction('close', currentTicket.ticket_code);
+            $(document).on('tickets:action-confirmed:close', function (e, ticketCode) {
+                performAction('close', ticketCode);
             });
 
-            $('#btn-action-reopen').on('click', function () {
-                if (!currentTicket) return;
-                performAction('reopen', currentTicket.ticket_code);
+            $(document).on('tickets:action-confirmed:reopen', function (e, ticketCode) {
+                performAction('reopen', ticketCode);
             });
 
-            $('#btn-action-remind').on('click', function () {
-                if (!currentTicket) return;
-                sendReminder(currentTicket.ticket_code);
+            $(document).on('tickets:action-confirmed:remind', function (e, ticketCode) {
+                sendReminder(ticketCode);
             });
 
             // 4. Message Sent Event (Payload Response Strategy)
@@ -389,6 +385,16 @@
             function updateActionButtons(ticket) {
                 const role = TicketConfig.role; // Global from index.blade.php
                 const status = ticket.status;
+
+                // Update Data Attributes for Modals
+                $('.btn-trigger-confirm, .btn-trigger-assign').data('ticket-code', ticket.ticket_code);
+                
+                // For Assign Modal, also set current agent
+                if (ticket.owner_agent_id) {
+                    $('#btn-action-assign').data('current-agent-id', ticket.owner_agent_id);
+                } else {
+                    $('#btn-action-assign').removeData('current-agent-id');
+                }
 
                 // Reset visibility
                 $('#btn-action-resolve, #btn-action-close, #btn-action-reopen, #action-section-assign, #action-section-remind').addClass('d-none');

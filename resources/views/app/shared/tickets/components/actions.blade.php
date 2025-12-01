@@ -24,20 +24,35 @@
                 <i class="fas fa-exchange-alt mr-1"></i> Cambiar Estado
             </small>
             <div class="d-flex flex-column flex-sm-row flex-wrap gap-2" id="action-buttons-container">
-                <!-- Resolver: Solo OPEN o PENDING (Agent) -->
-                <button type="button" class="btn btn-success d-none" id="btn-action-resolve"
+            <!-- Resolver: Solo OPEN o PENDING (Agent) -->
+                <button type="button" class="btn btn-success d-none btn-trigger-confirm" id="btn-action-resolve"
+                        data-action="resolve"
+                        data-title="Resolver Ticket"
+                        data-message="¿Está seguro de marcar este ticket como resuelto?"
+                        data-btn-class="btn-success"
+                        data-btn-text="Resolver"
                         title="Solo disponible en OPEN o PENDING">
                     <i class="fas fa-check-circle mr-1"></i> Resolver
                 </button>
 
                 <!-- Reabrir: Solo RESOLVED o CLOSED (User/Agent) -->
-                <button type="button" class="btn btn-warning d-none" id="btn-action-reopen"
+                <button type="button" class="btn btn-warning d-none btn-trigger-confirm" id="btn-action-reopen"
+                        data-action="reopen"
+                        data-title="Reabrir Ticket"
+                        data-message="¿Está seguro de reabrir este ticket?"
+                        data-btn-class="btn-warning"
+                        data-btn-text="Reabrir"
                         title="Solo disponible en RESOLVED o CLOSED">
                     <i class="fas fa-redo mr-1"></i> Reabrir
                 </button>
 
                 <!-- Cerrar: Todos menos CLOSED (User/Agent) -->
-                <button type="button" class="btn btn-secondary d-none" id="btn-action-close"
+                <button type="button" class="btn btn-secondary d-none btn-trigger-confirm" id="btn-action-close"
+                        data-action="close"
+                        data-title="Cerrar Ticket"
+                        data-message="¿Está seguro de cerrar este ticket permanentemente?"
+                        data-btn-class="btn-secondary"
+                        data-btn-text="Cerrar"
                         title="No disponible en CLOSED">
                     <i class="fas fa-times-circle mr-1"></i> Cerrar
                 </button>
@@ -50,7 +65,7 @@
                 <i class="fas fa-user-tie mr-1"></i> Asignación
             </small>
             <!-- Reasignar: Siempre disponible -->
-            <button type="button" class="btn btn-info" id="btn-action-assign">
+            <button type="button" class="btn btn-info btn-trigger-assign" id="btn-action-assign">
                 <i class="fas fa-user-plus mr-1"></i> <span id="lbl-action-assign">Asignar / Reasignar</span>
             </button>
         </div>
@@ -61,7 +76,12 @@
                 <i class="fas fa-bell mr-1"></i> Notificación
             </small>
             <!-- Enviar Recordatorio: Solo AGENT -->
-            <button type="button" class="btn btn-warning" id="btn-action-remind">
+            <button type="button" class="btn btn-warning btn-trigger-confirm" id="btn-action-remind"
+                    data-action="remind"
+                    data-title="Enviar Recordatorio"
+                    data-message="¿Enviar recordatorio por email al creador del ticket?"
+                    data-btn-class="btn-warning"
+                    data-btn-text="Enviar Recordatorio">
                 <i class="fas fa-envelope mr-1"></i> Enviar Recordatorio por Email
             </button>
         </div>

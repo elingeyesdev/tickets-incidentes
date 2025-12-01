@@ -574,11 +574,12 @@ class UserController extends Controller
      */
     protected function applyFilters($query, Request $request, User $currentUser)
     {
-        // Company admin scope: only see users from their company
+        // Company admin and Agent scope: only see users from their company
         $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
         $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
+        $isAgent = $currentUser->hasRole('AGENT');
 
-        if ($isCompanyAdmin && !$isPlatformAdmin) {
+        if (($isCompanyAdmin || $isAgent) && !$isPlatformAdmin) {
             // Get company IDs for current user
             $companyIds = $currentUser->userRoles()
                 ->where('is_active', true)

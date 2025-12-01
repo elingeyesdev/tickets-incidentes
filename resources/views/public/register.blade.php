@@ -337,6 +337,30 @@
                     return true;
                 },
 
+                decodeJWT(token) {
+                    try {
+                        const base64Url = token.split('.')[1];
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join(''));
+                        return JSON.parse(jsonPayload);
+                    } catch (error) {
+                        console.error('Failed to decode JWT:', error);
+                        return { roles: [] };
+                    }
+                },
+
+                getDashboardUrl(roleCode) {
+                    const dashboardMap = {
+                        'PLATFORM_ADMIN': '/app/admin/dashboard',
+                        'COMPANY_ADMIN': '/app/company/dashboard',
+                        'AGENT': '/app/agent/dashboard',
+                        'USER': '/app/user/dashboard'
+                    };
+                    return dashboardMap[roleCode] || '/app/dashboard';
+                },
+
                 async submit() {
                     // Validar todos los campos
                     const firstNameValid = this.validateFirstName();
@@ -373,15 +397,40 @@
                         }
 
                         // Guardar SOLO access token en localStorage
-                        // SECURITY: refresh_token viene en HttpOnly cookie (no accesible a JavaScript)
                         if (data.accessToken) {
                             localStorage.setItem('access_token', data.accessToken);
                         }
 
-                        // Redirigir al dashboard o a verificación de email
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 1500);
+                        // Decodificar JWT para verificar roles
+                        const payload = this.decodeJWT(data.accessToken);
+                        const roles = payload.roles || [];
+
+                        // Lógica inteligente de roles (similar a login)
+                        if (roles.length === 1) {
+                            // Auto-asignar el único rol
+                            const activeRole = {
+                                code: roles[0].code,
+                                company_id: roles[0].company_id || null,
+                                company_name: roles[0].company_name || null
+                            };
+                            localStorage.setItem('active_role', JSON.stringify(activeRole));
+
+                            // Ir a /auth/prepare-web que establece cookie y redirija al dashboard
+                            const dashboardUrl = this.getDashboardUrl(activeRole.code);
+                            setTimeout(() => {
+                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent(dashboardUrl)}`;
+                            }, 1500);
+                        } else if (roles.length > 1) {
+                            // Múltiples roles: ir a role-selector
+                            setTimeout(() => {
+                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/auth-flow/role-selector')}`;
+                            }, 1500);
+                        } else {
+                            // Fallback por defecto
+                            setTimeout(() => {
+                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/app/dashboard')}`;
+                            }, 1500);
+                        }
 
                     } catch (err) {
                         console.error('Register error:', err);
