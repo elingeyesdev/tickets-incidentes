@@ -458,4 +458,47 @@ class AssignTicketTest extends TestCase
             'owner_agent_id' => $agent1->id, // Still assigned to agent1
         ]);
     }
+
+    /**
+     * Test #11: Company Admin can assign ticket to agent
+     *
+     * Verifies that a COMPANY_ADMIN can successfully assign a ticket to an agent
+     * from the same company.
+     *
+     * Expected: 200 OK with updated ticket data
+     */
+    #[Test]
+    public function company_admin_can_assign_ticket_to_agent(): void
+    {
+        // Arrange
+        $company = Company::factory()->create();
+        $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $company->id)->create();
+        $agent = User::factory()->withRole('AGENT', $company->id)->create();
+        $category = Category::factory()->create(['company_id' => $company->id]);
+
+        $ticket = Ticket::factory()->create([
+            'company_id' => $company->id,
+            'category_id' => $category->id,
+            'owner_agent_id' => null, // Unassigned
+        ]);
+
+        $payload = [
+            'new_agent_id' => $agent->id,
+            'assignment_note' => 'Assigning via Company Admin',
+        ];
+
+        // Act
+        $response = $this->authenticateWithJWT($companyAdmin)
+            ->postJson("/api/tickets/{$ticket->ticket_code}/assign", $payload);
+
+        // Assert
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.owner_agent_id', $agent->id);
+
+        // Verify database
+        $this->assertDatabaseHas('ticketing.tickets', [
+            'id' => $ticket->id,
+            'owner_agent_id' => $agent->id,
+        ]);
+    }
 }

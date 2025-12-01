@@ -524,7 +524,7 @@ class TicketActionController extends Controller
     #[OA\Post(
         path: '/api/tickets/{ticket}/assign',
         operationId: 'assign_ticket',
-        description: 'Assigns a ticket to a specific agent by updating the owner_agent_id field. Only AGENT role users from the ticket\'s company can assign tickets. The target agent must have AGENT role and belong to the same company as the ticket. Triggers TicketAssigned event and sends notification to the assigned agent.',
+        description: 'Assigns a ticket to a specific agent by updating the owner_agent_id field. Only AGENT and COMPANY_ADMIN role users from the ticket\'s company can assign tickets. The target agent must have AGENT role and belong to the same company as the ticket. Triggers TicketAssigned event and sends notification to the assigned agent.',
         summary: 'Assign ticket to agent',
         security: [
             ['bearerAuth' => []],

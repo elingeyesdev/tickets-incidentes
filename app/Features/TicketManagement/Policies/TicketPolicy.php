@@ -136,11 +136,12 @@ class TicketPolicy
     }
 
     /**
-     * Asignar ticket: solo AGENT de la compañía.
+     * Asignar ticket: AGENT o COMPANY_ADMIN de la compañía.
      */
     public function assign(User $user, Ticket $ticket): bool
     {
-        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id)
+            || $user->hasRoleInCompany('COMPANY_ADMIN', $ticket->company_id);
     }
 
     /**
