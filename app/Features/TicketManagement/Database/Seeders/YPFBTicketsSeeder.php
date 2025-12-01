@@ -87,11 +87,11 @@ class YPFBTicketsSeeder extends Seeder
 
         // YPFB es energía, usa categorías relevantes
         $this->categories = [
-            'supply_chain' => $categories->firstWhere('name', 'Service Outage'),
-            'equipment_issue' => $categories->firstWhere('name', 'Equipment Problem'),
-            'production_delay' => $categories->firstWhere('name', 'Maintenance Request'),
-            'quality_problem' => $categories->firstWhere('name', 'Billing Dispute'),
-            'safety_concern' => $categories->firstWhere('name', 'Safety Concern'),
+            'supply_chain' => $categories->firstWhere('name', 'Interrupción del Servicio'),
+            'equipment_issue' => $categories->firstWhere('name', 'Problema de Equipo'),
+            'production_delay' => $categories->firstWhere('name', 'Solicitud de Mantenimiento'),
+            'quality_problem' => $categories->firstWhere('name', 'Disputa de Facturación'),
+            'safety_concern' => $categories->firstWhere('name', 'Problema de Seguridad'),
         ];
     }
 

@@ -82,11 +82,11 @@ class PilAndinaTicketsSeeder extends Seeder
 
         // PIL Andina es manufacturing, usa categorías de esa industria
         $this->categories = [
-            'equipment_issue' => $categories->firstWhere('name', 'Equipment Issue'),
-            'production_delay' => $categories->firstWhere('name', 'Production Delay'),
-            'quality_problem' => $categories->firstWhere('name', 'Quality Problem'),
-            'supply_chain' => $categories->firstWhere('name', 'Supply Chain'),
-            'safety_concern' => $categories->firstWhere('name', 'Safety Concern'),
+            'equipment_issue' => $categories->firstWhere('name', 'Problema de Equipo'),
+            'production_delay' => $categories->firstWhere('name', 'Retraso en Producción'),
+            'quality_problem' => $categories->firstWhere('name', 'Problema de Calidad'),
+            'supply_chain' => $categories->firstWhere('name', 'Cadena de Suministro'),
+            'safety_concern' => $categories->firstWhere('name', 'Problema de Seguridad'),
         ];
     }
 
