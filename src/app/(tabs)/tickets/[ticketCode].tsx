@@ -5,13 +5,13 @@ import { useTicketStore } from '@/stores/ticketStore';
 import { useEffect, useState } from 'react';
 import { Ticket } from '@/types/ticket';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { TicketConversation } from '@/components/tickets/TicketConversation';
 import { TicketAttachments } from '@/components/tickets/TicketAttachments';
 import { TicketDetailSkeleton } from '@/components/Skeleton';
 import { useDebounceCallback } from '@/hooks/useDebounceCallback';
+import { ScreenContainer } from '@/components/layout/ScreenContainer';
 
 export default function TicketDetailScreen() {
     const { ticketCode } = useLocalSearchParams();
@@ -78,7 +78,7 @@ export default function TicketDetailScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+        <ScreenContainer backgroundColor="#f9fafb">
             {/* Header */}
             <View className="bg-white p-4 border-b border-gray-200 shadow-sm z-10">
                 <View className="flex-row justify-between items-center mb-2">
@@ -153,39 +153,120 @@ export default function TicketDetailScreen() {
 
                         <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
                             <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Detalles</Text>
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Prioridad</Text>
+                                <View className={`px-2 py-0.5 rounded ${currentTicket.priority === 'high' ? 'bg-red-100' :
+                                    currentTicket.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
+                                    }`}>
+                                    <Text className={`text-xs font-bold ${currentTicket.priority === 'high' ? 'text-red-800' :
+                                        currentTicket.priority === 'medium' ? 'text-yellow-800' : 'text-green-800'
+                                        }`}>
+                                        {currentTicket.priority === 'low' ? 'BAJA' :
+                                            currentTicket.priority === 'medium' ? 'MEDIA' : 'ALTA'}
+                                    </Text>
+                                </View>
+                            </View>
+
                             <View className="flex-row justify-between mb-2">
                                 <Text className="text-gray-600">Categoría</Text>
                                 <Text className="font-medium text-gray-900">{currentTicket.category?.name || 'Sin Categoría'}</Text>
                             </View>
+
+                            {currentTicket.area && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Área</Text>
+                                    <Text className="font-medium text-gray-900">{currentTicket.area.name}</Text>
+                                </View>
+                            )}
+
+                            <Divider className="my-2" />
+
                             <View className="flex-row justify-between mb-2">
                                 <Text className="text-gray-600">Creado</Text>
                                 <Text className="font-medium text-gray-900">{format(new Date(currentTicket.createdAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
                             </View>
-                            <View className="flex-row justify-between">
-                                <Text className="text-gray-600">Actualizado</Text>
-                                <Text className="font-medium text-gray-900">{format(new Date(currentTicket.updatedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+
+                            {currentTicket.updatedAt !== currentTicket.createdAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Actualizado</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.updatedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Solicitante</Text>
+                            <View className="flex-row items-center">
+                                <Avatar.Text size={32} label={currentTicket.createdBy.displayName.substring(0, 2).toUpperCase()} className="bg-blue-100" color="#1e40af" />
+                                <View className="ml-3">
+                                    <Text className="font-bold text-gray-900">{currentTicket.createdBy.displayName}</Text>
+                                    {currentTicket.createdBy.email && (
+                                        <Text className="text-gray-500 text-xs">{currentTicket.createdBy.email}</Text>
+                                    )}
+                                </View>
                             </View>
                         </View>
 
                         {currentTicket.ownerAgent && (
-                            <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4 flex-row items-center">
-                                {currentTicket.ownerAgent.avatarUrl ? (
-                                    <Avatar.Image size={40} source={{ uri: currentTicket.ownerAgent.avatarUrl }} />
-                                ) : (
-                                    <Avatar.Icon size={40} icon="account" />
-                                )}
-                                <View className="ml-3">
-                                    <Text className="font-bold text-gray-900">{currentTicket.ownerAgent.displayName}</Text>
-                                    <Text className="text-gray-500 text-xs">Agente Asignado</Text>
+                            <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                                <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Agente Asignado</Text>
+                                <View className="flex-row items-center">
+                                    {currentTicket.ownerAgent.avatarUrl ? (
+                                        <Avatar.Image size={32} source={{ uri: currentTicket.ownerAgent.avatarUrl }} />
+                                    ) : (
+                                        <Avatar.Icon size={32} icon="account" className="bg-purple-100" color="#6b21a8" />
+                                    )}
+                                    <View className="ml-3">
+                                        <Text className="font-bold text-gray-900">{currentTicket.ownerAgent.displayName}</Text>
+                                        <Text className="text-gray-500 text-xs">Soporte Técnico</Text>
+                                    </View>
                                 </View>
                             </View>
                         )}
+
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Línea de Tiempo</Text>
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Creado</Text>
+                                <Text className="font-medium text-gray-900">{format(new Date(currentTicket.createdAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                            </View>
+
+                            {currentTicket.timeline?.firstResponseAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Primera Respuesta</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.timeline.firstResponseAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.updatedAt !== currentTicket.createdAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Última Actualización</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.updatedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.resolvedAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Resuelto</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.resolvedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.closedAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Cerrado</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.closedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+                        </View>
 
                         {currentTicket.status === 'closed' && (
                             <Button
                                 mode="contained"
                                 onPress={handleReopen}
-                                className="bg-gray-800"
+                                className="bg-gray-800 mb-6"
                             >
                                 Reabrir Ticket
                             </Button>
@@ -197,6 +278,6 @@ export default function TicketDetailScreen() {
                     <TicketAttachments ticket={currentTicket} />
                 )}
             </View>
-        </SafeAreaView>
+        </ScreenContainer>
     );
 }

@@ -17,6 +17,8 @@ interface TicketState {
     fetchTicketResponses: (ticketCode: string) => Promise<void>;
     createResponse: (ticketCode: string, content: string, attachments?: any[]) => Promise<void>;
     fetchCategories: (companyId: string) => Promise<void>;
+    checkCompanyAreasEnabled: (companyId: string) => Promise<boolean>;
+    fetchAreas: (companyId: string) => Promise<any[]>;
     rateTicket: (ticketCode: string, rating: number, comment?: string) => Promise<void>;
     reopenTicket: (ticketCode: string) => Promise<void>;
 }
@@ -34,7 +36,7 @@ export const useTicketStore = create<TicketState>((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await client.get('/api/tickets', {
-                params: { ...filters, include: 'company,category' }
+                params: { ...filters, include: 'company,category,area' }
             });
             let tickets = response.data.data.map(mapTicket);
 
@@ -83,7 +85,7 @@ export const useTicketStore = create<TicketState>((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await client.get(`/api/tickets/${ticketCode}`, {
-                params: { include: 'company,category,owner,creator,attachments' }
+                params: { include: 'company,category,owner,creator,attachments,area' }
             });
             let ticket = mapTicket(response.data.data);
 
@@ -198,6 +200,25 @@ export const useTicketStore = create<TicketState>((set, get) => ({
         // Refresh ticket
         await get().fetchTicket(ticketCode);
     },
+    checkCompanyAreasEnabled: async (companyId: string) => {
+        try {
+            const response = await client.get(`/api/companies/${companyId}/settings/areas-enabled`);
+            return response.data.data.areas_enabled;
+        } catch (error) {
+            console.error('Error checking areas enabled:', error);
+            return false;
+        }
+    },
+
+    fetchAreas: async (companyId: string) => {
+        try {
+            const response = await client.get('/api/areas', { params: { company_id: companyId, is_active: true } });
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching areas:', error);
+            return [];
+        }
+    },
 }));
 
 // Helper to map API response (snake_case) to Ticket interface (camelCase)
@@ -221,20 +242,26 @@ const mapTicket = (data: any): Ticket => ({
     ticketCode: data.ticket_code,
     title: data.title,
     description: data.description,
+    priority: data.priority || 'medium', // Default to medium if missing
     status: data.status,
     lastResponseAuthorType: data.last_response_author_type,
     company: {
         id: data.company?.id || data.company_id,
         name: data.company?.name,
-        logoUrl: data.company?.logo_url || data.company?.logoUrl || null, // Handle both cases just in case
+        logoUrl: data.company?.logo_url || data.company?.logoUrl || null,
     },
     category: data.category ? {
         id: data.category.id,
         name: data.category.name,
     } : null,
+    area: data.area ? {
+        id: data.area.id,
+        name: data.area.name,
+    } : null,
     createdBy: {
         id: data.created_by_user?.id,
         displayName: data.created_by_user?.name,
+        email: data.created_by_user?.email,
     },
     ownerAgent: data.owner_agent ? {
         id: data.owner_agent.id,
@@ -251,6 +278,12 @@ const mapTicket = (data: any): Ticket => ({
     responsesCount: data.responses_count || 0,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    timeline: {
+        createdAt: data.timeline?.created_at || data.created_at,
+        firstResponseAt: data.timeline?.first_response_at || null,
+        resolvedAt: data.timeline?.resolved_at || data.resolved_at || null,
+        closedAt: data.timeline?.closed_at || data.closed_at || null,
+    },
     firstResponseAt: data.timeline?.first_response_at || null,
     resolvedAt: data.resolved_at,
     closedAt: data.closed_at,

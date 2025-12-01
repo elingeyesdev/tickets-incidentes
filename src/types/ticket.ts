@@ -3,6 +3,7 @@ export interface Ticket {
     ticketCode: string; // TKT-2025-00001
     title: string;
     description: string; // initial_description
+    priority: 'low' | 'medium' | 'high';
     status: 'open' | 'pending' | 'resolved' | 'closed';
     lastResponseAuthorType: 'none' | 'user' | 'agent';
 
@@ -17,9 +18,15 @@ export interface Ticket {
         name: string;
     } | null;
 
+    area: {
+        id: string;
+        name: string;
+    } | null;
+
     createdBy: {
         id: string;
         displayName: string;
+        email?: string;
     };
 
     ownerAgent: {
@@ -40,9 +47,27 @@ export interface Ticket {
 
     createdAt: string;
     updatedAt: string;
+
+    timeline: {
+        createdAt: string;
+        firstResponseAt: string | null;
+        resolvedAt: string | null;
+        closedAt: string | null;
+    };
+
+    // Deprecated/Root level accessors (kept for compatibility if needed, or mapped from timeline)
     firstResponseAt: string | null;
     resolvedAt: string | null;
     closedAt: string | null;
+}
+
+export interface Area {
+    id: string;
+    companyId: string;
+    name: string;
+    description: string | null;
+    isActive: boolean;
+    activeTicketsCount: number;
 }
 
 export interface TicketFilters {
@@ -58,6 +83,7 @@ export interface TicketFilters {
 export interface CreateTicketData {
     company_id: string;
     category_id?: string;
+    area_id?: string | null;
     title: string; // min 5, max 255 chars
     description: string; // required
     priority: 'low' | 'medium' | 'high';

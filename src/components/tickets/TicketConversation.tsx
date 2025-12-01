@@ -76,9 +76,16 @@ export function TicketConversation({ ticket }: TicketConversationProps) {
                         }`}
                 >
                     {!isMe && (
-                        <Text className="text-xs font-bold text-gray-500 mb-1">
-                            {item.author.displayName}
-                        </Text>
+                        <View className="flex-row items-center mb-1">
+                            <Text className="text-xs font-bold text-gray-500 mr-2">
+                                {item.author.displayName}
+                            </Text>
+                            {item.authorType === 'agent' && (
+                                <View className="bg-blue-100 px-1.5 py-0.5 rounded">
+                                    <Text className="text-[10px] text-blue-800 font-bold">AGENTE</Text>
+                                </View>
+                            )}
+                        </View>
                     )}
 
                     <Text className={`text-base ${isMe ? 'text-white' : 'text-gray-800'}`}>
