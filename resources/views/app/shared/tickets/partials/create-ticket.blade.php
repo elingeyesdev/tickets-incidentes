@@ -37,32 +37,46 @@
                 {{-- Hidden input for form submission --}}
                 <input type="hidden" id="createCompany" name="company_id" required>
                 
-                {{-- Selected Company Card (AdminLTE v3 Official) --}}
-                <div id="selectedCompanyCard" class="card card-primary card-outline mt-3" style="display: none;">
-                    <div class="card-body box-profile">
-                        <div class="text-center">
-                            <img class="profile-user-img img-fluid img-circle" 
-                                 id="selectedCompanyLogo" 
-                                 src="" 
-                                 alt="Company Logo"
-                                 style="width: 100px; height: 100px; object-fit: contain;">
+                {{-- Selected Company Card (AdminLTE v3 Compact Design - No outline) --}}
+                <div id="selectedCompanyCard" class="card card-primary mt-3" style="display: none;">
+                    <div class="card-body" style="padding: 1rem;">
+                        <div class="d-flex align-items-center">
+                            {{-- Company Logo - Left --}}
+                            <div class="mr-3 flex-shrink-0">
+                                <img id="selectedCompanyLogo" 
+                                     src="" 
+                                     alt="Company Logo"
+                                     style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px;">
+                            </div>
+                            
+                            {{-- Company Info - Right --}}
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1" id="selectedCompanyName" style="font-weight: 600;"></h5>
+                                <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                                    <span id="selectedCompanyCode"></span> • <span id="selectedCompanyIndustry"></span>
+                                </p>
+                            </div>
+                            
+                            {{-- Clear Button - Right --}}
+                            <div class="ml-2 flex-shrink-0">
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btnClearCompany" title="Cambiar Compañía">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
-                        <h3 class="profile-username text-center" id="selectedCompanyName"></h3>
-                        <p class="text-muted text-center" id="selectedCompanyCode"></p>
                         
-                        <ul class="list-group list-group-unbordered mb-3">
-                            <li class="list-group-item">
-                                <b>Industria</b> <span class="float-right" id="selectedCompanyIndustry"></span>
-                            </li>
-                        </ul>
-                        
-                        <button type="button" class="btn btn-outline-danger btn-block" id="btnClearCompany">
-                            <i class="fas fa-times"></i> Cambiar Compañía
-                        </button>
+                        {{-- Area Select (Conditional) - Integrated inside card --}}
+                        <div id="area-row-inside-card" class="mt-3" style="display: none;">
+                            <label for="createArea" class="mb-1" style="font-size: 0.875rem; font-weight: 600;">Área / Departamento</label>
+                            <select id="createArea" name="area_id" class="form-control select2" style="width: 100%;" disabled>
+                                <option value="">Selecciona un área (opcional)</option>
+                            </select>
+                            <small class="form-text text-muted">Selecciona el área o departamento relacionado</small>
+                        </div>
                     </div>
                 </div>
                 
-                <small class="form-text text-muted">Busca y selecciona la compañía relacionada con este ticket</small>
+                <small id="companyHelpText" class="form-text text-muted">Busca y selecciona la compañía relacionada con este ticket</small>
             </div>
 
             {{-- Row 2: Category (col-md-6) + Priority (col-md-6) --}}
@@ -99,18 +113,7 @@
                 </div>
             </div>
 
-            {{-- Row 3: Area (Conditional - Only if company has areas enabled) --}}
-            <div class="row" id="area-row" style="display: none;">
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="createArea">Área</label>
-                        <select id="createArea" name="area_id" class="form-control select2" style="width: 100%;" disabled>
-                            <option value="">Selecciona un área (opcional)</option>
-                        </select>
-                        <small class="form-text text-muted">Área o departamento al que pertenece este ticket</small>
-                    </div>
-                </div>
-            </div>
+            {{-- Row 3: Area moved inside company card - This div is now hidden/removed --}}
 
             {{-- Row 4: Title --}}
             <div class="form-group">
@@ -272,7 +275,7 @@
     position: absolute;
     top: 100%;
     left: 0;
-    right: 0;
+    right: 56px; /* Exclude button width (btn-lg is ~56px) */
     z-index: 1050;
     margin-top: 2px;
     max-height: 400px;
@@ -288,8 +291,10 @@
     cursor: pointer;
     border-left: 0;
     border-right: 0;
-    padding: 0.75rem 1rem;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border-top: 0;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    padding: 0.875rem 1rem;
+    transition: all 0.2s ease;
 }
 
 .company-search-results .list-group-item:first-child {
@@ -304,25 +309,25 @@
     border-bottom-right-radius: 0.25rem;
 }
 
+/* Hover Effect - Marca todo el item */
 .company-search-results .list-group-item:hover {
     background-color: #f4f6f9;
-    border-color: #007bff;
+    border-color: rgba(0,0,0,.125);
 }
 
 /* Company Item Layout */
 .company-item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
+/* Company Logo - Sin fondo gris, tamaño aumentado */
 .company-logo {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
     border-radius: 4px;
-    background-color: #f4f4f4;
-    padding: 4px;
     flex-shrink: 0;
 }
 
@@ -331,16 +336,28 @@
     min-width: 0;
 }
 
+/* Company Name - Tamaño aumentado */
 .company-name {
     font-weight: 600;
-    color: #333;
-    margin: 0;
+    color: #212529;
+    margin: 0 0 2px 0;
     line-height: 1.3;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
+/* Company Code - A la derecha del nombre */
+.company-code {
+    font-weight: 400;
+    color: #6c757d;
+    font-size: 0.813rem;
+}
+
+/* Company Industry - Debajo del nombre */
 .company-info {
-    font-size: 0.85rem;
+    font-size: 0.813rem;
     color: #6c757d;
     margin: 0;
     line-height: 1.2;
@@ -359,26 +376,8 @@
     color: #6c757d;
 }
 
-/* Selected Company Card Styling (AdminLTE v3 Official Profile Card) */
-#selectedCompanyCard .profile-user-img {
-    border: 3px solid #adb5bd;
-    margin: 0 auto;
-    padding: 3px;
-}
-
-#selectedCompanyCard .profile-username {
-    font-size: 1.25rem;
-    margin: 10px 0 5px;
-}
-
-#selectedCompanyCard .list-group-unbordered > .list-group-item {
-    border-bottom: 1px solid rgba(0,0,0,.125);
-    border-top: 0;
-    border-left: 0;
-    border-right: 0;
-    padding-left: 0;
-    padding-right: 0;
-}
+/* Selected Company Card Styling (Compact Design) */
+/* No additional styles needed - using Bootstrap flex utilities */
 
 /* ========================================
    GENERAL FORM STYLES
@@ -466,7 +465,7 @@
         const $companySelect = $('#createCompany');
         const $categorySelect = $('#createCategory');
         const $areaSelect = $('#createArea');
-        const $areaRow = $('#area-row');
+        const $areaRow = $('#area-row-inside-card'); // Changed to new location inside card
         const $priorityButtons = $('.btn-priority');
         const $priorityHiddenInput = $('#createPriority');
         const $fileInput = $('#createAttachment');
@@ -545,8 +544,11 @@
                         <div class="company-item">
                             <img class="company-logo" src="${company.logoUrl || '/img/default-company.png'}" alt="${company.name}">
                             <div class="company-details">
-                                <div class="company-name">${company.name}</div>
-                                <div class="company-info">${buildCompanyInfo(company)}</div>
+                                <div class="company-name">
+                                    ${company.name}
+                                    <span class="company-code">${company.companyCode || ''}</span>
+                                </div>
+                                <div class="company-info">${company.industryName || 'Sin categoría'}</div>
                             </div>
                         </div>
                     </a>
@@ -593,6 +595,12 @@
             $('#selectedCompanyCode').text(company.companyCode || 'N/A');
             $('#selectedCompanyIndustry').text(company.industryName || 'N/A');
             $selectedCompanyCard.slideDown(300);
+            
+            // Hide help text when company is selected
+            $('#companyHelpText').hide();
+            
+            // Remove any validation error styling from search input
+            $companySearchInput.removeClass('is-invalid');
 
             // 🔴 FIX: Trigger jQuery Validation re-check
             $form.validate().element('#createCompany');
@@ -620,6 +628,9 @@
             $companyHiddenInput.val('');
             $selectedCompanyCard.slideUp(300);
             $companySearchInput.val('').focus();
+            
+            // Show help text again
+            $('#companyHelpText').show();
 
             // Reset dependent fields
             $categorySelect.val(null).trigger('change');
@@ -1009,10 +1020,22 @@
             },
             highlight: function(element, errorClass, validClass) {
                 $(element).addClass('is-invalid');
+                
+                // Special case: if validating company_id (hidden), mark the search input
+                if ($(element).attr('id') === 'createCompany' && $(element).attr('type') === 'hidden') {
+                    $('#companySearch').addClass('is-invalid');
+                }
+                
                 $(element).closest('.form-group').find('.form-text').hide();
             },
             unhighlight: function(element, errorClass, validClass) {
                 $(element).removeClass('is-invalid');
+                
+                // Special case: if validating company_id (hidden), unmark the search input
+                if ($(element).attr('id') === 'createCompany' && $(element).attr('type') === 'hidden') {
+                    $('#companySearch').removeClass('is-invalid');
+                }
+                
                 $(element).closest('.form-group').find('.form-text').show();
             },
             rules: {
