@@ -35,13 +35,13 @@
                         <label>Prioridad <span class="text-danger">*</span></label>
                         <div class="btn-group d-flex" role="group" id="priority-btn-group">
                             <button type="button" class="btn btn-outline-success btn-priority flex-fill" data-priority="low">
-                                <i class="fas fa-angle-down"></i> Baja
+                                <i class="fas fa-bolt"></i> Baja - Normal
                             </button>
                             <button type="button" class="btn btn-outline-warning btn-priority flex-fill" data-priority="medium">
-                                <i class="fas fa-minus"></i> Media
+                                <i class="fas fa-exclamation-triangle"></i> Media - Importante
                             </button>
                             <button type="button" class="btn btn-outline-danger btn-priority flex-fill" data-priority="high">
-                                <i class="fas fa-angle-up"></i> Alta
+                                <i class="fas fa-exclamation-circle"></i> Alta - Crítico
                             </button>
                         </div>
                         <input type="hidden" id="createPriority" name="priority" required>
@@ -130,28 +130,88 @@
    ======================================== */
 .btn-priority {
     transition: all 0.2s ease;
+    color: #000 !important;
+    font-weight: 500;
+}
+
+.btn-priority i {
+    margin-right: 4px;
 }
 
 .btn-priority.active {
-    /* Cuando está activo, usar colores sólidos según AdminLTE v3 */
+    color: #000 !important;
+}
+
+/* Baja - Verde Acaramelado */
+.btn-priority[data-priority="low"] {
+    border-color: #7cb342 !important;
+    color: #000 !important;
+}
+
+.btn-priority[data-priority="low"] i {
+    color: #7cb342 !important;
+}
+
+.btn-priority[data-priority="low"]:hover:not(.active) {
+    background-color: rgba(124, 179, 66, 0.08) !important;
 }
 
 .btn-priority[data-priority="low"].active {
-    background-color: #28a745 !important; /* btn-success (VERDE) */
-    border-color: #28a745 !important;
-    color: white !important;
+    background-color: #7cb342 !important;
+    border-color: #7cb342 !important;
+    color: #000 !important;
+}
+
+.btn-priority[data-priority="low"].active i {
+    color: #fff !important;
+}
+
+/* Media - Amarillo AdminLTE */
+.btn-priority[data-priority="medium"] {
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.btn-priority[data-priority="medium"] i {
+    color: #ffc107 !important;
+}
+
+.btn-priority[data-priority="medium"]:hover:not(.active) {
+    background-color: rgba(255, 193, 7, 0.08) !important;
 }
 
 .btn-priority[data-priority="medium"].active {
-    background-color: #ffc107 !important; /* btn-warning */
+    background-color: #ffc107 !important;
     border-color: #ffc107 !important;
-    color: #1f2d3d !important; /* Texto oscuro para contraste */
+    color: #000 !important;
+}
+
+.btn-priority[data-priority="medium"].active i {
+    color: #fff !important;
+}
+
+/* Alta - Rojo Acaramelado */
+.btn-priority[data-priority="high"] {
+    border-color: #ef5350 !important;
+    color: #000 !important;
+}
+
+.btn-priority[data-priority="high"] i {
+    color: #ef5350 !important;
+}
+
+.btn-priority[data-priority="high"]:hover:not(.active) {
+    background-color: rgba(239, 83, 80, 0.08) !important;
 }
 
 .btn-priority[data-priority="high"].active {
-    background-color: #dc3545 !important; /* btn-danger */
-    border-color: #dc3545 !important;
-    color: white !important;
+    background-color: #ef5350 !important;
+    border-color: #ef5350 !important;
+    color: #fff !important;
+}
+
+.btn-priority[data-priority="high"].active i {
+    color: #fff !important;
 }
 
 /* ========================================
