@@ -64,8 +64,9 @@ mkdir -p storage/logs \
          bootstrap/cache
 
 # Set permissions recursively (required after restarts on Windows)
-chmod -R 777 storage bootstrap/cache
+# First change ownership, then permissions
 chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
 echo "✅ Storage directories permissions fixed"
 
