@@ -782,7 +782,7 @@ class AuthController
     }
 
     /**
-     * Capitaliza nombres correctamente (Primera letra mayúscula, resto minúsculas)
+     * Capitaliza nombres correctamente (Primera letra mayúscula de cada palabra)
      * También sanitiza quitando HTML tags
      *
      * @param string $name Nombre a capitalizar
@@ -791,6 +791,6 @@ class AuthController
     private function capitalizeName(string $name): string
     {
         $sanitized = strip_tags(trim($name));
-        return ucfirst(strtolower($sanitized));
+        return ucwords($sanitized);
     }
 }
