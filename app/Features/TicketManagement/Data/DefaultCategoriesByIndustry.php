@@ -29,368 +29,368 @@ final class DefaultCategoriesByIndustry
     private const CATEGORIES_MAP = [
         'technology' => [
             [
-                'name' => 'Bug Report',
+                'name' => 'Reporte de Error',
                 'description' => 'Reportes de errores, fallos y comportamientos inesperados en la aplicación',
             ],
             [
-                'name' => 'Feature Request',
+                'name' => 'Solicitud de Funcionalidad',
                 'description' => 'Solicitudes de nuevas funcionalidades y mejoras al sistema',
             ],
             [
-                'name' => 'Performance Issue',
+                'name' => 'Problema de Rendimiento',
                 'description' => 'Problemas de rendimiento, velocidad y optimización',
             ],
             [
-                'name' => 'Account & Access',
+                'name' => 'Cuenta y Acceso',
                 'description' => 'Problemas de autenticación, permisos y acceso a la plataforma',
             ],
             [
-                'name' => 'Technical Support',
+                'name' => 'Soporte Técnico',
                 'description' => 'Soporte técnico general e instalación',
             ],
         ],
 
         'healthcare' => [
             [
-                'name' => 'Patient Support',
+                'name' => 'Atención al Paciente',
                 'description' => 'Consultas y soporte directo para pacientes',
             ],
             [
-                'name' => 'Appointment Issue',
+                'name' => 'Problema con Citas',
                 'description' => 'Problemas con citas, reprogramación o cancelaciones',
             ],
             [
-                'name' => 'Medical Records',
+                'name' => 'Historial Médico',
                 'description' => 'Solicitudes de acceso o actualización de historiales médicos',
             ],
             [
-                'name' => 'System Access',
+                'name' => 'Acceso al Sistema',
                 'description' => 'Problemas de acceso al sistema médico y credenciales',
             ],
             [
-                'name' => 'Billing & Insurance',
+                'name' => 'Facturación y Seguros',
                 'description' => 'Consultas sobre facturación, cobros e seguros',
             ],
         ],
 
         'education' => [
             [
-                'name' => 'Course Issue',
+                'name' => 'Problema con Curso',
                 'description' => 'Problemas con acceso a cursos, materiales o plataforma de aprendizaje',
             ],
             [
-                'name' => 'Grade & Assessment',
+                'name' => 'Calificaciones y Evaluaciones',
                 'description' => 'Consultas sobre calificaciones, evaluaciones y resultados académicos',
             ],
             [
-                'name' => 'Account Access',
+                'name' => 'Acceso a la Cuenta',
                 'description' => 'Problemas de acceso a cuenta de estudiante o docente',
             ],
             [
-                'name' => 'Technical Support',
+                'name' => 'Soporte Técnico',
                 'description' => 'Soporte técnico para herramientas educativas',
             ],
             [
-                'name' => 'Administrative Request',
+                'name' => 'Solicitud Administrativa',
                 'description' => 'Solicitudes de documentación académica, certificados y trámites',
             ],
         ],
 
         'finance' => [
             [
-                'name' => 'Account Issue',
+                'name' => 'Problema de Cuenta',
                 'description' => 'Problemas con cuentas, saldos y movimientos',
             ],
             [
-                'name' => 'Transaction Problem',
+                'name' => 'Problema de Transacción',
                 'description' => 'Problemas con transacciones, transferencias o pagos',
             ],
             [
-                'name' => 'Security Concern',
+                'name' => 'Problema de Seguridad',
                 'description' => 'Reportes de actividad sospechosa o problemas de seguridad',
             ],
             [
-                'name' => 'Compliance & Regulatory',
+                'name' => 'Cumplimiento y Regulación',
                 'description' => 'Consultas sobre cumplimiento normativo y regulaciones',
             ],
             [
-                'name' => 'Technical Support',
+                'name' => 'Soporte Técnico',
                 'description' => 'Soporte técnico y problemas con plataformas de banca digital',
             ],
         ],
 
         'retail' => [
             [
-                'name' => 'Order Issue',
+                'name' => 'Problema con Pedido',
                 'description' => 'Problemas con pedidos, devoluciones o modificaciones',
             ],
             [
-                'name' => 'Payment Problem',
+                'name' => 'Problema de Pago',
                 'description' => 'Problemas de pago, reembolsos o transacciones fallidas',
             ],
             [
-                'name' => 'Shipping & Delivery',
+                'name' => 'Envío y Entrega',
                 'description' => 'Consultas sobre envío, seguimiento y entrega de productos',
             ],
             [
-                'name' => 'Product Return',
+                'name' => 'Devolución de Producto',
                 'description' => 'Solicitudes de devolución, cambio o reemplazo de productos',
             ],
             [
-                'name' => 'Account Access',
+                'name' => 'Acceso a la Cuenta',
                 'description' => 'Problemas de acceso a cuenta, contraseña u perfil',
             ],
         ],
 
         'manufacturing' => [
             [
-                'name' => 'Equipment Issue',
+                'name' => 'Problema de Equipo',
                 'description' => 'Problemas y mantenimiento de equipos e maquinaria',
             ],
             [
-                'name' => 'Production Delay',
+                'name' => 'Retraso en Producción',
                 'description' => 'Reportes de retrasos en producción o cuellos de botella',
             ],
             [
-                'name' => 'Quality Problem',
+                'name' => 'Problema de Calidad',
                 'description' => 'Problemas de calidad, defectos o control de calidad',
             ],
             [
-                'name' => 'Supply Chain',
+                'name' => 'Cadena de Suministro',
                 'description' => 'Consultas sobre proveedores, materias primas y logística',
             ],
             [
-                'name' => 'Safety Concern',
+                'name' => 'Problema de Seguridad',
                 'description' => 'Reportes de problemas de seguridad e higiene industrial',
             ],
         ],
 
         'real_estate' => [
             [
-                'name' => 'Property Inquiry',
+                'name' => 'Consulta de Propiedad',
                 'description' => 'Consultas sobre propiedades, disponibilidad y características',
             ],
             [
-                'name' => 'Lease & Contract',
+                'name' => 'Arrendamiento y Contrato',
                 'description' => 'Consultas sobre contratos, términos de arrendamiento',
             ],
             [
-                'name' => 'Maintenance Request',
+                'name' => 'Solicitud de Mantenimiento',
                 'description' => 'Solicitudes de reparación y mantenimiento de propiedades',
             ],
             [
-                'name' => 'Billing Issue',
+                'name' => 'Problema de Facturación',
                 'description' => 'Problemas con rentas, pagos y facturación',
             ],
             [
-                'name' => 'Document Request',
+                'name' => 'Solicitud de Documento',
                 'description' => 'Solicitud de documentos, certificados y permisos',
             ],
         ],
 
         'hospitality' => [
             [
-                'name' => 'Reservation Issue',
+                'name' => 'Problema de Reservación',
                 'description' => 'Problemas con reservaciones, cancelaciones o modificaciones',
             ],
             [
-                'name' => 'Room & Service Complaint',
+                'name' => 'Queja de Habitación y Servicio',
                 'description' => 'Quejas sobre calidad de habitación, limpieza y servicio',
             ],
             [
-                'name' => 'Billing Problem',
+                'name' => 'Problema de Facturación',
                 'description' => 'Problemas con cargos, facturas o refunds',
             ],
             [
-                'name' => 'Maintenance Request',
+                'name' => 'Solicitud de Mantenimiento',
                 'description' => 'Reportes de daños, averías o necesidades de reparación',
             ],
             [
-                'name' => 'Guest Support',
+                'name' => 'Atención al Huésped',
                 'description' => 'Soporte general y consultas de huéspedes durante su estadía',
             ],
         ],
 
         'transportation' => [
             [
-                'name' => 'Shipment Tracking',
+                'name' => 'Rastreo de Envío',
                 'description' => 'Consultas sobre ubicación y estado de envíos',
             ],
             [
-                'name' => 'Delivery Problem',
+                'name' => 'Problema de Entrega',
                 'description' => 'Problemas de entrega, retrasos o daños en tránsito',
             ],
             [
-                'name' => 'Vehicle Issue',
+                'name' => 'Problema de Vehículo',
                 'description' => 'Problemas mecánicos y mantenimiento de vehículos',
             ],
             [
-                'name' => 'Driver Concern',
+                'name' => 'Reporte de Conductor',
                 'description' => 'Reportes sobre comportamiento de conductores y seguridad',
             ],
             [
-                'name' => 'Billing & Invoice',
+                'name' => 'Facturación',
                 'description' => 'Consultas sobre facturas, pagos y costos de transporte',
             ],
         ],
 
         'professional_services' => [
             [
-                'name' => 'Project Issue',
+                'name' => 'Problema de Proyecto',
                 'description' => 'Problemas con proyectos, cronogramas y alcance de trabajo',
             ],
             [
-                'name' => 'Document & Report',
+                'name' => 'Documentos y Reportes',
                 'description' => 'Solicitudes de documentación, reportes e informes',
             ],
             [
-                'name' => 'Billing Dispute',
+                'name' => 'Disputa de Facturación',
                 'description' => 'Disputas por facturas, costos y términos de pago',
             ],
             [
-                'name' => 'Compliance Question',
+                'name' => 'Consulta de Cumplimiento',
                 'description' => 'Consultas sobre normas, regulaciones y cumplimiento',
             ],
             [
-                'name' => 'Account Access',
+                'name' => 'Acceso a la Cuenta',
                 'description' => 'Problemas de acceso a plataformas y sistemas de gestión',
             ],
         ],
 
         'media' => [
             [
-                'name' => 'Campaign Issue',
+                'name' => 'Problema de Campaña',
                 'description' => 'Problemas con campañas publicitarias y ejecución',
             ],
             [
-                'name' => 'Content Request',
+                'name' => 'Solicitud de Contenido',
                 'description' => 'Solicitudes de creación, edición o publicación de contenido',
             ],
             [
-                'name' => 'Design & Creative',
+                'name' => 'Diseño y Creatividad',
                 'description' => 'Solicitudes de diseño, creatividad y material visual',
             ],
             [
-                'name' => 'Billing Problem',
+                'name' => 'Problema de Facturación',
                 'description' => 'Problemas con facturas, servicios y pagos',
             ],
             [
-                'name' => 'Technical Support',
+                'name' => 'Soporte Técnico',
                 'description' => 'Soporte técnico para plataformas de publicación',
             ],
         ],
 
         'energy' => [
             [
-                'name' => 'Service Outage',
+                'name' => 'Interrupción del Servicio',
                 'description' => 'Reportes de cortes de servicio, apagones y falta de suministro',
             ],
             [
-                'name' => 'Billing Dispute',
+                'name' => 'Disputa de Facturación',
                 'description' => 'Disputas por consumo, facturas y cargos',
             ],
             [
-                'name' => 'Safety Concern',
+                'name' => 'Problema de Seguridad',
                 'description' => 'Reportes de peligros, riesgos y problemas de seguridad',
             ],
             [
-                'name' => 'Equipment Problem',
+                'name' => 'Problema de Equipo',
                 'description' => 'Problemas con medidores, instalaciones y equipos',
             ],
             [
-                'name' => 'Maintenance Request',
+                'name' => 'Solicitud de Mantenimiento',
                 'description' => 'Solicitudes de mantenimiento preventivo y correctivo',
             ],
         ],
 
         'agriculture' => [
             [
-                'name' => 'Equipment Issue',
+                'name' => 'Problema de Equipo',
                 'description' => 'Problemas con maquinaria agrícola y equipos',
             ],
             [
-                'name' => 'Supply Order',
+                'name' => 'Pedido de Suministros',
                 'description' => 'Solicitudes de semillas, fertilizantes y suministros',
             ],
             [
-                'name' => 'Crop & Livestock Problem',
+                'name' => 'Problema de Cultivos y Ganado',
                 'description' => 'Problemas de plagas, enfermedades y salud animal',
             ],
             [
-                'name' => 'Pricing Dispute',
+                'name' => 'Disputa de Precios',
                 'description' => 'Consultas sobre precios, contratos y términos comerciales',
             ],
             [
-                'name' => 'Technical Support',
+                'name' => 'Soporte Técnico',
                 'description' => 'Soporte para sistemas de riego, drones y tecnología agrícola',
             ],
         ],
 
         'government' => [
             [
-                'name' => 'Service Request',
+                'name' => 'Solicitud de Servicio',
                 'description' => 'Solicitudes de servicios públicos y trámites administrativos',
             ],
             [
-                'name' => 'Document Request',
+                'name' => 'Solicitud de Documento',
                 'description' => 'Solicitudes de documentación, certificados y permisos',
             ],
             [
-                'name' => 'Complaint',
+                'name' => 'Queja',
                 'description' => 'Quejas sobre servicios, infraestructura o funcionarios',
             ],
             [
-                'name' => 'Account Access',
+                'name' => 'Acceso a la Cuenta',
                 'description' => 'Problemas de acceso a portales y sistemas en línea',
             ],
             [
-                'name' => 'Administrative',
+                'name' => 'Administrativo',
                 'description' => 'Consultas administrativas y procedimientos oficiales',
             ],
         ],
 
         'non_profit' => [
             [
-                'name' => 'Donation & Contribution',
+                'name' => 'Donación y Contribución',
                 'description' => 'Consultas sobre donaciones, contribuciones y patrocinios',
             ],
             [
-                'name' => 'Volunteer Inquiry',
+                'name' => 'Consulta de Voluntariado',
                 'description' => 'Consultas sobre voluntariado y participación en programas',
             ],
             [
-                'name' => 'Program Support',
+                'name' => 'Soporte de Programa',
                 'description' => 'Soporte para programas, beneficiarios y actividades',
             ],
             [
-                'name' => 'Event Support',
+                'name' => 'Soporte de Evento',
                 'description' => 'Apoyo para organización y realización de eventos',
             ],
             [
-                'name' => 'Account Access',
+                'name' => 'Acceso a la Cuenta',
                 'description' => 'Problemas de acceso a plataformas y sistemas',
             ],
         ],
 
         'other' => [
             [
-                'name' => 'General Support',
+                'name' => 'Soporte General',
                 'description' => 'Soporte general sobre productos y servicios',
             ],
             [
-                'name' => 'Question',
+                'name' => 'Pregunta',
                 'description' => 'Preguntas generales sobre operaciones y procesos',
             ],
             [
-                'name' => 'Complaint',
+                'name' => 'Queja',
                 'description' => 'Quejas y retroalimentación general',
             ],
             [
-                'name' => 'Request',
+                'name' => 'Solicitud',
                 'description' => 'Solicitudes diversas no clasificadas en otras categorías',
             ],
             [
-                'name' => 'Technical Issue',
+                'name' => 'Problema Técnico',
                 'description' => 'Problemas técnicos varios',
             ],
         ],

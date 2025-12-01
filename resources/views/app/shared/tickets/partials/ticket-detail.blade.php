@@ -398,14 +398,13 @@
 
                 // Reset visibility
                 $('#btn-action-resolve, #btn-action-close, #btn-action-reopen, #action-section-assign, #action-section-remind').addClass('d-none');
+                $('#card-ticket-actions').removeClass('d-none'); // Ensure visible by default
 
                 // --- USER Logic ---
                 if (role === 'USER') {
-                    // Close: Only if Resolved
-                    if (status === 'resolved') $('#btn-action-close').removeClass('d-none');
-
-                    // Reopen: If Resolved or Closed (check date logic in backend, here just show)
-                    if (status === 'resolved' || status === 'closed') $('#btn-action-reopen').removeClass('d-none');
+                    // Hide the entire actions card for USER
+                    $('#card-ticket-actions').addClass('d-none');
+                    return;
                 }
 
                 // --- AGENT / ADMIN Logic ---
