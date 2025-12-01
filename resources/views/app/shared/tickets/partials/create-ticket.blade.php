@@ -448,6 +448,19 @@
     object-position: center !important;
     max-width: none !important;
 }
+
+/* ========================================
+   SELECT2 CUSTOMIZATION
+   ======================================== */
+/* Fix for strong blue background on hover making small text unreadable */
+.select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] {
+    background-color: #e8f0fe !important; /* Very light blue */
+    color: #333 !important;
+}
+
+.select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] .text-muted {
+    color: #6c757d !important; /* Keep description gray */
+}
 </style>
 @endpush
 
@@ -709,14 +722,40 @@
                 $categorySelect.append('<option value="">Selecciona una categoría...</option>');
 
                 result.data.forEach(category => {
-                    $categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
+                    // Store description in data attribute for Select2 template
+                    // Escape quotes in description to avoid HTML issues
+                    const description = (category.description || '').replace(/"/g, '&quot;');
+                    $categorySelect.append(`<option value="${category.id}" data-description="${description}">${category.name}</option>`);
                 });
 
-                // Re-init Select2
+                // Custom formatting function for Select2 results
+                function formatCategory(state) {
+                    if (!state.id) {
+                        return state.text;
+                    }
+                    
+                    const description = $(state.element).data('description');
+                    
+                    const $state = $(
+                        '<div class="d-flex flex-column">' +
+                            '<span class="font-weight-bold">' + state.text + '</span>' +
+                            '<span class="small text-muted" style="line-height: 1.2; margin-top: 2px;">' + (description || '') + '</span>' +
+                        '</div>'
+                    );
+                    
+                    return $state;
+                }
+
+                // Re-init Select2 with custom template
                 $categorySelect.select2({
                     theme: 'bootstrap4',
                     placeholder: 'Selecciona una categoría...',
-                    allowClear: true
+                    allowClear: true,
+                    templateResult: formatCategory,
+                    // Keep selection simple (just the name)
+                    templateSelection: function(state) {
+                        return state.text;
+                    }
                 });
 
                 $categorySelect.prop('disabled', false);
@@ -807,14 +846,38 @@
                 result.data.forEach(area => {
                     // Show active tickets count if available
                     const ticketCount = area.active_tickets_count > 0 ? ` (${area.active_tickets_count} tickets)` : '';
-                    $areaSelect.append(`<option value="${area.id}">${area.name}${ticketCount}</option>`);
+                    // Store description in data attribute
+                    const description = (area.description || '').replace(/"/g, '&quot;');
+                    $areaSelect.append(`<option value="${area.id}" data-description="${description}">${area.name}${ticketCount}</option>`);
                 });
+
+                // Custom formatting function for Select2 results
+                function formatArea(state) {
+                    if (!state.id) {
+                        return state.text;
+                    }
+                    
+                    const description = $(state.element).data('description');
+                    
+                    const $state = $(
+                        '<div class="d-flex flex-column">' +
+                            '<span class="font-weight-bold">' + state.text + '</span>' +
+                            '<span class="small text-muted" style="line-height: 1.2; margin-top: 2px;">' + (description || '') + '</span>' +
+                        '</div>'
+                    );
+                    
+                    return $state;
+                }
 
                 // Re-init Select2
                 $areaSelect.select2({
                     theme: 'bootstrap4',
                     placeholder: 'Selecciona un área (opcional)',
-                    allowClear: true
+                    allowClear: true,
+                    templateResult: formatArea,
+                    templateSelection: function(state) {
+                        return state.text;
+                    }
                 });
 
                 $areaSelect.prop('disabled', false);
