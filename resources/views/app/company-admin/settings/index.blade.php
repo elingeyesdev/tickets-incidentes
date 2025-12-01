@@ -283,6 +283,29 @@
                 </form>
             </div>
 
+            <!-- 5.5 CONFIGURACIÓN DE FUNCIONALIDADES -->
+            <div class="card card-outline card-purple mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i> Configuración de Funcionalidades
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Áreas / Departamentos</label>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="areasEnabledToggle">
+                            <label class="custom-control-label" for="areasEnabledToggle">
+                                Habilitar gestión de Áreas y Departamentos
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Si se habilita, podrás gestionar áreas y asignar tickets a departamentos específicos.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
             <!-- 6. BRANDING -->
             <div class="card card-outline card-danger mt-4">
                 <div class="card-header">
@@ -379,6 +402,7 @@
     // ====== INICIALIZACIÓN ======
     document.addEventListener('DOMContentLoaded', function() {
         loadCompanySettings();
+        loadFeatureSettings();
         setupEventListeners();
     });
 
@@ -455,6 +479,11 @@
                 document.getElementById('secondaryColorPreview').style.backgroundColor = this.value;
             }
         });
+
+        // Toggle: Áreas
+        document.getElementById('areasEnabledToggle').addEventListener('change', function() {
+            updateAreaSettings(this.checked);
+        });
     }
 
     // ====== CARGAR CONFIGURACIÓN DE EMPRESA ======
@@ -483,6 +512,63 @@
             document.getElementById('loadingSpinner').style.display = 'none';
             document.getElementById('generalErrorAlert').style.display = 'block';
             document.getElementById('generalErrorText').textContent = 'Error al cargar la configuración de la empresa';
+        });
+    }
+
+    // ====== CARGAR CONFIGURACIÓN DE FUNCIONALIDADES ======
+    function loadFeatureSettings() {
+        fetch(`${apiUrl}/companies/me/settings/areas-enabled`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('areasEnabledToggle').checked = data.data.areas_enabled;
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando configuración de áreas:', error);
+        });
+    }
+
+    // ====== ACTUALIZAR CONFIGURACIÓN DE ÁREAS ======
+    function updateAreaSettings(enabled) {
+        const toggle = document.getElementById('areasEnabledToggle');
+        const label = toggle.nextElementSibling;
+        const originalLabel = label.textContent;
+        
+        // Optimistic UI update handled by checkbox, but let's show loading state
+        label.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+        toggle.disabled = true;
+
+        fetch(`${apiUrl}/companies/me/settings/areas-enabled`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ enabled: enabled })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessAlert('Configuración de áreas actualizada correctamente');
+            } else {
+                throw new Error(data.message || 'Error al actualizar');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorAlert(error.message || 'Error al actualizar la configuración');
+            toggle.checked = !enabled; // Revert change
+        })
+        .finally(() => {
+            toggle.disabled = false;
+            label.textContent = originalLabel.trim(); // Restore label
         });
     }
 
