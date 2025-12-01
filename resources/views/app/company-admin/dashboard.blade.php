@@ -98,11 +98,11 @@
         </div>
     </div>
 
-    <!-- Average Response Time -->
+    <!-- Tickets Over Time Chart -->
     <div class="col-md-6">
         <div class="card card-outline card-secondary">
             <div class="card-header">
-                <h3 class="card-title">Métrica de Rendimiento</h3>
+                <h3 class="card-title">Evolución de Tickets (Últimos 6 meses)</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
@@ -110,19 +110,8 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 text-center">
-                        <div class="text-lg font-weight-bold mb-2">
-                            <span id="avg-response-time">--</span>
-                        </div>
-                        <small class="text-muted">Tiempo Promedio Respuesta</small>
-                    </div>
-                    <div class="col-md-6 text-center">
-                        <div class="text-lg font-weight-bold mb-2">
-                            <span id="customer-satisfaction">--</span>%
-                        </div>
-                        <small class="text-muted">Satisfacción Cliente</small>
-                    </div>
+                <div style="position: relative; height: 250px;">
+                    <canvas id="ticketsOverTimeChart"></canvas>
                 </div>
             </div>
         </div>
@@ -132,7 +121,7 @@
 <!-- Row 3: Recent Tickets and Team -->
 <div class="row">
     <!-- Recent Tickets Table -->
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card card-outline card-secondary">
             <div class="card-header">
                 <h3 class="card-title">Tickets Recientes</h3>
@@ -146,28 +135,29 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th style="width: 30%;">Código</th>
+                            <th style="width: 20%;">Código</th>
                             <th style="width: 40%;">Título</th>
-                            <th style="width: 30%;">Estado</th>
+                            <th style="width: 20%;">Creador</th>
+                            <th style="width: 20%;">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="recentTicketsBody">
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-3">Cargando...</td>
+                            <td colspan="4" class="text-center text-muted py-3">Cargando...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer">
-                <a href="/app/company/tickets" class="btn btn-sm btn-primary">
-                    <i class="fas fa-arrow-right"></i> Ver todos
+            <div class="card-footer clearfix">
+                <a href="/app/company/tickets" class="btn btn-sm btn-primary float-right">
+                    Ver todos los tickets
                 </a>
             </div>
         </div>
     </div>
 
     <!-- Team Members -->
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card card-outline card-secondary">
             <div class="card-header">
                 <h3 class="card-title">Equipo de Soporte</h3>
@@ -178,25 +168,13 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;">Nombre</th>
-                            <th style="width: 35%;">Email</th>
-                            <th style="width: 25%;">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teamBody">
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-3">Cargando...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <ul class="users-list clearfix" id="teamBody">
+                    <!-- Loaded dynamically -->
+                    <li class="text-center text-muted py-3" style="width: 100%">Cargando...</li>
+                </ul>
             </div>
-            <div class="card-footer">
-                <a href="/app/company/agents" class="btn btn-sm btn-info">
-                    <i class="fas fa-arrow-right"></i> Gestionar
-                </a>
+            <div class="card-footer text-center">
+                <a href="/app/company/agents">Ver todos los agentes</a>
             </div>
         </div>
     </div>
@@ -216,69 +194,56 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th style="width: 50%;">Nombre</th>
-                            <th style="width: 50%;">Tickets Activos</th>
+                            <th style="width: 10px">#</th>
+                            <th>Categoría</th>
+                            <th>Progreso</th>
+                            <th style="width: 40px">Cant.</th>
                         </tr>
                     </thead>
                     <tbody id="categoriesBody">
                         <tr>
-                            <td colspan="2" class="text-center text-muted py-3">Cargando...</td>
+                            <td colspan="4" class="text-center text-muted py-3">Cargando...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer">
-                <a href="/app/company/categories" class="btn btn-sm btn-danger">
-                    <i class="fas fa-arrow-right"></i> Gestionar
-                </a>
-            </div>
         </div>
     </div>
 
-    <!-- Announcements Card -->
+    <!-- Quick Stats (Info Boxes) -->
     <div class="col-md-6">
-        <div class="card card-outline card-secondary">
-            <div class="card-header">
-                <h3 class="card-title">Estadísticas Rápidas</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
+        <div class="info-box mb-3 bg-info">
+            <span class="info-box-icon"><i class="fas fa-stopwatch"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tiempo Promedio de Respuesta</span>
+                <span class="info-box-number" id="avg-response-time">--</span>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6 border-right">
-                        <div class="text-center">
-                            <h4 id="total-tickets-stat" class="text-primary">0</h4>
-                            <p class="text-muted">Tickets Totales</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h4 id="resolution-rate" class="text-success">0%</h4>
-                            <p class="text-muted">Tasa Resolución</p>
-                        </div>
-                    </div>
-                </div>
-                <hr class="my-3">
-                <div class="row">
-                    <div class="col-6 border-right">
-                        <div class="text-center">
-                            <h5 id="pending-tickets" class="text-warning">0</h5>
-                            <p class="text-muted">Pendientes</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center">
-                            <h5 id="closed-tickets" class="text-info">0</h5>
-                            <p class="text-muted">Cerrados</p>
-                        </div>
-                    </div>
-                </div>
+        </div>
+
+        <div class="info-box mb-3 bg-warning">
+            <span class="info-box-icon"><i class="fas fa-hourglass-half text-white"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text text-white">Tickets Pendientes</span>
+                <span class="info-box-number text-white" id="pending-tickets">0</span>
+            </div>
+        </div>
+
+        <div class="info-box mb-3 bg-success">
+            <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tasa de Resolución</span>
+                <span class="info-box-number" id="resolution-rate">0%</span>
+            </div>
+        </div>
+
+        <div class="info-box mb-3 bg-danger">
+            <span class="info-box-icon"><i class="fas fa-exclamation-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tickets Abiertos</span>
+                <span class="info-box-number" id="open-tickets">0</span>
             </div>
         </div>
     </div>
@@ -330,10 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const token = getAccessToken();
         const apiUrl = '/api';
 
-        console.log('[Company Admin Dashboard] Token available:', !!token);
-
         if (!token) {
-            console.error('[Company Admin Dashboard] No token available');
             Swal.fire({
                 icon: 'error',
                 title: 'Error de autenticación',
@@ -344,86 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // =====================================================================
-        // 1. LOAD AGENTS DATA
-        // =====================================================================
-
-        fetch(`${apiUrl}/users?role=AGENT&per_page=100`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.status === 401) return null;
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-
-            const totalAgents = data.meta?.total || 0;
-            const agents = data.data || [];
-
-            document.getElementById('total-agents').textContent = totalAgents;
-            renderTeamMembers(agents.slice(0, 5));
-        })
-        .catch(error => {
-            console.error('[Company Admin Dashboard] Error loading agents:', error);
-        });
-
-        // =====================================================================
-        // 2. LOAD ARTICLES DATA
-        // =====================================================================
-
-        fetch(`${apiUrl}/help-center/articles?per_page=1000`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.status === 401) return null;
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-
-            const totalArticles = data.meta?.total || (data.data ? data.data.length : 0);
-            document.getElementById('total-articles').textContent = totalArticles;
-        })
-        .catch(error => {
-            console.error('[Company Admin Dashboard] Error loading articles:', error);
-        });
-
-        // =====================================================================
-        // 3. LOAD ANNOUNCEMENTS DATA
-        // =====================================================================
-
-        fetch(`${apiUrl}/announcements?per_page=1000`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.status === 401) return null;
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-
-            const totalAnnouncements = data.meta?.total || (data.data ? data.data.length : 0);
-            document.getElementById('total-announcements').textContent = totalAnnouncements;
-        })
-        .catch(error => {
-            console.error('[Company Admin Dashboard] Error loading announcements:', error);
-        });
-
-        // =====================================================================
-        // 4. LOAD TICKETS DATA
-        // =====================================================================
-
-        fetch(`${apiUrl}/tickets?page=1&per_page=100`, {
+        fetch(`${apiUrl}/analytics/company-dashboard`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -434,68 +317,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = '/login?reason=session_expired';
                 return null;
             }
+            if (!response.ok) throw new Error('Failed to load dashboard data');
             return response.json();
         })
         .then(data => {
             if (!data) return;
-
-            const tickets = data.data || [];
-            const totalTickets = data.meta?.total || 0;
-
-            // Count by status
-            let openCount = 0, pendingCount = 0, resolvedCount = 0, closedCount = 0;
-
-            tickets.forEach(ticket => {
-                if (ticket.status === 'OPEN') openCount++;
-                else if (ticket.status === 'PENDING') pendingCount++;
-                else if (ticket.status === 'RESOLVED') resolvedCount++;
-                else if (ticket.status === 'CLOSED') closedCount++;
-            });
 
             // Update KPI cards
-            document.getElementById('total-tickets-kpi').textContent = totalTickets;
+            document.getElementById('total-agents').textContent = data.kpi.total_agents;
+            document.getElementById('total-articles').textContent = data.kpi.total_articles;
+            document.getElementById('total-announcements').textContent = data.kpi.total_announcements;
+            document.getElementById('total-tickets-kpi').textContent = data.kpi.total_tickets;
 
-            // Update stats
-            document.getElementById('total-tickets-stat').textContent = totalTickets;
-            document.getElementById('pending-tickets').textContent = pendingCount;
-            document.getElementById('closed-tickets').textContent = closedCount;
+            // Update Info Boxes (Quick Stats)
+            document.getElementById('avg-response-time').textContent = data.performance.avg_response_time;
+            document.getElementById('pending-tickets').textContent = data.ticket_status.PENDING;
+            document.getElementById('open-tickets').textContent = data.ticket_status.OPEN;
 
-            // Calculate resolution rate
-            const resolutionRate = totalTickets > 0 ? Math.round((resolvedCount + closedCount) / totalTickets * 100) : 0;
-            document.getElementById('resolution-rate').textContent = resolutionRate;
+            const totalTickets = data.kpi.total_tickets;
+            const resolvedCount = data.ticket_status.RESOLVED + data.ticket_status.CLOSED;
+            const resolutionRate = totalTickets > 0 ? Math.round((resolvedCount / totalTickets) * 100) : 0;
+            document.getElementById('resolution-rate').textContent = resolutionRate + '%';
 
-            // Render recent tickets table
-            renderRecentTickets(tickets.slice(0, 5));
+            // Render Tables and Lists
+            renderRecentTickets(data.recent_tickets);
+            renderTeamMembers(data.team_members);
+            renderCategories(data.categories);
 
-            // Initialize chart
-            initializeTicketStatusChart(openCount, pendingCount, resolvedCount, closedCount);
+            // Initialize Charts
+            initializeTicketStatusChart(
+                data.ticket_status.OPEN,
+                data.ticket_status.PENDING,
+                data.ticket_status.RESOLVED,
+                data.ticket_status.CLOSED
+            );
+
+            initializeTicketsOverTimeChart(data.tickets_over_time);
         })
         .catch(error => {
-            console.error('[Company Admin Dashboard] Error loading tickets:', error);
-        });
-
-        // =====================================================================
-        // 5. LOAD CATEGORIES DATA
-        // =====================================================================
-
-        fetch(`${apiUrl}/tickets/categories`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.status === 401) return null;
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-
-            const categories = data.data || [];
-            renderCategories(categories);
-        })
-        .catch(error => {
-            console.error('[Company Admin Dashboard] Error loading categories:', error);
+            console.error('[Company Admin Dashboard] Error loading dashboard:', error);
         });
 
     }, 500);
@@ -510,15 +370,16 @@ function renderRecentTickets(tickets) {
     tbody.innerHTML = '';
 
     if (tickets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sin tickets</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin tickets recientes</td></tr>';
         return;
     }
 
     tickets.forEach(ticket => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><strong>${ticket.ticket_code}</strong></td>
+            <td><a href="/app/company/tickets/${ticket.ticket_code}">${ticket.ticket_code}</a></td>
             <td>${ticket.title}</td>
+            <td>${ticket.creator_name}</td>
             <td>
                 <span class="badge ${getStatusBadgeClass(ticket.status)}">
                     ${getStatusLabel(ticket.status)}
@@ -530,28 +391,26 @@ function renderRecentTickets(tickets) {
 }
 
 function renderTeamMembers(agents) {
-    const tbody = document.getElementById('teamBody');
-    tbody.innerHTML = '';
+    const list = document.getElementById('teamBody');
+    list.innerHTML = '';
 
     if (agents.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sin agentes</td></tr>';
+        list.innerHTML = '<li class="text-center text-muted py-3" style="width: 100%">Sin agentes</li>';
         return;
     }
 
     agents.forEach(agent => {
-        const firstName = agent.profile?.first_name || '';
-        const lastName = agent.profile?.last_name || '';
-        const name = firstName ? `${firstName} ${lastName}`.trim() : agent.email;
-        const isOnline = Math.random() > 0.3;
-        const statusBadge = isOnline ? '<span class="badge badge-success">En línea</span>' : '<span class="badge badge-secondary">Offline</span>';
+        const name = agent.name || agent.email;
+        const avatar = agent.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=random';
+        const date = new Date().toLocaleDateString(); // Placeholder for "Member Since" if needed, or just remove
 
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${name}</td>
-            <td>${agent.email}</td>
-            <td>${statusBadge}</td>
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <img src="${avatar}" alt="User Image" style="width: 50px; height: 50px; object-fit: cover;">
+            <a class="users-list-name" href="#">${name}</a>
+            <span class="users-list-date">${agent.status === 'ONLINE' ? '<span class="text-success">Online</span>' : 'Offline'}</span>
         `;
-        tbody.appendChild(row);
+        list.appendChild(li);
     });
 }
 
@@ -560,36 +419,51 @@ function renderCategories(categories) {
     tbody.innerHTML = '';
 
     if (categories.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">Sin categorías</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin categorías</td></tr>';
         return;
     }
 
-    categories.forEach(category => {
+    categories.forEach((category, index) => {
+        const percentage = category.percentage || 0;
+        let colorClass = 'bg-primary';
+        if (percentage > 75) colorClass = 'bg-danger';
+        else if (percentage > 50) colorClass = 'bg-warning';
+        else if (percentage > 25) colorClass = 'bg-info';
+
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>${index + 1}.</td>
             <td>${category.name}</td>
-            <td><span class="badge badge-info">${category.active_tickets_count || 0}</span></td>
+            <td>
+                <div class="progress progress-xs">
+                    <div class="progress-bar ${colorClass}" style="width: ${percentage}%"></div>
+                </div>
+            </td>
+            <td><span class="badge ${colorClass}">${category.active_tickets_count}</span></td>
         `;
         tbody.appendChild(row);
     });
 }
 
+// =====================================================================
+// CHART FUNCTIONS
+// =====================================================================
+
 function initializeTicketStatusChart(open, pending, resolved, closed) {
     const ctx = document.getElementById('ticketStatusChart');
     if (!ctx) return;
 
-    new Chart(ctx, {
+    if (window.ticketStatusChartInstance) {
+        window.ticketStatusChartInstance.destroy();
+    }
+
+    window.ticketStatusChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Abiertos', 'Pendientes', 'Resueltos', 'Cerrados'],
             datasets: [{
                 data: [open, pending, resolved, closed],
-                backgroundColor: [
-                    '#dc3545',
-                    '#ffc107',
-                    '#17a2b8',
-                    '#28a745'
-                ],
+                backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
                 borderColor: '#fff',
                 borderWidth: 2
             }]
@@ -600,6 +474,61 @@ function initializeTicketStatusChart(open, pending, resolved, closed) {
             plugins: {
                 legend: {
                     position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function initializeTicketsOverTimeChart(data) {
+    const ctx = document.getElementById('ticketsOverTimeChart');
+    if (!ctx) return;
+
+    if (window.ticketsOverTimeChartInstance) {
+        window.ticketsOverTimeChartInstance.destroy();
+    }
+
+    window.ticketsOverTimeChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Tickets Creados',
+                data: data.data,
+                backgroundColor: 'rgba(60, 141, 188, 0.2)',
+                borderColor: 'rgba(60, 141, 188, 1)',
+                pointRadius: 4,
+                pointBackgroundColor: '#3b8bba',
+                pointBorderColor: 'rgba(60, 141, 188, 1)',
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.4 // Smooth curve
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
                 }
             }
         }

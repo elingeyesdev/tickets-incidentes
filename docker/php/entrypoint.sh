@@ -66,43 +66,57 @@ mkdir -p storage/logs \
 # Set permissions recursively (required after restarts on Windows)
 # First change ownership, then permissions
 chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+
+# Use 777 in development (Windows Docker has permission issues with mounted volumes)
+# Use 775 in production for better security
+if [ "$APP_ENV" = "local" ]; then
+    chmod -R 777 storage bootstrap/cache
+else
+    chmod -R 775 storage bootstrap/cache
+fi
 
 echo "✅ Storage directories permissions fixed"
 
-# --- 4. Generate APP_KEY if not set ---
+# --- 4. Generate APP_KEY if not set (run as helpdesk for correct permissions) ---
 if [ ! -f .env ] || grep -q "APP_KEY=$" .env; then
     echo "🔑 Generating Laravel application key..."
-    php artisan key:generate --force
+    su -s /bin/bash helpdesk -c "php artisan key:generate --force"
 else
     echo "✅ Application key already set"
 fi
 
 # --- 5. Run migrations (only if vendor exists) ---
+# Execute as helpdesk user to ensure all generated files have correct ownership
 if [ -f "vendor/autoload.php" ]; then
     echo "🗄️  Running database migrations..."
-    php artisan migrate --force
+    su -s /bin/bash helpdesk -c "php artisan migrate --force"
 
     # --- 5.1. Seed database (roles + default user) ---
     echo "🌱 Seeding database..."
-    php artisan db:seed --class="Database\\Seeders\\DatabaseSeeder" || true
+    su -s /bin/bash helpdesk -c "php artisan db:seed --class='Database\\Seeders\\DatabaseSeeder'" || true
 
     # --- 6. Clear and optimize cache ---
     echo "🧹 Clearing and optimizing cache..."
-    php artisan config:clear
-    php artisan route:clear
-    php artisan view:clear
-    php artisan cache:clear
+    su -s /bin/bash helpdesk -c "php artisan config:clear"
+    su -s /bin/bash helpdesk -c "php artisan route:clear"
+    su -s /bin/bash helpdesk -c "php artisan view:clear"
+    su -s /bin/bash helpdesk -c "php artisan cache:clear"
 
     echo "⚡ Optimizing application..."
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
+    su -s /bin/bash helpdesk -c "php artisan config:cache"
+    su -s /bin/bash helpdesk -c "php artisan route:cache"
+    
+    # Only cache views in production (avoid permission issues in development)
+    if [ "$APP_ENV" != "local" ]; then
+        su -s /bin/bash helpdesk -c "php artisan view:cache"
+    else
+        echo "⚠️  Skipping view cache (development mode - views compile on-demand)"
+    fi
 
     # --- 7. Create storage link ---
     if [ ! -L "public/storage" ]; then
         echo "🔗 Creating storage symlink..."
-        php artisan storage:link
+        su -s /bin/bash helpdesk -c "php artisan storage:link"
     fi
 else
     echo "⚠️  Skipping migrations and cache (vendor not installed)"

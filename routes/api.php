@@ -601,3 +601,12 @@ Route::middleware('jwt.require')->group(function () {
     Route::post('/tickets/{ticket}/remind', [\App\Features\TicketManagement\Http\Controllers\TicketReminderController::class, 'sendReminder'])
         ->name('tickets.remind');
 });
+
+// ================================================================================
+// REST API ENDPOINTS - Analytics
+// ================================================================================
+
+Route::middleware(['jwt.require', 'role:COMPANY_ADMIN'])->prefix('analytics')->group(function () {
+    Route::get('/company-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'dashboard'])
+        ->name('analytics.company-dashboard');
+});
