@@ -7,28 +7,13 @@
     <form id="form-create-ticket" novalidate>
         <div class="card-body">
 
-            {{-- Row 1: Company Search (Full Width) - AdminLTE v3 Official Search --}}
+            {{-- Row 1: Company Select (Full Width) - Select2 Searchable Dropdown --}}
             <div class="form-group">
                 <label for="createCompany">Compañía <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="search"
-                           id="createCompanySearch"
-                           class="form-control form-control-lg"
-                           placeholder="Buscar compañía por nombre..."
-                           autocomplete="off">
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-lg btn-default" id="btn-search-company">
-                            <i class="fa fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-                <input type="hidden" id="createCompany" name="company_id" required>
+                <select id="createCompany" name="company_id" class="form-control select2" style="width: 100%;" required>
+                    <option value="">Selecciona una compañía...</option>
+                </select>
                 <small class="form-text text-muted">Busca y selecciona la compañía relacionada con este ticket</small>
-
-                {{-- Company Search Results Dropdown --}}
-                <div id="company-search-results" class="list-group" style="display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;">
-                    {{-- Results will be appended here via jQuery --}}
-                </div>
             </div>
 
             {{-- Row 2: Category (col-md-6) + Priority (col-md-6) --}}
@@ -49,7 +34,7 @@
                     <div class="form-group">
                         <label>Prioridad <span class="text-danger">*</span></label>
                         <div class="btn-group d-flex" role="group" id="priority-btn-group">
-                            <button type="button" class="btn btn-outline-info btn-priority flex-fill" data-priority="low">
+                            <button type="button" class="btn btn-outline-success btn-priority flex-fill" data-priority="low">
                                 <i class="fas fa-angle-down"></i> Baja
                             </button>
                             <button type="button" class="btn btn-outline-warning btn-priority flex-fill" data-priority="medium">
@@ -137,19 +122,6 @@
     </li>
 </template>
 
-{{-- Template for Company Search Result Item --}}
-<template id="template-company-item">
-    <a href="#" class="list-group-item list-group-item-action company-result-item" data-company-id="">
-        <div class="d-flex align-items-center">
-            <img src="" alt="Logo" class="company-logo mr-3" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">
-            <div class="flex-fill">
-                <h6 class="mb-0 company-name"></h6>
-                <small class="text-muted company-info"></small>
-            </div>
-        </div>
-    </a>
-</template>
-
 {{-- Push CSS to layout head --}}
 @push('css')
 <style>
@@ -165,8 +137,8 @@
 }
 
 .btn-priority[data-priority="low"].active {
-    background-color: #17a2b8 !important; /* btn-info */
-    border-color: #17a2b8 !important;
+    background-color: #28a745 !important; /* btn-success (VERDE) */
+    border-color: #28a745 !important;
     color: white !important;
 }
 
@@ -183,33 +155,40 @@
 }
 
 /* ========================================
-   COMPANY SEARCH RESULTS
+   SELECT2 CUSTOM TEMPLATES (Company Dropdown)
    ======================================== */
-#company-search-results {
-    border: 1px solid #dee2e6;
+.select2-results__option .company-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.select2-results__option .company-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
     border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#company-search-results .list-group-item {
-    border-left: 0;
-    border-right: 0;
-}
-
-#company-search-results .list-group-item:first-child {
-    border-top: 0;
-}
-
-#company-search-results .list-group-item:last-child {
-    border-bottom: 0;
-}
-
-.company-logo {
     background-color: #f4f4f4;
+    flex-shrink: 0;
 }
 
-.company-result-item:hover {
-    background-color: #f8f9fa;
+.select2-results__option .company-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.select2-results__option .company-name {
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.select2-results__option .company-info {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin: 0;
+    line-height: 1.2;
 }
 
 /* ========================================
@@ -295,9 +274,7 @@
         // CONFIGURATION & STATE
         // ==============================================================
         const $form = $('#form-create-ticket');
-        const $companySearchInput = $('#createCompanySearch');
-        const $companySearchResults = $('#company-search-results');
-        const $companyHiddenInput = $('#createCompany');
+        const $companySelect = $('#createCompany');
         const $categorySelect = $('#createCategory');
         const $areaSelect = $('#createArea');
         const $areaRow = $('#area-row');
@@ -310,152 +287,119 @@
         let selectedFiles = [];
         let selectedCompanyId = null;
         let companyHasAreas = false;
-        let searchTimeout = null;
 
         const MAX_FILES = 5;
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         const ALLOWED_EXTENSIONS = ['pdf','txt','log','doc','docx','xls','xlsx','csv','jpg','jpeg','png','gif','bmp','webp','svg','mp4'];
 
         // ==============================================================
-        // COMPANY SEARCH - AdminLTE v3 Official Pattern
+        // COMPANY SELECT2 - Searchable Dropdown with Custom Template
         // ==============================================================
 
-        // Focus on search input
-        $companySearchInput.on('focus', function() {
-            if ($(this).val().length >= 2) {
-                performCompanySearch($(this).val());
-            } else {
-                $companySearchResults.show();
-                $companySearchResults.html('<div class="list-group-item text-muted">Escribe al menos 2 caracteres para buscar...</div>');
-            }
+        $companySelect.select2({
+            theme: 'bootstrap4',
+            placeholder: 'Selecciona una compañía...',
+            allowClear: true,
+            minimumInputLength: 0, // Cargar datos iniciales sin escribir
+            ajax: {
+                url: '/api/companies/minimal',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        search: params.term || '', // Si no hay búsqueda, enviar vacío
+                        per_page: 20,
+                        page: params.page || 1
+                    };
+                },
+                processResults: function (data, params) {
+                    params.page = params.page || 1;
+                    return {
+                        results: data.data.map(function(company) {
+                            return {
+                                id: company.id,
+                                text: company.name,
+                                logoUrl: company.logoUrl,
+                                companyCode: company.companyCode,
+                                industryName: company.industryName
+                            };
+                        }),
+                        pagination: {
+                            more: (params.page * 20) < data.meta.total
+                        }
+                    };
+                },
+                cache: true
+            },
+            // Custom template para mostrar logo + datos en el dropdown
+            templateResult: formatCompanyOption,
+            // Template simple para la selección (solo nombre)
+            templateSelection: formatCompanySelection
         });
 
-        // Search on input (debounced)
-        $companySearchInput.on('input', function() {
-            const query = $(this).val().trim();
-
-            clearTimeout(searchTimeout);
-
-            if (query.length < 2) {
-                $companySearchResults.html('<div class="list-group-item text-muted">Escribe al menos 2 caracteres para buscar...</div>');
-                $companySearchResults.show();
-                return;
+        // Template para el dropdown (muestra logo + nombre + info)
+        function formatCompanyOption(company) {
+            if (company.loading) {
+                return company.text;
             }
 
-            // Debounce search (wait 300ms after user stops typing)
-            searchTimeout = setTimeout(function() {
-                performCompanySearch(query);
-            }, 300);
-        });
-
-        // Search button click
-        $('#btn-search-company').on('click', function() {
-            const query = $companySearchInput.val().trim();
-            if (query.length >= 2) {
-                performCompanySearch(query);
-            } else {
-                Swal.fire('Búsqueda vacía', 'Escribe al menos 2 caracteres para buscar', 'info');
+            if (!company.id) {
+                return company.text;
             }
-        });
 
-        // Perform company search
-        async function performCompanySearch(query) {
-            console.log(`[Company Search] Buscando: "${query}"`);
+            var $container = $(
+                '<div class="company-item">' +
+                    '<img class="company-logo" src="' + (company.logoUrl || '/img/default-company.png') + '" alt="Logo">' +
+                    '<div class="company-details">' +
+                        '<div class="company-name">' + company.text + '</div>' +
+                        '<div class="company-info">' + buildCompanyInfo(company) + '</div>' +
+                    '</div>' +
+                '</div>'
+            );
 
-            $companySearchResults.html('<div class="list-group-item text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>');
-            $companySearchResults.show();
-
-            try {
-                const response = await fetch(`/api/companies/minimal?search=${encodeURIComponent(query)}&per_page=20`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.message || 'Error al buscar compañías');
-                }
-
-                console.log(`[Company Search] Resultados encontrados: ${result.data.length}`);
-
-                if (result.data.length === 0) {
-                    $companySearchResults.html('<div class="list-group-item text-muted">No se encontraron resultados</div>');
-                    return;
-                }
-
-                // Render results
-                $companySearchResults.empty();
-                result.data.forEach(company => {
-                    renderCompanyItem(company);
-                });
-
-            } catch (error) {
-                console.error('[Company Search] Error:', error);
-                $companySearchResults.html(`<div class="list-group-item text-danger"><i class="fas fa-exclamation-triangle"></i> ${error.message}</div>`);
-            }
+            return $container;
         }
 
-        // Render company result item
-        function renderCompanyItem(company) {
-            const template = document.getElementById('template-company-item').content.cloneNode(true);
-            const $item = $(template.querySelector('.company-result-item'));
+        // Template para la selección (solo muestra el nombre)
+        function formatCompanySelection(company) {
+            return company.text || company.name || 'Selecciona una compañía...';
+        }
 
-            // Set data
-            $item.attr('data-company-id', company.id);
-            $item.find('.company-logo').attr('src', company.logoUrl || '/img/default-company.png');
-            $item.find('.company-logo').attr('alt', company.name);
-            $item.find('.company-name').text(company.name);
-
-            // Build info string (code + industry)
-            let infoText = company.companyCode || '';
+        // Helper para construir info (código + industria)
+        function buildCompanyInfo(company) {
+            var info = company.companyCode || '';
             if (company.industryName) {
-                infoText += (infoText ? ' • ' : '') + company.industryName;
+                info += (info ? ' • ' : '') + company.industryName;
             }
-            $item.find('.company-info').text(infoText || 'Sin información adicional');
-
-            // Click handler
-            $item.on('click', function(e) {
-                e.preventDefault();
-                selectCompany(company);
-            });
-
-            $companySearchResults.append($item);
+            return info || 'Sin información adicional';
         }
 
-        // Select company
-        async function selectCompany(company) {
-            console.log(`[Company Search] Compañía seleccionada: ${company.name} (${company.id})`);
-
-            selectedCompanyId = company.id;
-            $companyHiddenInput.val(company.id);
-            $companySearchInput.val(company.name);
-            $companySearchResults.hide();
+        // Handle Company Change
+        $companySelect.on('change', async function() {
+            const companyId = $(this).val();
+            console.log(`[Company] Compañía seleccionada: ${companyId || 'ninguna'}`);
 
             // Reset dependent fields
             $categorySelect.val(null).trigger('change');
-            $categorySelect.prop('disabled', false);
+            $categorySelect.prop('disabled', true);
             $areaSelect.val(null).trigger('change');
             $areaSelect.prop('disabled', true);
             $areaRow.hide();
 
-            // 🔴 FIX: Trigger jQuery Validation re-check
-            $form.validate().element('#createCompany');
-            console.log('[Validation] Re-validando company_id');
+            if (companyId) {
+                selectedCompanyId = companyId;
 
-            // Load categories for this company
-            await loadCategories(company.id);
+                // 🔴 FIX: Trigger jQuery Validation re-check
+                $form.validate().element('#createCompany');
+                console.log('[Validation] Re-validando company_id');
 
-            // Check if company has areas enabled
-            await checkCompanyAreas(company.id);
-        }
+                // Load categories for this company
+                await loadCategories(companyId);
 
-        // Hide search results when clicking outside
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('#createCompanySearch, #company-search-results, #btn-search-company').length) {
-                $companySearchResults.hide();
+                // Check if company has areas enabled
+                await checkCompanyAreas(companyId);
+            } else {
+                selectedCompanyId = null;
             }
         });
 
@@ -498,6 +442,8 @@
                     placeholder: 'Selecciona una categoría...',
                     allowClear: true
                 });
+
+                $categorySelect.prop('disabled', false);
 
             } catch (error) {
                 console.error('[Categories] Error:', error);
@@ -854,7 +800,7 @@
                 const ticketData = {
                     title: $('#createTitle').val(),
                     description: $('#createDescription').val(),
-                    company_id: $companyHiddenInput.val(),
+                    company_id: $companySelect.val(),
                     category_id: $categorySelect.val(),
                     priority: $priorityHiddenInput.val()
                 };
@@ -941,9 +887,7 @@
             console.log('[Create Ticket] Reseteando formulario...');
 
             $form[0].reset();
-            $companySearchInput.val('');
-            $companyHiddenInput.val('');
-            $companySearchResults.hide();
+            $companySelect.val(null).trigger('change');
             $categorySelect.val(null).trigger('change');
             $categorySelect.prop('disabled', true);
             $areaSelect.val(null).trigger('change');
