@@ -49,9 +49,15 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="#" class="nav-link" data-filter="pending_my_reply">
+                                    <i class="fas fa-user-clock"></i> Pendiente de mi respuesta
+                                    <span class="badge bg-warning float-right count-pending-my-reply"></span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="#" class="nav-link" data-filter="awaiting_support">
                                     <i class="far fa-clock"></i> Esperando Soporte
-                                    <span class="badge bg-warning float-right count-awaiting"></span>
+                                    <span class="badge bg-secondary float-right count-awaiting"></span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -70,6 +76,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="#" class="nav-link" data-filter="requires_attention">
+                                    <i class="fas fa-exclamation-circle text-danger"></i> Requiere Atención
+                                    <span class="badge bg-danger float-right count-attention"></span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="#" class="nav-link" data-filter="new">
                                     <i class="fas fa-star"></i> Nuevos (Sin Asignar)
                                     <span class="badge bg-info float-right count-new"></span>
@@ -84,7 +96,7 @@
                             <li class="nav-item">
                                 <a href="#" class="nav-link" data-filter="awaiting_response">
                                     <i class="far fa-comments"></i> Esperando mi respuesta
-                                    <span class="badge bg-danger float-right count-awaiting-response"></span>
+                                    <span class="badge bg-warning float-right count-awaiting-response"></span>
                                 </a>
                             </li>
 
@@ -94,6 +106,12 @@
                                 <a href="#" class="nav-link active" data-filter="all">
                                     <i class="fas fa-inbox"></i> Todos
                                     <span class="badge bg-primary float-right count-total"></span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" data-filter="requires_attention">
+                                    <i class="fas fa-exclamation-circle text-danger"></i> Requiere Atención
+                                    <span class="badge bg-danger float-right count-attention"></span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -460,7 +478,6 @@
                 }
 
                 initRouting();
-                initRouting();
             }
 
             // Wait for jQuery
@@ -504,7 +521,7 @@
                 if (TicketConfig.role !== 'USER') statuses.push('new');
 
                 for (const status of statuses) {
-                    // Para USER, filtrar por sus propios tickets si es necesario, 
+                    // Para USER, filtrar por sus propios tickets si es necesario,
                     // pero la API /api/tickets ya filtra por el usuario autenticado por defecto.
                     const count = await getCount({ status: status });
                     $(`.count-status-${status}`).text(count > 0 ? count : '');
@@ -518,9 +535,20 @@
                     const total = await getCount({});
                     $('.count-total').text(total > 0 ? total : '');
 
-                    // Awaiting Support (last_response_author_type = user)
-                    const awaiting = await getCount({ last_response_author_type: 'user' });
-                    $('.count-awaiting').text(awaiting > 0 ? awaiting : '');
+                    // Pending My Reply (last_response_author_type = agent, status != closed/resolved)
+                    // We sum open + pending where agent replied last
+                    const pmrOpen = await getCount({ last_response_author_type: 'agent', status: 'open' });
+                    const pmrPending = await getCount({ last_response_author_type: 'agent', status: 'pending' });
+                    const pmrTotal = pmrOpen + pmrPending;
+                    $('.count-pending-my-reply').text(pmrTotal > 0 ? pmrTotal : '');
+
+                    // Awaiting Support (last_response_author_type = user or none, status != closed/resolved)
+                    // Note: 'none' is for new tickets
+                    const asUserOpen = await getCount({ last_response_author_type: 'user', status: 'open' });
+                    const asUserPending = await getCount({ last_response_author_type: 'user', status: 'pending' });
+                    const asNoneOpen = await getCount({ last_response_author_type: 'none', status: 'open' });
+                    const asTotal = asUserOpen + asUserPending + asNoneOpen;
+                    $('.count-awaiting').text(asTotal > 0 ? asTotal : '');
 
                     // Resolved
                     const resolved = await getCount({ status: 'resolved' });
@@ -533,18 +561,23 @@
                     const total = await getCount({});
                     $('.count-total').text(total > 0 ? total : '');
 
+                    // Requires Attention (Priority High + Open/Pending)
+                    const raOpen = await getCount({ priority: 'high', status: 'open' });
+                    const raPending = await getCount({ priority: 'high', status: 'pending' });
+                    const raTotal = raOpen + raPending;
+                    $('.count-attention').text(raTotal > 0 ? raTotal : '');
+
                     // New (Unassigned)
                     const newTickets = await getCount({ owner_agent_id: 'null' });
                     $('.count-new').text(newTickets > 0 ? newTickets : '');
 
                     // My Assigned (Active only: Open/Pending)
-                    // We fetch open and pending separately and sum them up
                     const assignedOpen = await getCount({ owner_agent_id: 'me', status: 'open' });
                     const assignedPending = await getCount({ owner_agent_id: 'me', status: 'pending' });
-                    $('.count-assigned').text((assignedOpen + assignedPending) > 0 ? (assignedOpen + assignedPending) : '');
+                    const assignedTotal = assignedOpen + assignedPending;
+                    $('.count-assigned').text(assignedTotal > 0 ? assignedTotal : '');
 
                     // Awaiting My Response (Assigned to me + User replied last + Active)
-                    // We filter by status open/pending to ensure we don't count resolved/closed
                     const awaitingOpen = await getCount({
                         owner_agent_id: 'me',
                         last_response_author_type: 'user',
@@ -564,6 +597,12 @@
                     // All
                     const total = await getCount({});
                     $('.count-total').text(total > 0 ? total : '');
+
+                    // Requires Attention (Priority High + Open/Pending)
+                    const raOpen = await getCount({ priority: 'high', status: 'open' });
+                    const raPending = await getCount({ priority: 'high', status: 'pending' });
+                    const raTotal = raOpen + raPending;
+                    $('.count-attention').text(raTotal > 0 ? raTotal : '');
 
                     // New (Unassigned)
                     const newTickets = await getCount({ owner_agent_id: 'null' });
