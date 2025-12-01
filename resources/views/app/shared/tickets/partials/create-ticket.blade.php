@@ -7,12 +7,61 @@
     <form id="form-create-ticket" novalidate>
         <div class="card-body">
 
-            {{-- Row 1: Company Select (Full Width) - Select2 Searchable Dropdown --}}
+            {{-- Row 1: Company Search (Full Width) - AdminLTE v3 Official Search Component --}}
             <div class="form-group">
-                <label for="createCompany">Compañía <span class="text-danger">*</span></label>
-                <select id="createCompany" name="company_id" class="form-control select2" style="width: 100%;" required>
-                    <option value="">Selecciona una compañía...</option>
-                </select>
+                <label for="companySearch">Compañía <span class="text-danger">*</span></label>
+                
+                {{-- Wrapper with position: relative for absolute positioning --}}
+                <div id="company-search-container" style="position: relative;">
+                    <div class="input-group">
+                        <input type="search" 
+                               id="companySearch" 
+                               class="form-control form-control-lg" 
+                               placeholder="Buscar compañía..."
+                               autocomplete="off">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-lg btn-default" id="btnSearchCompany">
+                                <i class="fa fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {{-- Dropdown Results (AdminLTE v3 Style) - Positioned Absolutely --}}
+                    <div id="companySearchResults" class="company-search-results" style="display: none;">
+                        <div class="list-group">
+                            {{-- Results will be dynamically loaded here --}}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Hidden input for form submission --}}
+                <input type="hidden" id="createCompany" name="company_id" required>
+                
+                {{-- Selected Company Card (AdminLTE v3 Official) --}}
+                <div id="selectedCompanyCard" class="card card-primary card-outline mt-3" style="display: none;">
+                    <div class="card-body box-profile">
+                        <div class="text-center">
+                            <img class="profile-user-img img-fluid img-circle" 
+                                 id="selectedCompanyLogo" 
+                                 src="" 
+                                 alt="Company Logo"
+                                 style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                        <h3 class="profile-username text-center" id="selectedCompanyName"></h3>
+                        <p class="text-muted text-center" id="selectedCompanyCode"></p>
+                        
+                        <ul class="list-group list-group-unbordered mb-3">
+                            <li class="list-group-item">
+                                <b>Industria</b> <span class="float-right" id="selectedCompanyIndustry"></span>
+                            </li>
+                        </ul>
+                        
+                        <button type="button" class="btn btn-outline-danger btn-block" id="btnClearCompany">
+                            <i class="fas fa-times"></i> Cambiar Compañía
+                        </button>
+                    </div>
+                </div>
+                
                 <small class="form-text text-muted">Busca y selecciona la compañía relacionada con este ticket</small>
             </div>
 
@@ -215,40 +264,120 @@
 }
 
 /* ========================================
-   SELECT2 CUSTOM TEMPLATES (Company Dropdown)
+   COMPANY SEARCH DROPDOWN (AdminLTE v3 Official Style)
    ======================================== */
-.select2-results__option .company-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+
+/* Search Results Dropdown - Positioned absolutely below search input */
+.company-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    margin-top: 2px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-.select2-results__option .company-logo {
-    width: 32px;
-    height: 32px;
+/* List Group Items (Company Results) */
+.company-search-results .list-group-item {
+    cursor: pointer;
+    border-left: 0;
+    border-right: 0;
+    padding: 0.75rem 1rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.company-search-results .list-group-item:first-child {
+    border-top: 0;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+}
+
+.company-search-results .list-group-item:last-child {
+    border-bottom: 0;
+    border-bottom-left-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.company-search-results .list-group-item:hover {
+    background-color: #f4f6f9;
+    border-color: #007bff;
+}
+
+/* Company Item Layout */
+.company-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.company-logo {
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     border-radius: 4px;
     background-color: #f4f4f4;
+    padding: 4px;
     flex-shrink: 0;
 }
 
-.select2-results__option .company-details {
+.company-details {
     flex: 1;
     min-width: 0;
 }
 
-.select2-results__option .company-name {
-    font-weight: 500;
+.company-name {
+    font-weight: 600;
     color: #333;
+    margin: 0;
+    line-height: 1.3;
+    font-size: 0.95rem;
+}
+
+.company-info {
+    font-size: 0.85rem;
+    color: #6c757d;
     margin: 0;
     line-height: 1.2;
 }
 
-.select2-results__option .company-info {
-    font-size: 0.85em;
+/* Empty State */
+.company-search-results .text-muted {
+    padding: 1rem;
+    text-align: center;
+}
+
+/* Loading State */
+.company-search-results .loading {
+    padding: 1rem;
+    text-align: center;
     color: #6c757d;
-    margin: 0;
-    line-height: 1.2;
+}
+
+/* Selected Company Card Styling (AdminLTE v3 Official Profile Card) */
+#selectedCompanyCard .profile-user-img {
+    border: 3px solid #adb5bd;
+    margin: 0 auto;
+    padding: 3px;
+}
+
+#selectedCompanyCard .profile-username {
+    font-size: 1.25rem;
+    margin: 10px 0 5px;
+}
+
+#selectedCompanyCard .list-group-unbordered > .list-group-item {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 /* ========================================
@@ -353,91 +482,121 @@
         const ALLOWED_EXTENSIONS = ['pdf','txt','log','doc','docx','xls','xlsx','csv','jpg','jpeg','png','gif','bmp','webp','svg','mp4'];
 
         // ==============================================================
-        // COMPANY SELECT2 - Searchable Dropdown with Custom Template
+        // COMPANY SEARCH - AdminLTE v3 Official Search Component
         // ==============================================================
 
-        $companySelect.select2({
-            theme: 'bootstrap4',
-            placeholder: 'Selecciona una compañía...',
-            allowClear: true,
-            minimumInputLength: 0, // Cargar datos iniciales sin escribir
-            ajax: {
-                url: '/api/companies/minimal',
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return {
-                        search: params.term || '', // Si no hay búsqueda, enviar vacío
-                        per_page: 20,
-                        page: params.page || 1
-                    };
-                },
-                processResults: function (data, params) {
-                    params.page = params.page || 1;
-                    return {
-                        results: data.data.map(function(company) {
-                            return {
-                                id: company.id,
-                                text: company.name,
-                                logoUrl: company.logoUrl,
-                                companyCode: company.companyCode,
-                                industryName: company.industryName
-                            };
-                        }),
-                        pagination: {
-                            more: (params.page * 20) < data.meta.total
-                        }
-                    };
-                },
-                cache: true
-            },
-            // Custom template para mostrar logo + datos en el dropdown
-            templateResult: formatCompanyOption,
-            // Template simple para la selección (solo nombre)
-            templateSelection: formatCompanySelection
-        });
+        const $companySearchInput = $('#companySearch');
+        const $companySearchBtn = $('#btnSearchCompany');
+        const $companySearchResults = $('#companySearchResults');
+        const $companyHiddenInput = $('#createCompany'); // Hidden input for form submission
+        const $selectedCompanyCard = $('#selectedCompanyCard');
+        const $btnClearCompany = $('#btnClearCompany');
 
-        // Template para el dropdown (muestra logo + nombre + info)
-        function formatCompanyOption(company) {
-            if (company.loading) {
-                return company.text;
-            }
+        let searchTimeout = null;
+        let currentSearchQuery = '';
+        let loadedCompanies = [];
 
-            if (!company.id) {
-                return company.text;
-            }
+        // Load companies instantly when clicking search input or button
+        function loadCompanies(searchQuery = '') {
+            console.log(`[Company Search] Cargando compañías con búsqueda: "${searchQuery}"`);
+            currentSearchQuery = searchQuery;
 
-            var $container = $(
-                '<div class="company-item">' +
-                    '<img class="company-logo" src="' + (company.logoUrl || '/img/default-company.png') + '" alt="Logo">' +
-                    '<div class="company-details">' +
-                        '<div class="company-name">' + company.text + '</div>' +
-                        '<div class="company-info">' + buildCompanyInfo(company) + '</div>' +
-                    '</div>' +
-                '</div>'
-            );
+            // Show loading state
+            $companySearchResults.html(`
+                <div class="list-group-item loading">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando compañías...
+                </div>
+            `).show();
 
-            return $container;
+            // Fetch companies from API
+            fetch(`/api/companies/minimal?search=${encodeURIComponent(searchQuery)}&per_page=50`)
+                .then(response => response.json())
+                .then(data => {
+                    loadedCompanies = data.data;
+                    console.log(`[Company Search] Compañías cargadas: ${loadedCompanies.length}`);
+
+                    if (loadedCompanies.length === 0) {
+                        $companySearchResults.html(`
+                            <div class="list-group-item text-muted">
+                                <i class="fas fa-info-circle"></i> No se encontraron compañías
+                            </div>
+                        `);
+                    } else {
+                        renderCompanies(loadedCompanies);
+                    }
+                })
+                .catch(error => {
+                    console.error('[Company Search] Error:', error);
+                    $companySearchResults.html(`
+                        <div class="list-group-item text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Error al cargar compañías
+                        </div>
+                    `);
+                });
         }
 
-        // Template para la selección (solo muestra el nombre)
-        function formatCompanySelection(company) {
-            return company.text || company.name || 'Selecciona una compañía...';
+        // Render companies in dropdown
+        function renderCompanies(companies) {
+            const $listGroup = $('<div class="list-group"></div>');
+
+            companies.forEach(company => {
+                const $item = $(`
+                    <a href="#" class="list-group-item list-group-item-action" data-company-id="${company.id}">
+                        <div class="company-item">
+                            <img class="company-logo" src="${company.logoUrl || '/img/default-company.png'}" alt="${company.name}">
+                            <div class="company-details">
+                                <div class="company-name">${company.name}</div>
+                                <div class="company-info">${buildCompanyInfo(company)}</div>
+                            </div>
+                        </div>
+                    </a>
+                `);
+
+                $item.on('click', function(e) {
+                    e.preventDefault();
+                    selectCompany(company);
+                });
+
+                $listGroup.append($item);
+            });
+
+            $companySearchResults.html($listGroup);
         }
 
-        // Helper para construir info (código + industria)
+        // Helper to build company info string
         function buildCompanyInfo(company) {
-            var info = company.companyCode || '';
+            let info = company.companyCode || '';
             if (company.industryName) {
                 info += (info ? ' • ' : '') + company.industryName;
             }
             return info || 'Sin información adicional';
         }
 
-        // Handle Company Change
-        $companySelect.on('change', async function() {
-            const companyId = $(this).val();
-            console.log(`[Company] Compañía seleccionada: ${companyId || 'ninguna'}`);
+        // Select a company and display card
+        function selectCompany(company) {
+            console.log(`[Company Search] Compañía seleccionada: ${company.name} (ID: ${company.id})`);
+
+            selectedCompanyId = company.id;
+            
+            // Update hidden input
+            $companyHiddenInput.val(company.id);
+
+            // Hide search results
+            $companySearchResults.hide();
+            
+            // Clear search input
+            $companySearchInput.val('');
+
+            // Display selected company card
+            $('#selectedCompanyLogo').attr('src', company.logoUrl || '/img/default-company.png');
+            $('#selectedCompanyName').text(company.name);
+            $('#selectedCompanyCode').text(company.companyCode || 'N/A');
+            $('#selectedCompanyIndustry').text(company.industryName || 'N/A');
+            $selectedCompanyCard.slideDown(300);
+
+            // 🔴 FIX: Trigger jQuery Validation re-check
+            $form.validate().element('#createCompany');
+            console.log('[Validation] Re-validando company_id');
 
             // Reset dependent fields
             $categorySelect.val(null).trigger('change');
@@ -446,20 +605,66 @@
             $areaSelect.prop('disabled', true);
             $areaRow.hide();
 
-            if (companyId) {
-                selectedCompanyId = companyId;
+            // Load categories for this company
+            loadCategories(company.id);
 
-                // 🔴 FIX: Trigger jQuery Validation re-check
-                $form.validate().element('#createCompany');
-                console.log('[Validation] Re-validando company_id');
+            // Check if company has areas enabled
+            checkCompanyAreas(company.id);
+        }
 
-                // Load categories for this company
-                await loadCategories(companyId);
+        // Clear selected company
+        $btnClearCompany.on('click', function() {
+            console.log('[Company Search] Limpiando selección de compañía');
+            
+            selectedCompanyId = null;
+            $companyHiddenInput.val('');
+            $selectedCompanyCard.slideUp(300);
+            $companySearchInput.val('').focus();
 
-                // Check if company has areas enabled
-                await checkCompanyAreas(companyId);
-            } else {
-                selectedCompanyId = null;
+            // Reset dependent fields
+            $categorySelect.val(null).trigger('change');
+            $categorySelect.prop('disabled', true);
+            $areaSelect.val(null).trigger('change');
+            $areaSelect.prop('disabled', true);
+            $areaRow.hide();
+        });
+
+        // Event: Click on search input - Load companies instantly
+        $companySearchInput.on('focus click', function() {
+            if (!selectedCompanyId) {
+                loadCompanies('');
+            }
+        });
+
+        // Event: Click on search button
+        $companySearchBtn.on('click', function() {
+            const query = $companySearchInput.val().trim();
+            loadCompanies(query);
+        });
+
+        // Event: Type in search input (debounced)
+        $companySearchInput.on('input', function() {
+            const query = $(this).val().trim();
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadCompanies(query);
+            }, 300);
+        });
+
+        // Event: Press Enter in search input
+        $companySearchInput.on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                const query = $(this).val().trim();
+                loadCompanies(query);
+            }
+        });
+
+        // Event: Click outside to close dropdown
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#company-search-container, #companySearchResults').length) {
+                $companySearchResults.hide();
             }
         });
 
