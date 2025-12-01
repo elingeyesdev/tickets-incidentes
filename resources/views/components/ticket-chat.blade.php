@@ -850,7 +850,7 @@
                     <img class="direct-chat-img" src="${avatarUrl}" alt="${authorName}">
                     <div class="direct-chat-text" style="${bgClass}; position: relative; padding-right: 85px;">
                         ${actionsHtml}
-                        <span class="message-content">${msg.content}</span>
+                        <pre style="font-family: inherit; font-size: inherit; color: inherit; margin: 0; padding: 0; white-space: pre-wrap; word-wrap: break-word;">${msg.content || ''}</pre>
                     </div>
                     ${attachmentsHtml}
                 </div>

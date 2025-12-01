@@ -696,6 +696,7 @@ class TicketController extends Controller
             'ownerAgent.profile',
             'company',
             'category',
+            'area',
         ]);
         $ticket->loadCount(['responses', 'attachments']);
 

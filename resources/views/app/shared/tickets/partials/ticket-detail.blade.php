@@ -260,7 +260,8 @@
                 $('#t-header-title').text(ticket.title);
                 $('#t-header-creator-name').text(ticket.created_by_user?.name || 'Desconocido');
                 $('#t-header-created-at').text(formatDate(ticket.created_at));
-                $('#t-header-description').html(ticket.description || '<i>Sin descripción</i>');
+                const descContent = ticket.description ? `<pre style="font-family: inherit; font-size: inherit; color: inherit; margin: 0; padding: 0; white-space: pre-wrap; word-wrap: break-word;">${ticket.description}</pre>` : '<i>Sin descripción</i>';
+                $('#t-header-description').html(descContent);
 
                 // Status Badge
                 const statusConfig = getStatusConfig(ticket.status);

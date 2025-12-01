@@ -81,7 +81,7 @@ class TicketService
         $query = Ticket::query();
 
         // Cargar relaciones para TicketListResource
-        $query->with(['creator.profile', 'ownerAgent.profile', 'category']);
+        $query->with(['creator.profile', 'ownerAgent.profile', 'category', 'area']);
         $query->withCount(['responses', 'attachments']);
 
         // Aplicar filtros de visibilidad según rol
