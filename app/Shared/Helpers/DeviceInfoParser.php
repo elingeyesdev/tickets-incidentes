@@ -26,7 +26,7 @@ class DeviceInfoParser
      * Extrae información del dispositivo desde un request HTTP
      *
      * @param Request|null $request Request de Laravel
-     * @return array{ip: string, user_agent: string|null, name: string}
+     * @return array{ip: string, user_agent_raw: string|null, user_agent: string|null, name: string}
      */
     public static function fromRequest(?Request $request): array
     {
@@ -37,7 +37,10 @@ class DeviceInfoParser
         $rawUserAgent = $request->userAgent();
         $ip = self::getClientIp($request);
 
-        // Normalizar user agent para apps móviles
+        // Guardar user agent raw para auditoría
+        $userAgentRaw = $rawUserAgent;
+
+        // Normalizar user agent completamente (apps móviles + navegadores)
         $normalizedUserAgent = self::normalizeUserAgent($rawUserAgent);
 
         // Parsear nombre amigable del dispositivo usando el user agent normalizado
@@ -46,22 +49,27 @@ class DeviceInfoParser
 
         return [
             'ip' => $ip ?? '127.0.0.1',
+            'user_agent_raw' => $userAgentRaw,
             'user_agent' => $normalizedUserAgent,
             'name' => $deviceName,
         ];
     }
 
     /**
-     * Normaliza el user agent para detectar y limpiar apps móviles nativas
+     * Normaliza el user agent para detectar y limpiar apps móviles y navegadores
      *
-     * Convierte user agents técnicos de apps móviles (okhttp, CFNetwork, Dart)
-     * a valores legibles y consistentes para mejor visualización y analytics.
+     * Convierte user agents técnicos a valores legibles y consistentes:
+     * - Apps móviles (okhttp, CFNetwork, Dart) → "Mobile App - X"
+     * - Navegadores desktop → "Browser on OS" (ej: "Chrome on Windows", "Edge on macOS")
+     * - Dispositivos móviles → marca o tipo (ej: "iPhone", "Android Phone")
      *
      * Ejemplos:
      * - "okhttp/4.12.0" → "Mobile App - Android"
      * - "CFNetwork/1445.104.11 Darwin/22.4.0" → "Mobile App - iOS"
      * - "Dart/3.0" → "Mobile App - Flutter"
-     * - "Mozilla/5.0..." (browsers) → mantiene original
+     * - "Mozilla/5.0 (Windows...)... Chrome/142... Safari/..." → "Chrome on Windows"
+     * - "Mozilla/5.0 (Windows...)... Edg/142... → "Edge on Windows"
+     * - "Mozilla/5.0 (iPhone...)..." → "iPhone"
      *
      * @param string|null $userAgent User agent raw del cliente
      * @return string|null User agent normalizado o null si está vacío
@@ -93,7 +101,48 @@ class DeviceInfoParser
             return 'Mobile App - Flutter';
         }
 
-        // Mantener user agents de browsers tal cual (Chrome, Firefox, Safari, etc.)
+        // Para otros user agents (navegadores y dispositivos móviles),
+        // usar la librería Agent para obtener un nombre normalizado
+        $agent = new Agent();
+        $agent->setUserAgent($userAgent);
+
+        // Detectar bots
+        if ($agent->isBot()) {
+            $botName = $agent->browser() ?? 'Bot';
+            return "{$botName} (Bot)";
+        }
+
+        // Obtener browser y OS
+        $browser = $agent->browser();
+        $platform = $agent->platform();
+
+        // Dispositivos móviles específicos
+        if ($agent->isPhone()) {
+            if (str_contains($userAgent, 'iPhone')) {
+                return 'iPhone';
+            }
+            if (str_contains($userAgent, 'Android')) {
+                return 'Android Phone';
+            }
+            return $browser ? "{$browser} Phone" : 'Mobile Phone';
+        }
+
+        if ($agent->isTablet()) {
+            if (str_contains($userAgent, 'iPad')) {
+                return 'iPad';
+            }
+            if (str_contains($userAgent, 'Android')) {
+                return 'Android Tablet';
+            }
+            return $browser ? "{$browser} Tablet" : 'Tablet';
+        }
+
+        // Navegadores de escritorio
+        if ($agent->isDesktop() && $browser && $platform) {
+            return "{$browser} on {$platform}";
+        }
+
+        // Fallback: mantener original si no se puede parsear
         return $userAgent;
     }
 
@@ -277,12 +326,13 @@ class DeviceInfoParser
      * Retorna información de dispositivo por defecto
      * Usado cuando no hay request disponible (tests, CLI, etc.)
      *
-     * @return array{ip_address: string, user_agent: string|null, device_name: string}
+     * @return array{ip: string, user_agent_raw: string|null, user_agent: string|null, name: string}
      */
     private static function getDefaultDeviceInfo(): array
     {
         return [
             'ip' => '127.0.0.1',
+            'user_agent_raw' => null,
             'user_agent' => null,
             'name' => 'Unknown Device',
         ];

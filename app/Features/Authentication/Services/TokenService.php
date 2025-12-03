@@ -85,6 +85,7 @@ class TokenService
             'token_hash' => $tokenHash,
             'device_name' => $deviceInfo['name'] ?? null,
             'ip_address' => $deviceInfo['ip'] ?? null,
+            'user_agent_raw' => $deviceInfo['user_agent_raw'] ?? null,
             'user_agent' => $deviceInfo['user_agent'] ?? null,
             'location' => $location,
             'expires_at' => now()->addMinutes($refreshTtl),
