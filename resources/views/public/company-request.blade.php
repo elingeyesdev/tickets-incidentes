@@ -1017,6 +1017,25 @@
                 feedback.textContent = '';
             });
 
+            let firstErrorField = null;
+            let firstErrorStep = null;
+
+            // Map field names to their step numbers
+            const fieldToStep = {
+                'company_name': 1,
+                'admin_email': 1,
+                'legal_name': 1,
+                'company_description': 2,
+                'industry_id': 2,
+                'website': 2,
+                'estimated_users': 2,
+                'contact_address': 3,
+                'contact_city': 3,
+                'contact_country': 3,
+                'contact_postal_code': 3,
+                'tax_id': 3
+            };
+
             // Map field names to their IDs for display in toasts
             const fieldLabels = {
                 'tax_id': 'ID Fiscal / NIT',
@@ -1050,6 +1069,12 @@
                         feedback.textContent = errorMessages[0]; // Show first error message
                         console.log(`[Validation] Mostrado error en campo: ${fieldName}`);
                     }
+
+                    // Track first error for scroll and step navigation
+                    if (!firstErrorField) {
+                        firstErrorField = field;
+                        firstErrorStep = fieldToStep[fieldName] || null;
+                    }
                 }
 
                 // Show each error in a toast (distinguished by type)
@@ -1072,6 +1097,27 @@
                     });
                 });
             });
+
+            // Navigate to step with first error and scroll to field
+            if (firstErrorField && firstErrorStep) {
+                console.log(`[Validation] Navegando al step ${firstErrorStep} con error`);
+
+                // Navigate stepper to the step with error
+                stepper.to(firstErrorStep - 1); // bs-stepper uses 0-based index
+
+                // Wait for stepper transition, then scroll to field
+                setTimeout(() => {
+                    firstErrorField.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    // Optional: focus the field to draw attention
+                    firstErrorField.focus();
+
+                    console.log('[Validation] ✓ Navegación y scroll completados');
+                }, 300);
+            }
 
             console.log('[Validation] Procesamiento de errores completado');
         }

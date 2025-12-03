@@ -691,7 +691,6 @@ class LargeBolivianCompaniesSeeder extends Seeder
                 ],
             ],
             'areas' => [
-            'areas' => [
                 [
                     'name' => 'Banca Corporativa y Empresarial',
                     'description' => 'Créditos empresariales, financiamiento de proyectos, productos especializados',
