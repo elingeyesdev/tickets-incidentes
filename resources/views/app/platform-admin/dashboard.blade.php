@@ -70,7 +70,7 @@
             <div class="icon">
                 <i class="fas fa-file-contract"></i>
             </div>
-            <a href="/app/admin/requests" class="small-box-footer">
+            <a href="/app/admin/company-requests" class="small-box-footer">
                 Revisar solicitudes <i class="fas fa-arrow-circle-right"></i>
             </a>
         </div>
@@ -147,7 +147,7 @@
                 </table>
             </div>
             <div class="card-footer clearfix">
-                <a href="/app/admin/requests" class="btn btn-sm btn-danger float-right">Ver todas las solicitudes</a>
+                <a href="/app/admin/company-requests" class="btn btn-sm btn-danger float-right">Ver todas las solicitudes</a>
             </div>
         </div>
     </div>
@@ -338,7 +338,7 @@ function renderPendingRequests(requests) {
             <td>${req.admin_email}</td>
             <td><small class="text-muted">${req.created_at}</small></td>
             <td>
-                <a href="/app/admin/requests" class="btn btn-xs btn-primary">
+                <a href="/app/admin/company-requests" class="btn btn-xs btn-primary">
                     <i class="fas fa-eye"></i> Revisar
                 </a>
             </td>
