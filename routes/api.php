@@ -26,6 +26,7 @@ use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController
 use App\Features\ContentManagement\Http\Controllers\ArticleController;
 use App\Features\TicketManagement\Http\Controllers\CategoryController;
 use App\Features\CompanyManagement\Http\Controllers\AreaController;
+use App\Features\TicketManagement\Http\Controllers\TicketPredictionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +37,23 @@ use App\Features\CompanyManagement\Http\Controllers\AreaController;
 | por el RouteServiceProvider dentro del grupo "api" con el prefijo /api
 |
 */
+
+// API root endpoint - serves OpenAPI/Swagger specification
+Route::get('/', function () {
+    $docsPath = storage_path('api-docs/api-docs.json');
+
+    if (file_exists($docsPath)) {
+        $docs = json_decode(file_get_contents($docsPath), true);
+        return response()->json($docs);
+    }
+
+    return response()->json([
+        'name' => 'Helpdesk API',
+        'version' => '1.0.0',
+        'status' => 'operational',
+        'documentation' => '/api/documentation',
+    ]);
+})->name('api.root');
 
 // Health check para REST API
 Route::get('health', [HealthController::class, 'check'])->name('api.health');
@@ -510,6 +528,11 @@ Route::bind('ticket', function ($value) {
 });
 
 Route::middleware('jwt.require')->group(function () {
+    // AI-powered area prediction for tickets (USER only)
+    Route::post('/tickets/predict-area', [TicketPredictionController::class, 'predictArea'])
+        ->middleware('role:USER')
+        ->name('tickets.predict-area');
+
     // Create ticket (USER only)
     Route::post('/tickets', [\App\Features\TicketManagement\Http\Controllers\TicketController::class, 'store'])
         ->middleware('role:USER')

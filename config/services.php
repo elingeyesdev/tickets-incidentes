@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        // Cambiado por defecto a la versión más reciente 'gemini-2.5-flash'
+        // Puedes sobrescribir con la variable de entorno GEMINI_MODEL si es necesario.
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
 ];

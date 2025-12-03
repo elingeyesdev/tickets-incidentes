@@ -65,14 +65,17 @@
                             </div>
                         </div>
                         
-                        {{-- Area Select (Conditional) - Integrated inside card --}}
-                        <div id="area-row-inside-card" class="mt-3" style="display: none;">
-                            <label for="createArea" class="mb-1" style="font-size: 0.875rem; font-weight: 600;">Área / Departamento</label>
-                            <select id="createArea" name="area_id" class="form-control select2" style="width: 100%;" disabled>
-                                <option value="">Selecciona un área (opcional)</option>
-                            </select>
-                            <small class="form-text text-muted">Selecciona el área o departamento relacionado</small>
+                        {{-- Area UI: reemplazamos el select por un placeholder que usará IA cuando la empresa tenga áreas habilitadas --}}
+                        <div id="area-ai-row" class="mt-3" style="display: none;">
+                            <label class="mb-1" style="font-size: 0.875rem; font-weight: 600;">Área / Departamento</label>
+                            <div id="area-ai-content" class="p-3 border rounded" style="background:#fafafa;">
+                                <div id="area-ai-placeholder" class="text-muted"><strong>(N/A)</strong> — Selecciona una categoría para que <span style="color: #0066cc; font-weight: 600;">HELPDESK IA</span> seleccione automáticamente el mejor área para tu ticket.</div>
+                            </div>
+                            <small class="form-text text-muted">Utilizamos IA para sugerir el área más adecuada.</small>
                         </div>
+
+                        {{-- Hidden input que almacenará el area_id sugerido por la IA para el envío del formulario --}}
+                        <input type="hidden" id="createAreaHidden" name="area_id">
                     </div>
                 </div>
                 
@@ -776,6 +779,13 @@
             if (categoryId) {
                 $form.validate().element('#createCategory');
             }
+            // If company has areas enabled, use IA to predict area when a category is selected
+            if (companyHasAreas && categoryId) {
+                const $opt = $categorySelect.find(`option[value="${categoryId}"]`);
+                const categoryName = $opt.text();
+                const categoryDescription = $opt.data('description') || '';
+                predictAreaForCategory(selectedCompanyId, categoryName, categoryDescription);
+            }
         });
 
         // ==============================================================
@@ -803,10 +813,16 @@
                 console.log(`[Areas] Áreas habilitadas: ${companyHasAreas}`);
 
                 if (companyHasAreas) {
-                    $areaRow.show();
-                    await loadAreas(companyId);
+                    // Usaremos IA para determinar el área automáticamente.
+                    // Ocultamos el select tradicional y mostramos el placeholder IA.
+                    $areaRow.hide();
+                    $('#area-ai-row').show();
+                    // Inicial placeholder
+                    $('#area-ai-content').html('<div id="area-ai-placeholder" class="text-muted">(N/A) — Selecciona una categoría para que HELPDESK IA seleccione automáticamente el mejor área para tu ticket.</div>');
+                    // Do not call loadAreas() to avoid rendering the select2
                 } else {
                     $areaRow.hide();
+                    $('#area-ai-row').hide();
                     $areaSelect.val(null).trigger('change');
                 }
 
@@ -881,6 +897,8 @@
                 });
 
                 $areaSelect.prop('disabled', false);
+                // Ensure AI hidden input is cleared when manual areas are available
+                $('#createAreaHidden').val('');
 
             } catch (error) {
                 console.error('[Areas] Error:', error);
@@ -1171,7 +1189,11 @@
                 };
 
                 // Add area_id if visible and selected
-                if ($areaRow.is(':visible') && $areaSelect.val()) {
+                // If we have an AI-predicted area, prefer it
+                const aiArea = $('#createAreaHidden').val();
+                if (aiArea) {
+                    ticketData.area_id = aiArea;
+                } else if ($areaRow.is(':visible') && $areaSelect.val()) {
                     ticketData.area_id = $areaSelect.val();
                 }
 
@@ -1245,6 +1267,89 @@
             } finally {
                 $submitBtn.prop('disabled', false).html(originalBtnText);
             }
+        }
+
+        // ==============================================================
+        // AI Prediction for Area
+        // ==============================================================
+
+        async function predictAreaForCategory(companyId, categoryName, categoryDescription) {
+            console.log(`[AI] Solicitando predicción de área para company=${companyId} category="${categoryName}"`);
+
+            // Show loading UI
+            $('#area-ai-content').html(`<div class="d-flex align-items-center">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                <div>
+                    <div style="font-weight:600">Utilizando HELPDESK IA...</div>
+                    <div class="small text-muted">Estamos buscando la mejor área para tu ticket. Esto puede tardar unos segundos.</div>
+                </div>
+            </div>`);
+
+            try {
+                const token = window.tokenManager.getAccessToken();
+                const payload = {
+                    company_id: companyId,
+                    category_name: categoryName,
+                    category_description: categoryDescription
+                };
+
+                const resp = await fetch(`/api/tickets/predict-area`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const body = await resp.json();
+
+                if (!resp.ok) {
+                    console.warn('[AI] Respuesta no OK', body);
+                    $('#area-ai-content').html(`<div class="text-danger">No se pudo determinar automáticamente el área. Intenta nuevamente o selecciona manualmente.</div>`);
+                    $('#createAreaHidden').val('');
+                    return;
+                }
+
+                if (body.success && body.data && body.data.predicted_area_id) {
+                    const areaId = body.data.predicted_area_id;
+                    const areaName = body.data.area_name || 'Área sugerida';
+                    const areaDesc = body.data.area_description || '';
+                    const confidence = body.data.confidence || '';
+
+                    $('#area-ai-content').html(`
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div style="font-weight:600">${escapeHtml(areaName)}</div>
+                                <div class="small text-muted">${escapeHtml(areaDesc)}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="badge badge-info">Sugerido</span>
+                                ${confidence ? `<div class="small text-muted">${escapeHtml(confidence)}</div>` : ''}
+                            </div>
+                        </div>
+                    `);
+
+                    // Set hidden input for submission
+                    $('#createAreaHidden').val(areaId);
+                    console.log(`[AI] Área sugerida: ${areaName} (${areaId})`);
+                } else {
+                    console.warn('[AI] No se recibió área válida', body);
+                    $('#area-ai-content').html(`<div class="text-warning">No se pudo determinar automáticamente el área. Por favor selecciona manualmente si lo deseas.</div>`);
+                    $('#createAreaHidden').val('');
+                }
+
+            } catch (err) {
+                console.error('[AI] Error al predecir área', err);
+                $('#area-ai-content').html(`<div class="text-danger">Error al conectar con HELPDESK IA. Intenta nuevamente más tarde.</div>`);
+                $('#createAreaHidden').val('');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return $('<div/>').text(text).html();
         }
 
         // Reset Form Function

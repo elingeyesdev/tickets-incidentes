@@ -412,46 +412,75 @@
              */
             async function loadFilterOptions() {
                 const token = window.tokenManager.getAccessToken();
-                if (!token) return;
-
-                // Load Categories
-                try {
-                    // Assuming we have an endpoint or we can use the company ID if available
-                    // For now, let's try to fetch from a general endpoint or company specific
-                    // Since we don't have a direct 'list all categories' endpoint handy in context,
-                    // we might need to rely on what we know. 
-                    // However, usually there is /api/categories?company_id=...
-
-                    if (TicketConfig.companyId) {
-                        // Fetch Categories
-                        $.ajax({
-                            url: `/api/categories?company_id=${TicketConfig.companyId}&is_active=true`,
-                            method: 'GET',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            success: function (response) {
-                                const categories = response.data || [];
-                                categories.forEach(cat => {
-                                    $filterCategory.append(new Option(cat.name, cat.id));
-                                });
-                            }
-                        });
-
-                        // Fetch Areas
-                        $.ajax({
-                            url: `/api/areas?company_id=${TicketConfig.companyId}&is_active=true`,
-                            method: 'GET',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            success: function (response) {
-                                const areas = response.data || [];
-                                areas.forEach(area => {
-                                    $filterArea.append(new Option(area.name, area.id));
-                                });
-                            }
-                        });
-                    }
-                } catch (e) {
-                    console.warn('[Tickets List] Error loading filter options', e);
+                if (!token) {
+                    console.warn('[Tickets List] No access token available');
+                    return;
                 }
+
+                if (!TicketConfig.companyId) {
+                    console.warn('[Tickets List] No company ID available');
+                    return;
+                }
+
+                // Fetch Categories from /api/tickets/categories
+                $.ajax({
+                    url: `/api/tickets/categories`,
+                    method: 'GET',
+                    data: {
+                        company_id: TicketConfig.companyId,
+                        is_active: true,
+                        per_page: 100
+                    },
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    success: function (response) {
+                        console.log('[Tickets List] Categories loaded:', response);
+                        const categories = response.data || [];
+                        if (categories.length > 0) {
+                            categories.forEach(cat => {
+                                $filterCategory.append(new Option(cat.name, cat.id));
+                            });
+                            console.log(`[Tickets List] Added ${categories.length} categories to filter`);
+                        } else {
+                            console.warn('[Tickets List] No categories returned from API');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('[Tickets List] Error loading categories:', error, xhr.responseText);
+                    }
+                });
+
+                // Fetch Areas from /api/areas
+                $.ajax({
+                    url: `/api/areas`,
+                    method: 'GET',
+                    data: {
+                        company_id: TicketConfig.companyId,
+                        is_active: true,
+                        per_page: 100
+                    },
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    success: function (response) {
+                        console.log('[Tickets List] Areas loaded:', response);
+                        const areas = response.data || [];
+                        if (areas.length > 0) {
+                            areas.forEach(area => {
+                                $filterArea.append(new Option(area.name, area.id));
+                            });
+                            console.log(`[Tickets List] Added ${areas.length} areas to filter`);
+                        } else {
+                            console.warn('[Tickets List] No areas returned from API');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('[Tickets List] Error loading areas:', error, xhr.responseText);
+                    }
+                });
             }
 
             // ==============================================================
