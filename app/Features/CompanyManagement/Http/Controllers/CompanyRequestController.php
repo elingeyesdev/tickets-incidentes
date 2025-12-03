@@ -209,12 +209,43 @@ class CompanyRequestController extends Controller
 
     /**
      * Crear solicitud de empresa (público, con rate limit).
+     *
+     * VALIDACIÓN DE DUPLICADOS - 4 CAPAS:
+     *
+     * 1. TAX ID (NIT/RUC)
+     *    - Validación: Exacta (0 tolerancia)
+     *    - Acción: Bloquea creación (error)
+     *    - Fuente: Solicitudes pendientes + Empresas registradas
+     *    - Mensaje: Especifica empresa/solicitud duplicada
+     *
+     * 2. ADMIN EMAIL + NOMBRE SIMILAR
+     *    - Validación: Email exacto + similitud de nombre
+     *    - Umbrales:
+     *      * Similitud > 70%: Bloquea creación (error sospechoso)
+     *      * Similitud 30-70%: Advertencia (no bloquea)
+     *    - Fuente: support_email en empresas registradas
+     *    - Intención: Prevenir misma persona creando empresa duplicada
+     *
+     * 3. WEBSITE DOMAIN + NOMBRE SIMILAR
+     *    - Validación: Dominio exacto + similitud de nombre
+     *    - Umbral: Similitud > 50% = Bloquea creación (error)
+     *    - Fuente: Empresas registradas
+     *    - Intención: Prevenir usar mismo dominio corporativo
+     *
+     * 4. NOMBRE MUY SIMILAR
+     *    - Validación: Similitud de nombre > 85%
+     *    - Acción: Advertencia (NO bloquea, solo alerta)
+     *    - Fuente: Empresas registradas + Solicitudes pendientes
+     *    - Mensaje: "ADVERTENCIA: Ya existe empresa con nombre muy similar"
+     *
+     * Algoritmo: Levenshtein Distance normalizado (0-1) después de normalizar nombres.
+     * Normalización: lowercase + sin acentos + solo alfanuméricos
      */
     #[OA\Post(
         path: '/api/company-requests',
         operationId: 'create_company_request',
         summary: 'Create company request',
-        description: 'Public endpoint to create new company request. Rate limit: 3 requests per hour. Automatic validation of duplicate email in pending requests.',
+        description: 'Public endpoint to create new company request. Rate limit: 3 requests per hour. Includes advanced duplicate detection using tax ID, email, website domain, and name similarity algorithms.',
         tags: ['Company Requests'],
         requestBody: new OA\RequestBody(
             required: true,
@@ -396,7 +427,78 @@ class CompanyRequestController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 422, description: 'Validation error - invalid data or duplicate email'),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error - invalid data or duplicate detection',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(
+                            property: 'success',
+                            type: 'boolean',
+                            example: false
+                        ),
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'Error de validación'
+                        ),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            description: 'Errores de validación por campo. Puede incluir: campo_requerido, formato_inválido, o errores_de_duplicados',
+                            properties: [
+                                new OA\Property(
+                                    property: 'tax_id',
+                                    type: 'array',
+                                    description: 'Error: NIT/Tax ID duplicado (bloquea creación)',
+                                    items: new OA\Items(
+                                        type: 'string',
+                                        example: 'Ya existe una solicitud pendiente con el NIT/Tax ID "12.345.678-9" para la empresa "TechCorp S.A.".'
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'admin_email',
+                                    type: 'array',
+                                    description: 'Error: Email admin duplicado con nombre similar >70% (bloquea creación)',
+                                    items: new OA\Items(
+                                        type: 'string',
+                                        example: 'El email "admin@techcorp.com" ya es el email de soporte de la empresa "TechCorp Solutions" (código: TECH-001). Si deseas administrar esta empresa, contacta con el administrador de plataforma.'
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'website',
+                                    type: 'array',
+                                    description: 'Error: Dominio de website duplicado con nombre similar >50% (bloquea creación)',
+                                    items: new OA\Items(
+                                        type: 'string',
+                                        example: 'Ya existe una empresa con el mismo sitio web (dominio: techcorp.com): "TechCorp Solutions". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma.'
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'company_name',
+                                    type: 'array',
+                                    description: 'Advertencia: Nombre muy similar >85% (no bloquea, solo advierte)',
+                                    items: new OA\Items(
+                                        type: 'string',
+                                        example: 'ADVERTENCIA: Ya existe una empresa con nombre muy similar: "TechCorp Solutions" (código: TECH-001). Si es la misma empresa, contacta con el administrador de plataforma.'
+                                    )
+                                ),
+                                new OA\Property(
+                                    property: 'company_name',
+                                    type: 'array',
+                                    description: 'Advertencia: Email admin con nombre débilmente similar 30-70% (no bloquea, solo advierte)',
+                                    items: new OA\Items(
+                                        type: 'string',
+                                        example: 'ADVERTENCIA: El email "admin@techcorp.com" ya está asociado a la empresa "TechCorp" que tiene un nombre similar. Verifica que no sean la misma empresa.'
+                                    )
+                                ),
+                            ],
+                            example: new \stdClass()
+                        ),
+                    ]
+                )
+            ),
             new OA\Response(response: 429, description: 'Rate limit exceeded - maximum 3 requests per hour'),
         ]
     )]

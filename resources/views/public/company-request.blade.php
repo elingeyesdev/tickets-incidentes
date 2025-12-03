@@ -289,6 +289,7 @@
                                 type="text"
                                 class="form-control"
                                 id="companyName"
+                                name="company_name"
                                 placeholder="Ej: Mi Empresa S.A."
                                 required
                             >
@@ -302,6 +303,7 @@
                                 type="email"
                                 class="form-control"
                                 id="adminEmail"
+                                name="admin_email"
                                 placeholder="admin@example.com"
                                 required
                             >
@@ -315,6 +317,7 @@
                                 type="text"
                                 class="form-control"
                                 id="legalName"
+                                name="legal_name"
                                 placeholder="Razón social de la empresa"
                             >
                             <div class="invalid-feedback"></div>
@@ -341,6 +344,7 @@
                             <textarea
                                 class="form-control"
                                 id="businessDescription"
+                                name="company_description"
                                 rows="4"
                                 placeholder="Describe brevemente tu empresa y su actividad (50-1000 caracteres)"
                                 required
@@ -357,6 +361,7 @@
                             <select
                                 class="form-control"
                                 id="industryType"
+                                name="industry_id"
                                 required
                             >
                                 <option value="">Selecciona una industria...</option>
@@ -371,6 +376,7 @@
                                 type="url"
                                 class="form-control"
                                 id="website"
+                                name="website"
                                 placeholder="https://www.example.com"
                             >
                             <div class="invalid-feedback"></div>
@@ -383,6 +389,7 @@
                                 type="number"
                                 class="form-control"
                                 id="estimatedUsers"
+                                name="estimated_users"
                                 placeholder="100"
                                 min="1"
                             >
@@ -415,6 +422,7 @@
                                 type="text"
                                 class="form-control"
                                 id="contactAddress"
+                                name="contact_address"
                                 placeholder="Calle y número"
                             >
                         </div>
@@ -426,6 +434,7 @@
                                 type="text"
                                 class="form-control"
                                 id="contactCity"
+                                name="contact_city"
                                 placeholder="Ciudad"
                             >
                         </div>
@@ -436,6 +445,7 @@
                             <select
                                 class="form-control"
                                 id="contactCountry"
+                                name="contact_country"
                             >
                                 <option value="">Selecciona un país...</option>
                                 <option value="Argentina">🇦🇷 Argentina</option>
@@ -471,6 +481,7 @@
                                 type="text"
                                 class="form-control"
                                 id="contactPostalCode"
+                                name="contact_postal_code"
                                 placeholder="Código postal"
                             >
                         </div>
@@ -482,6 +493,7 @@
                                 type="text"
                                 class="form-control"
                                 id="taxId"
+                                name="tax_id"
                                 placeholder="Número de identificación fiscal"
                             >
                         </div>
@@ -861,9 +873,11 @@
         }
 
         // ============================================================
-        // STEP 9: Submit Form
+        // STEP 9: Submit Form with Enhanced Error Handling
         // ============================================================
         async function submitForm() {
+            console.log('[Company Request] Iniciando envío de solicitud...');
+
             const submitBtn = document.getElementById('submitBtn');
             const originalText = submitBtn.innerHTML;
 
@@ -889,21 +903,33 @@
                     tax_id: data.taxId || null
                 };
 
-                console.log('📤 Enviando payload:', payload);
+                console.log('[Company Request] Payload a enviar:', payload);
 
                 const response = await fetch('/api/company-requests', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json', // CRÍTICO: Le dice a Laravel que queremos JSON
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify(payload)
                 });
 
-                const result = await response.json();
+                console.log('[Company Request] Respuesta recibida - Status:', response.status);
 
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                const isJson = contentType && contentType.includes('application/json');
+
+                let result = null;
+                if (isJson) {
+                    result = await response.json();
+                    console.log('[Company Request] Datos JSON:', result);
+                }
+
+                // Handle success
                 if (response.ok) {
-                    console.log('✅ Solicitud enviada exitosamente:', result);
+                    console.log('[Company Request] ✅ Solicitud enviada exitosamente');
 
                     // Show AdminLTE Native Toasts (Non-blocking notification)
                     $(document).Toasts('create', {
@@ -925,11 +951,40 @@
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 4000);
-                } else {
-                    throw new Error(result.message || 'Error al enviar la solicitud');
+                    return; // Exit early on success
                 }
+
+                // Handle specific HTTP status codes
+                if (response.status === 429) {
+                    // Rate limit exceeded
+                    console.log('[Company Request] ⏱️ Rate limit excedido');
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'Demasiadas Solicitudes',
+                        subtitle: 'Límite de uso',
+                        body: 'Has enviado demasiadas solicitudes. Por favor, espera unos minutos antes de intentar nuevamente. Límite: 3 solicitudes por hora.',
+                        icon: 'fas fa-clock',
+                        autohide: false,
+                        position: 'topRight'
+                    });
+                    return;
+                }
+
+                if (response.status === 422 && isJson && result.errors) {
+                    // Validation errors
+                    console.log('[Company Request] ❌ Errores de validación detectados:', result.errors);
+                    handleValidationErrors(result.errors);
+                    return;
+                }
+
+                // Handle other errors
+                const errorMessage = (isJson && result?.message)
+                    ? result.message
+                    : `Error del servidor (${response.status})`;
+
+                throw new Error(errorMessage);
             } catch (error) {
-                console.error('❌ Error:', error);
+                console.error('[Company Request] ❌ Error capturado:', error);
 
                 // Show AdminLTE Native Toasts for Error (Critical notification)
                 $(document).Toasts('create', {
@@ -938,8 +993,7 @@
                     subtitle: 'Intenta nuevamente',
                     body: error.message || 'Ocurrió un error inesperado al procesar tu solicitud.',
                     icon: 'fas fa-exclamation-circle',
-                    autohide: true,
-                    delay: 7000,
+                    autohide: false, // Los errores NO se cierran automáticamente
                     position: 'topRight'
                 });
             } finally {
@@ -950,6 +1004,79 @@
         }
 
         // ============================================================
+        // Enhanced Validation Error Handler
+        // ============================================================
+        function handleValidationErrors(errors) {
+            console.log('[Validation] Procesando errores de validación...');
+
+            // Clear all previous error states
+            document.querySelectorAll('.form-control').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            document.querySelectorAll('.invalid-feedback').forEach(feedback => {
+                feedback.textContent = '';
+            });
+
+            // Map field names to their IDs for display in toasts
+            const fieldLabels = {
+                'tax_id': 'ID Fiscal / NIT',
+                'admin_email': 'Email del Administrador',
+                'website': 'Sitio Web',
+                'company_name': 'Nombre de la Empresa',
+                'company_description': 'Descripción de la Empresa',
+                'industry_id': 'Tipo de Industria',
+                'estimated_users': 'Usuarios Estimados',
+                'contact_address': 'Dirección',
+                'contact_city': 'Ciudad',
+                'contact_country': 'País',
+                'contact_postal_code': 'Código Postal',
+                'legal_name': 'Razón Social'
+            };
+
+            // Process each field error
+            Object.keys(errors).forEach(fieldName => {
+                const errorMessages = errors[fieldName];
+                console.log(`[Validation] Campo: ${fieldName}`, errorMessages);
+
+                // Find the form field by name attribute
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    // Mark field as invalid
+                    field.classList.add('is-invalid');
+
+                    // Find and update the feedback element
+                    const feedback = field.closest('.form-group')?.querySelector('.invalid-feedback');
+                    if (feedback && errorMessages.length > 0) {
+                        feedback.textContent = errorMessages[0]; // Show first error message
+                        console.log(`[Validation] Mostrado error en campo: ${fieldName}`);
+                    }
+                }
+
+                // Show each error in a toast (distinguished by type)
+                errorMessages.forEach(message => {
+                    const fieldLabel = fieldLabels[fieldName] || fieldName;
+
+                    // Check if it's a warning (ADVERTENCIA prefix)
+                    const isWarning = message.includes('ADVERTENCIA');
+
+                    console.log(`[Toast] Mostrando ${isWarning ? 'advertencia' : 'error'}: ${message}`);
+
+                    $(document).Toasts('create', {
+                        class: isWarning ? 'bg-warning' : 'bg-danger',
+                        title: isWarning ? 'Advertencia de Validación' : 'Error de Validación',
+                        subtitle: fieldLabel,
+                        body: message,
+                        icon: isWarning ? 'fas fa-exclamation-circle' : 'fas fa-times-circle',
+                        autohide: false, // Los errores NO se cierran automáticamente para que el usuario sepa por qué falló
+                        position: 'topRight'
+                    });
+                });
+            });
+
+            console.log('[Validation] Procesamiento de errores completado');
+        }
+
+        // ============================================================
         // STEP 10: Helper Functions
         // ============================================================
         function escapeHtml(text) {
@@ -957,5 +1084,64 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        function showError(message) {
+            console.error('[Error]', message);
+            $(document).Toasts('create', {
+                class: 'bg-danger',
+                title: 'Error',
+                body: message,
+                icon: 'fas fa-times-circle',
+                autohide: false, // Los errores NO se cierran automáticamente
+                position: 'topRight'
+            });
+        }
+
+        // ============================================================
+        // STEP 11: Clear Validation Errors on Input
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to clear errors when user starts typing
+            document.querySelectorAll('.form-control').forEach(field => {
+                field.addEventListener('input', function() {
+                    // Check if field had error BEFORE clearing
+                    const hadError = this.classList.contains('is-invalid');
+
+                    // Remove error state
+                    this.classList.remove('is-invalid');
+
+                    // Clear error message
+                    const feedback = this.closest('.form-group')?.querySelector('.invalid-feedback');
+                    if (feedback && feedback.textContent) {
+                        feedback.textContent = '';
+                    }
+
+                    // Only log if there was actually an error cleared
+                    if (hadError) {
+                        console.log(`[FormClean] ✓ Campo corregido: ${this.name || this.id}`);
+                    }
+                });
+            });
+
+            // Same for selects (change event)
+            document.querySelectorAll('select.form-control').forEach(field => {
+                field.addEventListener('change', function() {
+                    const hadError = this.classList.contains('is-invalid');
+
+                    this.classList.remove('is-invalid');
+                    const feedback = this.closest('.form-group')?.querySelector('.invalid-feedback');
+                    if (feedback && feedback.textContent) {
+                        feedback.textContent = '';
+                    }
+
+                    if (hadError) {
+                        console.log(`[FormClean] ✓ Campo corregido: ${this.name || this.id}`);
+                    }
+                });
+            });
+
+            console.log('[FormClean] ✓ Auto-limpieza de errores activada');
+        });
+
     </script>
 @endsection
