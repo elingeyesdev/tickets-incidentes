@@ -73,6 +73,47 @@ class CompanyIndustrySeeder extends Seeder
                 'name' => 'Energía',
                 'description' => 'Electricidad, petróleo, renovables',
             ],
+            // Nuevas industrias añadidas para mayor granularidad
+            [
+                'code' => 'telecommunications',
+                'name' => 'Telecomunicaciones',
+                'description' => 'Operadores de telefonía móvil/fija, ISPs y servicios de telecom',
+            ],
+            [
+                'code' => 'food_and_beverage',
+                'name' => 'Alimentos y Bebidas',
+                'description' => 'Productores, procesadores y distribuidores de alimentos y bebidas',
+            ],
+            [
+                'code' => 'pharmacy',
+                'name' => 'Farmacéutica / Farmacias',
+                'description' => 'Cadenas de farmacias, distribución farmacéutica y productos de salud',
+            ],
+            [
+                'code' => 'electronics',
+                'name' => 'Electrónica y Hardware',
+                'description' => 'Tiendas y distribuidores de equipos electrónicos, componentes y hardware',
+            ],
+            [
+                'code' => 'banking',
+                'name' => 'Banca',
+                'description' => 'Bancos comerciales y servicios bancarios',
+            ],
+            [
+                'code' => 'supermarket',
+                'name' => 'Supermercado',
+                'description' => 'Cadenas de supermercados y tiendas de abarrotes',
+            ],
+            [
+                'code' => 'veterinary',
+                'name' => 'Veterinaria',
+                'description' => 'Clínicas veterinarias, servicios de cuidado animal y tiendas para mascotas',
+            ],
+            [
+                'code' => 'beverage',
+                'name' => 'Bebidas',
+                'description' => 'Productores y distribuidores de bebidas (cervecerías, bebidas no alcohólicas)',
+            ],
             [
                 'code' => 'agriculture',
                 'name' => 'Agricultura',

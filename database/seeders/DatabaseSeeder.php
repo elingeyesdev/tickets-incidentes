@@ -6,8 +6,9 @@ use Illuminate\Database\Seeder;
 use App\Features\UserManagement\Database\Seeders\RolesSeeder;
 use App\Features\CompanyManagement\Database\Seeders\CompanyIndustrySeeder;
 use App\Features\UserManagement\Database\Seeders\DefaultUserSeeder;
-use App\Features\CompanyManagement\Database\Seeders\RealBolivianCompaniesSeeder;
-use App\Features\CompanyManagement\Database\Seeders\PublishBolivianCompanyLogosSeeder;
+use App\Features\CompanyManagement\Database\Seeders\LargeBolivianCompaniesSeeder;
+use App\Features\CompanyManagement\Database\Seeders\MediumBolivianCompaniesSeeder;
+use App\Features\CompanyManagement\Database\Seeders\SmallBolivianCompaniesSeeder;
 
 // Articles
 use App\Features\ContentManagement\Database\Seeders\PilAndinaHelpCenterArticlesSeeder;
@@ -38,27 +39,26 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanyIndustrySeeder::class);
         $this->call(DefaultUserSeeder::class);
 
-        // 2. Companies
-        $this->call(RealBolivianCompaniesSeeder::class);
-        
-        // 3. Logos (from resources/logos to public storage)
-        $this->call(PublishBolivianCompanyLogosSeeder::class);
+        // 2. Companies (incluye logos integrados)
+        $this->call(LargeBolivianCompaniesSeeder::class);
+        $this->call(MediumBolivianCompaniesSeeder::class);
+        $this->call(SmallBolivianCompaniesSeeder::class);
 
-        // 4. Articles (One by one)
+        // 3. Articles (One by one)
         $this->call(PilAndinaHelpCenterArticlesSeeder::class);
         $this->call(BancoFassilHelpCenterArticlesSeeder::class);
         $this->call(YPFBHelpCenterArticlesSeeder::class);
         $this->call(TigoHelpCenterArticlesSeeder::class);
         $this->call(CBNHelpCenterArticlesSeeder::class);
 
-        // 5. Announcements (One by one)
+        // 4. Announcements (One by one)
         $this->call(PilAndinaAnnouncementsSeeder::class);
         $this->call(BancoFassilAnnouncementsSeeder::class);
         $this->call(YPFBAnnouncementsSeeder::class);
         $this->call(TigoAnnouncementsSeeder::class);
         $this->call(CerveceriaBolividanaAnnouncementsSeeder::class);
 
-        // 6. Tickets
+        // 5. Tickets
         $this->call(PilAndinaTicketsSeeder::class);
     }
 }

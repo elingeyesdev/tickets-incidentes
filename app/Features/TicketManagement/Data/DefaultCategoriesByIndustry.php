@@ -303,6 +303,190 @@ final class DefaultCategoriesByIndustry
             ],
         ],
 
+        'telecommunications' => [
+            [
+                'name' => 'Incidente de Red',
+                'description' => 'Cortes de red, torres, conectividad móvil o fija',
+            ],
+            [
+                'name' => 'Degradación de Servicio',
+                'description' => 'Latencia, baja velocidad, jitter y problemas de calidad de servicio',
+            ],
+            [
+                'name' => 'Instalación y Activación',
+                'description' => 'Solicitudes de activación de líneas, migraciones o instalaciones',
+            ],
+            [
+                'name' => 'Facturación y Planes',
+                'description' => 'Consultas sobre facturas, cargos y cambios de plan',
+            ],
+            [
+                'name' => 'Soporte Técnico',
+                'description' => 'Soporte técnico general para equipos y servicios de telecomunicaciones',
+            ],
+        ],
+
+        'food_and_beverage' => [
+            [
+                'name' => 'Problema de Producción',
+                'description' => 'Incidentes en líneas de producción, paro de planta o control de procesos',
+            ],
+            [
+                'name' => 'Control de Calidad',
+                'description' => 'Problemas de calidad del producto, devoluciones o inspecciones',
+            ],
+            [
+                'name' => 'Logística y Distribución',
+                'description' => 'Gestión de inventarios, cadena de frío y distribución de productos',
+            ],
+            [
+                'name' => 'Seguridad Alimentaria',
+                'description' => 'Incidentes relacionados con inocuidad, contaminaciones o retiros de producto',
+            ],
+            [
+                'name' => 'Soporte Técnico',
+                'description' => 'Soporte a sistemas productivos y maquinarias de planta',
+            ],
+        ],
+
+        'pharmacy' => [
+            [
+                'name' => 'Atención Farmacéutica',
+                'description' => 'Consultas sobre dispensación, disponibilidad de medicamentos y recomendaciones',
+            ],
+            [
+                'name' => 'Gestión de Sucursales',
+                'description' => 'Operaciones de puntos de venta, horarios y stock',
+            ],
+            [
+                'name' => 'Cumplimiento y Regulación',
+                'description' => 'Consultas sobre normativas sanitarias y farmacovigilancia',
+            ],
+            [
+                'name' => 'Cadena de Suministro',
+                'description' => 'Problemas con proveedores, logística y entrega de medicamentos',
+            ],
+            [
+                'name' => 'Facturación y Pagos',
+                'description' => 'Consultas sobre facturación, reembolsos y cobros',
+            ],
+        ],
+
+        'electronics' => [
+            [
+                'name' => 'Problema de Hardware',
+                'description' => 'Fallas en equipos, garantías y devoluciones',
+            ],
+            [
+                'name' => 'Configuración e Instalación',
+                'description' => 'Asistencia para montaje, drivers y puesta en marcha',
+            ],
+            [
+                'name' => 'Garantía y Reparación',
+                'description' => 'Solicitudes de reparación, RMA y cobertura de garantía',
+            ],
+            [
+                'name' => 'Pedido y Envío',
+                'description' => 'Consultas sobre pedidos, tracking y devoluciones',
+            ],
+            [
+                'name' => 'Soporte Técnico',
+                'description' => 'Soporte general para productos electrónicos y periféricos',
+            ],
+        ],
+
+        'banking' => [
+            [
+                'name' => 'Operaciones Bancarias',
+                'description' => 'Transacciones, procesamiento y servicios de cuentas',
+            ],
+            [
+                'name' => 'Problemas de Transacción',
+                'description' => 'Errores en transferencias, cargos incorrectos o fallos de pago',
+            ],
+            [
+                'name' => 'Seguridad y Fraude',
+                'description' => 'Reportes de actividad sospechosa, fraudes y accesos no autorizados',
+            ],
+            [
+                'name' => 'Cumplimiento y Regulación',
+                'description' => 'Consultas sobre KYC, cumplimiento normativo y auditorías',
+            ],
+            [
+                'name' => 'Soporte Técnico',
+                'description' => 'Soporte para plataformas bancarias y servicios digitales',
+            ],
+        ],
+
+        'supermarket' => [
+            [
+                'name' => 'Operaciones de Tienda',
+                'description' => 'Gestión de sucursales, inventarios y atención en tienda',
+            ],
+            [
+                'name' => 'Cadena de Frío y Perecibles',
+                'description' => 'Incidentes relacionados con perecibles y almacenamiento en frío',
+            ],
+            [
+                'name' => 'Pedido y Logística',
+                'description' => 'Reposición, distribución y logística de almacén',
+            ],
+            [
+                'name' => 'Promociones y Precios',
+                'description' => 'Consultas sobre ofertas, precios y promociones',
+            ],
+            [
+                'name' => 'Atención al Cliente',
+                'description' => 'Consultas de clientes, devoluciones y quejas',
+            ],
+        ],
+
+        'veterinary' => [
+            [
+                'name' => 'Citas y Atención',
+                'description' => 'Agendamiento y consultas de atención veterinaria',
+            ],
+            [
+                'name' => 'Suministros y Medicamentos',
+                'description' => 'Disponibilidad y dispensación de productos veterinarios',
+            ],
+            [
+                'name' => 'Urgencias',
+                'description' => 'Consultas por emergencias y atención prioritaria',
+            ],
+            [
+                'name' => 'Historial Médico Animal',
+                'description' => 'Acceso y actualización de historiales médicos de mascotas',
+            ],
+            [
+                'name' => 'Facturación y Pagos',
+                'description' => 'Consultas sobre facturas, pagos y seguros veterinarios',
+            ],
+        ],
+
+        'beverage' => [
+            [
+                'name' => 'Control de Calidad',
+                'description' => 'Pruebas de calidad, lotes y cumplimiento de estándares',
+            ],
+            [
+                'name' => 'Producción y Planta',
+                'description' => 'Incidentes de planta, procesos y mantenimiento',
+            ],
+            [
+                'name' => 'Distribución y Logística',
+                'description' => 'Envíos, almacenamiento y logística de bebidas',
+            ],
+            [
+                'name' => 'Marketing y Marca',
+                'description' => 'Promociones, eventos y gestión de marca',
+            ],
+            [
+                'name' => 'Soporte Técnico',
+                'description' => 'Soporte a maquinaria y sistemas de producción',
+            ],
+        ],
+
         'agriculture' => [
             [
                 'name' => 'Problema de Equipo',
