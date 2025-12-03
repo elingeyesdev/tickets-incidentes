@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features\CompanyManagement\Services;
 
 use App\Features\CompanyManagement\Events\CompanyActivated;
@@ -8,6 +10,7 @@ use App\Features\CompanyManagement\Events\CompanySuspended;
 use App\Features\CompanyManagement\Events\CompanyUpdated;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\UserManagement\Models\User;
+use App\Shared\Exceptions\ErrorWithExtensions;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -18,10 +21,43 @@ class CompanyService
 {
     /**
      * Crear una nueva empresa.
+     *
+     * VALIDACIÓN DE DUPLICADOS (Defense in Depth - Última línea de defensa):
+     * Valida que no exista una empresa con el mismo tax_id antes de crear.
+     * Esta es la última capa de protección después de:
+     * 1. Unique constraint en base de datos
+     * 2. Validación en FormRequest
+     *
+     * @throws ErrorWithExtensions Si se detecta tax_id duplicado
      */
     public function create(array $data, User $adminUser): Company
     {
         return DB::transaction(function () use ($data, $adminUser) {
+            // ========================================================================
+            // VALIDACIÓN CRÍTICA: Tax ID duplicado (última línea de defensa)
+            // ========================================================================
+            if (! empty($data['tax_id'])) {
+                $existingCompany = Company::where('tax_id', $data['tax_id'])->first();
+
+                if ($existingCompany) {
+                    throw ErrorWithExtensions::validation(
+                        sprintf(
+                            'Ya existe una empresa con el NIT/Tax ID "%s": "%s" (código: %s). No se puede crear empresa duplicada.',
+                            $data['tax_id'],
+                            $existingCompany->name,
+                            $existingCompany->company_code
+                        ),
+                        'DUPLICATE_TAX_ID',
+                        [
+                            'existingCompanyId' => $existingCompany->id,
+                            'existingCompanyName' => $existingCompany->name,
+                            'existingCompanyCode' => $existingCompany->company_code,
+                            'attemptedTaxId' => $data['tax_id'],
+                        ]
+                    );
+                }
+            }
+
             // Generar código único de empresa
             $companyCode = CodeGenerator::generate('business.companies', 'CMP', 'company_code');
 
@@ -88,7 +124,7 @@ class CompanyService
             }
 
             // Actualizar empresa
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $company->update($updateData);
             }
 
@@ -220,7 +256,7 @@ class CompanyService
         if (isset($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ILIKE', "%{$filters['search']}%")
-                  ->orWhere('legal_name', 'ILIKE', "%{$filters['search']}%");
+                    ->orWhere('legal_name', 'ILIKE', "%{$filters['search']}%");
             });
         }
 
@@ -240,8 +276,6 @@ class CompanyService
     /**
      * Subir archivo de logo de la empresa
      *
-     * @param Company $company
-     * @param UploadedFile $file
      * @return string Logo URL
      */
     public function uploadLogo(Company $company, UploadedFile $file): string
@@ -260,7 +294,7 @@ class CompanyService
         );
 
         // Generar URL completa
-        $logoUrl = asset('storage/' . $path);
+        $logoUrl = asset('storage/'.$path);
 
         // Actualizar empresa con URL del logo
         $company->update(['logo_url' => $logoUrl]);
@@ -271,8 +305,6 @@ class CompanyService
     /**
      * Subir archivo de favicon de la empresa
      *
-     * @param Company $company
-     * @param UploadedFile $file
      * @return string Favicon URL
      */
     public function uploadFavicon(Company $company, UploadedFile $file): string
@@ -291,7 +323,7 @@ class CompanyService
         );
 
         // Generar URL completa
-        $faviconUrl = asset('storage/' . $path);
+        $faviconUrl = asset('storage/'.$path);
 
         // Actualizar empresa con URL del favicon
         $company->update(['favicon_url' => $faviconUrl]);

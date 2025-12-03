@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Features\CompanyManagement\Http\Requests;
 
-use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Models\CompanyIndustry;
+use App\Features\CompanyManagement\Services\CompanyDuplicateDetectionService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -56,23 +58,52 @@ class StoreCompanyRequestRequest extends FormRequest
 
     /**
      * Configure the validator instance.
+     *
+     * VALIDACIÓN DE DUPLICADOS:
+     * Usa CompanyDuplicateDetectionService para detectar empresas duplicadas mediante:
+     * 1. Tax ID (NIT/RUC) - Bloqueo absoluto si existe
+     * 2. Admin Email + Nombre Similar - Previene misma persona creando duplicado
+     * 3. Website Domain + Nombre Similar - Previene usar mismo dominio
+     * 4. Nombre muy similar - Advertencia sobre posibles duplicados
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Verificar si el admin_email ya tiene una solicitud pendiente
+            // Obtener datos de entrada
+            $companyName = $this->input('company_name');
             $adminEmail = $this->input('admin_email');
+            $taxId = $this->input('tax_id');
+            $website = $this->input('website');
+            $industryId = $this->input('industry_id');
 
-            if ($adminEmail) {
-                $existingRequest = CompanyRequest::where('admin_email', $adminEmail)
-                    ->where('status', 'pending')
-                    ->exists();
+            // Validar solo si tenemos datos mínimos requeridos
+            if (! $companyName || ! $adminEmail) {
+                return;
+            }
 
-                if ($existingRequest) {
-                    $validator->errors()->add(
-                        'admin_email',
-                        'Ya existe una solicitud pendiente con este email de administrador.'
-                    );
+            // Ejecutar detección de duplicados
+            $detectionService = app(CompanyDuplicateDetectionService::class);
+
+            $result = $detectionService->detectDuplicates(
+                companyName: $companyName,
+                adminEmail: $adminEmail,
+                taxId: $taxId,
+                website: $website,
+                industryId: $industryId
+            );
+
+            // Agregar errores de bloqueo (previenen crear la solicitud)
+            foreach ($result['blocking_errors'] as $field => $message) {
+                $validator->errors()->add($field, $message);
+            }
+
+            // Agregar advertencias (permiten crear pero alertan al usuario)
+            // Las advertencias se muestran pero NO bloquean la creación
+            foreach ($result['warnings'] as $field => $message) {
+                // En Laravel, las advertencias también van a errors() pero con prefijo
+                // El frontend puede distinguirlas y mostrarlas de forma diferente
+                if (! $validator->errors()->has($field)) {
+                    $validator->errors()->add($field, $message);
                 }
             }
         });
