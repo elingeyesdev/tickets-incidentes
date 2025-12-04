@@ -234,6 +234,17 @@ class AuthController
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
+                )
+                ->cookie(
+                    'jwt_token',
+                    $payload['access_token'],
+                    60, // minutes
+                    '/',
+                    null,
+                    !app()->isLocal(),
+                    false, // Not HttpOnly
+                    false, // raw
+                    'lax'
                 );
         } catch (\Exception $e) {
             // Las excepciones son capturadas por ApiExceptionHandler middleware
@@ -421,6 +432,17 @@ class AuthController
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
+                )
+                ->cookie(
+                    'jwt_token',
+                    $payload['access_token'],
+                    60, // minutes
+                    '/',
+                    null,
+                    !app()->isLocal(),
+                    false, // Not HttpOnly
+                    false, // raw
+                    'lax'
                 );
         } catch (\Exception $e) {
             throw $e;
