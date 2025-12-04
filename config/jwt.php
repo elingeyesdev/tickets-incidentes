@@ -37,9 +37,11 @@ return [
     | Default: 60 minutos (1 hora)
     | Recomendado: 15-60 minutos para seguridad
     |
+    | TEMPORAL: 1 minuto para testing
+    |
     */
 
-    'ttl' => env('JWT_TTL', 60),
+    'ttl' => env('JWT_TTL', 1), // TESTING: 1 minute
 
     /*
     |--------------------------------------------------------------------------

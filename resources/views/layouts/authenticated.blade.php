@@ -201,6 +201,30 @@
                 localStorage.setItem('helpdesk_token_expiry', expiryTimestamp.toString());
                 localStorage.setItem('helpdesk_token_issued_at', now.toString());
 
+                // CRITICAL: Extract and set active_role from the new token
+                try {
+                    const payload = JSON.parse(atob(serverToken.access_token.split('.')[1]));
+                    
+                    // If the token has an active_role claim, use it
+                    if (payload.active_role) {
+                        localStorage.setItem('active_role', JSON.stringify(payload.active_role));
+                        console.log('[Server Refresh] Active role updated from token', payload.active_role);
+                    } 
+                    // Fallback: If no active_role in token, try to infer from roles list (if single role)
+                    else if (payload.roles && payload.roles.length === 1) {
+                        const role = payload.roles[0];
+                        const activeRole = {
+                            code: role.code,
+                            company_id: role.company_id || null,
+                            company_name: role.company_name || null
+                        };
+                        localStorage.setItem('active_role', JSON.stringify(activeRole));
+                        console.log('[Server Refresh] Active role inferred from single role', activeRole);
+                    }
+                } catch (e) {
+                    console.error('[Server Refresh] Failed to parse active role from new token:', e);
+                }
+
                 console.log('[Server Refresh] Token injected into localStorage', {
                     expiresIn: serverToken.expires_in,
                     expiryTimestamp
@@ -295,28 +319,62 @@
 
         // Add global logout function
         window.logout = async function () {
+            console.log('[LOGOUT FRONTEND] Logout initiated');
+            
             try {
                 const token = tokenManager.getAccessToken();
+                
+                console.log('[LOGOUT FRONTEND] Current token state:', {
+                    hasToken: !!token,
+                    tokenLength: token ? token.length : 0,
+                    localStorageKeys: Object.keys(localStorage),
+                });
 
                 if (token) {
-                    await fetch('/api/auth/logout', {
+                    console.log('[LOGOUT FRONTEND] Calling logout API');
+                    
+                    const response = await fetch('/api/auth/logout', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`,
                         },
                     });
+                    
+                    console.log('[LOGOUT FRONTEND] Logout API response:', {
+                        status: response.status,
+                        ok: response.ok,
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[LOGOUT FRONTEND] Logout API response data:', data);
+                    }
+                } else {
+                    console.warn('[LOGOUT FRONTEND] No token available, skipping API call');
                 }
 
                 // Clear tokens
+                console.log('[LOGOUT FRONTEND] Clearing tokens from TokenManager');
                 tokenManager.clearTokens();
+                
+                // Also clear any other auth-related items
+                console.log('[LOGOUT FRONTEND] Clearing additional localStorage items');
+                localStorage.removeItem('active_role');
+                localStorage.removeItem('last_email');
+                
+                console.log('[LOGOUT FRONTEND] localStorage after cleanup:', Object.keys(localStorage));
 
                 // Redirect to login
+                console.log('[LOGOUT FRONTEND] Redirecting to /login');
                 window.location.href = '/login';
             } catch (error) {
-                console.error('Logout error:', error);
+                console.error('[LOGOUT FRONTEND] Logout error:', error);
                 // Clear tokens anyway
+                console.log('[LOGOUT FRONTEND] Error occurred, clearing tokens anyway');
                 tokenManager.clearTokens();
+                localStorage.removeItem('active_role');
+                localStorage.removeItem('last_email');
                 window.location.href = '/login';
             }
         };

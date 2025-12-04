@@ -179,10 +179,17 @@ class SessionController
                 throw new AuthenticationException('User not authenticated');
             }
 
+            \Illuminate\Support\Facades\Log::info('[LOGOUT] Logout initiated', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'everywhere' => $request->input('everywhere', false),
+            ]);
+
             // Replicar exactamente LogoutMutation
             $everywhere = $request->input('everywhere') ?? false;
 
             if ($everywhere) {
+                \Illuminate\Support\Facades\Log::info('[LOGOUT] Logging out from all devices');
                 // Logout de todas las sesiones (todos los dispositivos)
                 $this->authService->logoutAllDevices($user->id);
             } else {
@@ -198,6 +205,7 @@ class SessionController
                 }
 
                 if (!$accessToken) {
+                    \Illuminate\Support\Facades\Log::warning('[LOGOUT] No access token in header');
                     throw new AuthenticationException('Access token required for logout');
                 }
 
@@ -205,9 +213,16 @@ class SessionController
                 $refreshToken = $request->header('X-Refresh-Token')
                     ?? $request->cookie('refresh_token');
 
+                \Illuminate\Support\Facades\Log::info('[LOGOUT] Tokens detected', [
+                    'has_access_token' => !!$accessToken,
+                    'access_token_length' => $accessToken ? strlen($accessToken) : 0,
+                    'has_refresh_token' => !!$refreshToken,
+                    'refresh_token_length' => $refreshToken ? strlen($refreshToken) : 0,
+                ]);
+
                 if (!$refreshToken) {
                     // Si no hay refresh token, solo invalidamos el access token
-                    \Illuminate\Support\Facades\Log::warning('Logout without refresh token - only access token will be blacklisted', [
+                    \Illuminate\Support\Facades\Log::warning('[LOGOUT] Logout without refresh token - only access token will be blacklisted', [
                         'user_id' => $user->id,
                     ]);
                 }
@@ -215,29 +230,51 @@ class SessionController
                 // Llamar al servicio para logout
                 $this->authService->logout($accessToken, $refreshToken ?? '', $user->id);
 
-                \Illuminate\Support\Facades\Log::info('User logged out from current session', [
+                \Illuminate\Support\Facades\Log::info('[LOGOUT] User logged out from current session', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                 ]);
             }
+
+            \Illuminate\Support\Facades\Log::info('[LOGOUT] Creating response with cleared cookies (jwt_token + refresh_token)', [
+                'secure' => !app()->isLocal(),
+            ]);
 
             return response()
                 ->json([
                     'success' => true,
                     'message' => 'Logged out successfully',
                 ], 200)
+                // CRITICAL: Clear refresh_token (HttpOnly)
                 ->cookie(
                     'refresh_token',
                     '',
-                    0, // minutes
+                    0, // minutes - expires immediately
                     '/', // path
                     null, // domain
                     !app()->isLocal(), // secure
                     true, // httpOnly
                     false, // raw
                     'lax' // sameSite
+                )
+                // CRITICAL FIX: Also clear jwt_token to prevent interference with future logins
+                ->cookie(
+                    'jwt_token',
+                    '',
+                    0, // minutes - expires immediately
+                    '/', // path
+                    null, // domain
+                    !app()->isLocal(), // secure
+                    false, // httpOnly (false because JS needs to read it normally)
+                    false, // raw
+                    'lax' // sameSite
                 );
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('[LOGOUT] Logout exception', [
+                'exception_class' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             throw $e;
         }
     }

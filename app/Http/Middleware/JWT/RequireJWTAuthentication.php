@@ -50,21 +50,45 @@ class RequireJWTAuthentication
      */
     public function handle(Request $request, Closure $next): Response
     {
+        \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Request received', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'expects_json' => $request->expectsJson(),
+            'has_auth_header' => $request->hasHeader('Authorization'),
+            'has_jwt_cookie' => $request->hasCookie('jwt_token'),
+            'has_refresh_cookie' => $request->hasCookie('refresh_token'),
+        ]);
+        
         try {
             // Extract token from header
             $token = $this->extractJWTToken($request);
 
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Token extraction result', [
+                'token_found' => !!$token,
+                'token_length' => $token ? strlen($token) : 0,
+                'token_preview' => $token ? substr($token, 0, 20) . '...' : null,
+            ]);
+
             // REQUIRED: Token must be present
             if (!$token) {
+                \Illuminate\Support\Facades\Log::warning('[JWT MIDDLEWARE] No token found, throwing unauthenticated exception');
                 throw AuthenticationException::unauthenticated();
             }
 
             // Authenticate user with token
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Attempting to authenticate user with token');
             $this->authenticateUser($request);
-
+            
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Authentication successful, proceeding with request');
             return $next($request);
 
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('[JWT MIDDLEWARE] Authentication exception caught', [
+                'exception_class' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'expects_json' => $request->expectsJson(),
+            ]);
+            
             // If request expects JSON (API), rethrow to let ExceptionHandler handle it (returns 401 JSON)
             if ($request->expectsJson()) {
                 if ($e instanceof TokenExpiredException) {
@@ -83,10 +107,17 @@ class RequireJWTAuthentication
             // SERVER-SIDE AUTO-REFRESH (For Web Requests)
             // If authentication failed (expired/missing), try to refresh using the HttpOnly cookie
             $refreshToken = $request->cookie('refresh_token');
+            
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Web request, checking for refresh token', [
+                'has_refresh_token' => !!$refreshToken,
+                'refresh_token_length' => $refreshToken ? strlen($refreshToken) : 0,
+            ]);
 
             if ($refreshToken) {
 
                 try {
+                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Attempting server-side auto-refresh');
+                    
                     // Attempt to refresh token
                     $deviceInfo = \App\Shared\Helpers\DeviceInfoParser::fromRequest($request);
                     $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
@@ -94,7 +125,10 @@ class RequireJWTAuthentication
                     // If successful, we have a new access token
                     $newAccessToken = $result['access_token'];
 
-                    \Illuminate\Support\Facades\Log::info('Refresh successful, authenticating with new token');
+                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Refresh successful, authenticating with new token', [
+                        'new_token_length' => strlen($newAccessToken),
+                        'expires_in' => $result['expires_in'],
+                    ]);
 
                     // Manually authenticate the user with the new token so the request can proceed
                     $this->processJWTToken($request, $newAccessToken);
@@ -112,6 +146,11 @@ class RequireJWTAuthentication
                     // Attach new cookies to the response
                     $cookieLifetime = (int) config('jwt.refresh_ttl');
                     $secure = config('app.env') === 'production';
+
+                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Attaching new cookies to response', [
+                        'cookie_lifetime' => $cookieLifetime,
+                        'secure' => $secure,
+                    ]);
 
                     // 1. New Access Token Cookie (Not Encrypted, for JS)
                     $response->withCookie(cookie(
@@ -139,20 +178,25 @@ class RequireJWTAuthentication
                         'strict'
                     ));
 
+                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Server-side auto-refresh completed successfully');
                     return $response;
 
                 } catch (\Exception $refreshError) {
                     // Refresh failed (invalid/expired refresh token or token validation error)
                     // Log and fall through to redirect
-                    \Illuminate\Support\Facades\Log::warning('Server-side auto-refresh failed', [
+                    \Illuminate\Support\Facades\Log::warning('[JWT MIDDLEWARE] Server-side auto-refresh failed', [
                         'error' => $refreshError->getMessage(),
                         'type' => get_class($refreshError)
                     ]);
                     // Fall through to redirect below
                 }
+            } else {
+                \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] No refresh token available, cannot auto-refresh');
             }
 
             // If it's a Web request (Browser) and refresh failed, redirect to login AND CLEAR COOKIE
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Redirecting to login with session_expired reason');
+            
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
                 redirect()->route('login', ['reason' => 'session_expired'])
                     ->with('error', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')

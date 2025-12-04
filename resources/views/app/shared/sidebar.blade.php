@@ -206,8 +206,8 @@
 
             init() {
                 this.loadUserData();
-                this.detectActiveRole();
-                this.loadCompanyRequestsCount();
+                // Wait for token to be available (in case of server-side injection)
+                this.waitForTokenAndDetectRole();
             },
 
             loadUserData() {
@@ -219,16 +219,27 @@
                 }
             },
 
-            detectActiveRole() {
+            waitForTokenAndDetectRole(attempts = 0) {
                 if (typeof getUserFromJWT === 'function') {
                     const userData = getUserFromJWT();
+                    
                     if (userData && userData.activeRole) {
                         this.activeRole = userData.activeRole.code;
                         console.log('Sidebar: Active role detected:', this.activeRole);
-                    } else {
-                        console.warn('Sidebar: No active role found in JWT');
-                        this.activeRole = null;
+                        this.loadCompanyRequestsCount(); // Load counts only after role is detected
+                        return;
                     }
+                }
+
+                // If no role found and we haven't retried too many times, wait and retry
+                // This handles the race condition where sidebar inits before token injection script finishes
+                if (attempts < 5) {
+                    setTimeout(() => {
+                        this.waitForTokenAndDetectRole(attempts + 1);
+                    }, 100);
+                } else {
+                    console.warn('Sidebar: No active role found in JWT after retries');
+                    this.activeRole = null;
                 }
             },
 

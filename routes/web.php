@@ -85,16 +85,22 @@ Route::get('/tests/helpcenter-knowledge-base', function () {
 // ========== PUBLIC ROUTES ==========
 
 // Welcome / Landing page
-Route::get('/', function () {
-    if (request()->hasCookie('jwt_token')) {
-        return redirect()->route('dashboard');
-    }
-    return view('public.welcome');
-})->name('welcome');
+// ========== PUBLIC ROUTES ==========
 
+// Root Route - The Entry Point "Auth Loader"
+// This page loads first, checks auth status via AJAX, syncs localStorage, and redirects appropriately.
+Route::get('/', function () {
+    return view('auth.loading');
+})->name('root');
+
+// Auth Check Endpoint (Called by auth.loading view)
+Route::get('/auth/check-status', [\App\Http\Controllers\Auth\CheckAuthStatusController::class, 'check'])
+    ->name('auth.check-status');
+
+// Welcome / Landing page (Redirected to if guest)
 Route::get('/welcome', function () {
     return view('public.welcome');
-});
+})->name('welcome');
 
 // Company Request / Solicitud de Empresa
 Route::get('/solicitud-empresa', function () {
@@ -164,12 +170,40 @@ Route::get('/auth/prepare-web', function () {
         $refreshTokenData = $tokenService->createRefreshToken($user, $deviceInfo);
 
         // Token is valid, establish cookies and redirect
+        $cookieLifetimeMinutes = (int) config('jwt.ttl'); // Access token TTL in minutes
+        $refreshCookieLifetimeMinutes = (int) config('jwt.refresh_ttl'); // Refresh token TTL in minutes
+        $secure = config('app.env') === 'production';
+
         return redirect($redirect)
-            // 3rd Token: Non-HttpOnly so JS can keep it in sync
-            ->cookie('jwt_token', $token, config('jwt.ttl'), '/', null, false, false)
-            // Refresh Token: HttpOnly for security
-            ->cookie('refresh_token', $refreshTokenData['token'], config('jwt.refresh_ttl'), '/', null, !app()->isLocal(), true, false, 'lax');
+            // Access Token Cookie (Not HttpOnly - JS needs to read it)
+            ->cookie(
+                'jwt_token',                    // name
+                $token,                         // value
+                $cookieLifetimeMinutes,        // minutes
+                '/',                            // path
+                null,                           // domain
+                $secure,                        // secure
+                false,                          // httpOnly (false so JS can read it)
+                false,                          // raw
+                'lax'                           // sameSite
+            )
+            // Refresh Token Cookie (HttpOnly for security)
+            ->cookie(
+                'refresh_token',                // name
+                $refreshTokenData['token'],     // value
+                $refreshCookieLifetimeMinutes,  // minutes
+                '/',                            // path
+                null,                           // domain
+                $secure,                        // secure
+                true,                           // httpOnly (true for security)
+                false,                          // raw
+                'lax'                           // sameSite
+            );
     } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('[AUTH PREPARE-WEB] Token validation failed', [
+            'error' => $e->getMessage(),
+            'token_preview' => $token ? substr($token, 0, 20) . '...' : null,
+        ]);
         return redirect('/login')->with('error', 'Token inválido: ' . $e->getMessage());
     }
 })->name('auth.prepare-web');
