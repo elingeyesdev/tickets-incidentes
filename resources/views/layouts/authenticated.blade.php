@@ -388,9 +388,13 @@
         document.addEventListener('DOMContentLoaded', function () {
             const token = tokenManager.getAccessToken();
             console.log('[Auth Check] Token available:', !!token);
+            // GUARDIA DE FRONTEND:
+            // Si no hay token en JS, pero estamos en una página protegida (lo cual significa que el servidor nos dejó entrar),
+            // entonces hay una desincronización. Redirigimos a la "Aduana" (/) para que nos resincronice.
             if (!token) {
-                console.log('[Auth Check] No valid token found, redirecting to login');
-                window.location.href = '/login?reason=session_expired';
+                console.warn('[Auth Check] No valid token found in localStorage. Redirecting to Auth Loader for resync.');
+                // Pasamos la URL actual para volver después
+                window.location.href = '/?redirect_to=' + encodeURIComponent(window.location.href);
             }
         });
     </script>

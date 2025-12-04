@@ -15,6 +15,16 @@ class RedirectIfAuthenticatedJWT
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Check if the JWT cookie OR the Refresh Token cookie exists
+        // If either exists, we send them to the Auth Loader to try and restore the session.
+        if ($request->hasCookie('jwt_token') || $request->hasCookie('refresh_token')) {
+            \Log::info('[RedirectIfAuthenticatedJWT] Found auth cookies, redirecting to root', [
+                'jwt' => $request->hasCookie('jwt_token'),
+                'refresh' => $request->hasCookie('refresh_token')
+            ]);
+            return redirect()->route('root');
+        }
+
         return $next($request);
     }
 }

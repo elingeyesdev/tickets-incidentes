@@ -181,6 +181,20 @@ class RefreshTokenController
                 'strict'                            // SameSite (strict para máxima seguridad)
             );
 
+            // TAMBIÉN actualizar la cookie de Access Token (jwt_token)
+            // Esto es CRÍTICO para que la navegación web subsiguiente no falle en el middleware
+            $response->cookie(
+                'jwt_token',
+                $result['access_token'],
+                $result['expires_in'] / 60,         // Minutos
+                '/',
+                null,
+                config('app.env') === 'production',
+                false,                              // Not HttpOnly (JS lo necesita)
+                false,                              // Raw
+                'lax'                               // SameSite
+            );
+
             Log::info('Token refreshed successfully via REST endpoint', [
                 'ip' => $deviceInfo['ip'],
                 'device' => $deviceInfo['name'],

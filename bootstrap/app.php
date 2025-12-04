@@ -74,6 +74,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role.selected' => \App\Http\Middleware\EnsureRoleSelected::class,  // ← Ensure user has selected active role
             'company.ownership' => \App\Features\CompanyManagement\Http\Middleware\EnsureCompanyOwnership::class,  // ← Company ownership validation
             'throttle.user' => \App\Http\Middleware\ThrottleByUser::class,  // ← User-based rate limiting (requires JWT)
+            'jwt.guest' => \App\Http\Middleware\RedirectIfAuthenticatedJWT::class, // ← Redirect if authenticated (for login/register pages)
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

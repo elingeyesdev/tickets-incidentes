@@ -100,23 +100,23 @@ Route::get('/auth/check-status', [\App\Http\Controllers\Auth\CheckAuthStatusCont
 // Welcome / Landing page (Redirected to if guest)
 Route::get('/welcome', function () {
     return view('public.welcome');
-})->name('welcome');
+})->middleware('jwt.guest')->name('welcome');
 
 // Company Request / Solicitud de Empresa
 Route::get('/solicitud-empresa', function () {
     return view('public.company-request');
-})->name('company.request');
+})->middleware('jwt.guest')->name('company.request');
 
 // ========== AUTHENTICATION ROUTES (Blade) ==========
 
 // Public auth pages
 Route::get('/login', function () {
     return view('public.login');
-})->name('login');
+})->middleware('jwt.guest')->name('login');
 
 Route::get('/register', function () {
     return view('public.register');
-})->name('register');
+})->middleware('jwt.guest')->name('register');
 
 Route::get('/forgot-password', function () {
     return view('public.forgot-password');
