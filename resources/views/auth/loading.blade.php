@@ -3,87 +3,71 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Loading... - HELPDESK</title>
-    
-    {{-- Google Font: Inter (Professional, Clean) --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>Cargando... - HELPDESK</title>
+
+    {{-- AdminLTE & Bootstrap Styles (Minified for speed) --}}
+    <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
 
     <style>
-        :root {
-            --primary: #4F46E5; /* Indigo 600 */
-            --bg-color: #F9FAFB; /* Gray 50 */
-            --text-color: #111827; /* Gray 900 */
-            --subtext-color: #6B7280; /* Gray 500 */
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+        body {
+            background-color: #f4f6f9; /* AdminLTE background color */
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling */
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
         }
 
-        .loader-container {
-            text-align: center;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .logo {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 24px;
-            /* Placeholder for actual logo */
-            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
-            display: inline-flex;
-            align-items: center;
+        /* Preloader Styles Override to center it perfectly */
+        .preloader {
+            display: flex;
+            flex-direction: column;
             justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
+            align-items: center;
+            background-color: #f4f6f9;
+            height: 100%;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
         }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(79, 70, 229, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 16px;
+        .animation__shake {
+            animation: shake 1500ms;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
         .status-text {
-            color: var(--subtext-color);
-            font-size: 0.875rem;
+            margin-top: 20px;
+            color: #6c757d; /* Secondary text color */
             font-weight: 500;
-            letter-spacing: 0.025em;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            font-size: 1.1rem;
+            text-align: center;
+            font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
     </style>
 </head>
 <body>
-    <div class="loader-container">
-        <div class="logo">H</div>
-        <div class="spinner"></div>
-        <div class="status-text" id="status-text">Initializing...</div>
+
+    {{-- AdminLTE Preloader Structure --}}
+    <div class="preloader">
+        <img class="animation__shake" src="{{ asset('vendor/adminlte/dist/img/AdminLTELogo.png') }}" alt="HELPDESK Logo" height="60" width="60">
+        <div class="status-text" id="status-text">Iniciando sistema...</div>
     </div>
 
     <script>
@@ -95,9 +79,10 @@
             }
 
             // Artificial delay to show the loading screen (Professional UX)
+            // Matches the animation__shake duration roughly
             setTimeout(async () => {
                 try {
-                    updateStatus('Checking authentication...');
+                    updateStatus('Verificando sesión...');
                     
                     // Call the check-status endpoint
                     const response = await fetch('/auth/check-status', {
@@ -110,7 +95,7 @@
                     const data = await response.json();
 
                     if (data.status === 'authenticated') {
-                        updateStatus('Session verified. Redirecting...');
+                        updateStatus('Sesión verificada. Redirigiendo...');
                         
                         // CRITICAL: Sync localStorage with the valid token from server
                         if (data.access_token) {
@@ -122,15 +107,39 @@
                             localStorage.setItem('helpdesk_token_expiry', (now + ttl).toString());
                             localStorage.setItem('helpdesk_token_issued_at', now.toString());
                             
-                            console.log('[Auth Loader] Token synced to localStorage');
+                            // CRITICAL: Extract and set active_role from the new token
+                            // This matches the logic in authenticated.blade.php
+                            try {
+                                const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+                                
+                                // If the token has an active_role claim, use it
+                                if (payload.active_role) {
+                                    localStorage.setItem('active_role', JSON.stringify(payload.active_role));
+                                } 
+                                // Fallback: If no active_role in token, try to infer from roles list (if single role)
+                                else if (payload.roles && payload.roles.length === 1) {
+                                    const role = payload.roles[0];
+                                    const activeRole = {
+                                        code: role.code,
+                                        company_id: role.company_id || null,
+                                        company_name: role.company_name || null
+                                    };
+                                    localStorage.setItem('active_role', JSON.stringify(activeRole));
+                                }
+                            } catch (e) {
+                                console.error('[Auth Loader] Failed to parse active role:', e);
+                            }
+
+                            console.log('[Auth Loader] Token and Role synced to localStorage');
                         }
 
                         // Redirect to dashboard
                         window.location.href = '/app/dashboard';
                     } else {
-                        updateStatus('Redirecting to welcome page...');
+                        updateStatus('Redirigiendo al inicio...');
                         // Clear artifacts
                         localStorage.removeItem('access_token');
+                        localStorage.removeItem('active_role');
                         localStorage.removeItem('helpdesk_token_expiry');
                         localStorage.removeItem('helpdesk_token_issued_at');
                         
@@ -140,11 +149,11 @@
 
                 } catch (error) {
                     console.error('[Auth Loader] Error:', error);
-                    updateStatus('Connection error. Redirecting...');
+                    updateStatus('Error de conexión. Reintentando...');
                     // Fallback to welcome on error
                     window.location.href = '/welcome';
                 }
-            }, 1500); // 1.5 second delay
+            }, 1000); // 1 second delay for the shake animation to play
         });
     </script>
 </body>

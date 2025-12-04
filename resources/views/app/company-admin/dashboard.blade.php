@@ -25,6 +25,9 @@
             <a href="/app/company/agents" class="small-box-footer">
                 Gestionar <i class="fas fa-arrow-circle-right"></i>
             </a>
+            <div class="overlay" id="overlay-kpi-agents">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 
@@ -41,6 +44,9 @@
             <a href="/app/company/help-center" class="small-box-footer">
                 Ver más <i class="fas fa-arrow-circle-right"></i>
             </a>
+            <div class="overlay" id="overlay-kpi-articles">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 
@@ -57,6 +63,9 @@
             <a href="/app/company/announcements" class="small-box-footer">
                 Ver más <i class="fas fa-arrow-circle-right"></i>
             </a>
+            <div class="overlay" id="overlay-kpi-announcements">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 
@@ -73,6 +82,9 @@
             <a href="/app/company/tickets" class="small-box-footer">
                 Ver todos <i class="fas fa-arrow-circle-right"></i>
             </a>
+            <div class="overlay" id="overlay-kpi-tickets">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 </div>
@@ -95,6 +107,10 @@
                     <canvas id="ticketStatusChart"></canvas>
                 </div>
             </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-ticket-status">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 
@@ -113,6 +129,10 @@
                 <div style="position: relative; height: 250px;">
                     <canvas id="ticketsOverTimeChart"></canvas>
                 </div>
+            </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-tickets-time">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -153,6 +173,10 @@
                     Ver todos los tickets
                 </a>
             </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-recent-tickets">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
         </div>
     </div>
 
@@ -175,6 +199,10 @@
             </div>
             <div class="card-footer text-center">
                 <a href="/app/company/agents">Ver todos los agentes</a>
+            </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-team">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -209,6 +237,10 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-categories">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -356,6 +388,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('[Company Admin Dashboard] Error loading dashboard:', error);
+            // Optional: Show error state in overlays or toast
+        })
+        .finally(() => {
+            // Hide Overlays regardless of success or failure
+            document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none');
         });
 
     }, 500);
