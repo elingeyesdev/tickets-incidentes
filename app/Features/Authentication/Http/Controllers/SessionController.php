@@ -245,30 +245,8 @@ class SessionController
                     'success' => true,
                     'message' => 'Logged out successfully',
                 ], 200)
-                // CRITICAL: Clear refresh_token (HttpOnly)
-                ->cookie(
-                    'refresh_token',
-                    '',
-                    0, // minutes - expires immediately
-                    '/', // path
-                    null, // domain
-                    !app()->isLocal(), // secure
-                    true, // httpOnly
-                    false, // raw
-                    'lax' // sameSite
-                )
-                // CRITICAL FIX: Also clear jwt_token to prevent interference with future logins
-                ->cookie(
-                    'jwt_token',
-                    '',
-                    0, // minutes - expires immediately
-                    '/', // path
-                    null, // domain
-                    !app()->isLocal(), // secure
-                    false, // httpOnly (false because JS needs to read it normally)
-                    false, // raw
-                    'lax' // sameSite
-                );
+                ->withCookie(cookie()->forget('refresh_token'))
+                ->withCookie(cookie()->forget('jwt_token'));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('[LOGOUT] Logout exception', [
                 'exception_class' => get_class($e),
