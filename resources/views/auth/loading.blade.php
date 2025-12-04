@@ -133,8 +133,16 @@
                             console.log('[Auth Loader] Token and Role synced to localStorage');
                         }
 
-                        // Redirect to dashboard
-                        window.location.href = '/app/dashboard';
+                        // Redirect to dashboard or original destination (Smart Customs)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectTo = urlParams.get('redirect_to');
+
+                        if (redirectTo) {
+                            console.log('[Auth Loader] Redirecting to original destination:', redirectTo);
+                            window.location.href = redirectTo;
+                        } else {
+                            window.location.href = '/app/dashboard';
+                        }
                     } else {
                         updateStatus('Redirigiendo al inicio...');
                         // Clear artifacts

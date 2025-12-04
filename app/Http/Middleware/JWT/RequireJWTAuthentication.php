@@ -104,103 +104,16 @@ class RequireJWTAuthentication
             }
 
 
-            // SERVER-SIDE AUTO-REFRESH (For Web Requests)
-            // If authentication failed (expired/missing), try to refresh using the HttpOnly cookie
-            $refreshToken = $request->cookie('refresh_token');
+            // SMART CUSTOMS LOGIC (ADUANA INTELIGENTE)
+            // Instead of trying to fix it here, we send the user to the Central Auth Loader (/)
+            // The loader will check if they have a valid Refresh Token, fix the session, and redirect back.
             
-            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Web request, checking for refresh token', [
-                'has_refresh_token' => !!$refreshToken,
-                'refresh_token_length' => $refreshToken ? strlen($refreshToken) : 0,
+            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Web request unauthenticated. Redirecting to Auth Loader.', [
+                'redirect_to' => $request->fullUrl()
             ]);
 
-            if ($refreshToken) {
-
-                try {
-                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Attempting server-side auto-refresh');
-                    
-                    // Attempt to refresh token
-                    $deviceInfo = \App\Shared\Helpers\DeviceInfoParser::fromRequest($request);
-                    $result = $this->authService->refreshToken($refreshToken, $deviceInfo);
-
-                    // If successful, we have a new access token
-                    $newAccessToken = $result['access_token'];
-
-                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Refresh successful, authenticating with new token', [
-                        'new_token_length' => strlen($newAccessToken),
-                        'expires_in' => $result['expires_in'],
-                    ]);
-
-                    // Manually authenticate the user with the new token so the request can proceed
-                    $this->processJWTToken($request, $newAccessToken);
-
-                    // CRITICAL: Store the refreshed token in request so Blade can inject it into the page
-                    // This prevents the frontend from seeing an expired token in localStorage
-                    $request->attributes->set('server_refreshed_token', [
-                        'access_token' => $newAccessToken,
-                        'expires_in' => $result['expires_in'],
-                    ]);
-
-                    // Proceed with the request
-                    $response = $next($request);
-
-                    // Attach new cookies to the response
-                    $cookieLifetime = (int) config('jwt.refresh_ttl');
-                    $secure = config('app.env') === 'production';
-
-                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Attaching new cookies to response', [
-                        'cookie_lifetime' => $cookieLifetime,
-                        'secure' => $secure,
-                    ]);
-
-                    // 1. New Access Token Cookie (Not Encrypted, for JS)
-                    $response->withCookie(cookie(
-                        'jwt_token',
-                        $newAccessToken,
-                        $result['expires_in'] / 60, // Minutes
-                        '/',
-                        null,
-                        $secure,
-                        false, // Not HttpOnly (JS needs it)
-                        false, // Raw
-                        'lax'
-                    ));
-
-                    // 2. New Refresh Token Cookie (HttpOnly, Encrypted)
-                    $response->withCookie(cookie(
-                        'refresh_token',
-                        $result['refresh_token'],
-                        $cookieLifetime,
-                        '/',
-                        null,
-                        $secure,
-                        true, // HttpOnly
-                        false,
-                        'strict'
-                    ));
-
-                    \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Server-side auto-refresh completed successfully');
-                    return $response;
-
-                } catch (\Exception $refreshError) {
-                    // Refresh failed (invalid/expired refresh token or token validation error)
-                    // Log and fall through to redirect
-                    \Illuminate\Support\Facades\Log::warning('[JWT MIDDLEWARE] Server-side auto-refresh failed', [
-                        'error' => $refreshError->getMessage(),
-                        'type' => get_class($refreshError)
-                    ]);
-                    // Fall through to redirect below
-                }
-            } else {
-                \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] No refresh token available, cannot auto-refresh');
-            }
-
-            // If it's a Web request (Browser) and refresh failed, redirect to login AND CLEAR COOKIE
-            \Illuminate\Support\Facades\Log::info('[JWT MIDDLEWARE] Redirecting to login with session_expired reason');
-            
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                redirect()->route('login', ['reason' => 'session_expired'])
-                    ->with('error', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
-                    ->withCookie(cookie()->forget('jwt_token'))
+                redirect()->route('root', ['redirect_to' => $request->fullUrl()])
             );
         }
     }
