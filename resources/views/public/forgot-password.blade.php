@@ -1,6 +1,8 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('auth_header', 'Recuperar Contraseña')
+@section('adminlte_css')
+    @parent
+@stop
 
 @section('auth_body')
     <div x-data="forgotPasswordForm()" x-init="init()">
@@ -12,18 +14,13 @@
             <p class="text-muted mt-2">Validando tu enlace...</p>
         </div>
 
-        <!-- Error Alert -->
-        <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <button type="button" class="close" @click="error = false" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-            <i class="fas fa-exclamation-circle mr-2"></i>
-            <span x-text="errorMessage"></span>
-        </div>
+
 
         <!-- STEP 1: Email Request Form -->
         <form @submit.prevent="submitEmail()" novalidate x-show="step === 1">
             @csrf
+
+            <p class="login-box-msg">¿Olvidaste tu contraseña? Aquí puedes recuperar fácilmente una nueva contraseña.</p>
 
             {{-- Email field --}}
             <div class="input-group mb-3">
@@ -33,8 +30,10 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.email }"
                     x-model="formData.email"
-                    @blur="validateEmail"
-                    placeholder="{{ __('adminlte::adminlte.email') }}"
+                    @focus="inputTouched.email = true"
+                    @blur="inputTouched.email && validateEmail()"
+                    @input="errors.email && validateEmail()"
+                    placeholder="Correo Electrónico"
                     :disabled="loading"
                     autofocus
                     required
@@ -49,62 +48,49 @@
                 <span class="invalid-feedback d-block" x-show="errors.email" x-text="errors.email"></span>
             </div>
 
-            {{-- Send reset link button --}}
-            <button
-                type="submit"
-                class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
-                :disabled="loading"
-            >
-                <span x-show="!loading">
-                    <span class="fas fa-share-square"></span>
-                    {{ __('adminlte::adminlte.send_password_reset_link') }}
-                </span>
-                <span x-show="loading">
-                    <span class="spinner-border spinner-border-sm mr-2"></span>
-                    Enviando...
-                </span>
-            </button>
+            <div class="row">
+                <div class="col-12">
+                    {{-- Send reset link button --}}
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-block"
+                        :disabled="loading"
+                    >
+                        <span x-show="!loading">
+                            Solicitar nueva contraseña
+                        </span>
+                        <span x-show="loading">
+                            <span class="spinner-border spinner-border-sm mr-2"></span>
+                            Enviando...
+                        </span>
+                    </button>
+                </div>
+            </div>
         </form>
 
         <!-- STEP 2: Code + Password (shown after email is sent or if token from email) -->
         <form @submit.prevent="submitPassword()" novalidate x-show="step === 2">
             @csrf
 
-            {{-- Email sent alert (only if no token) --}}
-            <div x-show="!formData.token && showEmailAlert" class="alert alert-info alert-dismissible fade show" role="alert">
-                <button type="button" class="close" @click="showEmailAlert = false" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                <i class="fas fa-info-circle mr-2"></i>
-                <strong>¡Email enviado!</strong>
-                <p class="mb-0 mt-2">Se ha enviado un enlace y un código de 6 dígitos a <strong x-text="formData.email"></strong></p>
-            </div>
+            <p class="login-box-msg" x-show="!formData.token">
+                Revisa tu correo <span x-show="formData.email" class="font-weight-bold" x-text="formData.email"></span>. Te hemos enviado un código de 6 dígitos para recuperar tu contraseña.
+            </p>
 
-            {{-- Token valid alert (only if token from email) --}}
-            <div x-show="showTokenAlert" class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle mr-2"></i>
-                <strong>¡Link válido!</strong>
-                <p class="mb-0 mt-2">Ahora ingresa tu nueva contraseña</p>
-            </div>
-
-            {{-- Success alert --}}
-            <div x-show="resetSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle mr-2"></i>
-                <strong>¡Éxito!</strong>
-                <p class="mb-0 mt-2">Tu contraseña ha sido restablecida. Redirigiendo...</p>
-            </div>
+            <p class="login-box-msg" x-show="formData.token">
+                Estás a un paso de tu nueva contraseña, ingresa tu nueva contraseña ahora.
+            </p>
 
             {{-- Code field (only if no token) - 6 separate inputs --}}
             <div x-show="!formData.token">
                 <label class="form-label mb-2">Código de 6 dígitos:</label>
-                <div class="d-flex justify-content-center gap-2 mb-3" style="gap: 0.5rem;">
+                <div class="d-flex justify-content-center gap-2 mb-3" style="gap: 0.5rem;" id="codeInputs">
                     <input
                         type="text"
                         x-model="codeDigits[0]"
                         @input="onCodeInput(0, $event)"
                         @keydown.backspace="onCodeBackspace(0, $event)"
+                        @paste="onCodePaste($event)"
                         class="form-control text-center"
-                        :class="{ 'is-invalid': errors.code }"
                         placeholder="0"
                         maxlength="1"
                         inputmode="numeric"
@@ -189,8 +175,10 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.password }"
                     x-model="formData.password"
-                    @blur="validatePassword"
-                    placeholder="{{ __('adminlte::adminlte.password') }}"
+                    @focus="inputTouched.password = true"
+                    @blur="inputTouched.password && validatePassword()"
+                    @input="errors.password && validatePassword()"
+                    placeholder="Contraseña"
                     :disabled="loading"
                     required
                 >
@@ -212,8 +200,10 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.passwordConfirmation }"
                     x-model="formData.passwordConfirmation"
-                    @blur="validatePasswordConfirmation"
-                    placeholder="{{ __('adminlte::adminlte.retype_password') }}"
+                    @focus="inputTouched.passwordConfirmation = true"
+                    @blur="inputTouched.passwordConfirmation && validatePasswordConfirmation()"
+                    @input="errors.passwordConfirmation && validatePasswordConfirmation()"
+                    placeholder="Confirmar Contraseña"
                     :disabled="loading"
                     required
                 >
@@ -227,43 +217,32 @@
                 <span class="invalid-feedback d-block" x-show="errors.passwordConfirmation" x-text="errors.passwordConfirmation"></span>
             </div>
 
-            {{-- Confirm password button --}}
-            <button
-                type="submit"
-                class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
-                :disabled="loading"
-            >
-                <span x-show="!loading">
-                    <span class="fas fa-sync-alt"></span>
-                    Restablecer Contraseña
-                </span>
-                <span x-show="loading">
-                    <span class="spinner-border spinner-border-sm mr-2"></span>
-                    Procesando...
-                </span>
-            </button>
-
-            {{-- Back button --}}
-            <button
-                type="button"
-                class="btn btn-outline-secondary btn-block mt-2"
-                @click="goBackToEmail()"
-            >
-                <span class="fas fa-arrow-left mr-2"></span>Volver
-            </button>
+            <div class="row">
+                <div class="col-12">
+                    {{-- Confirm password button --}}
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-block"
+                        :disabled="loading"
+                    >
+                        <span x-show="!loading">
+                            Cambiar contraseña
+                        </span>
+                        <span x-show="loading">
+                            <span class="spinner-border spinner-border-sm mr-2"></span>
+                            Procesando...
+                        </span>
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 @stop
 
 @section('auth_footer')
-    <p class="my-0">
+    <p class="mt-3 mb-1">
         <a href="{{ route('login') }}">
-            Volver a iniciar sesión
-        </a>
-    </p>
-    <p class="my-0">
-        <a href="{{ route('register') }}">
-            {{ __('adminlte::adminlte.register_a_new_membership') }}
+            Iniciar sesión
         </a>
     </p>
 @stop
@@ -288,6 +267,11 @@
                     code: '',
                     password: '',
                     passwordConfirmation: '',
+                },
+                inputTouched: {
+                    email: false,
+                    password: false,
+                    passwordConfirmation: false,
                 },
                 loading: false,
                 error: false,
@@ -331,24 +315,15 @@
 
                         // Token válido, pasar al paso 2
                         this.formData.token = token;
-                        this.showTokenAlert = true;
                         this.step = 2;
-
-                        // Auto-desaparecer alerta después de 6 segundos
-                        setTimeout(() => {
-                            this.showTokenAlert = false;
-                        }, 6000);
 
                     } catch (err) {
                         console.error('Token validation error:', err);
-                        this.errorMessage = err.message || 'Error al validar el token';
-                        this.error = true;
+                        // Mostrar error con Toast
+                        this.showToast('danger', 'Error', err.message || 'Error al validar el token');
                         this.step = 1;
 
-                        // Auto-desaparecer error después de 6 segundos
-                        setTimeout(() => {
-                            this.error = false;
-                        }, 6000);
+
                     } finally {
                         this.validatingToken = false;
                     }
@@ -394,6 +369,11 @@
                     }
                     // Mantener solo un dígito
                     this.codeDigits[index] = value.slice(-1);
+                    
+                    // Limpiar error si hay mientras escribe
+                    if (this.errors.code) {
+                        this.errors.code = '';
+                    }
 
                     // Moverse al siguiente input si hay valor
                     if (this.codeDigits[index] && index < 5) {
@@ -414,6 +394,43 @@
                             this.codeDigits[index - 1] = '';
                         }, 0);
                     }
+                },
+
+                onCodePaste(event) {
+                    event.preventDefault();
+                    const pastedData = event.clipboardData.getData('text');
+                    
+                    // Limpiar y validar que solo contenga dígitos
+                    const digits = pastedData.replace(/\D/g, '');
+                    
+                    if (digits.length !== 6) {
+                        this.errors.code = 'El código debe tener exactamente 6 dígitos';
+                        return;
+                    }
+                    
+                    // Distribuir los dígitos en los inputs
+                    for (let i = 0; i < 6; i++) {
+                        this.codeDigits[i] = digits[i];
+                    }
+                    
+                    // Enfocar el último input
+                    const inputs = document.querySelector('#codeInputs').querySelectorAll('input');
+                    inputs[5].focus();
+                    
+                    // Limpiar error si había
+                    this.errors.code = '';
+                },
+
+                showToast(type, title, message) {
+                    // AdminLTE v3 Toast
+                    $(document).Toasts('create', {
+                        class: type === 'success' ? 'bg-success' : (type === 'info' ? 'bg-info' : 'bg-danger'),
+                        title: title,
+                        body: message,
+                        autohide: true,
+                        delay: 8000,
+                        icon: type === 'success' ? 'fas fa-check-circle' : (type === 'info' ? 'fas fa-info-circle' : 'fas fa-exclamation-circle'),
+                    });
                 },
 
                 validatePassword() {
@@ -482,22 +499,13 @@
 
                         // Email enviado exitosamente, pasar al paso 2 (código + contraseña)
                         this.step = 2;
-                        this.showEmailAlert = true;
-
-                        // Ocultar alerta después de 6 segundos
-                        setTimeout(() => {
-                            this.showEmailAlert = false;
-                        }, 6000);
 
                     } catch (err) {
                         console.error('Forgot password error:', err);
-                        this.errorMessage = err.message || 'Error desconocido';
-                        this.error = true;
+                        // Mostrar error con Toast
+                        this.showToast('danger', 'Error', err.message || 'Error desconocido');
 
-                        // Auto-desaparecer error después de 6 segundos
-                        setTimeout(() => {
-                            this.error = false;
-                        }, 6000);
+
                     } finally {
                         this.loading = false;
                     }
@@ -556,23 +564,17 @@
                             localStorage.setItem('access_token', data.accessToken);
                         }
 
-                        // Mostrar mensaje de éxito
-                        this.resetSuccess = true;
-
-                        // Redirigir a login después de 2 segundos
+                        // Redirigir a login después de 1 segundo
                         setTimeout(() => {
                             window.location.href = '/login';
-                        }, 2000);
+                        }, 1000);
 
                     } catch (err) {
                         console.error('Password reset error:', err);
-                        this.errorMessage = err.message || 'Error desconocido';
-                        this.error = true;
+                        // Mostrar error con Toast
+                        this.showToast('danger', 'Error', err.message || 'Error desconocido');
 
-                        // Auto-desaparecer error después de 6 segundos
-                        setTimeout(() => {
-                            this.error = false;
-                        }, 6000);
+
                     } finally {
                         this.loading = false;
                     }

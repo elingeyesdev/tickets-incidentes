@@ -1,6 +1,7 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'register'])
 
-@section('css')
+@section('adminlte_css')
+    @parent
     <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
 @stop
 
@@ -28,7 +29,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.firstName }"
                     x-model="formData.firstName"
-                    @blur="validateFirstName"
+                    @focus="inputTouched.firstName = true"
+                    @blur="inputTouched.firstName && validateFirstName()"
+                    @input="errors.firstName && validateFirstName()"
                     placeholder="Nombre"
                     :disabled="loading"
                     autofocus
@@ -52,7 +55,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.lastName }"
                     x-model="formData.lastName"
-                    @blur="validateLastName"
+                    @focus="inputTouched.lastName = true"
+                    @blur="inputTouched.lastName && validateLastName()"
+                    @input="errors.lastName && validateLastName()"
                     placeholder="Apellido"
                     :disabled="loading"
                     required
@@ -75,7 +80,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.email }"
                     x-model="formData.email"
-                    @blur="validateEmail"
+                    @focus="inputTouched.email = true"
+                    @blur="inputTouched.email && validateEmail()"
+                    @input="errors.email && validateEmail()"
                     placeholder="Correo Electrónico"
                     :disabled="loading"
                     required
@@ -98,7 +105,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.password }"
                     x-model="formData.password"
-                    @blur="validatePassword"
+                    @focus="inputTouched.password = true"
+                    @blur="inputTouched.password && validatePassword()"
+                    @input="errors.password && validatePassword()"
                     placeholder="Contraseña"
                     :disabled="loading"
                     required
@@ -121,7 +130,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': errors.passwordConfirmation }"
                     x-model="formData.passwordConfirmation"
-                    @blur="validatePasswordConfirmation"
+                    @focus="inputTouched.passwordConfirmation = true"
+                    @blur="inputTouched.passwordConfirmation && validatePasswordConfirmation()"
+                    @input="errors.passwordConfirmation && validatePasswordConfirmation()"
                     placeholder="Repetir contraseña"
                     :disabled="loading"
                     required
@@ -140,15 +151,9 @@
             <div class="row">
                 <div class="col-8">
                     <div class="icheck-primary">
-                        <input
-                            type="checkbox"
-                            id="acceptsTerms"
-                            name="acceptsTerms"
-                            x-model="formData.acceptsTerms"
-                            @change="validateTerms"
-                            :disabled="loading"
-                            required
-                        >
+                        <input type="checkbox" name="acceptsTerms" id="acceptsTerms" x-model="formData.acceptsTerms"
+                            @change="errors.acceptsTerms && validateTerms()" :disabled="loading">
+
                         <label for="acceptsTerms">
                             Acepto los <a href="#" target="_blank">términos</a>
                         </label>
@@ -207,6 +212,13 @@
                     password: '',
                     passwordConfirmation: '',
                     acceptsTerms: '',
+                },
+                inputTouched: {
+                    firstName: false,
+                    lastName: false,
+                    email: false,
+                    password: false,
+                    passwordConfirmation: false,
                 },
                 loading: false,
                 error: false,

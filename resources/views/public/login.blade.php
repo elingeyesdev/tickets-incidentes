@@ -32,7 +32,11 @@
         {{-- Email field --}}
         <div class="input-group mb-3">
             <input type="email" name="email" class="form-control" :class="{ 'is-invalid': errors.email }"
-                x-model="formData.email" @blur="validateEmail" placeholder="Correo Electrónico"
+                x-model="formData.email" 
+                @focus="inputTouched.email = true"
+                @blur="inputTouched.email && validateEmail()"
+                @input="errors.email && validateEmail()" 
+                placeholder="Correo Electrónico"
                 :disabled="loading" autofocus required>
 
             <div class="input-group-append">
@@ -47,7 +51,10 @@
         {{-- Password field --}}
         <div class="input-group mb-3">
             <input type="password" name="password" class="form-control" :class="{ 'is-invalid': errors.password }"
-                x-model="formData.password" @blur="validatePassword"
+                x-model="formData.password" 
+                @focus="inputTouched.password = true"
+                @blur="inputTouched.password && validatePassword()"
+                @input="errors.password && validatePassword()"
                 placeholder="Contraseña" :disabled="loading" required>
 
             <div class="input-group-append">
@@ -125,6 +132,10 @@
             errors: {
                 email: '',
                 password: '',
+            },
+            inputTouched: {
+                email: false,
+                password: false,
             },
             loading: false,
             success: false,
