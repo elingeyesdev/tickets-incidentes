@@ -54,7 +54,7 @@
         <!-- Navbar - Zona Pública -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
-                <a class="navbar-brand" href="/" style="display: flex; align-items: center; gap: 8px;">
+                <a class="navbar-brand" href="{{ route('welcome') }}" style="display: flex; align-items: center; gap: 8px;">
                     <img src="{{ asset('logo.png') }}" alt="Helpdesk" height="50" style="width: auto;">
                     <strong>HELPDESK</strong>
                 </a>
@@ -66,7 +66,7 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item">
-                            <a class="nav-link {{ Request::is('/') ? 'active' : '' }}" href="/">
+                            <a class="nav-link {{ Request::is('/', 'welcome') ? 'active' : '' }}" href="{{ route('welcome') }}">
                                 <i class="fas fa-home mr-1"></i> Inicio
                             </a>
                         </li>
@@ -106,7 +106,7 @@
                     <div class="col-md-3">
                         <h6>Enlaces rápidos</h6>
                         <ul class="list-unstyled small">
-                            <li><a href="/" class="text-muted text-decoration-none">Inicio</a></li>
+                            <li><a href="{{ route('welcome') }}" class="text-muted text-decoration-none">Inicio</a></li>
                             <li><a href="{{ route('register') }}" class="text-muted text-decoration-none">Registro</a></li>
                             <li><a href="{{ route('password.request') }}" class="text-muted text-decoration-none">Recuperar contraseña</a></li>
                         </ul>

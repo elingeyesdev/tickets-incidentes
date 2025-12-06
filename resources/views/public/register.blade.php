@@ -1,6 +1,6 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'register'])
 
-@section('auth_header', __('adminlte::adminlte.register_message'))
+@section('auth_header', 'Registrar una nueva cuenta')
 
 @section('auth_body')
     <div x-data="registerForm()" x-init="init()" @keydown.enter="submit()">
@@ -72,7 +72,7 @@
                     :class="{ 'is-invalid': errors.email }"
                     x-model="formData.email"
                     @blur="validateEmail"
-                    placeholder="{{ __('adminlte::adminlte.email') }}"
+                    placeholder="Correo Electrónico"
                     :disabled="loading"
                     required
                 >
@@ -95,7 +95,7 @@
                     :class="{ 'is-invalid': errors.password }"
                     x-model="formData.password"
                     @blur="validatePassword"
-                    placeholder="{{ __('adminlte::adminlte.password') }}"
+                    placeholder="Contraseña"
                     :disabled="loading"
                     required
                 >
@@ -118,7 +118,7 @@
                     :class="{ 'is-invalid': errors.passwordConfirmation }"
                     x-model="formData.passwordConfirmation"
                     @blur="validatePasswordConfirmation"
-                    placeholder="{{ __('adminlte::adminlte.retype_password') }}"
+                    placeholder="Repetir contraseña"
                     :disabled="loading"
                     required
                 >
@@ -180,7 +180,7 @@
             >
                 <span x-show="!loading">
                     <span class="fas fa-user-plus"></span>
-                    {{ __('adminlte::adminlte.register') }}
+                    Registrarse
                 </span>
                 <span x-show="loading">
                     <span class="spinner-border spinner-border-sm mr-2"></span>
@@ -207,7 +207,7 @@
 @section('auth_footer')
     <p class="my-0">
         <a href="{{ route('login') }}">
-            {{ __('adminlte::adminlte.i_already_have_a_membership') }}
+            Ya tengo una cuenta
         </a>
     </p>
 @stop

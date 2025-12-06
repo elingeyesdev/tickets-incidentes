@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
 @stop
 
-@section('auth_header', __('adminlte::adminlte.login_message'))
+@section('auth_header', 'Inicia sesión para comenzar')
 
 @section('auth_body')
 <div x-data="loginForm()" x-init="init()" @keydown.enter="submit()">
@@ -32,7 +32,7 @@
         {{-- Email field --}}
         <div class="input-group mb-3">
             <input type="email" name="email" class="form-control" :class="{ 'is-invalid': errors.email }"
-                x-model="formData.email" @blur="validateEmail" placeholder="{{ __('adminlte::adminlte.email') }}"
+                x-model="formData.email" @blur="validateEmail" placeholder="Correo Electrónico"
                 :disabled="loading" autofocus required>
 
             <div class="input-group-append">
@@ -48,7 +48,7 @@
         <div class="input-group mb-3">
             <input type="password" name="password" class="form-control" :class="{ 'is-invalid': errors.password }"
                 x-model="formData.password" @blur="validatePassword"
-                placeholder="{{ __('adminlte::adminlte.password') }}" :disabled="loading" required>
+                placeholder="Contraseña" :disabled="loading" required>
 
             <div class="input-group-append">
                 <div class="input-group-text">
@@ -62,12 +62,12 @@
         {{-- Login field --}}
         <div class="row">
             <div class="col-7">
-                <div class="icheck-primary" title="{{ __('adminlte::adminlte.remember_me_hint') }}">
+                <div class="icheck-primary" title="Mantenerme conectado">
                     <input type="checkbox" name="remember" id="remember" x-model="formData.remember"
                         :disabled="loading">
 
                     <label for="remember">
-                        {{ __('adminlte::adminlte.remember_me') }}
+                        Recuérdame
                     </label>
                 </div>
             </div>
@@ -78,7 +78,7 @@
                     :disabled="loading">
                     <span x-show="!loading">
                         <span class="fas fa-sign-in-alt"></span>
-                        {{ __('adminlte::adminlte.sign_in') }}
+                        Ingresar
                     </span>
                     <span x-show="loading">
                         <span class="spinner-border spinner-border-sm mr-2"></span>
@@ -103,14 +103,14 @@
 {{-- Password reset link --}}
 <p class="my-0">
     <a href="{{ route('password.request') }}">
-        {{ __('adminlte::adminlte.i_forgot_my_password') }}
+        Olvidé mi contraseña
     </a>
 </p>
 
 {{-- Register link --}}
 <p class="my-0">
     <a href="{{ route('register') }}">
-        {{ __('adminlte::adminlte.register_a_new_membership') }}
+        Registrar una nueva cuenta
     </a>
 </p>
 @stop
