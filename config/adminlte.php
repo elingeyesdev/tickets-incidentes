@@ -84,13 +84,13 @@ return [
     */
 
     'auth_logo' => [
-        'enabled' => false,
+        'enabled' => true,
         'img' => [
             'path' => 'img/helpdesklogo.png',
             'alt' => 'Auth Logo',
-            'class' => '',
-            'width' => 150,
-            'height' => null, // Let height auto-scale
+            'class' => 'align-middle mr-2', // Center vertically with text and add spacing
+            'width' => null,
+            'height' => 80, // Increased size
         ],
     ],
 
@@ -171,12 +171,12 @@ return [
     |
     */
 
-    'classes_auth_card' => 'card-outline card-primary',
+    'classes_auth_card' => '',
     'classes_auth_header' => '',
-    'classes_auth_body' => '',
+    'classes_auth_body' => 'register-card-body',
     'classes_auth_footer' => '',
     'classes_auth_icon' => '',
-    'classes_auth_btn' => 'btn-flat btn-primary',
+    'classes_auth_btn' => 'btn-primary btn-block',
 
     /*
     |--------------------------------------------------------------------------

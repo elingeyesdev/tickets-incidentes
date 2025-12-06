@@ -1,14 +1,14 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('adminlte_css_pre')
+@section('css')
 <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
 @stop
 
-@section('auth_header', 'Inicia sesión para comenzar')
-
 @section('auth_body')
 <div x-data="loginForm()" x-init="init()" @keydown.enter="submit()">
-    <!-- Error Alert -->
+    <p class="login-box-msg">Inicia sesión para comenzar</p>
+
+    <!-- Error Alert (Original Customization - Keeping for functionality) -->
     <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
         <button type="button" class="close" @click="error = false" aria-label="Close">
             <span aria-hidden="true">&times;</span>
@@ -17,7 +17,7 @@
         <span x-text="errorMessage"></span>
     </div>
 
-    <!-- Success Alert -->
+    <!-- Success Alert (Original Customization - Keeping for functionality) -->
     <div x-show="success" class="alert alert-success alert-dismissible fade show" role="alert">
         <button type="button" class="close" @click="success = false" aria-label="Close">
             <span aria-hidden="true">&times;</span>
@@ -61,7 +61,7 @@
 
         {{-- Login field --}}
         <div class="row">
-            <div class="col-7">
+            <div class="col-8">
                 <div class="icheck-primary" title="Mantenerme conectado">
                     <input type="checkbox" name="remember" id="remember" x-model="formData.remember"
                         :disabled="loading">
@@ -72,76 +72,42 @@
                 </div>
             </div>
 
-            <div class="col-5">
+            <div class="col-4">
                 <button type="submit"
-                    class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
+                    class="btn btn-primary btn-block"
                     :disabled="loading">
                     <span x-show="!loading">
-                        <span class="fas fa-sign-in-alt"></span>
                         Ingresar
                     </span>
                     <span x-show="loading">
-                        <span class="spinner-border spinner-border-sm mr-2"></span>
-                        Autenticando...
+                        <span class="spinner-border spinner-border-sm"></span>
                     </span>
                 </button>
             </div>
         </div>
     </form>
 
-    <!-- Google Sign In Button -->
-    <div class="mt-3">
+    <!-- Social Auth Links -->
+    <div class="social-auth-links text-center mb-3">
+        <p>- O -</p>
         <button type="button" class="btn btn-block btn-danger" @click="loginWithGoogle()" :disabled="loading">
             <i class="fab fa-google mr-2"></i>
             Iniciar sesión con Google
         </button>
     </div>
+
+    <!-- Footer Links -->
+    <p class="mb-1">
+        <a href="{{ route('password.request') }}">
+            Olvidé mi contraseña
+        </a>
+    </p>
+    <p class="mb-0">
+        <a href="{{ route('register') }}" class="text-center">
+            Registrar una nueva cuenta
+        </a>
+    </p>
 </div>
-@stop
-
-@section('auth_footer')
-{{-- Password reset link --}}
-<p class="my-0">
-    <a href="{{ route('password.request') }}">
-        Olvidé mi contraseña
-    </a>
-</p>
-
-{{-- Register link --}}
-<p class="my-0">
-    <a href="{{ route('register') }}">
-        Registrar una nueva cuenta
-    </a>
-</p>
-@stop
-
-@section('adminlte_css')
-<style>
-    /* Default AdminLTE v3 login card sizing */
-    body .login-page .card {
-        max-width: 400px !important;
-        width: 100% !important;
-    }
-
-    body .card-body {
-        padding: 2rem !important;
-    }
-
-    body .login-box {
-        width: 100%;
-        max-width: 400px !important;
-    }
-
-    .btn-danger {
-        background-color: #dc3545;
-        border-color: #dc3545;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-        background-color: #c82333;
-        border-color: #bd2130;
-    }
-</style>
 @stop
 
 @section('adminlte_js')

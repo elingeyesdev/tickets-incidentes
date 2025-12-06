@@ -10,7 +10,7 @@
         $dashboardUrl = $dashboardUrl ? url($dashboardUrl) : '';
     }
 
-    $bodyClasses = "{$authType}-page";
+    $bodyClasses = "hold-transition {$authType}-page";
 
     if (! empty(config('adminlte.layout_dark_mode', null))) {
         $bodyClasses .= ' dark-mode';

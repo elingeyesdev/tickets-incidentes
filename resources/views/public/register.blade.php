@@ -1,9 +1,13 @@
 @extends('adminlte::auth.auth-page', ['authType' => 'register'])
 
-@section('auth_header', 'Registrar una nueva cuenta')
+@section('css')
+    <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
+@stop
 
 @section('auth_body')
     <div x-data="registerForm()" x-init="init()" @keydown.enter="submit()">
+        <p class="login-box-msg">Registrar una nueva cuenta</p>
+
         <!-- Error Alert -->
         <div x-show="error" class="alert alert-danger alert-dismissible fade show" role="alert">
             <button type="button" class="close" @click="error = false" aria-label="Close">
@@ -133,64 +137,37 @@
             </div>
 
             {{-- Terms and Conditions --}}
-            <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <input
-                        type="checkbox"
-                        class="custom-control-input"
-                        id="acceptsTerms"
-                        name="acceptsTerms"
-                        x-model="formData.acceptsTerms"
-                        @change="validateTerms"
-                        :disabled="loading"
-                        required
-                    >
-                    <label class="custom-control-label" for="acceptsTerms">
-                        Acepto los <a href="#" target="_blank">términos y condiciones</a>
-                    </label>
+            <div class="row">
+                <div class="col-8">
+                    <div class="icheck-primary">
+                        <input
+                            type="checkbox"
+                            id="acceptsTerms"
+                            name="acceptsTerms"
+                            x-model="formData.acceptsTerms"
+                            @change="validateTerms"
+                            :disabled="loading"
+                            required
+                        >
+                        <label for="acceptsTerms">
+                            Acepto los <a href="#" target="_blank">términos</a>
+                        </label>
+                    </div>
+                    <div class="text-danger small" x-show="errors.acceptsTerms" x-text="errors.acceptsTerms"></div>
                 </div>
-                <span class="invalid-feedback d-block" x-show="errors.acceptsTerms" x-text="errors.acceptsTerms"></span>
-            </div>
-
-            {{-- Privacy Policy --}}
-            <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <input
-                        type="checkbox"
-                        class="custom-control-input"
-                        id="acceptsPrivacyPolicy"
-                        name="acceptsPrivacyPolicy"
-                        x-model="formData.acceptsPrivacyPolicy"
-                        @change="validatePrivacyPolicy"
-                        :disabled="loading"
-                        required
-                    >
-                    <label class="custom-control-label" for="acceptsPrivacyPolicy">
-                        Acepto la <a href="#" target="_blank">política de privacidad</a>
-                    </label>
+                <!-- /.col -->
+                <div class="col-4">
+                    <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
+                        <span x-show="!loading">Registrar</span>
+                        <span x-show="loading">...</span>
+                    </button>
                 </div>
-                <span class="invalid-feedback d-block" x-show="errors.acceptsPrivacyPolicy" x-text="errors.acceptsPrivacyPolicy"></span>
+                <!-- /.col -->
             </div>
-
-            {{-- Register Button --}}
-            <button
-                type="submit"
-                class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}"
-                :disabled="loading"
-            >
-                <span x-show="!loading">
-                    <span class="fas fa-user-plus"></span>
-                    Registrarse
-                </span>
-                <span x-show="loading">
-                    <span class="spinner-border spinner-border-sm mr-2"></span>
-                    Registrando...
-                </span>
-            </button>
         </form>
 
-        <!-- Google Sign Up Button -->
-        <div class="mt-3">
+        <div class="social-auth-links text-center">
+            <p>- O -</p>
             <button
                 type="button"
                 class="btn btn-block btn-danger"
@@ -201,15 +178,12 @@
                 Registrarse con Google
             </button>
         </div>
+
+        <a href="{{ route('login') }}" class="text-center">Ya tengo una cuenta</a>
     </div>
 @stop
 
-@section('auth_footer')
-    <p class="my-0">
-        <a href="{{ route('login') }}">
-            Ya tengo una cuenta
-        </a>
-    </p>
+@section('adminlte_css')
 @stop
 
 @section('adminlte_js')
@@ -225,7 +199,6 @@
                     password: '',
                     passwordConfirmation: '',
                     acceptsTerms: false,
-                    acceptsPrivacyPolicy: false,
                 },
                 errors: {
                     firstName: '',
@@ -234,7 +207,6 @@
                     password: '',
                     passwordConfirmation: '',
                     acceptsTerms: '',
-                    acceptsPrivacyPolicy: '',
                 },
                 loading: false,
                 error: false,
@@ -322,16 +294,7 @@
                 validateTerms() {
                     this.errors.acceptsTerms = '';
                     if (!this.formData.acceptsTerms) {
-                        this.errors.acceptsTerms = 'Debes aceptar los términos y condiciones';
-                        return false;
-                    }
-                    return true;
-                },
-
-                validatePrivacyPolicy() {
-                    this.errors.acceptsPrivacyPolicy = '';
-                    if (!this.formData.acceptsPrivacyPolicy) {
-                        this.errors.acceptsPrivacyPolicy = 'Debes aceptar la política de privacidad';
+                        this.errors.acceptsTerms = 'Debes aceptar los términos';
                         return false;
                     }
                     return true;
@@ -369,9 +332,8 @@
                     const passwordValid = this.validatePassword();
                     const passwordConfirmationValid = this.validatePasswordConfirmation();
                     const termsValid = this.validateTerms();
-                    const privacyValid = this.validatePrivacyPolicy();
 
-                    if (!firstNameValid || !lastNameValid || !emailValid || !passwordValid || !passwordConfirmationValid || !termsValid || !privacyValid) {
+                    if (!firstNameValid || !lastNameValid || !emailValid || !passwordValid || !passwordConfirmationValid || !termsValid) {
                         return;
                     }
 
