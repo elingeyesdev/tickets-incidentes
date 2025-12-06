@@ -206,8 +206,16 @@
 
             init() {
                 this.loadUserData();
-                // Wait for token to be available (in case of server-side injection)
-                this.waitForTokenAndDetectRole();
+                
+                // Wait for Alpine and DOM to be fully ready before detecting role
+                // This prevents race conditions where getUserFromJWT might not be defined yet
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        setTimeout(() => this.waitForTokenAndDetectRole(), 100);
+                    });
+                } else {
+                    setTimeout(() => this.waitForTokenAndDetectRole(), 100);
+                }
             },
 
             loadUserData() {

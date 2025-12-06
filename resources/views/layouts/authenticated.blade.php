@@ -301,6 +301,20 @@
                     }
                 }
 
+                // Fallback: If no active_role in localStorage, try to infer from token payload
+                if (!activeRole && payload.roles && payload.roles.length > 0) {
+                     // Auto-select first role (usually USER for new registrations)
+                     const role = payload.roles[0];
+                     activeRole = {
+                        code: role.code,
+                        company_id: role.company_id || null,
+                        company_name: role.company_name || null
+                     };
+                     // Save for consistency
+                     localStorage.setItem('active_role', JSON.stringify(activeRole));
+                     console.log('[getUserFromJWT] Auto-detected active role from token:', activeRole);
+                }
+
                 return {
                     name: payload.name || 'User',
                     email: payload.email || '',

@@ -85,6 +85,9 @@ class AuthService
             assignedBy: null   // Auto-asignado en registro
         );
 
+        // IMPORTANTE: Recargar relaciones de roles en el usuario para que el token JWT incluya los roles recién asignados
+        $user->load(['userRoles.role', 'userRoles.company']);
+
         // Generar tokens - RefreshToken PRIMERO para usar su ID como session_id
         $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);
         $sessionId = $refreshTokenData['model']->id; // Usar ID del RefreshToken como session_id
@@ -142,6 +145,11 @@ class AuthService
             'last_login_at' => now(),
             'last_login_ip' => $deviceInfo['ip'] ?? request()->ip(),
         ]);
+
+        // Asegurar que los roles estén cargados para incluirlos en el JWT
+        if (!$user->relationLoaded('userRoles')) {
+            $user->load(['userRoles.role', 'userRoles.company']);
+        }
 
         // Generar tokens - RefreshToken PRIMERO para usar su ID como session_id
         $refreshTokenData = $this->tokenService->createRefreshToken($user, $deviceInfo);

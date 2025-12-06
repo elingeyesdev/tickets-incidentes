@@ -18,6 +18,15 @@
             <span x-text="errorMessage"></span>
         </div>
 
+        <!-- Success Alert -->
+        <div x-show="success" class="alert alert-success alert-dismissible fade show" role="alert">
+            <button type="button" class="close" @click="success = false" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <i class="fas fa-check-circle mr-2"></i>
+            <span x-text="successMessage"></span>
+        </div>
+
         <form @submit.prevent="submit()" novalidate>
             @csrf
 
@@ -152,10 +161,10 @@
                 <div class="col-8">
                     <div class="icheck-primary">
                         <input type="checkbox" name="acceptsTerms" id="acceptsTerms" x-model="formData.acceptsTerms"
-                            @change="errors.acceptsTerms && validateTerms()" :disabled="loading">
+                            @change="formData.acceptsPrivacyPolicy = formData.acceptsTerms; errors.acceptsTerms && validateTerms()" :disabled="loading">
 
                         <label for="acceptsTerms">
-                            Acepto los <a href="#" target="_blank">términos</a>
+                            Acepto los <a href="#" target="_blank">términos</a> y la <a href="#" target="_blank">política de privacidad</a>
                         </label>
                     </div>
                     <div class="text-danger small" x-show="errors.acceptsTerms" x-text="errors.acceptsTerms"></div>
@@ -164,7 +173,9 @@
                 <div class="col-4">
                     <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
                         <span x-show="!loading">Registrar</span>
-                        <span x-show="loading">...</span>
+                        <span x-show="loading">
+                            <span class="spinner-border spinner-border-sm"></span>
+                        </span>
                     </button>
                 </div>
                 <!-- /.col -->
@@ -204,6 +215,7 @@
                     password: '',
                     passwordConfirmation: '',
                     acceptsTerms: false,
+                    acceptsPrivacyPolicy: false,
                 },
                 errors: {
                     firstName: '',
@@ -221,7 +233,9 @@
                     passwordConfirmation: false,
                 },
                 loading: false,
+                success: false,
                 error: false,
+                successMessage: '',
                 errorMessage: '',
 
                 init() {
@@ -351,6 +365,7 @@
 
                     this.loading = true;
                     this.error = false;
+                    this.success = false;
 
                     try {
                         const response = await fetch('/api/auth/register', {
@@ -367,52 +382,61 @@
                         const data = await response.json();
 
                         if (!response.ok) {
-                            throw new Error(data.message || 'Error al registrarse');
+                            const errorMsg = this.extractErrorMessage(data);
+                            throw new Error(errorMsg);
                         }
 
-                        // Guardar SOLO access token en localStorage
+                        // Guardar access token en localStorage
                         if (data.accessToken) {
                             localStorage.setItem('access_token', data.accessToken);
                         }
 
-                        // Decodificar JWT para verificar roles
-                        const payload = this.decodeJWT(data.accessToken);
-                        const roles = payload.roles || [];
+                        // Mostrar mensaje de éxito
+                        this.successMessage = '¡Registro exitoso! Redirigiendo a verificar email...';
+                        this.success = true;
 
-                        // Lógica inteligente de roles (similar a login)
-                        if (roles.length === 1) {
-                            // Auto-asignar el único rol
-                            const activeRole = {
-                                code: roles[0].code,
-                                company_id: roles[0].company_id || null,
-                                company_name: roles[0].company_name || null
-                            };
-                            localStorage.setItem('active_role', JSON.stringify(activeRole));
-
-                            // Ir a /auth/prepare-web que establece cookie y redirija al dashboard
-                            const dashboardUrl = this.getDashboardUrl(activeRole.code);
-                            setTimeout(() => {
-                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent(dashboardUrl)}`;
-                            }, 1500);
-                        } else if (roles.length > 1) {
-                            // Múltiples roles: ir a role-selector
-                            setTimeout(() => {
-                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/auth-flow/role-selector')}`;
-                            }, 1500);
-                        } else {
-                            // Fallback por defecto
-                            setTimeout(() => {
-                                window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/app/dashboard')}`;
-                            }, 1500);
-                        }
+                        // Redirigir directamente a verify-email (la cookie se establece en prepare-web)
+                        setTimeout(() => {
+                            window.location.href = `/auth/prepare-web?token=${data.accessToken}&redirect=${encodeURIComponent('/verify-email')}`;
+                        }, 1500);
 
                     } catch (err) {
                         console.error('Register error:', err);
-                        this.errorMessage = err.message || 'Error desconocido';
+                        this.errorMessage = err.message || 'Error desconocido al registrarse';
                         this.error = true;
                     } finally {
                         this.loading = false;
                     }
+                },
+
+                /**
+                 * Extrae el mensaje de error de la respuesta de la API
+                 * Maneja múltiples formatos: {message}, {errors: {}}, etc.
+                 */
+                extractErrorMessage(data) {
+                    // Caso 1: Mensaje directo
+                    if (data.message && typeof data.message === 'string') {
+                        return data.message;
+                    }
+
+                    // Caso 2: Errores de validación de Laravel {errors: {field: [msg1, msg2]}}
+                    if (data.errors && typeof data.errors === 'object') {
+                        const firstField = Object.keys(data.errors)[0];
+                        if (firstField && Array.isArray(data.errors[firstField])) {
+                            return data.errors[firstField][0];
+                        }
+                        if (firstField && typeof data.errors[firstField] === 'string') {
+                            return data.errors[firstField];
+                        }
+                    }
+
+                    // Caso 3: Error como string directo
+                    if (data.error && typeof data.error === 'string') {
+                        return data.error;
+                    }
+
+                    // Fallback
+                    return 'Error al registrarse. Verifica los datos ingresados.';
                 },
             };
         }

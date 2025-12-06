@@ -122,10 +122,10 @@ Route::get('/forgot-password', function () {
     return view('public.forgot-password');
 })->name('password.request');
 
-// Email verification (requires authentication)
+// Email verification (public - token/code identifies user)
 Route::get('/verify-email', function () {
     return view('public.verify-email');
-})->middleware('jwt.require')->name('verification.notice');
+})->name('verification.notice');
 
 // Confirm password (requires authentication)
 Route::get('/confirm-password', function () {

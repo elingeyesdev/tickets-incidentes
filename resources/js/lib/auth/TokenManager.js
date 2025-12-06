@@ -95,6 +95,13 @@ class TokenManager {
 
       // Schedule auto-refresh
       this._scheduleRefresh(expiresIn);
+
+      // CRITICAL: Sync cookie for web navigation (middleware requires it)
+      // Standard cookie, not HttpOnly, allowing JS to update it
+      const cookieExpire = new Date(expiryTimestamp).toUTCString();
+      document.cookie = `jwt_token=${accessToken}; expires=${cookieExpire}; path=/; SameSite=Lax`;
+
+      this._log('Tokens set and cookie synced', { expiresIn, expiryTimestamp });
     } catch (error) {
       this._logError('Failed to set tokens in localStorage', error);
       throw new Error('Failed to store tokens');

@@ -263,7 +263,9 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        throw new Error(data.message || 'Error al iniciar sesión');
+                        // Capturar errores de validación de Laravel
+                        const errorMsg = this.extractErrorMessage(data);
+                        throw new Error(errorMsg);
                     }
 
                     // Guardar email si remember me está activo
@@ -324,11 +326,41 @@
 
                 } catch (err) {
                     console.error('Login error:', err);
-                    this.errorMessage = err.message || 'Error desconocido';
+                    this.errorMessage = err.message || 'Error desconocido al iniciar sesión';
                     this.error = true;
                 } finally {
                     this.loading = false;
                 }
+            },
+
+            /**
+             * Extrae el mensaje de error de la respuesta de la API
+             * Maneja múltiples formatos: {message}, {errors: {}}, etc.
+             */
+            extractErrorMessage(data) {
+                // Caso 1: Mensaje directo
+                if (data.message && typeof data.message === 'string') {
+                    return data.message;
+                }
+
+                // Caso 2: Errores de validación de Laravel {errors: {field: [msg1, msg2]}}
+                if (data.errors && typeof data.errors === 'object') {
+                    const firstField = Object.keys(data.errors)[0];
+                    if (firstField && Array.isArray(data.errors[firstField])) {
+                        return data.errors[firstField][0];
+                    }
+                    if (firstField && typeof data.errors[firstField] === 'string') {
+                        return data.errors[firstField];
+                    }
+                }
+
+                // Caso 3: Error como string directo
+                if (data.error && typeof data.error === 'string') {
+                    return data.error;
+                }
+
+                // Fallback
+                return 'Error al iniciar sesión. Verifica tus credenciales.';
             },
 
             async loginWithGoogle() {
