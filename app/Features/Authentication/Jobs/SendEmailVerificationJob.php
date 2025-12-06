@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Mail;
  *
  * Job asíncrono para enviar email de verificación de cuenta.
  * Se ejecuta en la cola 'emails'.
+ * 
+ * Incluye:
+ * - Token (64 caracteres) - para links/requests
+ * - Código (6 dígitos) - para entrada manual
  */
 class SendEmailVerificationJob implements ShouldQueue
 {
@@ -36,7 +40,8 @@ class SendEmailVerificationJob implements ShouldQueue
      */
     public function __construct(
         public User $user,
-        public string $verificationToken
+        public string $verificationToken,
+        public string $verificationCode
     ) {
         // Asignar a cola específica
         $this->onQueue('emails');
@@ -52,11 +57,12 @@ class SendEmailVerificationJob implements ShouldQueue
             return;
         }
 
-        // Enviar email
+        // Enviar email con token y código
         Mail::to($this->user->email)->send(
             new EmailVerificationMail(
                 $this->user,
-                $this->verificationToken
+                $this->verificationToken,
+                $this->verificationCode
             )
         );
     }

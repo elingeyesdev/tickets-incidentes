@@ -52,6 +52,20 @@
             text-align: center;
             margin: 30px 0;
         }
+        .code-box {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .code-box .code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+            letter-spacing: 3px;
+            font-family: 'Courier New', monospace;
+        }
         .alternative-link {
             font-size: 12px;
             color: #666;
@@ -79,6 +93,13 @@
         .warning strong {
             color: #856404;
         }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        ul li {
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -97,14 +118,33 @@
             <p><strong>{{ $user->email }}</strong></p>
         </div>
 
+        <div class="content">
+            <h3>Opción 1: Usar el enlace directo</h3>
+            <p>Haz clic en el siguiente botón para verificar tu cuenta:</p>
+        </div>
+
         <div class="button-container">
             <a href="{{ $verificationUrl }}" class="verification-button">
                 ✓ Verificar mi cuenta
             </a>
         </div>
 
+        <div class="content">
+            <h3>Opción 2: Usar el código de verificación</h3>
+            <p>Si prefieres, puedes usar este código de 6 dígitos en lugar del enlace:</p>
+        </div>
+
+        <div class="code-box">
+            <div class="code">{{ $verificationCode }}</div>
+        </div>
+
         <div class="warning">
-            <strong>⏱️ Importante:</strong> Este enlace expirará en <strong>{{ $expiresInHours }} horas</strong>.
+            <strong>⏱️ Información Importante:</strong>
+            <ul>
+                <li>Este enlace y código expiran en <strong>{{ $expiresInHours }} horas</strong></li>
+                <li>No compartas este código con nadie</li>
+                <li>Si no creaste una cuenta, puedes ignorar este email de forma segura</li>
+            </ul>
         </div>
 
         <div class="content">
@@ -125,6 +165,7 @@
             <p>Si no creaste una cuenta en Helpdesk System, puedes ignorar este correo.</p>
             <p>Este es un email automático, por favor no respondas a este mensaje.</p>
             <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 15px 0;">
+            <p>Atentamente,<br>El equipo de <strong>Helpdesk System</strong></p>
             <p>&copy; {{ date('Y') }} Helpdesk System. Todos los derechos reservados.</p>
         </div>
     </div>

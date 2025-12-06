@@ -6,13 +6,22 @@ Para completar tu registro y comenzar a usar tu cuenta, necesitamos verificar tu
 
 {{ $user->email }}
 
-VERIFICAR MI CUENTA
--------------------
+OPCIÓN 1: USAR EL ENLACE DIRECTO
+---------------------------------
 Haz clic en el siguiente enlace para verificar tu cuenta:
 
 {{ $verificationUrl }}
 
-⏱️ IMPORTANTE: Este enlace expirará en {{ $expiresInHours }} horas.
+OPCIÓN 2: USAR EL CÓDIGO DE VERIFICACIÓN
+-----------------------------------------
+Si prefieres, puedes usar este código de 6 dígitos:
+
+{{ $verificationCode }}
+
+⏱️ INFORMACIÓN IMPORTANTE:
+- Este enlace y código expiran en {{ $expiresInHours }} horas
+- No compartas este código con nadie
+- Si no creaste una cuenta, puedes ignorar este email de forma segura
 
 ¿Por qué verificamos tu email?
 - Confirmar que la dirección de correo es válida
@@ -25,4 +34,8 @@ Si no creaste una cuenta en Helpdesk System, puedes ignorar este correo.
 
 Este es un email automático, por favor no respondas a este mensaje.
 
+Atentamente,
+El equipo de Helpdesk System
+
 © {{ date('Y') }} Helpdesk System. Todos los derechos reservados.
+

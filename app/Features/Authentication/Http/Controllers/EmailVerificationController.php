@@ -17,9 +17,13 @@ use OpenApi\Attributes as OA;
  *
  * REST endpoints para verificación de email.
  * Flujo:
- * 1. POST /email/verify → Verificar email con token
+ * 1. POST /email/verify → Verificar email con token O código de 6 dígitos
  * 2. POST /email/verify/resend → Reenviar email (requiere auth)
  * 3. GET /email/status → Ver estado de verificación (requiere auth)
+ * 
+ * El email de verificación incluye:
+ * - Token de 64 caracteres (para link directo)
+ * - Código de 6 dígitos (para entrada manual)
  */
 class EmailVerificationController
 {
@@ -33,8 +37,9 @@ class EmailVerificationController
     /**
      * Verify email
      *
-     * Verifica el email del usuario usando un token.
-     * El token identifica al usuario automáticamente.
+     * Verifica el email del usuario usando un token O código de 6 dígitos.
+     * El token/código identifica al usuario automáticamente.
+     * Puede usar token (64 chars) o code (6 dígitos).
      * Siempre retorna 200, pero success puede ser false.
      *
      * @authenticated false
@@ -42,19 +47,27 @@ class EmailVerificationController
      */
     #[OA\Post(
         path: '/api/auth/email/verify',
-        summary: 'Verify email',
-        description: 'Verify user email with token. Public endpoint (no authentication required). Always returns 200 status, check "success" field in response body to determine result.',
+        summary: 'Verify email with token or code',
+        description: 'Verify user email with token OR 6-digit code. Public endpoint (no authentication required). Provide either token or code, not both. Always returns 200 status for valid/invalid tokens, check "success" field in response body to determine result.',
         tags: ['Email Verification'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['token'],
+                type: 'object',
                 properties: [
                     new OA\Property(
                         property: 'token',
                         type: 'string',
-                        description: 'Email verification token (received via email)',
-                        example: 'abc123def456ghi789jkl012mno345pq'
+                        nullable: true,
+                        description: 'Email verification token (64 characters) - received via email link. Use token OR code, not both.',
+                        example: 'abc123def456ghi789jkl012mno345pqrst789xyz123abc456def789ghi012'
+                    ),
+                    new OA\Property(
+                        property: 'code',
+                        type: 'string',
+                        nullable: true,
+                        description: '6-digit verification code - alternative to token for manual entry. Use token OR code, not both.',
+                        example: '123456'
                     ),
                 ]
             )
@@ -62,14 +75,49 @@ class EmailVerificationController
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Verification result (always returns 200, check success field)',
+                description: 'Verification result (always returns 200 for both success and failure cases, check success field)',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'success', type: 'boolean', example: true),
-                        new OA\Property(property: 'message', type: 'string', example: '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.'),
-                        new OA\Property(property: 'canResend', type: 'boolean', example: false),
-                        new OA\Property(property: 'resendAvailableAt', type: 'string', nullable: true, example: null),
+                        new OA\Property(
+                            property: 'success', 
+                            type: 'boolean', 
+                            example: true,
+                            description: 'Whether verification succeeded'
+                        ),
+                        new OA\Property(
+                            property: 'message', 
+                            type: 'string', 
+                            example: '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.',
+                            description: 'User-friendly message describing the result'
+                        ),
+                        new OA\Property(
+                            property: 'canResend', 
+                            type: 'boolean', 
+                            example: false,
+                            description: 'Whether user can request to resend verification email'
+                        ),
+                        new OA\Property(
+                            property: 'resendAvailableAt', 
+                            type: 'string', 
+                            format: 'date-time',
+                            nullable: true, 
+                            example: null,
+                            description: 'Timestamp when resend will be available (null if cannot resend)'
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422, 
+                description: 'Validation error (e.g., both token and code provided, neither provided, or invalid format)',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string', example: 'Proporciona token O código, no ambos.'),
+                        new OA\Property(property: 'canResend', type: 'boolean', example: true),
+                        new OA\Property(property: 'resendAvailableAt', type: 'string', format: 'date-time'),
                     ]
                 )
             ),
@@ -79,13 +127,38 @@ class EmailVerificationController
     {
         try {
             $token = $request->input('token');
+            $code = $request->input('code');
 
-            // Verificar email usando token (replicar exactamente VerifyEmailMutation)
-            $user = $this->authService->verifyEmail($token);
+            // Validar que se envíe token O código, pero no ambos
+            if ($token && $code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Proporciona token O código, no ambos.',
+                    'canResend' => true,
+                    'resendAvailableAt' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            if (!$token && !$code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Se requiere token o código de verificación.',
+                    'canResend' => true,
+                    'resendAvailableAt' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Verificar usando token O código
+            if ($token) {
+                $user = $this->authService->verifyEmail($token);
+            } else {
+                $user = $this->authService->verifyEmailWithCode($code);
+            }
 
             \Illuminate\Support\Facades\Log::info('Email verified successfully', [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'method' => $token ? 'token' : 'code',
             ]);
 
             return response()->json([
@@ -96,9 +169,10 @@ class EmailVerificationController
             ], 200);
 
         } catch (AuthenticationException $e) {
-            // Error de verificación (token inválido, expirado, email ya verificado)
+            // Error de verificación (token/código inválido, expirado, email ya verificado)
             \Illuminate\Support\Facades\Log::warning('Email verification failed', [
-                'token_preview' => substr($request->input('token', ''), 0, 10) . '...',
+                'token_preview' => $request->input('token') ? substr($request->input('token', ''), 0, 10) . '...' : null,
+                'code' => $request->input('code') ? '******' : null,
                 'error' => $e->getMessage(),
             ]);
 

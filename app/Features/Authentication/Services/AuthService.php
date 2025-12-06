@@ -395,6 +395,99 @@ class AuthService
         ];
     }
 
+    /**
+     * Verificar email usando código de 6 dígitos
+     *
+     * Sigue el MISMO patrón que PasswordResetService::confirmResetWithCode()
+     * - Valida formato del código
+     * - Busca usuario por mapeo inverso O(1)
+     * - Marca email como verificado
+     * - Limpia cache
+     *
+     * @param string $code Código de 6 dígitos
+     * @return User
+     * @throws AuthenticationException
+     */
+    public function verifyEmailWithCode(string $code): User
+    {
+        // Validar que el código tenga exactamente 6 dígitos
+        if (!preg_match('/^\d{6}$/', $code)) {
+            throw new AuthenticationException('Invalid code format. Must be 6 digits.');
+        }
+
+        // Buscar usuario que tenga este código usando mapeo inverso O(1)
+        $userId = $this->findUserIdByVerificationCode($code);
+
+        if (!$userId) {
+            throw new AuthenticationException('Invalid or expired verification code');
+        }
+
+        // Buscar usuario
+        $user = User::with('profile')->find($userId);
+
+        if (!$user) {
+            throw new AuthenticationException('User not found');
+        }
+
+        // Verificar si ya está verificado
+        if ($user->hasVerifiedEmail()) {
+            throw new AuthenticationException('Email already verified');
+        }
+
+        // Marcar email como verificado
+        $user->markEmailAsVerified();
+
+        // Invalidar código y mapeo inverso
+        $this->invalidateVerificationCode($code, $userId);
+
+        // También invalidar el token si existe
+        $tokenKey = $this->getEmailVerificationKey($userId);
+        Cache::forget($tokenKey);
+
+        // Disparar evento
+        event(new EmailVerified($user));
+
+        return $user->fresh(['profile']);
+    }
+
+    /**
+     * Buscar userId por código de verificación
+     *
+     * Usa mapeo inverso (code -> user_id) almacenado en cache
+     * para búsqueda O(1) en lugar de iterar todas las keys
+     *
+     * @param string $code
+     * @return string|null User ID (UUID) o null
+     */
+    private function findUserIdByVerificationCode(string $code): ?string
+    {
+        // Buscar user_id usando el mapeo inverso
+        $cacheKey = "email_verification_code_lookup:{$code}";
+        $userId = Cache::get($cacheKey);
+
+        if ($userId) {
+            return (string) $userId;
+        }
+
+        return null;
+    }
+
+    /**
+     * Invalidar código de verificación
+     *
+     * @param string $code
+     * @param string $userId User ID (UUID)
+     * @return bool
+     */
+    private function invalidateVerificationCode(string $code, string $userId): bool
+    {
+        // Eliminar ambas keys: user_id -> code Y code -> user_id
+        Cache::forget("email_verification_code:{$userId}");
+        Cache::forget("email_verification_code_lookup:{$code}");
+
+        return true;
+    }
+
     // ==================== AUTH STATUS ====================
 
     /**

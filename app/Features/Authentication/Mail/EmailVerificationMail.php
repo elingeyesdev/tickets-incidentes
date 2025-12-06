@@ -13,7 +13,9 @@ use Illuminate\Queue\SerializesModels;
  * Email Verification Mail
  *
  * Email enviado al usuario para verificar su cuenta.
- * Contiene un link con token que expira en 24 horas.
+ * Incluye:
+ * - Token (64 caracteres) - para links/requests
+ * - Código (6 dígitos) - para entrada manual
  */
 class EmailVerificationMail extends Mailable
 {
@@ -27,11 +29,12 @@ class EmailVerificationMail extends Mailable
      */
     public function __construct(
         public User $user,
-        public string $verificationToken
+        public string $verificationToken,
+        public string $verificationCode
     ) {
-        // Generar URL de verificación
-        $this->verificationUrl = config('app.frontend_url', config('app.url'))
-            . "/verify-email?token={$verificationToken}&user_id={$user->id}";
+        // Generar URL de verificación con token
+        $frontendUrl = config('app.frontend_url', config('app.url'));
+        $this->verificationUrl = $frontendUrl . '/verify-email?token=' . urlencode($verificationToken);
 
         // Nombre para mostrar
         $this->displayName = $user->profile
@@ -45,7 +48,7 @@ class EmailVerificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verifica tu cuenta - Helpdesk',
+            subject: '🔐 Verifica tu cuenta - Helpdesk',
         );
     }
 
@@ -59,6 +62,8 @@ class EmailVerificationMail extends Mailable
             text: 'emails.auth.verify-email-text',
             with: [
                 'user' => $this->user,
+                'verificationToken' => $this->verificationToken,
+                'verificationCode' => $this->verificationCode,
                 'verificationUrl' => $this->verificationUrl,
                 'displayName' => $this->displayName,
                 'expiresInHours' => 24,

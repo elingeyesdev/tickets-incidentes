@@ -10,19 +10,35 @@ use Tests\TestCase;
 use Tests\Traits\RefreshDatabaseWithoutTransactions;
 
 /**
- * Test Completo del Flujo de Verificación de Email
+ * Test Completo del Flujo de Verificación de Email (16 Tests)
  *
- * Flujo profesional:
- * 1. Usuario se registra → recibe email con token
- * 2. Query emailVerificationStatus → estado "no verificado"
- * 3. Mutation verifyEmail → verifica con token
- * 4. Query emailVerificationStatus → estado "verificado"
- * 5. Mutation resendVerification → falla (ya verificado)
+ * A. FLUJO PRINCIPAL
+ *    1. complete_email_verification_flow_works_correctly - Registro → Estado → Verify → Estado verificado
  *
- * También prueba:
- * - Resend antes de verificar
- * - Tokens inválidos/expirados
- * - Rate limiting
+ * B. RESEND TESTS
+ *    2. can_resend_verification_email_before_verifying - Resend antes de verificar
+ *    3. cannot_resend_verification_if_already_verified - No resend si ya verificado
+ *
+ * C. TOKEN TESTS
+ *    4. cannot_verify_with_invalid_token - Token inválido rechazado
+ *    5. cannot_verify_with_expired_token - Token expirado rechazado
+ *    6. verify_email_does_not_require_authentication - No requiere auth
+ *
+ * D. AUTENTICACIÓN
+ *    7. email_verification_status_requires_authentication - Status requiere auth
+ *    8. resend_verification_requires_authentication - Resend requiere auth
+ *    9. email_verification_status_returns_correct_information - Status correcto
+ *
+ * E. MAILPIT
+ *    10. verification_email_arrives_to_mailpit - Email contiene token + código
+ *
+ * F. CÓDIGO DE 6 DÍGITOS (NUEVO)
+ *    11. can_verify_email_with_6_digit_code - Verificar con código
+ *    12. rejects_invalid_code_format - Rechaza formato inválido
+ *    13. rejects_wrong_code - Rechaza código incorrecto
+ *    14. cannot_reuse_same_code_twice - No reusar código
+ *    15. rejects_both_token_and_code_in_single_request - Rechaza ambos
+ *    16. rejects_empty_request - Rechaza request vacío
  */
 class EmailVerificationCompleteFlowTest extends TestCase
 {
@@ -344,9 +360,192 @@ class EmailVerificationCompleteFlowTest extends TestCase
 
         $this->assertNotNull($verificationEmail, 'Verification email should arrive to Mailpit');
 
-        // Verify email contains verification token
+        // Verify email contains verification token AND 6-digit code
         $emailBody = $this->getMailpitMessageBody($verificationEmail['ID']);
         $this->assertMatchesRegularExpression('/\?token=[a-zA-Z0-9]+/', $emailBody, 'Email should contain verification token');
+        $this->assertMatchesRegularExpression('/\b\d{6}\b/', $emailBody, 'Email should contain 6-digit code');
+    }
+
+    // =========================================================================
+    // TESTS DE VERIFICACIÓN CON CÓDIGO DE 6 DÍGITOS
+    // =========================================================================
+
+    /**
+     * @test
+     * Puede verificar email con código de 6 dígitos
+     */
+    public function can_verify_email_with_6_digit_code(): void
+    {
+        // Arrange
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'codetest@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Code',
+            'lastName' => 'Test',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ]);
+
+        $userId = $registerResponse->json('user.id');
+
+        // Obtener código del cache (en producción vendría por email)
+        $verificationCode = Cache::get("email_verification_code:{$userId}");
+        $this->assertNotEmpty($verificationCode, 'El código de verificación debe existir en cache');
+        $this->assertEquals(6, strlen($verificationCode), 'El código debe tener 6 dígitos');
+
+        // Act - Verificar con código
+        $verifyResponse = $this->postJson('/api/auth/email/verify', [
+            'code' => $verificationCode
+        ]);
+
+        // Assert
+        $verifyResponse->assertJson([
+            'success' => true,
+            'message' => '¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema.',
+            'canResend' => false,
+        ]);
+
+        // Verificar en base de datos
+        $user = User::find($userId);
+        $this->assertTrue($user->email_verified);
+        $this->assertNotNull($user->email_verified_at);
+
+        // Verificar que el código fue eliminado del cache
+        $this->assertNull(Cache::get("email_verification_code:{$userId}"));
+        $this->assertNull(Cache::get("email_verification_code_lookup:{$verificationCode}"));
+    }
+
+    /**
+     * @test
+     * Rechaza código con formato inválido
+     */
+    public function rejects_invalid_code_format(): void
+    {
+        $invalidCodes = ['abc123', '12345', '1234567', 'ABCDEF'];
+
+        foreach ($invalidCodes as $invalidCode) {
+            $response = $this->postJson('/api/auth/email/verify', [
+                'code' => $invalidCode,
+            ]);
+
+            $this->assertFalse($response->json('success'));
+        }
+    }
+
+    /**
+     * @test
+     * Rechaza código incorrecto
+     */
+    public function rejects_wrong_code(): void
+    {
+        // Arrange
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'wrongcode@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Wrong',
+            'lastName' => 'Code',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ]);
+
+        $userId = $registerResponse->json('user.id');
+        $realCode = Cache::get("email_verification_code:{$userId}");
+        $wrongCode = '000000';
+
+        if ($wrongCode === $realCode) $wrongCode = '111111';
+
+        // Act
+        $response = $this->postJson('/api/auth/email/verify', [
+            'code' => $wrongCode,
+        ]);
+
+        // Assert
+        $this->assertFalse($response->json('success'));
+        $this->assertStringContainsString('Invalid', $response->json('message'));
+    }
+
+    /**
+     * @test
+     * NO permite reutilizar código ya usado
+     */
+    public function cannot_reuse_same_code_twice(): void
+    {
+        // Arrange
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'reusetest@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Reuse',
+            'lastName' => 'Test',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ]);
+
+        $userId = $registerResponse->json('user.id');
+        $verificationCode = Cache::get("email_verification_code:{$userId}");
+
+        // Act 1 - Primer uso (debe funcionar)
+        $response1 = $this->postJson('/api/auth/email/verify', [
+            'code' => $verificationCode,
+        ]);
+
+        $this->assertTrue($response1->json('success'));
+
+        // Act 2 - Intentar reutilizar
+        $response2 = $this->postJson('/api/auth/email/verify', [
+            'code' => $verificationCode,
+        ]);
+
+        // Assert - Debe fallar
+        $this->assertFalse($response2->json('success'));
+    }
+
+    /**
+     * @test
+     * Rechaza si se envían ambos token Y código
+     */
+    public function rejects_both_token_and_code_in_single_request(): void
+    {
+        // Arrange
+        $registerResponse = $this->postJson('/api/auth/register', [
+            'email' => 'bothtest@example.com',
+            'password' => 'SecurePass123!',
+            'passwordConfirmation' => 'SecurePass123!',
+            'firstName' => 'Both',
+            'lastName' => 'Test',
+            'acceptsTerms' => true,
+            'acceptsPrivacyPolicy' => true,
+        ]);
+
+        $userId = $registerResponse->json('user.id');
+        $token = Cache::get("email_verification:{$userId}");
+        $code = Cache::get("email_verification_code:{$userId}");
+
+        // Act - Enviar ambos
+        $response = $this->postJson('/api/auth/email/verify', [
+            'token' => $token,
+            'code' => $code,
+        ]);
+
+        // Assert - Debe rechazar con 422
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(422);
+    }
+
+    /**
+     * @test
+     * Rechaza si no se envía ni token ni código
+     */
+    public function rejects_empty_request(): void
+    {
+        // Act
+        $response = $this->postJson('/api/auth/email/verify', []);
+
+        // Assert - Debe rechazar con 422
+        $this->assertFalse($response->json('success'));
+        $response->assertStatus(422);
     }
 
     protected function isMailpitAvailable(): bool
