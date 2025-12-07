@@ -658,6 +658,11 @@ Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
         Route::get('/realtime-traffic/latest', [\App\Features\Analytics\Http\Controllers\RealtimeTrafficController::class, 'latest'])
             ->name('analytics.realtime-traffic.latest');
     });
+
+    // Company Full Stats - for Platform Admin viewing company details
+    Route::get('/companies/{companyId}/stats', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'companyStats'])
+        ->middleware('role:PLATFORM_ADMIN')
+        ->name('analytics.company-stats');
 });
 
 // ================================================================================

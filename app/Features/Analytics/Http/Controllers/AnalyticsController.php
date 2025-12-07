@@ -170,4 +170,78 @@ class AnalyticsController extends Controller
 
         return response()->json($stats);
     }
+
+    #[OA\Get(
+        path: '/api/admin/companies/{companyId}/stats',
+        operationId: 'get_company_full_stats',
+        summary: 'Get comprehensive company statistics',
+        description: 'Returns all statistics for a specific company including users, tickets, announcements, articles, areas, and categories. Requires PLATFORM_ADMIN role.',
+        security: [['bearerAuth' => []]],
+        tags: ['Analytics'],
+        parameters: [
+            new OA\Parameter(
+                name: 'companyId',
+                description: 'Company UUID',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Company statistics retrieved successfully',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'users', type: 'object', description: 'User statistics'),
+                                new OA\Property(property: 'tickets', type: 'object', description: 'Ticket statistics by status and priority'),
+                                new OA\Property(property: 'announcements', type: 'object', description: 'Announcement statistics by type and status'),
+                                new OA\Property(property: 'articles', type: 'object', description: 'Help center article statistics'),
+                                new OA\Property(property: 'areas', type: 'object', description: 'Area statistics'),
+                                new OA\Property(property: 'categories', type: 'object', description: 'Category statistics'),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: 'Forbidden - requires PLATFORM_ADMIN role',
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Company not found',
+            )
+        ]
+    )]
+    public function companyStats(string $companyId): JsonResponse
+    {
+        // Ensure user is PLATFORM_ADMIN
+        $user = JWTHelper::getAuthenticatedUser();
+        if (!$user->hasRole('PLATFORM_ADMIN')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify company exists
+        $company = \App\Features\CompanyManagement\Models\Company::find($companyId);
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Company not found'
+            ], 404);
+        }
+
+        $stats = $this->analyticsService->getCompanyFullStats($companyId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    }
 }

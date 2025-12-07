@@ -4,12 +4,17 @@ namespace App\Features\Analytics\Services;
 
 use App\Features\TicketManagement\Models\Ticket;
 use App\Features\TicketManagement\Enums\TicketStatus;
+use App\Features\TicketManagement\Enums\TicketPriority;
 use App\Features\UserManagement\Models\User;
+use App\Features\UserManagement\Models\UserRole;
 use App\Features\ContentManagement\Models\HelpCenterArticle;
 use App\Features\ContentManagement\Models\Announcement;
+use App\Features\ContentManagement\Enums\AnnouncementType;
+use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\TicketManagement\Models\Category;
 use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Area;
 use Illuminate\Support\Facades\DB;
 
 class AnalyticsService
@@ -527,4 +532,200 @@ class AnalyticsService
             'avg_response_time' => $avgTimeFormatted,
         ];
     }
+
+    /**
+     * Get comprehensive statistics for a specific company.
+     * Optimized for Platform Admin view - all stats in one call.
+     * Uses efficient grouped queries to avoid N+1 problems.
+     *
+     * @param string $companyId
+     * @return array
+     */
+    public function getCompanyFullStats(string $companyId): array
+    {
+        return [
+            'users' => $this->getCompanyUserStats($companyId),
+            'tickets' => $this->getCompanyTicketStats($companyId),
+            'announcements' => $this->getCompanyAnnouncementStats($companyId),
+            'articles' => $this->getCompanyArticleStats($companyId),
+            'areas' => $this->getCompanyAreaStats($companyId),
+            'categories' => $this->getCompanyCategorySummary($companyId),
+        ];
+    }
+
+    /**
+     * Get user statistics for a company.
+     */
+    private function getCompanyUserStats(string $companyId): array
+    {
+        // Get role counts in a single query
+        $roleCounts = UserRole::where('company_id', $companyId)
+            ->where('is_active', true)
+            ->select('role_code', DB::raw('COUNT(DISTINCT user_id) as total'))
+            ->groupBy('role_code')
+            ->pluck('total', 'role_code')
+            ->toArray();
+
+        // Get followers count
+        $followersCount = DB::table('business.user_company_followers')
+            ->where('company_id', $companyId)
+            ->count();
+
+        return [
+            'total' => array_sum($roleCounts),
+            'admins' => $roleCounts['COMPANY_ADMIN'] ?? 0,
+            'agents' => $roleCounts['AGENT'] ?? 0,
+            'followers' => $followersCount,
+        ];
+    }
+
+    /**
+     * Get ticket statistics for a company.
+     * Single optimized query with grouping.
+     */
+    private function getCompanyTicketStats(string $companyId): array
+    {
+        // Status counts in one query
+        $statusCounts = Ticket::where('company_id', $companyId)
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        // Priority counts in one query
+        $priorityCounts = Ticket::where('company_id', $companyId)
+            ->select('priority', DB::raw('count(*) as total'))
+            ->groupBy('priority')
+            ->pluck('total', 'priority')
+            ->toArray();
+
+        $total = array_sum($statusCounts);
+
+        return [
+            'total' => $total,
+            'by_status' => [
+                'open' => $statusCounts[TicketStatus::OPEN->value] ?? 0,
+                'pending' => $statusCounts[TicketStatus::PENDING->value] ?? 0,
+                'resolved' => $statusCounts[TicketStatus::RESOLVED->value] ?? 0,
+                'closed' => $statusCounts[TicketStatus::CLOSED->value] ?? 0,
+            ],
+            'by_priority' => [
+                'low' => $priorityCounts[TicketPriority::LOW->value] ?? 0,
+                'medium' => $priorityCounts[TicketPriority::MEDIUM->value] ?? 0,
+                'high' => $priorityCounts[TicketPriority::HIGH->value] ?? 0,
+            ],
+        ];
+    }
+
+    /**
+     * Get announcement statistics for a company.
+     */
+    private function getCompanyAnnouncementStats(string $companyId): array
+    {
+        // Type counts
+        $typeCounts = Announcement::where('company_id', $companyId)
+            ->select('type', DB::raw('count(*) as total'))
+            ->groupBy('type')
+            ->pluck('total', 'type')
+            ->toArray();
+
+        // Status counts
+        $statusCounts = Announcement::where('company_id', $companyId)
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        $total = array_sum($typeCounts);
+
+        return [
+            'total' => $total,
+            'by_type' => [
+                'MAINTENANCE' => $typeCounts[AnnouncementType::MAINTENANCE->value] ?? 0,
+                'INCIDENT' => $typeCounts[AnnouncementType::INCIDENT->value] ?? 0,
+                'NEWS' => $typeCounts[AnnouncementType::NEWS->value] ?? 0,
+                'ALERT' => $typeCounts[AnnouncementType::ALERT->value] ?? 0,
+            ],
+            'by_status' => [
+                'DRAFT' => $statusCounts[PublicationStatus::DRAFT->value] ?? 0,
+                'SCHEDULED' => $statusCounts[PublicationStatus::SCHEDULED->value] ?? 0,
+                'PUBLISHED' => $statusCounts[PublicationStatus::PUBLISHED->value] ?? 0,
+                'ARCHIVED' => $statusCounts[PublicationStatus::ARCHIVED->value] ?? 0,
+            ],
+        ];
+    }
+
+    /**
+     * Get help center article statistics for a company.
+     */
+    private function getCompanyArticleStats(string $companyId): array
+    {
+        // Status counts and total views in one query
+        $stats = HelpCenterArticle::where('company_id', $companyId)
+            ->select(
+                'status',
+                DB::raw('count(*) as total'),
+                DB::raw('sum(views_count) as views')
+            )
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $total = $stats->sum('total');
+        $totalViews = $stats->sum('views');
+
+        return [
+            'total' => $total,
+            'by_status' => [
+                'DRAFT' => $stats->get('DRAFT')?->total ?? 0,
+                'PUBLISHED' => $stats->get('PUBLISHED')?->total ?? 0,
+                'ARCHIVED' => $stats->get('ARCHIVED')?->total ?? 0,
+            ],
+            'total_views' => (int) $totalViews,
+        ];
+    }
+
+    /**
+     * Get area statistics for a company.
+     */
+    private function getCompanyAreaStats(string $companyId): array
+    {
+        // Check if company has areas enabled
+        $company = Company::find($companyId);
+        $areasEnabled = $company?->hasAreasEnabled() ?? false;
+
+        // Area counts by active status
+        $areaCounts = Area::where('company_id', $companyId)
+            ->select('is_active', DB::raw('count(*) as total'))
+            ->groupBy('is_active')
+            ->pluck('total', 'is_active')
+            ->toArray();
+
+        return [
+            'total' => array_sum($areaCounts),
+            'active' => $areaCounts[true] ?? $areaCounts[1] ?? 0,
+            'inactive' => $areaCounts[false] ?? $areaCounts[0] ?? 0,
+            'areas_enabled' => $areasEnabled,
+        ];
+    }
+
+    /**
+     * Get category summary for a company.
+     */
+    private function getCompanyCategorySummary(string $companyId): array
+    {
+        // Category counts
+        $categoryCounts = Category::where('company_id', $companyId)
+            ->select('is_active', DB::raw('count(*) as total'))
+            ->groupBy('is_active')
+            ->pluck('total', 'is_active')
+            ->toArray();
+
+        return [
+            'total' => array_sum($categoryCounts),
+            'active' => $categoryCounts[true] ?? $categoryCounts[1] ?? 0,
+            'inactive' => $categoryCounts[false] ?? $categoryCounts[0] ?? 0,
+        ];
+    }
 }
+
