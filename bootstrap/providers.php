@@ -9,4 +9,5 @@ return [
     App\Features\CompanyManagement\CompanyManagementServiceProvider::class,
     App\Features\TicketManagement\TicketManagementServiceProvider::class,
     App\Features\ContentManagement\ContentManagementServiceProvider::class,
+    App\Features\AuditLog\AuditLogServiceProvider::class,
 ];

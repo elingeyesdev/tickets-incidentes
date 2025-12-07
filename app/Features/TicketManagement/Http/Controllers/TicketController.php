@@ -2,6 +2,7 @@
 
 namespace App\Features\TicketManagement\Http\Controllers;
 
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Features\TicketManagement\Models\Ticket;
 use App\Features\TicketManagement\Http\Requests\StoreTicketRequest;
 use App\Features\TicketManagement\Http\Requests\UpdateTicketRequest;
@@ -34,7 +35,8 @@ class TicketController extends Controller
     use AuthorizesRequests;
 
     public function __construct(
-        private TicketService $ticketService
+        private TicketService $ticketService,
+        private ActivityLogService $activityLogService
     ) {}
 
     #[OA\Post(
@@ -904,7 +906,24 @@ class TicketController extends Controller
     {
         $this->authorize('update', $ticket);
 
+        // Capturar valores anteriores para el log
+        $oldValues = [
+            'title' => $ticket->title,
+            'description' => $ticket->description,
+            'priority' => $ticket->priority?->value,
+            'category_id' => $ticket->category_id,
+            'area_id' => $ticket->area_id,
+        ];
+
         $ticket = $this->ticketService->update($ticket, $request->validated());
+
+        // Registrar actividad
+        $this->activityLogService->logTicketUpdated(
+            userId: auth()->id(),
+            ticketId: $ticket->id,
+            oldData: $oldValues,
+            newData: $request->validated()
+        );
 
         return response()->json([
             'message' => 'Ticket actualizado exitosamente',
@@ -988,7 +1007,24 @@ class TicketController extends Controller
     {
         $this->authorize('delete', $ticket);
 
+        // Capturar datos del ticket antes de eliminar
+        $ticketData = [
+            'ticket_code' => $ticket->ticket_code,
+            'title' => $ticket->title,
+            'status' => $ticket->status->value,
+            'company_id' => $ticket->company_id,
+        ];
+
         $this->ticketService->delete($ticket);
+
+        // Registrar actividad
+        $this->activityLogService->log(
+            action: 'ticket_deleted',
+            userId: auth()->id(),
+            entityType: 'ticket',
+            entityId: $ticket->id,
+            oldValues: $ticketData
+        );
 
         return response()->json([
             'message' => 'Ticket eliminado exitosamente',

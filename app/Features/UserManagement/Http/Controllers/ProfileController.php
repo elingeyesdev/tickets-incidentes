@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Features\UserManagement\Http\Controllers;
 
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Features\UserManagement\Http\Requests\UpdatePreferencesRequest;
 use App\Features\UserManagement\Http\Requests\UpdateProfileRequest;
 use App\Features\UserManagement\Http\Requests\UploadAvatarRequest;
@@ -23,7 +24,8 @@ use OpenApi\Attributes as OA;
 class ProfileController
 {
     public function __construct(
-        private readonly ProfileService $profileService
+        private readonly ProfileService $profileService,
+        private readonly ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -235,9 +237,22 @@ class ProfileController
     {
         $user = JWTHelper::getAuthenticatedUser();
 
+        // Capturar valores anteriores para auditoría
+        $oldProfile = $user->profile?->only(['first_name', 'last_name', 'display_name', 'phone_number', 'avatar_url']);
+
         $profile = $this->profileService->updateProfile(
             $user->id,
             $request->validated()
+        );
+
+        // Registrar actividad
+        $this->activityLogService->log(
+            action: 'profile_updated',
+            userId: $user->id,
+            entityType: 'user',
+            entityId: $user->id,
+            oldValues: $oldProfile,
+            newValues: $request->validated()
         );
 
         // Touch the user to update updated_at timestamp

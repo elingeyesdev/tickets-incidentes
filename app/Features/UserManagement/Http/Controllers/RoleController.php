@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Features\UserManagement\Http\Controllers;
 
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Features\UserManagement\Http\Requests\AssignRoleRequest;
 use App\Features\UserManagement\Http\Resources\RoleResource;
 use App\Features\UserManagement\Http\Resources\UserRoleResource;
@@ -18,7 +19,8 @@ use OpenApi\Attributes as OA;
 class RoleController extends Controller
 {
     public function __construct(
-        private readonly RoleService $roleService
+        private readonly RoleService $roleService,
+        private readonly ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -197,6 +199,14 @@ class RoleController extends Controller
 
         $statusCode = $result['wasReactivated'] ? 200 : 201;
 
+        // Registrar actividad
+        $this->activityLogService->logRoleAssigned(
+            adminId: $currentUser->id,
+            targetUserId: $userId,
+            roleCode: $validated['roleCode'],
+            companyId: $validated['companyId'] ?? null
+        );
+
         return response()->json([
             'success' => true,
             'message' => $result['message'],
@@ -266,9 +276,23 @@ class RoleController extends Controller
 
         $reason = $request->input('reason');
 
+        // Obtener info del rol antes de eliminar para el log
+        $userRole = UserRole::findOrFail($roleId);
+        $targetUserId = $userRole->user_id;
+        $roleCode = $userRole->role_code;
+        $companyId = $userRole->company_id;
+
         $this->roleService->removeRoleById(
             roleId: $roleId,
             reason: $reason
+        );
+
+        // Registrar actividad
+        $this->activityLogService->logRoleRemoved(
+            adminId: $currentUser->id,
+            targetUserId: $targetUserId,
+            roleCode: $roleCode,
+            companyId: $companyId
         );
 
         return response()->json([

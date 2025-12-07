@@ -666,6 +666,24 @@ Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
 });
 
 // ================================================================================
+// REST API ENDPOINTS - Activity Logs
+// ================================================================================
+
+Route::middleware(['jwt.require'])->prefix('activity-logs')->group(function () {
+    // List activity logs (admins can see all, users see only their own)
+    Route::get('/', [\App\Features\AuditLog\Http\Controllers\ActivityLogController::class, 'index'])
+        ->name('activity-logs.index');
+
+    // Get my activity logs
+    Route::get('/my', [\App\Features\AuditLog\Http\Controllers\ActivityLogController::class, 'myActivity'])
+        ->name('activity-logs.my');
+
+    // Get activity logs for a specific entity
+    Route::get('/entity/{entityType}/{entityId}', [\App\Features\AuditLog\Http\Controllers\ActivityLogController::class, 'entityActivity'])
+        ->name('activity-logs.entity');
+});
+
+// ================================================================================
 // REST API ENDPOINTS - Storage for Microservices
 // ================================================================================
 // Used by microservices (Ratings, Macros) for file attachments

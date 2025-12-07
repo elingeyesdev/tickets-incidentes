@@ -2,6 +2,7 @@
 
 namespace App\Features\UserManagement\Http\Controllers;
 
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Features\UserManagement\Http\Resources\UserResource;
 use App\Features\UserManagement\Http\Requests\UpdateStatusRequest;
 use App\Features\UserManagement\Models\User;
@@ -28,7 +29,8 @@ use OpenApi\Attributes as OA;
 class UserController extends Controller
 {
     public function __construct(
-        protected UserService $userService
+        protected UserService $userService,
+        protected ActivityLogService $activityLogService
     ) {}
 
     /**
@@ -425,6 +427,9 @@ class UserController extends Controller
         $status = $request->validated('status');
         $reason = $request->validated('reason');
 
+        // Guardar estado anterior para el log
+        $oldStatus = $user->status->value;
+
         try {
             // Update status based on action
             if ($status === 'suspended') {
@@ -432,6 +437,14 @@ class UserController extends Controller
             } else {
                 $user = $this->userService->activateUser($id);
             }
+
+            // Registrar actividad
+            $this->activityLogService->logUserStatusChanged(
+                adminId: $currentUser->id,
+                targetUserId: $id,
+                oldStatus: $oldStatus,
+                newStatus: $user->status->value
+            );
 
             return response()->json([
                 'data' => [
