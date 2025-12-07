@@ -1,702 +1,439 @@
 @extends('layouts.authenticated')
 
-@section('title', 'Gestión de Empresas - Dashboard')
-
+@section('title', 'Gestión de Empresas - Platform Admin')
 @section('content_header', 'Gestión de Empresas')
 
 @section('breadcrumbs')
-    <li class="breadcrumb-item"><a href="/app/admin/dashboard">Admin</a></li>
+    <li class="breadcrumb-item"><a href="/app/admin/dashboard">Dashboard</a></li>
     <li class="breadcrumb-item active">Empresas</li>
 @endsection
 
 @section('content')
-<!-- Row 1: Filters and Actions -->
+
+{{-- Statistics Info Boxes (Clickable) --}}
 <div class="row mb-3">
-    <div class="col-12">
-        <div class="card card-primary card-outline">
-            <div class="card-body p-3">
-                <div class="row align-items-center">
-                    <!-- Filter by Status -->
-                    <div class="col-lg-2 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-status" class="mb-1">Estado:</label>
-                        <select id="filter-status" class="form-control form-control-sm">
-                            <option value="">Todos</option>
-                            <option value="active">Activas</option>
-                            <option value="suspended">Suspendidas</option>
-                        </select>
-                    </div>
-
-                    <!-- Filter by Industry -->
-                    <div class="col-lg-2 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-industry" class="mb-1">Industria:</label>
-                        <select id="filter-industry" class="form-control form-control-sm">
-                            <option value="">Todas</option>
-                        </select>
-                    </div>
-
-                    <!-- Search Box -->
-                    <div class="col-lg-4 col-md-4 col-sm-12 mb-2">
-                        <label for="search-companies" class="mb-1">Buscar:</label>
-                        <input type="text" id="search-companies" class="form-control form-control-sm"
-                               placeholder="Buscar por nombre o email...">
-                    </div>
-
-                    <!-- Refresh Button -->
-                    <div class="col-lg-2 col-md-12 col-sm-12 mb-2">
-                        <label class="mb-1">&nbsp;</label>
-                        <button id="btn-refresh" class="btn btn-primary btn-sm btn-block">
-                            <i class="fas fa-sync-alt"></i> Refrescar
-                        </button>
-                    </div>
-
-                    <!-- Create Button -->
-                    <div class="col-lg-2 col-md-12 col-sm-12 mb-2">
-                        <label class="mb-1">&nbsp;</label>
-                        <button id="btn-create-company" class="btn btn-success btn-sm btn-block">
-                            <i class="fas fa-plus"></i> Nueva Empresa
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stats Row -->
-                <div class="row mt-2">
-                    <div class="col-12">
-                        <small class="text-muted">
-                            Total: <strong id="total-count">0</strong> |
-                            Activas: <strong id="active-count">0</strong> |
-                            Suspendidas: <strong id="suspended-count">0</strong>
-                        </small>
-                    </div>
-                </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="info-box bg-light elevation-2" style="cursor:pointer" data-filter="" id="infoBoxAll">
+            <span class="info-box-icon bg-primary"><i class="fas fa-building"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Total Empresas</span>
+                <span class="info-box-number" id="totalCompanies">0</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="info-box bg-light" style="cursor:pointer" data-filter="active" id="infoBoxActive">
+            <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Activas</span>
+                <span class="info-box-number" id="activeCompanies">0</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="info-box bg-light" style="cursor:pointer" data-filter="suspended" id="infoBoxSuspended">
+            <span class="info-box-icon bg-warning"><i class="fas fa-pause-circle"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Suspendidas</span>
+                <span class="info-box-number" id="suspendedCompanies">0</span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Row 2: Companies Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-building"></i> Empresas Registradas
-                </h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
+{{-- Filters Card (Collapsible) --}}
+<div class="card card-outline card-secondary collapsed-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-filter"></i> Filtros Avanzados</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label class="text-sm">Buscar</label>
+                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Nombre, email o código...">
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="companies-table" class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width: 10%;">Código</th>
-                                <th style="width: 20%;">Nombre</th>
-                                <th style="width: 15%;">Email Soporte</th>
-                                <th style="width: 12%;">Industria</th>
-                                <th style="width: 10%;">Admin</th>
-                                <th style="width: 8%;">Estado</th>
-                                <th style="width: 10%;">Agentes</th>
-                                <th style="width: 15%;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Loaded dynamically via AJAX -->
-                        </tbody>
-                    </table>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="text-sm">Estado</label>
+                    <select class="form-control form-control-sm" id="statusFilter">
+                        <option value="">Todos</option>
+                        <option value="active" selected>Activas</option>
+                        <option value="suspended">Suspendidas</option>
+                    </select>
                 </div>
             </div>
-            <div class="card-footer">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i>
-                    Los datos se cargan dinámicamente desde la API
-                </small>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="text-sm">Industria</label>
+                    <select class="form-control form-control-sm" id="industryFilter">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="text-sm">Ordenar por</label>
+                    <select class="form-control form-control-sm" id="orderByFilter">
+                        <option value="created_at">Fecha Creación</option>
+                        <option value="name">Nombre</option>
+                        <option value="support_email">Email</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="text-sm d-block">&nbsp;</label>
+                <button type="button" class="btn btn-default btn-sm" id="btnResetFilters"><i class="fas fa-eraser"></i> Limpiar</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnRefresh"><i class="fas fa-sync-alt"></i> Aplicar</button>
+                <button type="button" class="btn btn-success btn-sm" id="btnCreateCompany"><i class="fas fa-plus"></i> Nueva</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal 1: View/Edit Details -->
-<div class="modal fade" id="modal-details" tabindex="-1" role="dialog" aria-labelledby="modalDetailsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailsLabel">
-                    <i class="fas fa-building"></i> Detalles de Empresa
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+{{-- Companies Table Card --}}
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-building"></i> Empresas del Sistema</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+            <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="loadingSpinner" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+            <p class="text-muted mt-3">Cargando empresas...</p>
+        </div>
+        <div id="tableContainer" style="display:none">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:10%">Código</th>
+                            <th style="width:22%">Empresa</th>
+                            <th style="width:18%">Email Soporte</th>
+                            <th style="width:12%">Industria</th>
+                            <th style="width:8%">Estado</th>
+                            <th style="width:8%">Agentes</th>
+                            <th style="width:22%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companiesTableBody"></tbody>
+                </table>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <!-- Left Column: Basic Info -->
-                    <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Información General</h6>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Código de Empresa:</label>
-                            <p class="mb-2"><strong id="detail-company-code">-</strong></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Nombre Comercial:</label>
-                            <p class="mb-2"><strong id="detail-company-name">-</strong></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Nombre Legal:</label>
-                            <p class="mb-2" id="detail-legal-name">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Email de Soporte:</label>
-                            <p class="mb-2" id="detail-support-email">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Teléfono:</label>
-                            <p class="mb-2" id="detail-phone">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Sitio Web:</label>
-                            <p class="mb-2" id="detail-website">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Industria:</label>
-                            <p class="mb-2" id="detail-industry">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Estado:</label>
-                            <p class="mb-2" id="detail-status-badge">-</p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Contact & Admin -->
-                    <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Información de Contacto</h6>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Dirección:</label>
-                            <p class="mb-2" id="detail-address">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Ciudad:</label>
-                            <p class="mb-2" id="detail-city">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Estado/Región:</label>
-                            <p class="mb-2" id="detail-state">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">País:</label>
-                            <p class="mb-2" id="detail-country">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Código Postal:</label>
-                            <p class="mb-2" id="detail-postal">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Tax ID (RUT/NIT):</label>
-                            <p class="mb-2" id="detail-tax-id">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Representante Legal:</label>
-                            <p class="mb-2" id="detail-legal-rep">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Zona Horaria:</label>
-                            <p class="mb-2" id="detail-timezone">-</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Admin & Statistics Section -->
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <hr>
-                        <h6 class="border-bottom pb-2 mb-3">Administrador y Estadísticas</h6>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="text-muted mb-1">Admin:</label>
-                        <p class="mb-2" id="detail-admin-name">-</p>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="text-muted mb-1">Email Admin:</label>
-                        <p class="mb-2" id="detail-admin-email">-</p>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="text-muted mb-1">Agentes Activos:</label>
-                        <p class="mb-2"><strong id="detail-active-agents">0</strong></p>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="text-muted mb-1">Seguidores (Users):</label>
-                        <p class="mb-2"><strong id="detail-followers">0</strong></p>
-                    </div>
-                </div>
-
-                <!-- Dates -->
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <label class="text-muted mb-1">Creada:</label>
-                        <p class="mb-2" id="detail-created-at">-</p>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="text-muted mb-1">Última Actualización:</label>
-                        <p class="mb-2" id="detail-updated-at">-</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-                <button type="button" id="btn-modal-edit" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-            </div>
+        </div>
+        <div id="errorMessage" class="alert alert-danger m-3" style="display:none">
+            <i class="fas fa-exclamation-circle"></i> <span id="errorText"></span>
+        </div>
+    </div>
+    <div class="card-footer border-top py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted" id="paginationInfo">Mostrando 0 de 0</small>
+            <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
         </div>
     </div>
 </div>
 
-<!-- Modal 2: Create/Edit Company -->
-<div class="modal fade" id="modal-form" tabindex="-1" role="dialog" aria-labelledby="modalFormLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-success">
-                <h5 class="modal-title text-white" id="modalFormLabel">
-                    <i class="fas fa-plus-circle"></i> <span id="form-title">Nueva Empresa</span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="company-form">
-                    <div class="row">
-                        <!-- Left Column -->
-                        <div class="col-md-6">
-                            <h6 class="border-bottom pb-2 mb-3">Información General</h6>
+{{-- Include Modal Partials --}}
+@include('app.platform-admin.companies.partials.view-company-modal')
+@include('app.platform-admin.companies.partials.form-company-modal')
+@include('app.platform-admin.companies.partials.status-company-modal')
+@include('app.platform-admin.companies.partials.delete-company-modal')
 
-                            <div class="form-group">
-                                <label for="form-company-name">Nombre Comercial <span class="text-danger">*</span></label>
-                                <input type="text" id="form-company-name" class="form-control" placeholder="Nombre de la empresa" required>
-                                <small class="form-text text-muted">2-255 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-legal-name">Nombre Legal</label>
-                                <input type="text" id="form-legal-name" class="form-control" placeholder="Nombre legal">
-                                <small class="form-text text-muted">2-255 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-support-email">Email de Soporte <span class="text-danger">*</span></label>
-                                <input type="email" id="form-support-email" class="form-control" placeholder="support@empresa.com" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-phone">Teléfono</label>
-                                <input type="text" id="form-phone" class="form-control" placeholder="+56912345678">
-                                <small class="form-text text-muted">Máximo 20 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-website">Sitio Web</label>
-                                <input type="url" id="form-website" class="form-control" placeholder="https://empresa.com">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-industry-id">Industria <span class="text-danger">*</span></label>
-                                <select id="form-industry-id" class="form-control" required disabled>
-                                    <option value="">Cargando industrias...</option>
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle"></i>
-                                    Requerida en creación. Editable en actualización.
-                                </small>
-                            </div>
-                        </div>
-
-                        <!-- Right Column -->
-                        <div class="col-md-6">
-                            <h6 class="border-bottom pb-2 mb-3">Información de Contacto</h6>
-
-                            <div class="form-group">
-                                <label for="form-address">Dirección</label>
-                                <input type="text" id="form-address" class="form-control" placeholder="Calle y número">
-                                <small class="form-text text-muted">Máximo 255 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-city">Ciudad</label>
-                                <input type="text" id="form-city" class="form-control" placeholder="Santiago">
-                                <small class="form-text text-muted">Máximo 100 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-state">Estado/Región</label>
-                                <input type="text" id="form-state" class="form-control" placeholder="Metropolitana">
-                                <small class="form-text text-muted">Máximo 100 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-country">País</label>
-                                <input type="text" id="form-country" class="form-control" placeholder="Chile">
-                                <small class="form-text text-muted">Máximo 100 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-postal">Código Postal</label>
-                                <input type="text" id="form-postal" class="form-control" placeholder="8340000">
-                                <small class="form-text text-muted">Máximo 20 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-tax-id">Tax ID (RUT/NIT)</label>
-                                <input type="text" id="form-tax-id" class="form-control" placeholder="12.345.678-9">
-                                <small class="form-text text-muted">Máximo 50 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-legal-rep">Representante Legal</label>
-                                <input type="text" id="form-legal-rep" class="form-control" placeholder="Nombre completo">
-                                <small class="form-text text-muted">Máximo 255 caracteres</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="form-timezone">Zona Horaria <span class="text-danger">*</span></label>
-                                <select id="form-timezone" class="form-control" required>
-                                    <option value="">Seleccionar zona horaria...</option>
-                                    <option value="America/Santiago">America/Santiago</option>
-                                    <option value="America/Bogota">America/Bogota</option>
-                                    <option value="America/La_Paz">America/La_Paz</option>
-                                    <option value="UTC">UTC</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Admin Selection -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <hr>
-                            <h6 class="border-bottom pb-2 mb-3">Administrador</h6>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="form-admin-id">Usuario Admin <span class="text-danger">*</span></label>
-                                <select id="form-admin-id" class="form-control" required disabled>
-                                    <option value="">Cargando usuarios...</option>
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle"></i>
-                                    Requerido en creación. No editable en actualización.
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <input type="hidden" id="form-company-id">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-save-company" class="btn btn-success">
-                    <i class="fas fa-save"></i> Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 3: Delete Company -->
-<div class="modal fade" id="modal-delete" tabindex="-1" role="dialog" aria-labelledby="modalDeleteLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger">
-                <h5 class="modal-title text-white" id="modalDeleteLabel">
-                    <i class="fas fa-trash"></i> Eliminar Empresa
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>¿Deseas eliminar la empresa <span id="delete-company-name">-</span>?</strong>
-                </div>
-
-                <p>Esta acción es <strong>irreversible</strong> y eliminará:</p>
-                <ul>
-                    <li>Todos los datos de la empresa</li>
-                    <li>Todos los usuarios asociados</li>
-                    <li>Todos los tickets y datos relacionados</li>
-                </ul>
-
-                <div class="alert alert-danger">
-                    <strong>CONFIRMACIÓN:</strong> Escribe el nombre de la empresa para confirmar
-                </div>
-
-                <input type="text" id="delete-confirmation" class="form-control" placeholder="Nombre de la empresa">
-                <small class="form-text text-muted">Debes escribir el nombre exacto para confirmar</small>
-
-                <input type="hidden" id="delete-company-id">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-confirm-delete" class="btn btn-danger" disabled>
-                    <i class="fas fa-trash"></i> Eliminar Permanentemente
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
-@section('js')
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // =====================================================================
-        // CONFIGURATION & STATE
-        // =====================================================================
+(function() {
+    'use strict';
+    console.log('[Companies] Initializing...');
 
-        const token = window.tokenManager?.getAccessToken();
-        const apiUrl = '/api';
+    // =========================================================================
+    // CONFIGURATION
+    // =========================================================================
+    const CONFIG = {
+        API_BASE: '/api',
+        TOAST_DELAY: 3000,
+        DEBOUNCE_DELAY: 400,
+        PER_PAGE: 15
+    };
 
-        let allCompanies = [];
-        let currentCompany = null;
-        let currentMode = 'view'; // view, create, edit
-        let industries = [];
-        let adminUsers = [];
-        let industriesLoaded = false;
-        let adminUsersLoaded = false;
+    // =========================================================================
+    // STATE (Centralized)
+    // =========================================================================
+    const state = {
+        companies: [],
+        currentCompany: null,
+        currentPage: 1,
+        filters: {
+            status: 'active',
+            industry_id: '',
+            search: '',
+            order_by: 'created_at',
+            order_direction: 'desc'
+        },
+        isLoading: false,
+        isOperating: false,
+        meta: null,
+        links: null,
+        industries: [],
+        industriesLoaded: false
+    };
 
-        // =====================================================================
-        // UTILITY: Format Status Badge
-        // =====================================================================
-
-        function getStatusBadge(status) {
-            const statusLower = status ? status.toLowerCase() : '';
-            const badges = {
-                'active': '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Activa</span>',
-                'suspended': '<span class="badge badge-warning"><i class="fas fa-pause-circle"></i> Suspendida</span>'
-            };
-            return badges[statusLower] || '<span class="badge badge-secondary">Desconocido</span>';
-        }
-
-        // =====================================================================
-        // UTILITY: Format Date
-        // =====================================================================
-
-        function formatDate(dateString) {
+    // =========================================================================
+    // UTILITIES
+    // =========================================================================
+    const Utils = {
+        getToken() {
+            return window.tokenManager?.getAccessToken() || localStorage.getItem('access_token');
+        },
+        escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+        formatDate(dateString) {
             if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
+            return new Date(dateString).toLocaleDateString('es-ES', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        },
+        translateError(error) {
+            const status = error.status;
+            const data = error.data;
+            
+            if (status === 401) return 'Sesión expirada. Por favor recarga la página.';
+            if (status === 403) return data?.message || 'No tienes permiso para esta acción.';
+            if (status === 404) return 'Recurso no encontrado.';
+            if (status === 422 && data?.errors) {
+                return Object.values(data.errors).flat().join('. ');
+            }
+            return data?.message || 'Error al procesar la solicitud.';
+        },
+        getStatusBadge(status) {
+            const s = (status || '').toLowerCase();
+            const badges = {
+                active: '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Activa</span>',
+                suspended: '<span class="badge badge-warning"><i class="fas fa-pause-circle"></i> Suspendida</span>'
             };
-            return date.toLocaleDateString('es-ES', options);
+            return badges[s] || '<span class="badge badge-secondary">Desconocido</span>';
         }
+    };
 
-        // =====================================================================
-        // LOAD INDUSTRIES FOR FORM
-        // =====================================================================
+    // =========================================================================
+    // TOAST (AdminLTE v3 Official)
+    // =========================================================================
+    const Toast = {
+        success(message, title = 'Éxito') {
+            $(document).Toasts('create', {
+                class: 'bg-success',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY,
+                icon: 'fas fa-check-circle'
+            });
+        },
+        error(message, title = 'Error') {
+            $(document).Toasts('create', {
+                class: 'bg-danger',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY + 2000,
+                icon: 'fas fa-exclamation-circle'
+            });
+        },
+        warning(message, title = 'Advertencia') {
+            $(document).Toasts('create', {
+                class: 'bg-warning',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY,
+                icon: 'fas fa-exclamation-triangle'
+            });
+        }
+    };
+    
+    // Expose showToast globally for modals
+    window.showToast = function(type, message) {
+        if (type === 'success') Toast.success(message);
+        else if (type === 'error') Toast.error(message);
+        else if (type === 'warning') Toast.warning(message);
+        else Toast.success(message);
+    };
 
-        function loadIndustries() {
-            fetch(`${apiUrl}/company-industries`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.data && Array.isArray(data.data)) {
-                        industries = data.data;
-                        industriesLoaded = true;
-                        populateIndustrySelects();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading industries:', error);
+    // =========================================================================
+    // API LAYER
+    // =========================================================================
+    const API = {
+        async loadCompanies() {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            UI.showLoading();
+            
+            try {
+                const params = new URLSearchParams({
+                    page: state.currentPage,
+                    per_page: CONFIG.PER_PAGE
                 });
-        }
-
-        function populateIndustrySelects() {
-            const filterSelect = document.getElementById('filter-industry');
-            const formSelect = document.getElementById('form-industry-id');
-
-            // Clear existing options (except the first one)
-            filterSelect.querySelectorAll('option:not(:first-child)').forEach(opt => opt.remove());
-            formSelect.querySelectorAll('option:not(:first-child)').forEach(opt => opt.remove());
-
-            industries.forEach(industry => {
-                // Filter select
-                const filterOption = document.createElement('option');
-                filterOption.value = industry.id;
-                filterOption.textContent = industry.name;
-                filterSelect.appendChild(filterOption);
-
-                // Form select
-                const formOption = document.createElement('option');
-                formOption.value = industry.id;
-                formOption.textContent = industry.name;
-                formSelect.appendChild(formOption);
-            });
-
-            // Enable form select
-            formSelect.disabled = false;
-        }
-
-        // =====================================================================
-        // LOAD ADMIN USERS FOR FORM
-        // =====================================================================
-
-        function loadAdminUsers() {
-            // Load active users for admin selector
-            fetch(`${apiUrl}/users?status=ACTIVE&per_page=100`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                
+                if (state.filters.status) params.append('status', state.filters.status);
+                if (state.filters.industry_id) params.append('industry_id', state.filters.industry_id);
+                if (state.filters.search) params.append('search', state.filters.search);
+                if (state.filters.order_by) params.append('order_by', state.filters.order_by);
+                if (state.filters.order_direction) params.append('order_direction', state.filters.order_direction);
+                
+                const response = await fetch(`${CONFIG.API_BASE}/companies?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Utils.getToken()}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw { status: response.status, data: data };
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data && Array.isArray(data.data)) {
-                    adminUsers = data.data;
-                    adminUsersLoaded = true;
-                    populateAdminUserSelects();
-                }
-            })
-            .catch(error => {
-                console.error('Error loading admin users:', error);
-            });
+                
+                state.companies = data.data || [];
+                state.meta = data.meta;
+                state.links = data.links;
+                
+                UI.hideLoading();
+                UI.renderTable();
+                UI.updatePagination();
+                this.loadStatistics();
+                
+            } catch (error) {
+                console.error('[Companies] Load error:', error);
+                UI.showError(Utils.translateError(error));
+            } finally {
+                state.isLoading = false;
+            }
+        },
+        
+        async loadStatistics() {
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${Utils.getToken()}`,
+                    'Accept': 'application/json'
+                };
+                
+                const [totalRes, activeRes, suspendedRes] = await Promise.all([
+                    fetch(`${CONFIG.API_BASE}/companies?per_page=1`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/companies?per_page=1&status=active`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/companies?per_page=1&status=suspended`, { headers })
+                ]);
+                
+                const [totalData, activeData, suspendedData] = await Promise.all([
+                    totalRes.json(),
+                    activeRes.json(),
+                    suspendedRes.json()
+                ]);
+                
+                $('#totalCompanies').text(totalData.meta?.total || 0);
+                $('#activeCompanies').text(activeData.meta?.total || 0);
+                $('#suspendedCompanies').text(suspendedData.meta?.total || 0);
+                
+            } catch (error) {
+                console.error('[Companies] Stats error:', error);
+            }
+        },
+        
+        async loadIndustries() {
+            if (state.industriesLoaded) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_BASE}/company-industries`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                state.industries = data.data || [];
+                state.industriesLoaded = true;
+                
+                // Populate filter dropdown
+                const $select = $('#industryFilter');
+                $select.html('<option value="">Todas</option>');
+                state.industries.forEach(ind => {
+                    $select.append(`<option value="${ind.id}">${Utils.escapeHtml(ind.name)}</option>`);
+                });
+                
+            } catch (error) {
+                console.error('[Companies] Industries error:', error);
+            }
         }
+    };
 
-        function populateAdminUserSelects() {
-            const formSelect = document.getElementById('form-admin-id');
-
-            // Clear existing options (except the first one)
-            formSelect.querySelectorAll('option:not(:first-child)').forEach(opt => opt.remove());
-
-            adminUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                // Display user code and email
-                option.textContent = `${user.userCode} - ${user.email}`;
-                formSelect.appendChild(option);
-            });
-
-            // Enable form select
-            formSelect.disabled = false;
-        }
-
-        // =====================================================================
-        // FUNCTION 1: Load Companies
-        // =====================================================================
-
-        function loadCompanies(filters = {}) {
-            if (!token) {
-                showAlert('error', 'No se encontró token de autenticación');
+    // =========================================================================
+    // UI LAYER
+    // =========================================================================
+    const UI = {
+        showLoading() {
+            $('#loadingSpinner').show();
+            $('#tableContainer, #errorMessage').hide();
+        },
+        
+        hideLoading() {
+            $('#loadingSpinner').hide();
+            $('#tableContainer').show();
+        },
+        
+        showError(message) {
+            $('#loadingSpinner, #tableContainer').hide();
+            $('#errorText').text(message);
+            $('#errorMessage').show();
+        },
+        
+        renderTable() {
+            const $tbody = $('#companiesTableBody');
+            
+            if (!state.companies.length) {
+                $tbody.html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay empresas</p>
+                        </td>
+                    </tr>
+                `);
                 return;
             }
-
-            const tbody = document.querySelector('#companies-table tbody');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando empresas...</td></tr>';
-
-            // Build URL with filters
-            let url = `${apiUrl}/companies`;
-            const params = new URLSearchParams();
-
-            if (filters.status) params.append('status', filters.status);
-            if (filters.industry_id) params.append('industry_id', filters.industry_id);
-            if (filters.search) params.append('search', filters.search);
-            params.append('per_page', 50);
-
-            if (params.toString()) {
-                url += '?' + params.toString();
-            }
-
-            fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data && Array.isArray(data.data)) {
-                    allCompanies = Array.isArray(data.data) ? data.data : [data.data];
-                    renderCompaniesTable(allCompanies);
-
-                    // Update stats
-                    document.getElementById('total-count').textContent = data.meta?.total || allCompanies.length;
-                    const activeCount = allCompanies.filter(c => c.status === 'ACTIVE' || c.status === 'active').length;
-                    const suspendedCount = allCompanies.filter(c => c.status === 'SUSPENDED' || c.status === 'suspended').length;
-                    document.getElementById('active-count').textContent = activeCount;
-                    document.getElementById('suspended-count').textContent = suspendedCount;
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Error al cargar empresas</td></tr>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading companies:', error);
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Error de conexión: ' + error.message + '</td></tr>';
-            });
-        }
-
-        // =====================================================================
-        // FUNCTION: Render Companies Table
-        // =====================================================================
-
-        function renderCompaniesTable(companies) {
-            const tbody = document.querySelector('#companies-table tbody');
-
-            if (!companies || companies.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted"><i class="fas fa-inbox"></i> No hay empresas disponibles</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = companies.map(company => {
-                const statusBadge = getStatusBadge(company.status);
-                const industryName = (company.industry && company.industry.name) || 'N/A';
-
+            
+            $tbody.html(state.companies.map(company => {
+                const industryName = company.industry?.name || 'N/A';
                 return `
                     <tr data-id="${company.id}">
-                        <td><code>${company.companyCode || 'N/A'}</code></td>
+                        <td><code>${Utils.escapeHtml(company.companyCode || 'N/A')}</code></td>
                         <td>
-                            <strong>${company.name || 'N/A'}</strong><br>
-                            <small class="text-muted">${company.legalName || ''}</small>
+                            <strong>${Utils.escapeHtml(company.name || 'N/A')}</strong><br>
+                            <small class="text-muted">${Utils.escapeHtml(company.legalName || '')}</small>
                         </td>
-                        <td>${company.supportEmail || 'N/A'}</td>
-                        <td><span class="badge badge-info">${industryName}</span></td>
-                        <td><small>${company.adminName || 'N/A'}</small></td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <span class="badge badge-primary" title="Agentes activos">${company.activeAgentsCount || 0}</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary btn-view-details" data-id="${company.id}" title="Ver Detalles">
+                        <td><small>${Utils.escapeHtml(company.supportEmail || 'N/A')}</small></td>
+                        <td><span class="badge badge-info">${Utils.escapeHtml(industryName)}</span></td>
+                        <td>${Utils.getStatusBadge(company.status)}</td>
+                        <td><span class="badge badge-primary">${company.activeAgentsCount || 0}</span></td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-primary btn-view" data-id="${company.id}" title="Ver">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-warning btn-edit" data-id="${company.id}" title="Editar">
+                            <button class="btn btn-sm btn-info btn-edit" data-id="${company.id}" title="Editar">
                                 <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning btn-status" data-id="${company.id}" title="Estado">
+                                <i class="fas fa-ban"></i>
                             </button>
                             <button class="btn btn-sm btn-danger btn-delete" data-id="${company.id}" title="Eliminar">
                                 <i class="fas fa-trash"></i>
@@ -704,389 +441,302 @@
                         </td>
                     </tr>
                 `;
-            }).join('');
-
-            attachActionListeners();
-        }
-
-        // =====================================================================
-        // FUNCTION 2: Open Details Modal
-        // =====================================================================
-
-        function openDetailsModal(companyId) {
-            currentCompany = allCompanies.find(c => c.id === companyId);
-
-            if (!currentCompany) {
-                showAlert('error', 'No se encontró la empresa');
-                return;
+            }).join(''));
+            
+            this.attachRowEvents();
+        },
+        
+        attachRowEvents() {
+            $('.btn-view').off('click').on('click', function() {
+                Modals.openView($(this).data('id'));
+            });
+            $('.btn-edit').off('click').on('click', function() {
+                Modals.openEdit($(this).data('id'));
+            });
+            $('.btn-status').off('click').on('click', function() {
+                Modals.openStatus($(this).data('id'));
+            });
+            $('.btn-delete').off('click').on('click', function() {
+                Modals.openDelete($(this).data('id'));
+            });
+        },
+        
+        updatePagination() {
+            const meta = state.meta;
+            const links = state.links;
+            
+            // Calculate from/to
+            const from = meta && meta.total > 0 ? ((meta.current_page - 1) * meta.per_page) + 1 : 0;
+            const to = meta ? Math.min(meta.current_page * meta.per_page, meta.total) : 0;
+            $('#paginationInfo').text(`Mostrando ${from} a ${to} de ${meta?.total || 0}`);
+            
+            const $controls = $('#paginationControls');
+            $controls.empty();
+            
+            if (!meta || meta.last_page <= 1) return;
+            
+            // Previous button
+            $controls.append(`
+                <li class="page-item ${!links?.prev ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-action="prev"><i class="fas fa-chevron-left"></i></a>
+                </li>
+            `);
+            
+            // Page numbers
+            for (let i = 1; i <= meta.last_page; i++) {
+                $controls.append(`
+                    <li class="page-item ${i === meta.current_page ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `);
             }
-
-            currentMode = 'view';
-
-            // Populate basic info
-            document.getElementById('detail-company-code').textContent = currentCompany.companyCode || 'N/A';
-            document.getElementById('detail-company-name').textContent = currentCompany.name || 'N/A';
-            document.getElementById('detail-legal-name').textContent = currentCompany.legalName || 'N/A';
-            document.getElementById('detail-support-email').textContent = currentCompany.supportEmail || 'N/A';
-            document.getElementById('detail-phone').textContent = currentCompany.phone || 'N/A';
-
-            // Website with link
-            const website = currentCompany.website || 'N/A';
-            document.getElementById('detail-website').innerHTML = website !== 'N/A'
-                ? `<a href="${website}" target="_blank">${website} <i class="fas fa-external-link-alt"></i></a>`
-                : website;
-
-            document.getElementById('detail-industry').textContent = (currentCompany.industry && currentCompany.industry.name) || 'N/A';
-            document.getElementById('detail-status-badge').innerHTML = getStatusBadge(currentCompany.status);
-
-            // Contact info
-            document.getElementById('detail-address').textContent = currentCompany.contactAddress || 'N/A';
-            document.getElementById('detail-city').textContent = currentCompany.contactCity || 'N/A';
-            document.getElementById('detail-state').textContent = currentCompany.contactState || 'N/A';
-            document.getElementById('detail-country').textContent = currentCompany.contactCountry || 'N/A';
-            document.getElementById('detail-postal').textContent = currentCompany.contactPostalCode || 'N/A';
-            document.getElementById('detail-tax-id').textContent = currentCompany.taxId || 'N/A';
-            document.getElementById('detail-legal-rep').textContent = currentCompany.legalRepresentative || 'N/A';
-            document.getElementById('detail-timezone').textContent = currentCompany.timezone || 'UTC';
-
-            // Admin & Stats
-            document.getElementById('detail-admin-name').textContent = currentCompany.adminName || 'N/A';
-            document.getElementById('detail-admin-email').textContent = currentCompany.adminEmail || 'N/A';
-            document.getElementById('detail-active-agents').textContent = currentCompany.activeAgentsCount || 0;
-            document.getElementById('detail-followers').textContent = currentCompany.followersCount || 0;
-
-            // Dates
-            document.getElementById('detail-created-at').textContent = formatDate(currentCompany.createdAt);
-            document.getElementById('detail-updated-at').textContent = formatDate(currentCompany.updatedAt);
-
-            $('#modal-details').modal('show');
-        }
-
-        // =====================================================================
-        // FUNCTION 3: Open Form Modal (Create/Edit)
-        // =====================================================================
-
-        function openFormModal(mode, companyId = null) {
-            currentMode = mode;
-            const form = document.getElementById('company-form');
-            form.reset();
-
-            if (mode === 'create') {
-                document.getElementById('form-title').textContent = 'Nueva Empresa';
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.remove('bg-info');
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.add('bg-success');
-                document.getElementById('form-company-id').value = '';
-
-                // ENABLE selects for create mode (requerido en creación)
-                const formIndustrySelect = document.getElementById('form-industry-id');
-                const formAdminSelect = document.getElementById('form-admin-id');
-
-                // Industries
-                if (industriesLoaded) {
-                    formIndustrySelect.disabled = false;
-                    // Update placeholder text
-                    const firstOption = formIndustrySelect.querySelector('option');
-                    if (firstOption) {
-                        firstOption.textContent = 'Seleccionar industria...';
-                    }
+            
+            // Next button
+            $controls.append(`
+                <li class="page-item ${!links?.next ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-action="next"><i class="fas fa-chevron-right"></i></a>
+                </li>
+            `);
+            
+            // Pagination click handlers
+            $controls.find('a').on('click', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                const action = $(this).data('action');
+                
+                if (page) {
+                    state.currentPage = page;
+                } else if (action === 'prev' && state.currentPage > 1) {
+                    state.currentPage--;
+                } else if (action === 'next' && state.currentPage < meta.last_page) {
+                    state.currentPage++;
                 }
-
-                // Admin users
-                if (adminUsersLoaded) {
-                    formAdminSelect.disabled = false;
-                    // Update placeholder text
-                    const firstOption = formAdminSelect.querySelector('option');
-                    if (firstOption) {
-                        firstOption.textContent = 'Seleccionar usuario...';
-                    }
-                }
-
-                // Solo mostrar alerta si AMBOS aún no han cargado
-                if (!industriesLoaded && !adminUsersLoaded) {
-                    showAlert('warning', 'Cargando industrias y usuarios...');
-                } else if (!industriesLoaded) {
-                    showAlert('warning', 'Cargando industrias...');
-                } else if (!adminUsersLoaded) {
-                    showAlert('warning', 'Cargando usuarios...');
-                }
-            } else if (mode === 'edit') {
-                currentCompany = allCompanies.find(c => c.id === companyId);
-                if (!currentCompany) {
-                    showAlert('error', 'No se encontró la empresa');
-                    return;
-                }
-
-                document.getElementById('form-title').textContent = 'Editar Empresa';
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.remove('bg-success');
-                document.getElementById('modalFormLabel').closest('.modal-header').classList.add('bg-info');
-
-                // Populate form
-                document.getElementById('form-company-name').value = currentCompany.name || '';
-                document.getElementById('form-legal-name').value = currentCompany.legalName || '';
-                document.getElementById('form-support-email').value = currentCompany.supportEmail || '';
-                document.getElementById('form-phone').value = currentCompany.phone || '';
-                document.getElementById('form-website').value = currentCompany.website || '';
-                document.getElementById('form-address').value = currentCompany.contactAddress || '';
-                document.getElementById('form-city').value = currentCompany.contactCity || '';
-                document.getElementById('form-state').value = currentCompany.contactState || '';
-                document.getElementById('form-country').value = currentCompany.contactCountry || '';
-                document.getElementById('form-postal').value = currentCompany.contactPostalCode || '';
-                document.getElementById('form-tax-id').value = currentCompany.taxId || '';
-                document.getElementById('form-legal-rep').value = currentCompany.legalRepresentative || '';
-                document.getElementById('form-timezone').value = currentCompany.timezone || 'UTC';
-                document.getElementById('form-company-id').value = currentCompany.id;
-
-                // Set industry value (EDITABLE)
-                if (industriesLoaded && currentCompany.industryId) {
-                    document.getElementById('form-industry-id').value = currentCompany.industryId;
-                    document.getElementById('form-industry-id').disabled = false;
-                }
-
-                // Set admin value (READ-ONLY - no se puede editar)
-                if (adminUsersLoaded && currentCompany.adminId) {
-                    document.getElementById('form-admin-id').value = currentCompany.adminId;
-                }
-
-                // IMPORTANTE: admin_user_id NO es editable en PATCH
-                // Pero industry_id SÍ es editable (es opcional en PATCH)
-                document.getElementById('form-admin-id').disabled = true;
-            }
-
-            $('#modal-details').modal('hide');
-            $('#modal-form').modal('show');
-        }
-
-        // =====================================================================
-        // FUNCTION 4: Save Company
-        // =====================================================================
-
-        function saveCompany() {
-            const companyId = document.getElementById('form-company-id').value;
-            const isCreate = !companyId;
-
-            const payload = {
-                name: document.getElementById('form-company-name').value,
-                legal_name: document.getElementById('form-legal-name').value,
-                support_email: document.getElementById('form-support-email').value,
-                phone: document.getElementById('form-phone').value || null,
-                website: document.getElementById('form-website').value || null,
-                contact_address: document.getElementById('form-address').value || null,
-                contact_city: document.getElementById('form-city').value || null,
-                contact_state: document.getElementById('form-state').value || null,
-                contact_country: document.getElementById('form-country').value || null,
-                contact_postal_code: document.getElementById('form-postal').value || null,
-                tax_id: document.getElementById('form-tax-id').value || null,
-                legal_representative: document.getElementById('form-legal-rep').value || null,
-                timezone: document.getElementById('form-timezone').value,
-            };
-
-            // For create: industry_id y admin_user_id son requeridos
-            if (isCreate) {
-                payload.industry_id = document.getElementById('form-industry-id').value;
-                payload.admin_user_id = document.getElementById('form-admin-id').value;
+                
+                API.loadCompanies();
+            });
+        },
+        
+        updateFilterSelection() {
+            $('.info-box').removeClass('elevation-2');
+            const status = state.filters.status;
+            if (status === 'active') {
+                $('#infoBoxActive').addClass('elevation-2');
+            } else if (status === 'suspended') {
+                $('#infoBoxSuspended').addClass('elevation-2');
             } else {
-                // For edit: industry_id se puede cambiar (es opcional en PATCH)
-                const industryId = document.getElementById('form-industry-id').value;
-                if (industryId) {
-                    payload.industry_id = industryId;
-                }
-                // admin_user_id NO se envía en PATCH (no se puede editar)
+                $('#infoBoxAll').addClass('elevation-2');
             }
-
-            const method = isCreate ? 'POST' : 'PATCH';
-            const url = isCreate ? `${apiUrl}/companies` : `${apiUrl}/companies/${companyId}`;
-
-            const btnSave = document.getElementById('btn-save-company');
-            btnSave.disabled = true;
-            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
-            fetch(url, {
-                method: method,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data || data.success) {
-                    showAlert('success', isCreate ? 'Empresa creada exitosamente' : 'Empresa actualizada exitosamente');
-                    $('#modal-form').modal('hide');
-                    loadCompanies();
-                } else {
-                    showAlert('error', data.message || 'Error al guardar la empresa');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving company:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
-            })
-            .finally(() => {
-                btnSave.disabled = false;
-                btnSave.innerHTML = '<i class="fas fa-save"></i> Guardar';
-            });
         }
+    };
 
-        // =====================================================================
-        // FUNCTION 5: Delete Company
-        // =====================================================================
-
-        function openDeleteModal(companyId) {
-            currentCompany = allCompanies.find(c => c.id === companyId);
-            if (!currentCompany) {
-                showAlert('error', 'No se encontró la empresa');
+    // =========================================================================
+    // MODALS CONTROLLER
+    // =========================================================================
+    const Modals = {
+        openView(companyId) {
+            if (!companyId) {
+                Toast.error('ID de empresa no válido');
                 return;
             }
-
-            document.getElementById('delete-company-name').textContent = currentCompany.name;
-            document.getElementById('delete-company-id').value = companyId;
-            document.getElementById('delete-confirmation').value = '';
-            document.getElementById('btn-confirm-delete').disabled = true;
-
-            $('#modal-details').modal('hide');
-            $('#modal-delete').modal('show');
-        }
-
-        function deleteCompany() {
-            const companyId = document.getElementById('delete-company-id').value;
-            const confirmationText = document.getElementById('delete-confirmation').value.trim();
-            const expectedText = currentCompany.name;
-
-            if (confirmationText !== expectedText) {
-                showAlert('error', 'El nombre de confirmación no coincide');
+            
+            // Store company from list for quick reference
+            const company = state.companies.find(c => c.id === companyId);
+            if (company) {
+                state.currentCompany = company;
+            }
+            
+            if (typeof ViewCompanyModal !== 'undefined') {
+                // Modal now fetches complete data via API
+                ViewCompanyModal.open(companyId);
+            } else {
+                Toast.error('Error al abrir modal de vista');
+            }
+        },
+        
+        openEdit(companyId) {
+            const company = state.companies.find(c => c.id === companyId);
+            if (!company) {
+                Toast.error('Empresa no encontrada');
                 return;
             }
-
-            const btnDelete = document.getElementById('btn-confirm-delete');
-            btnDelete.disabled = true;
-            btnDelete.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-
-            // TODO: Esta función se implementará cuando exista el endpoint DELETE
-            fetch(`${apiUrl}/companies/${companyId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success || data.data?.success) {
-                    showAlert('success', 'Empresa eliminada exitosamente');
-                    $('#modal-delete').modal('hide');
-                    loadCompanies();
-                } else {
-                    showAlert('error', data.message || 'Error al eliminar la empresa');
-                    btnDelete.disabled = false;
-                    btnDelete.innerHTML = '<i class="fas fa-trash"></i> Eliminar Permanentemente';
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting company:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
-                btnDelete.disabled = false;
-                btnDelete.innerHTML = '<i class="fas fa-trash"></i> Eliminar Permanentemente';
-            });
+            state.currentCompany = company;
+            
+            if (typeof FormCompanyModal !== 'undefined') {
+                FormCompanyModal.openEdit(company);
+            } else {
+                Toast.error('Error al abrir modal de edición');
+            }
+        },
+        
+        openStatus(companyId) {
+            const company = state.companies.find(c => c.id === companyId);
+            if (!company) {
+                Toast.error('Empresa no encontrada');
+                return;
+            }
+            state.currentCompany = company;
+            
+            if (typeof StatusCompanyModal !== 'undefined') {
+                StatusCompanyModal.open(company);
+            } else {
+                Toast.error('Error al abrir modal de estado');
+            }
+        },
+        
+        openDelete(companyId) {
+            const company = state.companies.find(c => c.id === companyId);
+            if (!company) {
+                Toast.error('Empresa no encontrada');
+                return;
+            }
+            state.currentCompany = company;
+            
+            if (typeof DeleteCompanyModal !== 'undefined') {
+                DeleteCompanyModal.open(company);
+            } else {
+                Toast.error('Error al abrir modal de eliminación');
+            }
         }
+    };
 
-        // =====================================================================
-        // FUNCTION: Show Alert
-        // =====================================================================
-
-        function showAlert(type, message) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
-            });
-
-            Toast.fire({
-                icon: type,
-                title: message
-            });
-        }
-
-        // =====================================================================
-        // ATTACH ACTION LISTENERS
-        // =====================================================================
-
-        function attachActionListeners() {
-            document.querySelectorAll('.btn-view-details').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openDetailsModal(this.dataset.id);
-                });
-            });
-
-            document.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openFormModal('edit', this.dataset.id);
-                });
-            });
-
-            document.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openDeleteModal(this.dataset.id);
-                });
-            });
-        }
-
-        // =====================================================================
-        // EVENT LISTENERS
-        // =====================================================================
-
-        document.getElementById('filter-status').addEventListener('change', function() {
-            loadCompanies({ status: this.value });
+    // =========================================================================
+    // EVENT HANDLERS INITIALIZATION
+    // =========================================================================
+    function initEvents() {
+        // Search with debounce
+        let searchTimer;
+        $('#searchInput').on('input', function() {
+            clearTimeout(searchTimer);
+            const value = $(this).val().trim();
+            searchTimer = setTimeout(() => {
+                state.filters.search = value;
+                state.currentPage = 1;
+                API.loadCompanies();
+            }, CONFIG.DEBOUNCE_DELAY);
         });
-
-        document.getElementById('filter-industry').addEventListener('change', function() {
-            loadCompanies({ industry_id: this.value });
+        
+        // Filter handlers
+        $('#statusFilter').on('change', function() {
+            state.filters.status = $(this).val();
+            state.currentPage = 1;
+            UI.updateFilterSelection();
+            API.loadCompanies();
         });
-
-        document.getElementById('search-companies').addEventListener('input', function() {
-            loadCompanies({ search: this.value });
+        
+        $('#industryFilter').on('change', function() {
+            state.filters.industry_id = $(this).val();
+            state.currentPage = 1;
+            API.loadCompanies();
         });
-
-        document.getElementById('btn-refresh').addEventListener('click', function() {
-            loadCompanies();
+        
+        $('#orderByFilter').on('change', function() {
+            state.filters.order_by = $(this).val();
+            API.loadCompanies();
         });
-
-        document.getElementById('btn-create-company').addEventListener('click', function() {
-            openFormModal('create');
+        
+        // Reset filters
+        $('#btnResetFilters').on('click', function() {
+            state.filters = {
+                status: 'active',
+                industry_id: '',
+                search: '',
+                order_by: 'created_at',
+                order_direction: 'desc'
+            };
+            state.currentPage = 1;
+            
+            $('#searchInput').val('');
+            $('#statusFilter').val('active');
+            $('#industryFilter').val('');
+            $('#orderByFilter').val('created_at');
+            
+            UI.updateFilterSelection();
+            API.loadCompanies();
         });
-
-        document.getElementById('btn-modal-edit').addEventListener('click', function() {
-            if (currentCompany) {
-                openFormModal('edit', currentCompany.id);
+        
+        // Refresh button
+        $('#btnRefresh').on('click', () => API.loadCompanies());
+        
+        // Create button
+        $('#btnCreateCompany').on('click', function() {
+            if (typeof FormCompanyModal !== 'undefined') {
+                FormCompanyModal.openCreate();
             }
         });
-
-        document.getElementById('btn-save-company').addEventListener('click', saveCompany);
-
-        document.getElementById('btn-confirm-delete').addEventListener('click', deleteCompany);
-
-        // Delete confirmation text validation
-        document.getElementById('delete-confirmation').addEventListener('input', function() {
-            const btnDelete = document.getElementById('btn-confirm-delete');
-            btnDelete.disabled = this.value.trim() !== currentCompany.name;
+        
+        // Info box click handlers
+        $('#infoBoxAll').on('click', () => {
+            state.filters.status = '';
+            state.currentPage = 1;
+            $('#statusFilter').val('');
+            UI.updateFilterSelection();
+            API.loadCompanies();
         });
+        
+        $('#infoBoxActive').on('click', () => {
+            state.filters.status = 'active';
+            state.currentPage = 1;
+            $('#statusFilter').val('active');
+            UI.updateFilterSelection();
+            API.loadCompanies();
+        });
+        
+        $('#infoBoxSuspended').on('click', () => {
+            state.filters.status = 'suspended';
+            state.currentPage = 1;
+            $('#statusFilter').val('suspended');
+            UI.updateFilterSelection();
+            API.loadCompanies();
+        });
+        
+        // Modal events from partials
+        $(document).on('openEditCompanyModal', function(e, companyId) {
+            Modals.openEdit(companyId);
+        });
+        
+        $(document).on('openStatusCompanyModal', function(e, companyId) {
+            Modals.openStatus(companyId);
+        });
+        
+        $(document).on('openDeleteCompanyModal', function(e, companyId) {
+            Modals.openDelete(companyId);
+        });
+        
+        // Refresh on company operations
+        $(document).on('companySaved', function() {
+            API.loadCompanies();
+        });
+        
+        $(document).on('companyStatusChanged', function() {
+            API.loadCompanies();
+        });
+        
+        $(document).on('companyDeleted', function() {
+            API.loadCompanies();
+        });
+    }
 
-        // =====================================================================
-        // INITIALIZE
-        // =====================================================================
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    async function init() {
+        const token = Utils.getToken();
+        if (!token) {
+            Toast.error('Token no encontrado');
+            UI.showError('Error de autenticación. Por favor inicia sesión nuevamente.');
+            return;
+        }
+        
+        initEvents();
+        UI.updateFilterSelection();
+        
+        await API.loadIndustries();
+        await API.loadCompanies();
+        
+        console.log('[Companies] ✓ Initialized successfully');
+    }
 
-        loadIndustries();
-        loadAdminUsers();
-        loadCompanies();
-    });
+    $(document).ready(init);
+})();
 </script>
-
-<!-- SweetAlert2 for notifications -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-@endsection
+@endpush
