@@ -16,6 +16,7 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
+use App\Features\ServiceIntegration\Http\Controllers\ServiceFileController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementSchemaController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
 use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
@@ -647,3 +648,26 @@ Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
         ->middleware('role:PLATFORM_ADMIN')
         ->name('analytics.platform-dashboard');
 });
+
+// ================================================================================
+// REST API ENDPOINTS - Storage for Microservices
+// ================================================================================
+// Used by microservices (Ratings, Macros) for file attachments
+// Authenticated via standard JWT
+
+Route::middleware(['jwt.require'])->prefix('files')->group(function () {
+    Route::get('/', [ServiceFileController::class, 'index'])
+        ->name('files.index');
+    
+    Route::post('/upload', [ServiceFileController::class, 'upload'])
+        ->name('files.upload');
+    
+    Route::get('/{key}', [ServiceFileController::class, 'show'])
+        ->where('key', '.*')
+        ->name('files.show');
+    
+    Route::delete('/{key}', [ServiceFileController::class, 'destroy'])
+        ->where('key', '.*')
+        ->name('files.destroy');
+});
+

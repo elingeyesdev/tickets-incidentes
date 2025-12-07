@@ -16,6 +16,215 @@
         }
     ],
     "paths": {
+        "/api/analytics/company-dashboard": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get company dashboard statistics",
+                "description": "Returns comprehensive statistics for the company admin dashboard. Requires COMPANY_ADMIN role.",
+                "operationId": "get_company_dashboard_stats",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "kpi": {
+                                            "type": "object"
+                                        },
+                                        "ticket_status": {
+                                            "type": "object"
+                                        },
+                                        "recent_tickets": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "team_members": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "categories": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "performance": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/analytics/user-dashboard": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get user dashboard statistics",
+                "description": "Returns statistics for the user dashboard (Customer/Employee).",
+                "operationId": "get_user_dashboard_stats",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "kpi": {
+                                            "type": "object"
+                                        },
+                                        "ticket_status": {
+                                            "type": "object"
+                                        },
+                                        "recent_tickets": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "recent_articles": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/analytics/agent-dashboard": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get agent dashboard statistics",
+                "description": "Returns statistics for the agent dashboard (Assigned tickets, queue, etc).",
+                "operationId": "get_agent_dashboard_stats",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "kpi": {
+                                            "type": "object"
+                                        },
+                                        "ticket_status": {
+                                            "type": "object"
+                                        },
+                                        "assigned_tickets": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "unassigned_tickets": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "recent_articles": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/analytics/platform-dashboard": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get platform dashboard statistics",
+                "description": "Returns statistics for the platform admin dashboard (Global stats).",
+                "operationId": "get_platform_dashboard_stats",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "kpi": {
+                                            "type": "object"
+                                        },
+                                        "companies_growth": {
+                                            "type": "object"
+                                        },
+                                        "ticket_volume": {
+                                            "type": "object"
+                                        },
+                                        "pending_requests": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "top_companies": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -882,22 +1091,26 @@
                 "tags": [
                     "Email Verification"
                 ],
-                "summary": "Verify email",
-                "description": "Verify user email with token. Public endpoint (no authentication required). Always returns 200 status, check \"success\" field in response body to determine result.",
+                "summary": "Verify email with token or code",
+                "description": "Verify user email with token OR 6-digit code. Public endpoint (no authentication required). Provide either token or code, not both. Always returns 200 status for valid/invalid tokens, check \"success\" field in response body to determine result.",
                 "operationId": "077140d57b4d70ffd89a68e5a5899364",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "token"
-                                ],
                                 "properties": {
                                     "token": {
-                                        "description": "Email verification token (received via email)",
+                                        "description": "Email verification token (64 characters) - received via email link. Use token OR code, not both.",
                                         "type": "string",
-                                        "example": "abc123def456ghi789jkl012mno345pq"
+                                        "example": "abc123def456ghi789jkl012mno345pqrst789xyz123abc456def789ghi012",
+                                        "nullable": true
+                                    },
+                                    "code": {
+                                        "description": "6-digit verification code - alternative to token for manual entry. Use token OR code, not both.",
+                                        "type": "string",
+                                        "example": "123456",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -907,27 +1120,60 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Verification result (always returns 200, check success field)",
+                        "description": "Verification result (always returns 200 for both success and failure cases, check success field)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "description": "Whether verification succeeded",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "description": "User-friendly message describing the result",
+                                            "type": "string",
+                                            "example": "¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema."
+                                        },
+                                        "canResend": {
+                                            "description": "Whether user can request to resend verification email",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "resendAvailableAt": {
+                                            "description": "Timestamp when resend will be available (null if cannot resend)",
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (e.g., both token and code provided, neither provided, or invalid format)",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "success": {
                                             "type": "boolean",
-                                            "example": true
+                                            "example": false
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "¡Email verificado exitosamente! Ya puedes usar todas las funciones del sistema."
+                                            "example": "Proporciona token O código, no ambos."
                                         },
                                         "canResend": {
                                             "type": "boolean",
-                                            "example": false
+                                            "example": true
                                         },
                                         "resendAvailableAt": {
                                             "type": "string",
-                                            "example": null,
-                                            "nullable": true
+                                            "format": "date-time"
                                         }
                                     },
                                     "type": "object"
@@ -5410,7 +5656,7 @@
                     "Company Requests"
                 ],
                 "summary": "Create company request",
-                "description": "Public endpoint to create new company request. Rate limit: 3 requests per hour. Automatic validation of duplicate email in pending requests.",
+                "description": "Public endpoint to create new company request. Rate limit: 3 requests per hour. Includes advanced duplicate detection using tax ID, email, website domain, and name similarity algorithms.",
                 "operationId": "create_company_request",
                 "requestBody": {
                     "description": "Company request data",
@@ -5702,7 +5948,63 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error - invalid data or duplicate email"
+                        "description": "Validation error - invalid data or duplicate detection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Error de validación"
+                                        },
+                                        "errors": {
+                                            "description": "Errores de validación por campo. Puede incluir: campo_requerido, formato_inválido, o errores_de_duplicados",
+                                            "properties": {
+                                                "tax_id": {
+                                                    "description": "Error: NIT/Tax ID duplicado (bloquea creación)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Ya existe una solicitud pendiente con el NIT/Tax ID \"12.345.678-9\" para la empresa \"TechCorp S.A.\"."
+                                                    }
+                                                },
+                                                "admin_email": {
+                                                    "description": "Error: Email admin duplicado con nombre similar >70% (bloquea creación)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "El email \"admin@techcorp.com\" ya es el email de soporte de la empresa \"TechCorp Solutions\" (código: TECH-001). Si deseas administrar esta empresa, contacta con el administrador de plataforma."
+                                                    }
+                                                },
+                                                "website": {
+                                                    "description": "Error: Dominio de website duplicado con nombre similar >50% (bloquea creación)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Ya existe una empresa con el mismo sitio web (dominio: techcorp.com): \"TechCorp Solutions\". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma."
+                                                    }
+                                                },
+                                                "company_name": {
+                                                    "description": "Advertencia: Nombre muy similar >85% (no bloquea) O email admin con similitud 30-70%",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "ADVERTENCIA: Ya existe una empresa con nombre muy similar: \"TechCorp Solutions\" (código: TECH-001)."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object",
+                                            "example": {}
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "429": {
                         "description": "Rate limit exceeded - maximum 3 requests per hour"
@@ -11491,7 +11793,7 @@
                     "Ticket Actions"
                 ],
                 "summary": "Assign ticket to agent",
-                "description": "Assigns a ticket to a specific agent by updating the owner_agent_id field. Only AGENT role users from the ticket's company can assign tickets. The target agent must have AGENT role and belong to the same company as the ticket. Triggers TicketAssigned event and sends notification to the assigned agent.",
+                "description": "Assigns a ticket to a specific agent by updating the owner_agent_id field. Only AGENT and COMPANY_ADMIN role users from the ticket's company can assign tickets. The target agent must have AGENT role and belong to the same company as the ticket. Triggers TicketAssigned event and sends notification to the assigned agent.",
                 "operationId": "assign_ticket",
                 "parameters": [
                     {
@@ -16720,6 +17022,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Analytics",
+            "description": "Analytics"
+        },
         {
             "name": "Authentication",
             "description": "Authentication"

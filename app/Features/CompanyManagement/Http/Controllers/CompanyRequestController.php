@@ -478,19 +478,10 @@ class CompanyRequestController extends Controller
                                 new OA\Property(
                                     property: 'company_name',
                                     type: 'array',
-                                    description: 'Advertencia: Nombre muy similar >85% (no bloquea, solo advierte)',
+                                    description: 'Advertencia: Nombre muy similar >85% (no bloquea) O email admin con similitud 30-70%',
                                     items: new OA\Items(
                                         type: 'string',
-                                        example: 'ADVERTENCIA: Ya existe una empresa con nombre muy similar: "TechCorp Solutions" (código: TECH-001). Si es la misma empresa, contacta con el administrador de plataforma.'
-                                    )
-                                ),
-                                new OA\Property(
-                                    property: 'company_name',
-                                    type: 'array',
-                                    description: 'Advertencia: Email admin con nombre débilmente similar 30-70% (no bloquea, solo advierte)',
-                                    items: new OA\Items(
-                                        type: 'string',
-                                        example: 'ADVERTENCIA: El email "admin@techcorp.com" ya está asociado a la empresa "TechCorp" que tiene un nombre similar. Verifica que no sean la misma empresa.'
+                                        example: 'ADVERTENCIA: Ya existe una empresa con nombre muy similar: "TechCorp Solutions" (código: TECH-001).'
                                     )
                                 ),
                             ],
