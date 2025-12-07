@@ -164,7 +164,7 @@
                             @change="formData.acceptsPrivacyPolicy = formData.acceptsTerms; errors.acceptsTerms && validateTerms()" :disabled="loading">
 
                         <label for="acceptsTerms">
-                            Acepto los <a href="#" target="_blank">términos</a> y la <a href="#" target="_blank">política de privacidad</a>
+                            Acepto los <a href="#" data-toggle="modal" data-target="#termsModal" onclick="event.preventDefault()">términos y política de privacidad</a>
                         </label>
                     </div>
                     <div class="text-danger small" x-show="errors.acceptsTerms" x-text="errors.acceptsTerms"></div>
@@ -196,6 +196,71 @@
         </div>
 
         <a href="{{ route('login') }}" class="text-center">Ya tengo una cuenta</a>
+    </div>
+
+    {{-- Modal de Términos y Política de Privacidad --}}
+    <div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title" id="termsModalLabel">
+                        <i class="fas fa-file-contract mr-2"></i>Términos de Uso y Privacidad
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {{-- Información del Proyecto --}}
+                    <div class="callout callout-info">
+                        <h6><i class="fas fa-graduation-cap mr-2"></i>Proyecto Académico</h6>
+                        <p class="mb-0 small">
+                            Este sistema de gestión de tickets (HelpDesk) es un proyecto de tesis desarrollado en
+                            <strong>Univalle Santa Cruz</strong> por <strong>Lucas De La Quintana Montenegro</strong>.
+                            No tiene fines comerciales ni de lucro.
+                        </p>
+                    </div>
+
+                    {{-- Términos de Uso --}}
+                    <h6 class="text-primary mt-3"><i class="fas fa-gavel mr-2"></i>Términos de Uso</h6>
+                    <ul class="small pl-4">
+                        <li>El sistema está destinado exclusivamente para <strong>propósitos de demostración y evaluación académica</strong>.</li>
+                        <li>Eres responsable de mantener la confidencialidad de tu cuenta y contraseña.</li>
+                        <li>No está permitido publicar contenido ofensivo, difamatorio o ilegal.</li>
+                        <li>Los administradores se reservan el derecho de eliminar contenido inapropiado o suspender cuentas.</li>
+                        <li>Este es un proyecto en desarrollo y puede presentar errores o interrupciones.</li>
+                    </ul>
+
+                    {{-- Política de Privacidad --}}
+                    <h6 class="text-primary mt-3"><i class="fas fa-shield-alt mr-2"></i>Política de Privacidad</h6>
+                    <ul class="small pl-4">
+                        <li><strong>Datos recopilados:</strong> nombre, correo electrónico y actividad dentro del sistema.</li>
+                        <li><strong>Uso de datos:</strong> gestionar tu cuenta, procesar tickets y mejorar el sistema.</li>
+                        <li><strong>Protección:</strong> las contraseñas se almacenan de forma encriptada.</li>
+                        <li><strong>No compartimos</strong> tu información personal con terceros ni la comercializamos.</li>
+                        <li><strong>Retención:</strong> los datos pueden ser eliminados al finalizar el período de evaluación académica.</li>
+                    </ul>
+
+                    {{-- Aviso Importante --}}
+                    <div class="callout callout-warning">
+                        <h6><i class="fas fa-exclamation-triangle mr-2"></i>Aviso Importante</h6>
+                        <p class="mb-0 small">
+                            Al ser un proyecto académico, no garantizamos disponibilidad continua del servicio
+                            ni nos responsabilizamos por la pérdida de datos. Utiliza el sistema bajo tu propio criterio.
+                        </p>
+                    </div>
+
+                    <p class="text-muted small text-center mb-0 mt-3">
+                        <i class="fas fa-code-branch mr-1"></i>Versión 1.0.0 — Última actualización: Diciembre 2025
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">
+                        <i class="fas fa-check mr-2"></i>Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 @stop
 

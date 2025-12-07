@@ -206,7 +206,7 @@ class Company extends Model
     public function getActiveAgentsCountAttribute(): int
     {
         return $this->userRoles()
-            ->where('role_code', 'agent')
+            ->where('role_code', 'AGENT')
             ->where('is_active', true)
             ->count();
     }

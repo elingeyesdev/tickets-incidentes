@@ -151,21 +151,28 @@
                         </div>
                     </div>
                     
-                    {{-- Admin Section (Only for Create) --}}
-                    <div class="row mt-3" id="adminSection">
-                        <div class="col-12">
-                            <hr>
-                            <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-user-shield"></i> Administrador</h6>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="formAdminId">Usuario Administrador <span class="text-danger">*</span></label>
-                                <select id="formAdminId" name="admin_user_id" class="form-control">
-                                    <option value="">Cargando usuarios...</option>
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle"></i> Requerido en creación. No editable después.
-                                </small>
+                    {{-- Admin Section (Only for Create) - Improved UI --}}
+                    <div id="adminSection" style="display:none">
+                        <hr class="my-3">
+                        <div class="card card-outline card-info mb-0">
+                            <div class="card-header py-2">
+                                <h6 class="card-title mb-0"><i class="fas fa-user-shield text-info"></i> Administrador Principal</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-3">
+                                    <i class="fas fa-info-circle"></i> Selecciona un usuario existente que será asignado como administrador de esta empresa.
+                                    Este usuario tendrá acceso completo a la gestión de la empresa.
+                                </p>
+                                <div class="form-group mb-0">
+                                    <label for="formAdminId">Seleccionar Usuario <span class="text-danger">*</span></label>
+                                    <select id="formAdminId" name="admin_user_id" class="form-control select2" style="width:100%">
+                                        <option value="">Buscar usuario por nombre o email...</option>
+                                    </select>
+                                    <small class="form-text text-muted mt-2">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i> 
+                                        <strong>Nota:</strong> Una vez creada la empresa, el administrador no podrá ser cambiado desde aquí.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -436,7 +443,7 @@
             // Set create mode
             $('#formCompanyId').val('');
             $('#formCompanyTitle').text('Nueva Empresa');
-            $('#formCompanyModalHeader').removeClass('bg-info').addClass('bg-success');
+            $('#formCompanyModalHeader').removeClass('bg-info bg-success').addClass('bg-primary');
             
             // Show admin section (required for create)
             $('#adminSection').show();
@@ -464,7 +471,7 @@
             // Set edit mode
             $('#formCompanyId').val(companyData.id);
             $('#formCompanyTitle').text('Editar Empresa');
-            $('#formCompanyModalHeader').removeClass('bg-success').addClass('bg-info');
+            $('#formCompanyModalHeader').removeClass('bg-success bg-primary').addClass('bg-info');
             
             // Hide admin section (cannot change admin)
             $('#adminSection').hide();

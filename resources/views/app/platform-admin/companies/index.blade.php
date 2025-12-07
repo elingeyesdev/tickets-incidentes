@@ -10,87 +10,42 @@
 
 @section('content')
 
-{{-- Statistics Info Boxes (Clickable) --}}
-<div class="row mb-3">
-    <div class="col-md-4 col-sm-6">
-        <div class="info-box bg-light elevation-2" style="cursor:pointer" data-filter="" id="infoBoxAll">
-            <span class="info-box-icon bg-primary"><i class="fas fa-building"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Total Empresas</span>
-                <span class="info-box-number" id="totalCompanies">0</span>
+{{-- Statistics Small Boxes (matching articles style) --}}
+<div class="row">
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-total" class="small-box bg-info" style="cursor:pointer" data-filter="">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Total Empresas</p>
             </div>
+            <div class="icon"><i class="fas fa-building"></i></div>
         </div>
     </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="info-box bg-light" style="cursor:pointer" data-filter="active" id="infoBoxActive">
-            <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Activas</span>
-                <span class="info-box-number" id="activeCompanies">0</span>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-active" class="small-box bg-success" style="cursor:pointer" data-filter="active">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Activas</p>
             </div>
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
         </div>
     </div>
-    <div class="col-md-4 col-sm-6">
-        <div class="info-box bg-light" style="cursor:pointer" data-filter="suspended" id="infoBoxSuspended">
-            <span class="info-box-icon bg-warning"><i class="fas fa-pause-circle"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Suspendidas</span>
-                <span class="info-box-number" id="suspendedCompanies">0</span>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-suspended" class="small-box bg-warning" style="cursor:pointer" data-filter="suspended">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Suspendidas</p>
             </div>
+            <div class="icon"><i class="fas fa-pause-circle"></i></div>
         </div>
     </div>
-</div>
-
-{{-- Filters Card (Collapsible) --}}
-<div class="card card-outline card-secondary collapsed-card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-filter"></i> Filtros Avanzados</h3>
-        <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
-        </div>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label class="text-sm">Buscar</label>
-                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Nombre, email o código...">
-                </div>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-requests" class="small-box bg-purple" style="cursor:pointer" data-action="requests">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Solicitudes Pendientes</p>
             </div>
-            <div class="col-md-2">
-                <div class="form-group">
-                    <label class="text-sm">Estado</label>
-                    <select class="form-control form-control-sm" id="statusFilter">
-                        <option value="">Todos</option>
-                        <option value="active" selected>Activas</option>
-                        <option value="suspended">Suspendidas</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group">
-                    <label class="text-sm">Industria</label>
-                    <select class="form-control form-control-sm" id="industryFilter">
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-group">
-                    <label class="text-sm">Ordenar por</label>
-                    <select class="form-control form-control-sm" id="orderByFilter">
-                        <option value="created_at">Fecha Creación</option>
-                        <option value="name">Nombre</option>
-                        <option value="support_email">Email</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <label class="text-sm d-block">&nbsp;</label>
-                <button type="button" class="btn btn-default btn-sm" id="btnResetFilters"><i class="fas fa-eraser"></i> Limpiar</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnRefresh"><i class="fas fa-sync-alt"></i> Aplicar</button>
-                <button type="button" class="btn btn-success btn-sm" id="btnCreateCompany"><i class="fas fa-plus"></i> Nueva</button>
-            </div>
+            <div class="icon"><i class="fas fa-inbox"></i></div>
         </div>
     </div>
 </div>
@@ -100,37 +55,106 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-building"></i> Empresas del Sistema</h3>
         <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
-            <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnCreateCompany">
+                <i class="fas fa-plus"></i> Nueva Empresa
+            </button>
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button type="button" class="btn btn-tool" data-card-widget="maximize">
+                <i class="fas fa-expand"></i>
+            </button>
         </div>
     </div>
+
     <div class="card-body p-0">
+        {{-- Filters Section --}}
+        <div class="p-3 border-bottom bg-light">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Buscar</label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Nombre, email o código...">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Estado</label>
+                        <select class="form-control form-control-sm" id="statusFilter">
+                            <option value="">Todos</option>
+                            <option value="active">Activas</option>
+                            <option value="suspended">Suspendidas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Industria</label>
+                        <select class="form-control form-control-sm" id="industryFilter">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Ordenar por</label>
+                        <select class="form-control form-control-sm" id="orderByFilter">
+                            <option value="created_at">Más recientes</option>
+                            <option value="name">Nombre (A-Z)</option>
+                            <option value="support_email">Email</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="text-sm mb-1 d-block">&nbsp;</label>
+                    <button type="button" class="btn btn-default btn-sm" id="btnResetFilters">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnRefresh">
+                        <i class="fas fa-sync-alt"></i> Refrescar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Loading Spinner --}}
         <div id="loadingSpinner" class="text-center py-5">
             <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
             <p class="text-muted mt-3">Cargando empresas...</p>
         </div>
+        
+        {{-- Table --}}
         <div id="tableContainer" style="display:none">
             <div class="table-responsive">
                 <table class="table table-bordered table-striped table-hover mb-0">
                     <thead>
                         <tr>
                             <th style="width:10%">Código</th>
-                            <th style="width:22%">Empresa</th>
+                            <th style="width:24%">Empresa</th>
                             <th style="width:18%">Email Soporte</th>
                             <th style="width:12%">Industria</th>
                             <th style="width:8%">Estado</th>
                             <th style="width:8%">Agentes</th>
-                            <th style="width:22%">Acciones</th>
+                            <th style="width:20%">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="companiesTableBody"></tbody>
                 </table>
             </div>
         </div>
+        
+        {{-- Error Message --}}
         <div id="errorMessage" class="alert alert-danger m-3" style="display:none">
             <i class="fas fa-exclamation-circle"></i> <span id="errorText"></span>
         </div>
     </div>
+
+    {{-- Footer: Pagination --}}
     <div class="card-footer border-top py-3">
         <div class="d-flex justify-content-between align-items-center">
             <small class="text-muted" id="paginationInfo">Mostrando 0 de 0</small>
@@ -224,6 +248,44 @@
                 suspended: '<span class="badge badge-warning"><i class="fas fa-pause-circle"></i> Suspendida</span>'
             };
             return badges[s] || '<span class="badge badge-secondary">Desconocido</span>';
+        },
+        getIndustryBadge(industryName, industryId) {
+            // Color palette with good contrast (white text safe)
+            const colors = [
+                'badge-primary',    // Blue
+                'badge-info',       // Cyan
+                'badge-success',    // Green
+                'badge-purple',     // Purple (custom)
+                'badge-pink',       // Pink (custom via style)
+                'badge-indigo',     // Indigo (custom via style)
+                'badge-teal',       // Teal (custom via style)
+                'badge-orange'      // Orange (custom via style)
+            ];
+            
+            // Use industry ID to pick consistent color
+            const colorIndex = industryId ? (industryId.charCodeAt(0) + industryId.charCodeAt(industryId.length-1)) % colors.length : 0;
+            let colorClass = colors[colorIndex];
+            
+            // Custom colors that need inline styles for AdminLTE
+            let style = '';
+            if (colorClass === 'badge-purple') {
+                style = 'background-color:#6f42c1;color:#fff';
+                colorClass = '';
+            } else if (colorClass === 'badge-pink') {
+                style = 'background-color:#e83e8c;color:#fff';
+                colorClass = '';
+            } else if (colorClass === 'badge-indigo') {
+                style = 'background-color:#6610f2;color:#fff';
+                colorClass = '';
+            } else if (colorClass === 'badge-teal') {
+                style = 'background-color:#20c997;color:#fff';
+                colorClass = '';
+            } else if (colorClass === 'badge-orange') {
+                style = 'background-color:#fd7e14;color:#fff';
+                colorClass = '';
+            }
+            
+            return `<span class="badge ${colorClass}" style="${style}">${this.escapeHtml(industryName)}</span>`;
         }
     };
 
@@ -329,21 +391,30 @@
                     'Accept': 'application/json'
                 };
                 
-                const [totalRes, activeRes, suspendedRes] = await Promise.all([
+                const [totalRes, activeRes, suspendedRes, requestsRes] = await Promise.all([
                     fetch(`${CONFIG.API_BASE}/companies?per_page=1`, { headers }),
                     fetch(`${CONFIG.API_BASE}/companies?per_page=1&status=active`, { headers }),
-                    fetch(`${CONFIG.API_BASE}/companies?per_page=1&status=suspended`, { headers })
+                    fetch(`${CONFIG.API_BASE}/companies?per_page=1&status=suspended`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/company-requests?per_page=1&status=pending`, { headers })
                 ]);
                 
-                const [totalData, activeData, suspendedData] = await Promise.all([
+                const [totalData, activeData, suspendedData, requestsData] = await Promise.all([
                     totalRes.json(),
                     activeRes.json(),
-                    suspendedRes.json()
+                    suspendedRes.json(),
+                    requestsRes.ok ? requestsRes.json() : { meta: { total: 0 } }
                 ]);
                 
-                $('#totalCompanies').text(totalData.meta?.total || 0);
-                $('#activeCompanies').text(activeData.meta?.total || 0);
-                $('#suspendedCompanies').text(suspendedData.meta?.total || 0);
+                const total = totalData.meta?.total || 0;
+                const active = activeData.meta?.total || 0;
+                const suspended = suspendedData.meta?.total || 0;
+                const requests = requestsData.meta?.total || 0;
+                
+                // Update small-box stats (native HTML structure)
+                $('#stat-total .inner h3').text(total);
+                $('#stat-active .inner h3').text(active);
+                $('#stat-suspended .inner h3').text(suspended);
+                $('#stat-requests .inner h3').text(requests);
                 
             } catch (error) {
                 console.error('[Companies] Stats error:', error);
@@ -414,6 +485,7 @@
             
             $tbody.html(state.companies.map(company => {
                 const industryName = company.industry?.name || 'N/A';
+                const industryId = company.industry?.id || '';
                 return `
                     <tr data-id="${company.id}">
                         <td><code>${Utils.escapeHtml(company.companyCode || 'N/A')}</code></td>
@@ -422,7 +494,7 @@
                             <small class="text-muted">${Utils.escapeHtml(company.legalName || '')}</small>
                         </td>
                         <td><small>${Utils.escapeHtml(company.supportEmail || 'N/A')}</small></td>
-                        <td><span class="badge badge-info">${Utils.escapeHtml(industryName)}</span></td>
+                        <td>${Utils.getIndustryBadge(industryName, industryId)}</td>
                         <td>${Utils.getStatusBadge(company.status)}</td>
                         <td><span class="badge badge-primary">${company.activeAgentsCount || 0}</span></td>
                         <td class="text-nowrap">
@@ -517,14 +589,14 @@
         },
         
         updateFilterSelection() {
-            $('.info-box').removeClass('elevation-2');
+            $('.small-box').removeClass('elevation-3');
             const status = state.filters.status;
             if (status === 'active') {
-                $('#infoBoxActive').addClass('elevation-2');
+                $('#stat-active').addClass('elevation-3');
             } else if (status === 'suspended') {
-                $('#infoBoxSuspended').addClass('elevation-2');
+                $('#stat-suspended').addClass('elevation-3');
             } else {
-                $('#infoBoxAll').addClass('elevation-2');
+                $('#stat-total').addClass('elevation-3');
             }
         }
     };
@@ -664,8 +736,8 @@
             }
         });
         
-        // Info box click handlers
-        $('#infoBoxAll').on('click', () => {
+        // Small-box click handlers for filtering
+        $('#stat-total').on('click', () => {
             state.filters.status = '';
             state.currentPage = 1;
             $('#statusFilter').val('');
@@ -673,7 +745,7 @@
             API.loadCompanies();
         });
         
-        $('#infoBoxActive').on('click', () => {
+        $('#stat-active').on('click', () => {
             state.filters.status = 'active';
             state.currentPage = 1;
             $('#statusFilter').val('active');
@@ -681,12 +753,17 @@
             API.loadCompanies();
         });
         
-        $('#infoBoxSuspended').on('click', () => {
+        $('#stat-suspended').on('click', () => {
             state.filters.status = 'suspended';
             state.currentPage = 1;
             $('#statusFilter').val('suspended');
             UI.updateFilterSelection();
             API.loadCompanies();
+        });
+        
+        // Requests card - navigate to company requests page
+        $('#stat-requests').on('click', () => {
+            window.location.href = '/app/admin/company-requests';
         });
         
         // Modal events from partials

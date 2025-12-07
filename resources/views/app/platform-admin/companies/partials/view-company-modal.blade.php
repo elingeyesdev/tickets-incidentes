@@ -17,16 +17,16 @@
 <style>
     /* Company logo */
     .company-logo-view {
-        width: 85px;
-        height: 85px;
-        min-width: 85px;
+        width: 100px;
+        height: 100px;
+        min-width: 100px;
         border-radius: 14px;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #adb5bd;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         border: 2px solid #dee2e6;
     }
     .company-logo-view img {
@@ -170,12 +170,9 @@
 <div class="modal fade" id="viewCompanyModal" tabindex="-1" aria-labelledby="viewCompanyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content" style="position: relative;">
-            {{-- Loading Overlay --}}
-            <div id="viewCompanyLoading" class="modal-loading-overlay">
-                <div class="text-center">
-                    <div class="spinner-border text-primary mb-2" role="status"></div>
-                    <p class="text-muted mb-0">Cargando datos de empresa...</p>
-                </div>
+            {{-- Loading Overlay - AdminLTE v3 Official Pattern --}}
+            <div id="viewCompanyLoading" class="overlay" style="display:none;">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
             
             {{-- Header - Light theme for better readability --}}
@@ -195,6 +192,7 @@
                             <span class="text-muted mr-2">·</span>
                             <span class="text-muted" id="viewCompanyIndustry">-</span>
                         </div>
+                        <p class="text-muted small mb-0 mt-1" id="viewCompanyDescription" style="display:none; max-width: 600px;"></p>
                     </div>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -239,105 +237,92 @@
                     
                     {{-- Tab: Estadísticas (First) --}}
                     <div class="tab-pane fade show active" id="viewCompanyStats" role="tabpanel">
-                        <div id="statsLoading" class="tab-loading">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2 mb-0">Cargando estadísticas...</p>
+                        {{-- Main Stats - Clean info-box style --}}
+                        <div class="row">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-headset"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Agentes Activos</span>
+                                        <span class="info-box-number" id="statActiveAgents">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-ticket-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Total Tickets</span>
+                                        <span class="info-box-number" id="statTotalTickets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-folder-open"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Tickets Abiertos</span>
+                                        <span class="info-box-number" id="statOpenTickets">0</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="statsContent" style="display: none;">
-                            {{-- Main Stats Grid --}}
-                            <div class="row mb-4">
-                                <div class="col-lg-3 col-md-6 col-6 mb-3">
-                                    <div class="stat-card-compact">
-                                        <div class="stat-icon bg-primary text-white">
-                                            <i class="fas fa-users"></i>
-                                        </div>
-                                        <div class="stat-number text-primary" id="statTotalUsers">0</div>
-                                        <div class="stat-label">Usuarios</div>
+                        
+                        {{-- Tickets Status Card --}}
+                        <div class="card shadow-none border mb-3">
+                            <div class="card-header bg-light py-2 border-bottom">
+                                <h6 class="card-title mb-0 text-secondary">
+                                    <i class="fas fa-chart-bar"></i> Estado de Tickets
+                                </h6>
+                            </div>
+                            <div class="card-body py-3">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <h5 class="mb-0 text-success" id="statTicketsOpen">0</h5>
+                                        <small class="text-muted">Abiertos</small>
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-6 mb-3">
-                                    <div class="stat-card-compact">
-                                        <div class="stat-icon bg-success text-white">
-                                            <i class="fas fa-headset"></i>
-                                        </div>
-                                        <div class="stat-number text-success" id="statActiveAgents">0</div>
-                                        <div class="stat-label">Agentes</div>
+                                    <div class="col-3 border-left">
+                                        <h5 class="mb-0 text-warning" id="statTicketsPending">0</h5>
+                                        <small class="text-muted">Pendientes</small>
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-6 mb-3">
-                                    <div class="stat-card-compact">
-                                        <div class="stat-icon bg-info text-white">
-                                            <i class="fas fa-ticket-alt"></i>
-                                        </div>
-                                        <div class="stat-number text-info" id="statTotalTickets">0</div>
-                                        <div class="stat-label">Tickets</div>
+                                    <div class="col-3 border-left">
+                                        <h5 class="mb-0 text-info" id="statTicketsResolved">0</h5>
+                                        <small class="text-muted">Resueltos</small>
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-6 mb-3">
-                                    <div class="stat-card-compact">
-                                        <div class="stat-icon bg-warning text-white">
-                                            <i class="fas fa-folder-open"></i>
-                                        </div>
-                                        <div class="stat-number text-warning" id="statOpenTickets">0</div>
-                                        <div class="stat-label">Abiertos</div>
+                                    <div class="col-3 border-left">
+                                        <h5 class="mb-0 text-secondary" id="statTicketsClosed">0</h5>
+                                        <small class="text-muted">Cerrados</small>
                                     </div>
                                 </div>
                             </div>
-                            
-                            {{-- Tickets Breakdown --}}
-                            <div class="card card-outline card-info mb-3">
-                                <div class="card-header py-2">
-                                    <h6 class="card-title mb-0"><i class="fas fa-ticket-alt text-info"></i> Desglose de Tickets</h6>
-                                </div>
-                                <div class="card-body py-3">
-                                    <div class="row text-center">
-                                        <div class="col">
-                                            <div class="text-success font-weight-bold" id="statTicketsOpen">0</div>
-                                            <small class="text-muted">Abiertos</small>
-                                        </div>
-                                        <div class="col border-left">
-                                            <div class="text-warning font-weight-bold" id="statTicketsPending">0</div>
-                                            <small class="text-muted">Pendientes</small>
-                                        </div>
-                                        <div class="col border-left">
-                                            <div class="text-info font-weight-bold" id="statTicketsResolved">0</div>
-                                            <small class="text-muted">Resueltos</small>
-                                        </div>
-                                        <div class="col border-left">
-                                            <div class="text-secondary font-weight-bold" id="statTicketsClosed">0</div>
-                                            <small class="text-muted">Cerrados</small>
-                                        </div>
+                        </div>
+                        
+                        {{-- Content & Engagement Row --}}
+                        <div class="row">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border mb-3">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-bullhorn"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Anuncios</span>
+                                        <span class="info-box-number" id="statAnnouncements">0</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            {{-- Content Stats Row --}}
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <div class="info-box bg-gradient-success mb-0 shadow-sm">
-                                        <span class="info-box-icon"><i class="fas fa-bullhorn"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Anuncios</span>
-                                            <span class="info-box-number" id="statAnnouncements">0</span>
-                                        </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border mb-3">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-book"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Artículos</span>
+                                        <span class="info-box-number" id="statArticles">0</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="info-box bg-gradient-info mb-0 shadow-sm">
-                                        <span class="info-box-icon"><i class="fas fa-book"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Artículos</span>
-                                            <span class="info-box-number" id="statArticles">0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="info-box bg-gradient-warning mb-0 shadow-sm">
-                                        <span class="info-box-icon"><i class="fas fa-heart"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Seguidores</span>
-                                            <span class="info-box-number" id="statFollowers">0</span>
-                                        </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="info-box shadow-none border mb-3">
+                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-heart"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-muted">Seguidores</span>
+                                        <span class="info-box-number" id="statFollowers">0</span>
                                     </div>
                                 </div>
                             </div>
@@ -346,16 +331,6 @@
                     
                     {{-- Tab: Información (Combined General + Contact) --}}
                     <div class="tab-pane fade" id="viewCompanyInfo" role="tabpanel">
-                        {{-- Description Card - Full width at top --}}
-                        <div class="card card-outline card-info mb-3" id="descriptionCard" style="display: none;">
-                            <div class="card-header py-2">
-                                <h6 class="card-title mb-0"><i class="fas fa-align-left text-info"></i> Descripción</h6>
-                            </div>
-                            <div class="card-body py-3">
-                                <p class="mb-0 text-muted" id="viewDescription">-</p>
-                            </div>
-                        </div>
-                        
                         <div class="row">
                             {{-- Left Column: General --}}
                             <div class="col-lg-6">
@@ -367,8 +342,6 @@
                                         <dl class="row info-list mb-0">
                                             <dt class="col-sm-5">Nombre</dt>
                                             <dd class="col-sm-7" id="viewName">-</dd>
-                                            <dt class="col-sm-5">Nombre Legal</dt>
-                                            <dd class="col-sm-7" id="viewLegalName">-</dd>
                                             <dt class="col-sm-5">Email Soporte</dt>
                                             <dd class="col-sm-7" id="viewSupportEmail">-</dd>
                                             <dt class="col-sm-5">Teléfono</dt>
@@ -425,14 +398,16 @@
                                     </div>
                                 </div>
                                 
-                                {{-- Legal --}}
+                                {{-- Información Legal --}}
                                 <div class="card card-outline card-secondary mb-3">
                                     <div class="card-header py-2">
-                                        <h6 class="card-title mb-0"><i class="fas fa-file-contract text-secondary"></i> Legal</h6>
+                                        <h6 class="card-title mb-0"><i class="fas fa-file-contract text-secondary"></i> Información Legal</h6>
                                     </div>
                                     <div class="card-body py-3">
                                         <dl class="row info-list mb-0">
-                                            <dt class="col-sm-5">Tax ID</dt>
+                                            <dt class="col-sm-5">Nombre Legal</dt>
+                                            <dd class="col-sm-7" id="viewLegalName">-</dd>
+                                            <dt class="col-sm-5">NIT / Tax ID</dt>
                                             <dd class="col-sm-7" id="viewTaxId">-</dd>
                                             <dt class="col-sm-5">Representante</dt>
                                             <dd class="col-sm-7" id="viewLegalRep">-</dd>
@@ -984,13 +959,12 @@
         $('#viewPhone').text(companyData.phone || '-');
         $('#viewTimezone').text(companyData.timezone || 'UTC');
         
-        // Description - show card only if exists
+        // Description - show in header below company code/industry
         const description = companyData.description;
         if (description && description.trim()) {
-            $('#viewDescription').text(description);
-            $('#descriptionCard').show();
+            $('#viewCompanyDescription').text(description).show();
         } else {
-            $('#descriptionCard').hide();
+            $('#viewCompanyDescription').hide();
         }
         
         // Business Hours - show card only if configured

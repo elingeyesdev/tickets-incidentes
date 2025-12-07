@@ -225,6 +225,346 @@
                 ]
             }
         },
+        "/api/admin/companies/{companyId}/stats": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get comprehensive company statistics",
+                "description": "Returns all statistics for a specific company including users, tickets, announcements, articles, areas, and categories. Requires PLATFORM_ADMIN role.",
+                "operationId": "get_company_full_stats",
+                "parameters": [
+                    {
+                        "name": "companyId",
+                        "in": "path",
+                        "description": "Company UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company statistics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "users": {
+                                                    "description": "User statistics",
+                                                    "type": "object"
+                                                },
+                                                "tickets": {
+                                                    "description": "Ticket statistics by status and priority",
+                                                    "type": "object"
+                                                },
+                                                "announcements": {
+                                                    "description": "Announcement statistics by type and status",
+                                                    "type": "object"
+                                                },
+                                                "articles": {
+                                                    "description": "Help center article statistics",
+                                                    "type": "object"
+                                                },
+                                                "areas": {
+                                                    "description": "Area statistics",
+                                                    "type": "object"
+                                                },
+                                                "categories": {
+                                                    "description": "Category statistics",
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires PLATFORM_ADMIN role"
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/activity-logs": {
+            "get": {
+                "tags": [
+                    "Activity Logs"
+                ],
+                "summary": "List activity logs",
+                "description": "Returns paginated activity logs for the authenticated user or all users (admin only)",
+                "operationId": "list_activity_logs",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "Filter by user ID (admin only)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "description": "Filter by specific action",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filter by category",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "authentication",
+                                "tickets",
+                                "users",
+                                "companies"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "entity_type",
+                        "in": "query",
+                        "description": "Filter by entity type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entity_id",
+                        "in": "query",
+                        "description": "Filter by entity ID",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Filter from date (ISO 8601 format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Filter to date (ISO 8601 format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity logs retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/activity-logs/my": {
+            "get": {
+                "tags": [
+                    "Activity Logs"
+                ],
+                "summary": "Get my activity logs",
+                "description": "Returns paginated activity logs for the authenticated user",
+                "operationId": "my_activity_logs",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filter by category",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "authentication",
+                                "tickets",
+                                "users",
+                                "companies"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Filter from date (ISO 8601 format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Filter to date (ISO 8601 format)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity logs retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/activity-logs/entity/{entityType}/{entityId}": {
+            "get": {
+                "tags": [
+                    "Activity Logs"
+                ],
+                "summary": "Get entity activity logs",
+                "description": "Returns paginated activity logs for a specific entity (ticket, user, etc)",
+                "operationId": "entity_activity_logs",
+                "parameters": [
+                    {
+                        "name": "entityType",
+                        "in": "path",
+                        "description": "Entity type (ticket, user, company)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "entityId",
+                        "in": "path",
+                        "description": "Entity ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity logs retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -10525,6 +10865,260 @@
                 ]
             }
         },
+        "/api/service/files/upload": {
+            "post": {
+                "tags": [
+                    "Service - Files"
+                ],
+                "summary": "Upload a file",
+                "description": "Uploads a file and returns its key and URL. Used by microservices for attachments.",
+                "operationId": "cf202aec8c7e0b2d1cf8ed52c6a56730",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "File to upload",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "folder": {
+                                        "description": "Subfolder (e.g., chat, notes)",
+                                        "type": "string",
+                                        "example": "chat"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "File uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "key": {
+                                            "type": "string",
+                                            "example": "microservices/chat/abc123.pdf"
+                                        },
+                                        "url": {
+                                            "type": "string",
+                                            "example": "http://localhost:8000/storage/microservices/chat/abc123.pdf"
+                                        },
+                                        "filename": {
+                                            "type": "string",
+                                            "example": "document.pdf"
+                                        },
+                                        "mime_type": {
+                                            "type": "string",
+                                            "example": "application/pdf"
+                                        },
+                                        "size": {
+                                            "type": "integer",
+                                            "example": 102400
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file provided"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "serviceAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/service/files/{key}": {
+            "get": {
+                "tags": [
+                    "Service - Files"
+                ],
+                "summary": "Get file info or download",
+                "description": "Returns file information or redirects to download URL.",
+                "operationId": "3f5d71a547df70dfa4ee05bd2729bf90",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "File key/path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "download",
+                        "in": "query",
+                        "description": "If true, returns download response",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File info",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "key": {
+                                            "type": "string"
+                                        },
+                                        "url": {
+                                            "type": "string"
+                                        },
+                                        "size": {
+                                            "type": "integer"
+                                        },
+                                        "mime_type": {
+                                            "type": "string"
+                                        },
+                                        "last_modified": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "File not found"
+                    }
+                },
+                "security": [
+                    {
+                        "serviceAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Service - Files"
+                ],
+                "summary": "Delete a file",
+                "description": "Deletes a file from storage.",
+                "operationId": "56fd8a30aaa66c310a087c0eed6e8a93",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "File key/path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "File deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "File not found"
+                    }
+                },
+                "security": [
+                    {
+                        "serviceAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/service/files": {
+            "get": {
+                "tags": [
+                    "Service - Files"
+                ],
+                "summary": "List files in a folder",
+                "description": "Lists all files in a specific microservice folder.",
+                "operationId": "64e631b8a0fc6b48162026876f6cc7b5",
+                "parameters": [
+                    {
+                        "name": "folder",
+                        "in": "query",
+                        "description": "Subfolder to list",
+                        "schema": {
+                            "type": "string",
+                            "example": "chat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Files list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "folder": {
+                                            "type": "string"
+                                        },
+                                        "files": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "serviceAuth": []
+                    }
+                ]
+            }
+        },
         "/api/tickets/categories": {
             "get": {
                 "tags": [
@@ -17027,6 +17621,10 @@
             "description": "Analytics"
         },
         {
+            "name": "Activity Logs",
+            "description": "Activity Logs"
+        },
+        {
             "name": "Authentication",
             "description": "Authentication"
         },
@@ -17109,6 +17707,10 @@
         {
             "name": "News Announcements",
             "description": "News Announcements"
+        },
+        {
+            "name": "Service - Files",
+            "description": "Service - Files"
         },
         {
             "name": "Ticket Categories",
