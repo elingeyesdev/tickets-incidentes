@@ -76,6 +76,7 @@ class AnalyticsService
     {
         return [
             'kpi' => $this->getPlatformKpiStats(),
+            'company_requests_stats' => $this->getCompanyRequestsStats(),
             'companies_growth' => $this->getCompaniesGrowth(),
             'ticket_volume' => $this->getGlobalTicketVolume(),
             'pending_requests' => $this->getPendingCompanyRequests(),
@@ -111,6 +112,27 @@ class AnalyticsService
             'total_companies' => Company::count(),
             'total_tickets' => Ticket::count(),
             'pending_requests' => CompanyRequest::where('status', 'pending')->count(),
+        ];
+    }
+
+    /**
+     * Get Company Requests Stats (breakdown by status).
+     */
+    private function getCompanyRequestsStats(): array
+    {
+        $stats = CompanyRequest::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        return [
+            'labels' => ['Pendientes', 'Aprobadas', 'Rechazadas'],
+            'data' => [
+                $stats['pending'] ?? 0,
+                $stats['approved'] ?? 0,
+                $stats['rejected'] ?? 0,
+            ],
+            'backgroundColor' => ['#FFC107', '#28A745', '#DC3545'],
         ];
     }
 

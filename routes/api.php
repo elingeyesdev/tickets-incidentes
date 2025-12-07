@@ -647,6 +647,17 @@ Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
     Route::get('/platform-dashboard', [\App\Features\Analytics\Http\Controllers\AnalyticsController::class, 'platformDashboard'])
         ->middleware('role:PLATFORM_ADMIN')
         ->name('analytics.platform-dashboard');
+
+    // Real-time API Traffic Monitoring (PLATFORM_ADMIN only)
+    Route::middleware('role:PLATFORM_ADMIN')->group(function () {
+        // Get full traffic history (last 60 seconds) + statistics
+        Route::get('/realtime-traffic', [\App\Features\Analytics\Http\Controllers\RealtimeTrafficController::class, 'index'])
+            ->name('analytics.realtime-traffic');
+        
+        // Get only the latest data point (for efficient polling after initial load)
+        Route::get('/realtime-traffic/latest', [\App\Features\Analytics\Http\Controllers\RealtimeTrafficController::class, 'latest'])
+            ->name('analytics.realtime-traffic.latest');
+    });
 });
 
 // ================================================================================

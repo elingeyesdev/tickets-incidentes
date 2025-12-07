@@ -53,6 +53,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            // Track all API requests for real-time traffic monitoring (stored in Redis)
+            \App\Features\Analytics\Http\Middleware\TrackApiRequest::class,
             // Note: ApiExceptionHandler is NOT used as middleware
             // Instead, exceptions are handled via bootstrap/app.php renderable handlers
         ]);

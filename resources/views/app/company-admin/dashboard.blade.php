@@ -25,7 +25,7 @@
             <a href="/app/company/agents" class="small-box-footer">
                 Gestionar <i class="fas fa-arrow-circle-right"></i>
             </a>
-            <div class="overlay" id="overlay-kpi-agents">
+            <div class="overlay dark" id="overlay-kpi-agents">
                 <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
@@ -44,7 +44,7 @@
             <a href="/app/company/help-center" class="small-box-footer">
                 Ver más <i class="fas fa-arrow-circle-right"></i>
             </a>
-            <div class="overlay" id="overlay-kpi-articles">
+            <div class="overlay dark" id="overlay-kpi-articles">
                 <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
@@ -63,7 +63,7 @@
             <a href="/app/company/announcements" class="small-box-footer">
                 Ver más <i class="fas fa-arrow-circle-right"></i>
             </a>
-            <div class="overlay" id="overlay-kpi-announcements">
+            <div class="overlay dark" id="overlay-kpi-announcements">
                 <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
@@ -82,7 +82,7 @@
             <a href="/app/company/tickets" class="small-box-footer">
                 Ver todos <i class="fas fa-arrow-circle-right"></i>
             </a>
-            <div class="overlay" id="overlay-kpi-tickets">
+            <div class="overlay dark" id="overlay-kpi-tickets">
                 <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
