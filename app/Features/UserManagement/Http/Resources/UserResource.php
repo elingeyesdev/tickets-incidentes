@@ -38,6 +38,7 @@ class UserResource extends JsonResource
             $roleCode = strtoupper($userRole->role_code);
 
             return [
+                'userRoleId' => $userRole->id,
                 'roleCode' => $roleCode,
                 'roleName' => $this->getRoleName($roleCode),
                 'company' => $userRole->company ? [
@@ -47,6 +48,8 @@ class UserResource extends JsonResource
                     'logoUrl' => $userRole->company->logo_url,
                 ] : null,
                 'dashboardPath' => $this->getDashboardPath($roleCode),
+                'assignedAt' => $userRole->assigned_at?->toIso8601String(),
+                'isActive' => $userRole->is_active,
             ];
         })->toArray();
     }

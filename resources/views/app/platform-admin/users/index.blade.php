@@ -190,111 +190,11 @@
     </div>
 </div>
 
-{{-- Modal: View User Details --}}
-<div class="modal fade" id="viewUserModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
-    <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="fas fa-user-circle"></i> Detalles del Usuario</h5>
-        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
-    </div>
-    <div class="modal-body">
-        <div class="row">
-            {{-- Left Column: Basic Info --}}
-            <div class="col-md-6">
-                <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-id-card"></i> Información General</h6>
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Código:</dt>
-                    <dd class="col-sm-7"><code id="viewUserCode">-</code></dd>
-                    
-                    <dt class="col-sm-5 text-muted">Email:</dt>
-                    <dd class="col-sm-7" id="viewEmail">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Nombre:</dt>
-                    <dd class="col-sm-7" id="viewFullName">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Teléfono:</dt>
-                    <dd class="col-sm-7" id="viewPhone">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Estado:</dt>
-                    <dd class="col-sm-7" id="viewStatusBadge">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Email Verificado:</dt>
-                    <dd class="col-sm-7" id="viewEmailVerified">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Proveedor Auth:</dt>
-                    <dd class="col-sm-7" id="viewAuthProvider">-</dd>
-                </dl>
-            </div>
-            
-            {{-- Right Column: Stats & Preferences --}}
-            <div class="col-md-6">
-                <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-chart-bar"></i> Estadísticas</h6>
-                <dl class="row mb-3">
-                    <dt class="col-sm-6 text-muted">Tickets Creados:</dt>
-                    <dd class="col-sm-6"><strong id="viewTicketsCount">0</strong></dd>
-                    
-                    <dt class="col-sm-6 text-muted">Tickets Resueltos:</dt>
-                    <dd class="col-sm-6"><strong id="viewResolvedTickets">0</strong></dd>
-                    
-                    <dt class="col-sm-6 text-muted">Rating Promedio:</dt>
-                    <dd class="col-sm-6" id="viewAverageRating">-</dd>
-                </dl>
-                
-                <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-cog"></i> Preferencias</h6>
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Tema:</dt>
-                    <dd class="col-sm-7" id="viewTheme">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Idioma:</dt>
-                    <dd class="col-sm-7" id="viewLanguage">-</dd>
-                    
-                    <dt class="col-sm-5 text-muted">Zona Horaria:</dt>
-                    <dd class="col-sm-7" id="viewTimezone">-</dd>
-                </dl>
-            </div>
-        </div>
-        
-        <hr>
-        
-        {{-- Activity Section --}}
-        <h6 class="mb-3"><i class="fas fa-history"></i> Actividad</h6>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Último Login:</dt>
-                    <dd class="col-sm-7" id="viewLastLogin">-</dd>
-                </dl>
-            </div>
-            <div class="col-md-6">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Última Actividad:</dt>
-                    <dd class="col-sm-7" id="viewLastActivity">-</dd>
-                </dl>
-            </div>
-        </div>
-        
-        <hr>
-        
-        {{-- Roles Section --}}
-        <h6 class="mb-3"><i class="fas fa-shield-alt"></i> Roles Asignados</h6>
-        <div id="viewRolesContainer"><p class="text-muted">Sin roles asignados</p></div>
-        
-        <hr>
-        
-        {{-- Dates --}}
-        <div class="row">
-            <div class="col-md-6"><small class="text-muted">Creado: <strong id="viewCreatedAt">-</strong></small></div>
-            <div class="col-md-6 text-right"><small class="text-muted">Actualizado: <strong id="viewUpdatedAt">-</strong></small></div>
-        </div>
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-outline-dark" data-dismiss="modal"><i class="fas fa-times"></i> Cerrar</button>
-        <button type="button" id="btnModalRoles" class="btn btn-indigo"><i class="fas fa-shield-alt"></i> Gestionar Roles</button>
-        <button type="button" id="btnModalChangeStatus" class="btn btn-warning"><i class="fas fa-ban"></i> Cambiar Estado</button>
-    </div>
-</div></div></div>
+{{-- Modal: View User Details (New Component) --}}
+@include('app.platform-admin.users.partials.view-user-modal')
 
 {{-- Modal: Change Status --}}
-<div class="modal fade" id="changeStatusModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+<div class="modal fade" id="changeStatusModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <div class="modal-header bg-warning"><h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Cambiar Estado</h5>
         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
     <form id="changeStatusForm">
@@ -323,7 +223,7 @@
 </div></div></div>
 
 {{-- Modal: Delete User --}}
-<div class="modal fade" id="deleteUserModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+<div class="modal fade" id="deleteUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
     <div class="modal-header bg-danger text-white"><h5 class="modal-title"><i class="fas fa-trash"></i> Eliminar Usuario</h5>
         <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button></div>
     <div class="modal-body">
@@ -369,6 +269,7 @@
         }, 
         isLoading: false, 
         isOperating: false, 
+        showBackToViewModal: false,
         meta: null, 
         links: null 
     };
@@ -480,38 +381,23 @@
     const Modals = {
         openView(id) {
             const u=state.users.find(x=>x.id===id); if(!u){Toast.error('Usuario no encontrado');return;} state.currentUser=u;
-            // Basic Info
-            $('#viewUserCode').text(u.userCode||'N/A'); 
-            $('#viewEmail').text(u.email); 
-            $('#viewFullName').text(u.profile?`${u.profile.firstName||''} ${u.profile.lastName||''}`.trim():'N/A');
-            $('#viewPhone').text(u.profile?.phoneNumber||'N/A'); 
-            $('#viewStatusBadge').html(Utils.getStatusBadge(u.status)); 
-            $('#viewEmailVerified').html(u.emailVerified?'<span class="badge badge-success">Sí</span>':'<span class="badge badge-secondary">No</span>');
-            $('#viewAuthProvider').text(u.authProvider||'Sistema');
-            // Stats
-            $('#viewTicketsCount').text(u.ticketsCount||0); 
-            $('#viewResolvedTickets').text(u.resolvedTicketsCount||0); 
-            $('#viewAverageRating').text(u.averageRating?u.averageRating.toFixed(2)+' ⭐':'N/A');
-            // Preferences
-            $('#viewTheme').text(u.profile?.theme||'default');
-            $('#viewLanguage').text(u.profile?.language||'es');
-            $('#viewTimezone').text(u.profile?.timezone||'America/La_Paz');
-            // Activity
-            $('#viewLastLogin').text(Utils.formatDate(u.lastLoginAt)); 
-            $('#viewLastActivity').text(Utils.formatDate(u.lastActivityAt)); 
-            // Dates
-            $('#viewCreatedAt').text(Utils.formatDate(u.createdAt)); 
-            $('#viewUpdatedAt').text(Utils.formatDate(u.updatedAt));
-            // Roles
-            const rc=u.roleContexts||[]; 
-            $('#viewRolesContainer').html(rc.length?rc.map(r=>`<span class="badge badge-info mr-1">${Utils.escapeHtml(r.roleName||r.roleCode)}${r.company?' @ '+Utils.escapeHtml(r.company.name):''}</span>`).join(''):'<p class="text-muted mb-0">Sin roles</p>');
-            $('#viewUserModal').modal('show');
+            // Use the new ViewUserModal component
+            if(typeof ViewUserModal !== 'undefined') {
+                ViewUserModal.open(u);
+            } else {
+                console.error('[Users] ViewUserModal component not found');
+                Toast.error('Error al abrir modal');
+            }
         },
         openRoles(id) {
             const u=state.users.find(x=>x.id===id); if(!u){Toast.error('Usuario no encontrado');return;} state.currentUser=u;
-            $('#viewUserModal').modal('hide');
-            const name=u.profile?`${u.profile.firstName||''} ${u.profile.lastName||''}`.trim():u.email;
-            if(typeof RolesManager!=='undefined') RolesManager.open(u.id,name,u.email);
+            // Use new ViewUserModal with Roles tab
+            if(typeof ViewUserModal !== 'undefined') {
+                ViewUserModal.openRolesTab(u);
+            } else {
+                console.error('[Users] ViewUserModal component not found');
+                Toast.error('Error al abrir modal');
+            }
         },
         openStatus(id) {
             const u=state.users.find(x=>x.id===id); if(!u){Toast.error('Usuario no encontrado');return;} state.currentUser=u;
@@ -564,6 +450,43 @@
         $('#changeStatusForm').on('submit',e=>Modals.handleStatus(e));
         $('#btnConfirmDelete').on('click',()=>Modals.handleDelete());
         window.onRolesUpdated=()=>API.loadUsers();
+        
+        // Listen for events from ViewUserModal component
+        $(document).on('openStatusModal', function(e, userId, userData, showBack) {
+            state.currentUser = userData;
+            state.showBackToViewModal = showBack || false;
+            Modals.openStatus(userId);
+        });
+        $(document).on('openDeleteModal', function(e, userId, userData, showBack) {
+            state.currentUser = userData;
+            state.showBackToViewModal = showBack || false;
+            Modals.openDelete(userId);
+        });
+        $(document).on('userRolesChanged', function(e, userId) {
+            API.loadUsers();
+        });
+        
+        // Handle "back to view" from status/delete modals
+        $('#changeStatusModal').on('hidden.bs.modal', function() {
+            if (state.showBackToViewModal && state.currentUser && !state.isOperating) {
+                setTimeout(() => ViewUserModal.open(state.currentUser), 200);
+            }
+            state.showBackToViewModal = false;
+        });
+        $('#deleteUserModal').on('hidden.bs.modal', function() {
+            if (state.showBackToViewModal && state.currentUser && !state.isOperating) {
+                setTimeout(() => ViewUserModal.open(state.currentUser), 200);
+            }
+            state.showBackToViewModal = false;
+        });
+        
+        // Expose showToast globally for components
+        window.showToast = function(type, message) {
+            if (type === 'success') Toast.success(message);
+            else if (type === 'error') Toast.error(message);
+            else if (type === 'warning') Toast.error(message, 'Advertencia');
+            else Toast.success(message);
+        };
     }
 
     async function init() {
