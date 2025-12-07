@@ -44,11 +44,14 @@ class BancoFassilAnnouncementsSeeder extends Seeder
         // ===== PUBLISHED ANNOUNCEMENTS =====
 
         // January - NEWS: New Digital Platform
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Plataforma Digital Rediseñada - Bienvenida 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Plataforma Digital Rediseñada - Bienvenida 2025',
             'content' => 'Banco Fassil presenta su nueva plataforma digital completamente rediseñada con interfaz mejorada y mayor velocidad. Accede desde cualquier dispositivo con mejor experiencia de usuario y seguridad avanzada.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -62,14 +65,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-01-06 09:30:00',
-        ]);
+            ]
+        );
 
         // February - MAINTENANCE: System Upgrade
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Programado - Actualización de Sistemas Críticos',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Programado - Actualización de Sistemas Críticos',
             'content' => 'Se realizará actualización de nuestros sistemas de procesamiento de transacciones. Durante este período, las transferencias internacionales podrían experimentar demoras de hasta 2 horas.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -83,14 +90,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-02-09T03:45:00Z',
             ],
             'published_at' => '2025-02-03 10:00:00',
-        ]);
+            ]
+        );
 
         // March - ALERT: Regulatory Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Cambios Regulatorios - Actualización de Datos de Clientes',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Cambios Regulatorios - Actualización de Datos de Clientes',
             'content' => 'Según nuevas regulaciones de la Autoridad de Supervisión del Sistema Financiero (ASFI), todos los clientes deben actualizar su información personal y verificar sus datos de contacto antes del 31 de marzo.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -104,14 +115,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-03-31T23:59:59Z',
             ],
             'published_at' => '2025-03-01 08:00:00',
-        ]);
+            ]
+        );
 
         // April - NEWS: New Credit Product
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Lanzamiento: Crédito Rápido para PYMES',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Lanzamiento: Crédito Rápido para PYMES',
             'content' => 'Banco Fassil lanza su nuevo producto de crédito rápido especialmente diseñado para pequeñas y medianas empresas. Proceso de aprobación en 24 horas con tasas competitivas y sin trámites excesivos.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -125,14 +140,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-04-10 10:00:00',
-        ]);
+            ]
+        );
 
         // May - INCIDENT (Resolved): Service Interruption
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Interrupción Temporal de Servicios',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Interrupción Temporal de Servicios',
             'content' => 'Se presentó una interrupción temporal en nuestros servicios de banca móvil causada por una falla en nuestro proveedor de internet. El servicio ha sido completamente restaurado.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -146,14 +165,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Banca Móvil', 'Consulta de Saldos'],
             ],
             'published_at' => '2025-05-14 15:30:00',
-        ]);
+            ]
+        );
 
         // June - NEWS: Cash Rewards Program
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Programa de Cashback Ampliado - Junio 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Programa de Cashback Ampliado - Junio 2025',
             'content' => 'Hemos ampliado nuestro programa de cashback a más comercios afiliados. Disfruta de reembolsos de hasta el 5% en compras con tarjeta de débito en establecimientos participantes.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -167,14 +190,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-06-05 09:00:00',
-        ]);
+            ]
+        );
 
         // July - MAINTENANCE: Certificate Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Actualización de Certificados de Seguridad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Actualización de Certificados de Seguridad',
             'content' => 'Se realizará una actualización de los certificados de seguridad SSL/TLS de nuestras plataformas. No se requiere acción de los clientes, pero la conexión será temporal.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -188,14 +215,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-07-12T03:30:00Z',
             ],
             'published_at' => '2025-07-09 10:00:00',
-        ]);
+            ]
+        );
 
         // August - NEWS: Investment Webinar Series
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Series de Webinars - Educación Financiera',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Series de Webinars - Educación Financiera',
             'content' => 'Banco Fassil inicia una serie de webinars gratuitos sobre inversión, planificación financiera y ahorro. Expertos del sector compartirán estrategias para mejorar tu situación económica.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -209,14 +240,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-08-15 08:30:00',
-        ]);
+            ]
+        );
 
         // September - ALERT: Fraudulent Activity Warning
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Alerta de Seguridad - Actividad Fraudulenta Detectada',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Alerta de Seguridad - Actividad Fraudulenta Detectada',
             'content' => 'Se han detectado intentos de fraude dirigidos a clientes de nuestro banco. NO compartas jamás tu contraseña o PIN. Banco Fassil NUNCA solicita datos sensibles por correo o teléfono.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -230,14 +265,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-09-30T23:59:59Z',
             ],
             'published_at' => '2025-09-03 10:30:00',
-        ]);
+            ]
+        );
 
         // October - NEWS: Anniversary Celebration
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Celebración de Aniversario - Ofertas Especiales',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Celebración de Aniversario - Ofertas Especiales',
             'content' => 'Banco Fassil celebra años de servicio a la comunidad boliviana con ofertas especiales: tasas preferenciales en créditos, comisiones reducidas y bonificaciones en tarjetas de crédito.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -251,14 +290,18 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-10-08 09:00:00',
-        ]);
+            ]
+        );
 
         // November - INCIDENT (Active): System Performance
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Investigando - Lentitud en Procesamiento de Transacciones',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Investigando - Lentitud en Procesamiento de Transacciones',
             'content' => 'Nuestro equipo técnico está investigando reportes de lentitud en el procesamiento de transacciones internacionales. Se han asignado recursos adicionales para mejorar el desempeño.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -269,15 +312,19 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Transferencias Internacionales', 'Consulta de Transacciones'],
             ],
             'published_at' => '2025-11-20 10:15:00',
-        ]);
+            ]
+        );
 
         // ===== DRAFT ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Nueva Tarjeta de Débito Premium - En Desarrollo',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Nueva Tarjeta de Débito Premium - En Desarrollo',
             'content' => 'Próximamente lanzaremos una nueva tarjeta de débito premium con beneficios exclusivos: seguros incluidos, acceso a lounges VIP y programa de puntos mejorado.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -287,13 +334,17 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'summary' => 'Nueva tarjeta de débito premium próximamente',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Integración con Billetera Digital - Próximamente',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Integración con Billetera Digital - Próximamente',
             'content' => 'Estamos integrando nuestros servicios con la billetera digital del gobierno. Pronto podrás pagar servicios e impuestos desde Banco Fassil.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -303,15 +354,19 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'summary' => 'Integración con billetera digital del gobierno',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== SCHEDULED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Cierre por Fiestas - Diciembre 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Cierre por Fiestas - Diciembre 2025',
             'content' => 'Banco Fassil estará cerrado durante los días festivos de diciembre. La banca digital y app móvil seguirán operativas. Servicio de atención al cliente será limitado.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::SCHEDULED,
@@ -322,13 +377,17 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-11-28T08:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Anual de Infraestructura - Diciembre',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Anual de Infraestructura - Diciembre',
             'content' => 'Se realizará mantenimiento anual de nuestros servidores y centros de datos. Se espera que algunos servicios no críticos estén fuera de servicio durante este período.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::SCHEDULED,
@@ -341,15 +400,19 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-12-10T09:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== ARCHIVED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Completado - Enero 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Completado - Enero 2025',
             'content' => 'El mantenimiento de nuestros sistemas de banca digital se completó exitosamente. Todos los servicios están operativos y disponibles.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::ARCHIVED,
@@ -363,13 +426,17 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-01-02T05:30:00Z',
             ],
             'published_at' => '2024-12-30 10:00:00',
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Error en Depósitos de Nómina',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Error en Depósitos de Nómina',
             'content' => 'Se detectó y corrigió un error que afectaba el procesamiento de depósitos de nómina en algunas empresas. Todos los depósitos pendientes fueron procesados correctamente.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::ARCHIVED,
@@ -383,7 +450,8 @@ class BancoFassilAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Depósitos de Nómina', 'Procesamiento Masivo'],
             ],
             'published_at' => '2025-04-22 08:00:00',
-        ]);
+            ]
+        );
 
         $this->command->info('Banco Fassil announcements created successfully!');
         $this->command->info('- 11 Published announcements');

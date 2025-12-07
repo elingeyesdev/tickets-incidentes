@@ -330,8 +330,21 @@ class MediumBolivianCompaniesSeeder extends Seeder
     {
         $this->command->info('🏢 Creando empresas bolivianas MEDIANAS con datos profesionales...');
 
+        // [IDEMPOTENCY] Verificar si las 4 empresas MEDIANAS ya existen
+        $existingCount = Company::whereIn('company_code', ['CMP-2025-00007', 'CMP-2025-00008', 'CMP-2025-00009', 'CMP-2025-00010'])->count();
+        if ($existingCount >= 4) {
+            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+            return;
+        }
+
         foreach (self::COMPANIES as $companyData) {
             try {
+                // [IDEMPOTENCY] Verificar si la empresa ya existe por company_code
+                if (Company::where('company_code', $companyData['company_code'])->exists()) {
+                    $this->command->info("[OK] Empresa {$companyData['company_code']} ya existe, saltando...");
+                    continue;
+                }
+
                 // 1. Crear Company Admin
                 $admin = $this->createUser(
                     $companyData['company_admin']['first_name'],

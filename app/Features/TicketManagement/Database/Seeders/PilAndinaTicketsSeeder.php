@@ -54,6 +54,13 @@ class PilAndinaTicketsSeeder extends Seeder
             return;
         }
 
+        // [IDEMPOTENCY] Verificar si los tickets ya fueron creados
+        $existingTicketsCount = Ticket::where('company_id', $this->company->id)->count();
+        if ($existingTicketsCount >= 12) {
+            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+            return;
+        }
+
         // Get categories
         $this->loadCategories();
 

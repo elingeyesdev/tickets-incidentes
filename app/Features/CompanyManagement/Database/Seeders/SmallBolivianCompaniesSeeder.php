@@ -219,8 +219,22 @@ class SmallBolivianCompaniesSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('🏢 Creando 5 empresas bolivianas PEQUEÑAS...');
+
+        // [IDEMPOTENCY] Verificar si las 5 empresas PEQUEÑAS ya existen
+        $existingCount = Company::whereIn('company_code', ['CMP-2025-00011', 'CMP-2025-00012', 'CMP-2025-00013', 'CMP-2025-00014', 'CMP-2025-00015'])->count();
+        if ($existingCount >= 5) {
+            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+            return;
+        }
+
         foreach (self::COMPANIES as $companyData) {
             try {
+                // [IDEMPOTENCY] Verificar si la empresa ya existe por company_code
+                if (Company::where('company_code', $companyData['company_code'])->exists()) {
+                    $this->command->info("[OK] Empresa {$companyData['company_code']} ya existe, saltando...");
+                    continue;
+                }
+
                 // 1. Crear Company Admin
                 $admin = $this->createUser(
                     $companyData['company_admin']['first_name'],

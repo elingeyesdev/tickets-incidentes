@@ -44,11 +44,14 @@ class TigoAnnouncementsSeeder extends Seeder
         // ===== PUBLISHED ANNOUNCEMENTS =====
 
         // January - NEWS: 4G Expansion
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Expansión de Cobertura 4G - 50 Nuevas Ciudades',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Expansión de Cobertura 4G - 50 Nuevas Ciudades',
             'content' => 'Tigo Bolivia ha expandido su cobertura 4G LTE a 50 nuevas ciudades y municipios del país. Ahora ofrecemos las velocidades más rápidas de internet móvil en Bolivia con conectividad en más zonas rurales.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -62,14 +65,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-01-10 08:00:00',
-        ]);
+            ]
+        );
 
         // February - MAINTENANCE: Network Upgrade
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Actualización de Red - Mejoras en Velocidad y Estabilidad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Actualización de Red - Mejoras en Velocidad y Estabilidad',
             'content' => 'Se realizará una actualización mayor de la infraestructura de red en La Paz y Cochabamba. Se espera mejorar las velocidades de conexión en un 40% y reducir la latencia en videollamadas.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -83,14 +90,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-02-19T04:30:00Z',
             ],
             'published_at' => '2025-02-14 10:00:00',
-        ]);
+            ]
+        );
 
         // March - INCIDENT (Resolved): Tower Damage
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Daño en Torre de Telecomunicaciones',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Daño en Torre de Telecomunicaciones',
             'content' => 'Una torre de telecomunicaciones en el Alto fue dañada por fuertes vientos. Nuestro equipo técnico reparó la estructura e instaló antenas de respaldo. El servicio ha sido completamente restaurado.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -104,14 +115,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Cobertura Móvil El Alto', 'Internet Banda Ancha'],
             ],
             'published_at' => '2025-03-08 14:45:00',
-        ]);
+            ]
+        );
 
         // April - NEWS: 5G Pilot Program
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Programa Piloto 5G - La Paz y Cochabamba',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Programa Piloto 5G - La Paz y Cochabamba',
             'content' => 'Tigo Bolivia comienza un programa piloto de tecnología 5G en La Paz y Cochabamba. Usuarios seleccionados podrán experimentar velocidades de hasta 1 Gbps. La tecnología 5G revolucionará la conectividad en Bolivia.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -125,14 +140,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-04-12 09:00:00',
-        ]);
+            ]
+        );
 
         // May - ALERT: Data Plan Changes
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Cambios en Planes de Datos - Actualización de Política',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Cambios en Planes de Datos - Actualización de Política',
             'content' => 'A partir del 1 de junio, se actualizarán los planes de datos de Tigo. Se aumentará la velocidad base en todos los planes. Los clientes actuales serán notificados individualmente de los cambios que les aplican.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -146,14 +165,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-06-01T23:59:59Z',
             ],
             'published_at' => '2025-05-08 10:30:00',
-        ]);
+            ]
+        );
 
         // June - NEWS: Mobile Payments Launch
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Lanzamiento - Tigo Money Digital',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Lanzamiento - Tigo Money Digital',
             'content' => 'Tigo Bolivia lanza Tigo Money Digital, una billetera móvil que permite pagos sin contacto, transferencias instantáneas y pago de servicios. Integrado directamente en tu plan Tigo.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -167,14 +190,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-06-16 09:00:00',
-        ]);
+            ]
+        );
 
         // July - MAINTENANCE: Core Network Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Actualización de Red Troncal - Junio 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Actualización de Red Troncal - Junio 2025',
             'content' => 'Se realizará una actualización de la red troncal (backbone) de Tigo Bolivia. Se esperan mejoras significativas en la velocidad de datos a nivel nacional.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -188,14 +215,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-07-10T05:15:00Z',
             ],
             'published_at' => '2025-07-07 10:00:00',
-        ]);
+            ]
+        );
 
         // August - INCIDENT (Resolved): Routing Issue
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Problema de Enrutamiento de Datos',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Problema de Enrutamiento de Datos',
             'content' => 'Se presentó un problema en el enrutamiento de datos internacionales causando lentitud en la navegación. El equipo de NOC identificó y corrigió la configuración. El servicio funciona normalmente.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -209,14 +240,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Navegación Internacional', 'Datos Internacionales'],
             ],
             'published_at' => '2025-08-05 11:45:00',
-        ]);
+            ]
+        );
 
         // September - NEWS: Customer Loyalty Program
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Programa de Lealtad Mejorado - Tigo Rewards 2.0',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Programa de Lealtad Mejorado - Tigo Rewards 2.0',
             'content' => 'Tigo lanza una versión mejorada de su programa de lealtad con más beneficios y canjes. Gana puntos en cada recarga y canjéalos por minutos, datos o descuentos en servicios premium.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -230,14 +265,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-09-11 08:30:00',
-        ]);
+            ]
+        );
 
         // October - ALERT: SIM Card Replacement
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Programa de Reemplazo de Tarjetas SIM - Seguridad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Programa de Reemplazo de Tarjetas SIM - Seguridad',
             'content' => 'Por razones de seguridad, Tigo Bolivia está reemplazando todas las tarjetas SIM 2G antiguas por SIM 4G modernas. Solicita tu SIM nueva en cualquier tienda Tigo antes del 31 de octubre.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -251,14 +290,18 @@ class TigoAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-10-31T23:59:59Z',
             ],
             'published_at' => '2025-10-02 09:00:00',
-        ]);
+            ]
+        );
 
         // November - INCIDENT (Active): Network Congestion
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Congestión de Red - Investigación en Progreso',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Congestión de Red - Investigación en Progreso',
             'content' => 'Se ha detectado congestión en la red de datos en Santa Cruz durante horas pico (18:00-22:00). El equipo técnico está optimizando la capacidad. Se espera resolución en 48 horas.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -269,15 +312,19 @@ class TigoAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Datos Móviles Santa Cruz', 'Velocidad de Internet'],
             ],
             'published_at' => '2025-11-21 18:30:00',
-        ]);
+            ]
+        );
 
         // ===== DRAFT ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Tigo Hogar Inteligente - IoT en Desarrollo',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Tigo Hogar Inteligente - IoT en Desarrollo',
             'content' => 'Estamos desarrollando Tigo Hogar Inteligente, una plataforma IoT que conecta tu casa. Control remoto de luces, temperatura, seguridad y más desde tu móvil.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -287,13 +334,17 @@ class TigoAnnouncementsSeeder extends Seeder
                 'summary' => 'Plataforma IoT Tigo Hogar Inteligente próximamente',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Servicio de Cloud Gaming - En Pruebas',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Servicio de Cloud Gaming - En Pruebas',
             'content' => 'Tigo está probando un servicio de cloud gaming que permite jugar videojuegos AAA sin necesidad de consola. Solo necesitas una conexión 4G/5G estable.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -303,15 +354,19 @@ class TigoAnnouncementsSeeder extends Seeder
                 'summary' => 'Servicio de cloud gaming en desarrollo',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== SCHEDULED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Campaña de Fin de Año - Diciembre 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Campaña de Fin de Año - Diciembre 2025',
             'content' => 'Tigo lanza su gran campaña navideña con planes especiales, bonificaciones de datos y entretenimiento ilimitado. Ofertas disponibles desde el 1 de diciembre.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::SCHEDULED,
@@ -322,13 +377,17 @@ class TigoAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-12-01T08:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento de Infraestructura - Diciembre',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento de Infraestructura - Diciembre',
             'content' => 'Se realizará mantenimiento de la infraestructura de telecomunicaciones en zonas periurbanas. Se esperan interrupciones de entre 2 a 4 horas en horarios nocturnos.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::SCHEDULED,
@@ -341,15 +400,19 @@ class TigoAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-11-28T10:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== ARCHIVED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Completado - Red 4G La Paz',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Completado - Red 4G La Paz',
             'content' => 'El mantenimiento de la red 4G en La Paz se completó exitosamente. Se observan mejoras en velocidad y estabilidad en toda la ciudad.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::ARCHIVED,
@@ -363,13 +426,17 @@ class TigoAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-01-22T18:00:00Z',
             ],
             'published_at' => '2025-01-17 10:00:00',
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Caída de Servicio de Datos',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Caída de Servicio de Datos',
             'content' => 'Se detectó una caída del servicio de datos en Santa Cruz por falla de equipos. Se realizó el cambio a equipamiento de respaldo. El servicio se normalizó.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::ARCHIVED,
@@ -383,7 +450,8 @@ class TigoAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Datos Móviles Santa Cruz'],
             ],
             'published_at' => '2025-05-11 13:15:00',
-        ]);
+            ]
+        );
 
         $this->command->info('Tigo announcements created successfully!');
         $this->command->info('- 11 Published announcements');

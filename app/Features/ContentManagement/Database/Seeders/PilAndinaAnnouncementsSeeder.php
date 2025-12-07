@@ -43,11 +43,14 @@ class PilAndinaAnnouncementsSeeder extends Seeder
         // ===== PUBLISHED ANNOUNCEMENTS (distributed through 2025) =====
 
         // January - NEWS: New Year Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Bienvenida al Nuevo Año 2025',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Bienvenida al Nuevo Año 2025',
             'content' => 'El equipo de PIL Andina les desea un próspero año nuevo. Este año traerá grandes novedades para nuestros clientes y colaboradores. Estamos comprometidos con la mejora continua de nuestros servicios y productos.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -57,14 +60,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'summary' => 'Mensaje de año nuevo y expectativas para 2025',
             ],
             'published_at' => '2025-01-02 08:00:00',
-        ]);
+            ]
+        );
 
         // February - MAINTENANCE: System Upgrade
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Programado - Actualización de Servidores',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Programado - Actualización de Servidores',
             'content' => 'Se realizará una actualización de nuestros servidores principales para mejorar el rendimiento del sistema. Durante este período, algunos servicios podrían experimentar intermitencias.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -78,14 +85,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-02-15T05:30:00Z',
             ],
             'published_at' => '2025-02-10 10:00:00',
-        ]);
+            ]
+        );
 
         // March - INCIDENT (Resolved): Database Issue
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Problemas de Conectividad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Problemas de Conectividad',
             'content' => 'Se detectaron problemas de conectividad que afectaron el acceso al sistema de pedidos. El equipo técnico identificó y resolvió el problema relacionado con la base de datos.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -99,14 +110,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Sistema de Pedidos', 'Inventario'],
             ],
             'published_at' => '2025-03-05 14:30:00',
-        ]);
+            ]
+        );
 
         // April - NEWS: New Product Launch
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Lanzamiento: Nueva Línea de Productos Deslactosados',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Lanzamiento: Nueva Línea de Productos Deslactosados',
             'content' => 'PIL Andina se complace en anunciar el lanzamiento de nuestra nueva línea de productos deslactosados. Esta nueva gama incluye leche, yogur y quesos especialmente formulados para personas con intolerancia a la lactosa.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -120,14 +135,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-04-15 09:00:00',
-        ]);
+            ]
+        );
 
         // May - ALERT: Security Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Actualización de Seguridad Requerida',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Actualización de Seguridad Requerida',
             'content' => 'Hemos implementado nuevas medidas de seguridad en nuestro sistema. Todos los usuarios deben actualizar sus contraseñas antes del 31 de mayo para mantener el acceso a sus cuentas.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -141,14 +160,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-05-31T23:59:59Z',
             ],
             'published_at' => '2025-05-01 08:00:00',
-        ]);
+            ]
+        );
 
         // June - MAINTENANCE: Database Migration
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Migración de Base de Datos Programada',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Migración de Base de Datos Programada',
             'content' => 'Se realizará una migración completa de nuestra base de datos a una infraestructura más robusta. Este proceso mejorará significativamente los tiempos de respuesta del sistema.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -162,14 +185,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-06-20T07:30:00Z',
             ],
             'published_at' => '2025-06-15 10:00:00',
-        ]);
+            ]
+        );
 
         // July - NEWS: Policy Update
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Actualización de Políticas de Privacidad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Actualización de Políticas de Privacidad',
             'content' => 'Hemos actualizado nuestras políticas de privacidad para cumplir con las nuevas regulaciones de protección de datos. Les invitamos a revisar los cambios que entran en vigencia el 1 de agosto.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -183,14 +210,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-07-20 09:00:00',
-        ]);
+            ]
+        );
 
         // August - INCIDENT (Resolved): API Outage
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Interrupción del Servicio API',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Interrupción del Servicio API',
             'content' => 'El servicio de API experimentó una interrupción debido a un problema con el proveedor de hosting. El servicio ha sido completamente restaurado.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -204,14 +235,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'affected_services' => ['API REST', 'Integraciones de Terceros'],
             ],
             'published_at' => '2025-08-10 10:00:00',
-        ]);
+            ]
+        );
 
         // September - NEWS: Training Program
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Nuevo Programa de Capacitación para Distribuidores',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Nuevo Programa de Capacitación para Distribuidores',
             'content' => 'Lanzamos nuestro programa de capacitación virtual para distribuidores. El programa incluye módulos sobre manejo de productos, atención al cliente y uso del sistema de pedidos.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::PUBLISHED,
@@ -225,14 +260,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 ],
             ],
             'published_at' => '2025-09-01 08:00:00',
-        ]);
+            ]
+        );
 
         // October - ALERT: System Compliance
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Recordatorio: Verificación de Datos Fiscales',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Recordatorio: Verificación de Datos Fiscales',
             'content' => 'Se recuerda a todos los distribuidores que deben verificar y actualizar sus datos fiscales en el sistema antes del cierre del año fiscal.',
             'type' => AnnouncementType::ALERT,
             'status' => PublicationStatus::PUBLISHED,
@@ -246,14 +285,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'ended_at' => '2025-10-31T23:59:59Z',
             ],
             'published_at' => '2025-10-01 08:00:00',
-        ]);
+            ]
+        );
 
         // November - INCIDENT (Active): Current Issue
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Investigando - Lentitud en el Sistema de Reportes',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Investigando - Lentitud en el Sistema de Reportes',
             'content' => 'Hemos detectado lentitud en la generación de reportes. Nuestro equipo técnico está investigando la causa. Actualizaremos este anuncio con más información.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::PUBLISHED,
@@ -264,14 +307,18 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Sistema de Reportes', 'Exportación de Datos'],
             ],
             'published_at' => '2025-11-18 14:00:00',
-        ]);
+            ]
+        );
 
         // November - MAINTENANCE (Upcoming)
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Programado - Actualización de Seguridad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Programado - Actualización de Seguridad',
             'content' => 'Se realizará una actualización de seguridad en todos nuestros sistemas. Durante el mantenimiento, el acceso estará temporalmente interrumpido.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::PUBLISHED,
@@ -283,15 +330,19 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Portal Web', 'API', 'Sistema de Pedidos'],
             ],
             'published_at' => '2025-11-19 08:00:00',
-        ]);
+            ]
+        );
 
         // ===== DRAFT ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Cierre por Fiestas de Fin de Año',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Cierre por Fiestas de Fin de Año',
             'content' => 'Informamos que nuestras oficinas estarán cerradas durante las fiestas de fin de año. El sistema de pedidos seguirá operativo.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -301,13 +352,17 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'summary' => 'Horarios especiales durante fiestas de fin de año',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Nueva Funcionalidad: Seguimiento de Pedidos en Tiempo Real',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Nueva Funcionalidad: Seguimiento de Pedidos en Tiempo Real',
             'content' => 'Próximamente lanzaremos una nueva funcionalidad que permitirá a los distribuidores hacer seguimiento de sus pedidos en tiempo real.',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::DRAFT,
@@ -317,15 +372,19 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'summary' => 'Seguimiento de pedidos en tiempo real próximamente',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== SCHEDULED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento de Servidores - Diciembre',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento de Servidores - Diciembre',
             'content' => 'Mantenimiento preventivo programado para el mes de diciembre. Se realizarán actualizaciones de hardware y software.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::SCHEDULED,
@@ -338,13 +397,17 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-12-10T08:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Promociones Especiales de Navidad',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Promociones Especiales de Navidad',
             'content' => 'Este diciembre tendremos promociones especiales en toda nuestra línea de productos. ¡No se las pierdan!',
             'type' => AnnouncementType::NEWS,
             'status' => PublicationStatus::SCHEDULED,
@@ -355,15 +418,19 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'scheduled_for' => '2025-12-01T08:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== ARCHIVED ANNOUNCEMENTS =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Mantenimiento Completado - Sistema de Facturación',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Mantenimiento Completado - Sistema de Facturación',
             'content' => 'El mantenimiento del sistema de facturación se completó exitosamente. Todos los servicios están operativos.',
             'type' => AnnouncementType::MAINTENANCE,
             'status' => PublicationStatus::ARCHIVED,
@@ -377,13 +444,17 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'actual_end' => '2025-01-10T04:30:00Z',
             ],
             'published_at' => '2025-01-08 10:00:00',
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Incidente Resuelto - Error en Cálculo de Descuentos',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Incidente Resuelto - Error en Cálculo de Descuentos',
             'content' => 'Se detectó y corrigió un error en el cálculo de descuentos por volumen. Los pedidos afectados fueron recalculados.',
             'type' => AnnouncementType::INCIDENT,
             'status' => PublicationStatus::ARCHIVED,
@@ -397,7 +468,8 @@ class PilAndinaAnnouncementsSeeder extends Seeder
                 'affected_services' => ['Sistema de Pedidos', 'Facturación'],
             ],
             'published_at' => '2025-02-01 09:00:00',
-        ]);
+            ]
+        );
 
         $this->command->info('PIL Andina announcements created successfully!');
         $this->command->info('- 12 Published announcements');

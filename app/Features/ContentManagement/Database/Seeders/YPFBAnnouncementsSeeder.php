@@ -59,11 +59,14 @@ class YPFBAnnouncementsSeeder extends Seeder
         // ===== PUBLISHED ANNOUNCEMENTS =====
 
         // November 9 - NEWS: New Leadership
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'ANUNCIO OFICIAL: Nueva Administración de YPFB - Yussef Akly Asume Presidencia',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'ANUNCIO OFICIAL: Nueva Administración de YPFB - Yussef Akly Asume Presidencia',
             'content' => "Estimado personal de YPFB,
 
 El Presidente Rodrigo Paz ha designado oficialmente a Yussef Akly Flores como Presidente de Yacimientos Petrolíferos Fiscales Bolivianos a partir del 09 de noviembre de 2025.
@@ -101,14 +104,18 @@ Cochabamba, 09 de noviembre de 2025",
                 'urgency' => 'HIGH',
             ],
             'published_at' => '2025-11-09 10:00:00',
-        ]);
+            ]
+        );
 
         // November 10 - ALERT: Fuel Emergency
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'ALERTA CRÍTICA: Situación de emergencia en importación de combustibles',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'ALERTA CRÍTICA: Situación de emergencia en importación de combustibles',
             'content' => "COMUNICADO URGENTE
 
 A partir del 10 de noviembre de 2025, YPFB enfrenta una situación crítica en la importación de combustibles derivada de:
@@ -150,14 +157,18 @@ Presidente YPFB
                 'started_at' => '2025-11-10T00:00:00Z',
             ],
             'published_at' => '2025-11-10 06:00:00',
-        ]);
+            ]
+        );
 
         // November 11 - NEWS: Corruption Investigation
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'INVESTIGACIÓN ANTICORRUPCIÓN: Auditoría especial ordenada por Presidencia',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'INVESTIGACIÓN ANTICORRUPCIÓN: Auditoría especial ordenada por Presidencia',
             'content' => "Comunicado de Dirección - Información Oficial
 
 La Presidencia de la República ha ordenado una auditoría especial en YPFB para investigar indicios de corrupción, mal manejo de fondos y negligencia en gestión anterior.
@@ -198,14 +209,18 @@ Presidente YPFB
                 'urgency' => 'HIGH',
             ],
             'published_at' => '2025-11-11 08:00:00',
-        ]);
+            ]
+        );
 
         // November 15 - INCIDENT: Pipeline Aging Infrastructure
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'INCIDENTE POTENCIAL: Evaluación crítica de infraestructura de gasoductos',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'INCIDENTE POTENCIAL: Evaluación crítica de infraestructura de gasoductos',
             'content' => "BOLETÍN TÉCNICO - OPERACIONES CRÍTICAS
 
 Se ha identificado una vulnerabilidad crítica en la infraestructura de gasoductos nacional que requiere atención urgente.
@@ -255,14 +270,18 @@ Presidente YPFB
                 'technical_assessment' => 'critical',
             ],
             'published_at' => '2025-11-15 09:30:00',
-        ]);
+            ]
+        );
 
         // November 18 - NEWS: Exploration Plan
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'ESTRATEGIA EXPLORACIÓN: Plan de reversión de declinación de producción',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'ESTRATEGIA EXPLORACIÓN: Plan de reversión de declinación de producción',
             'content' => "Anuncio de Dirección - Plan Energético Nacional
 
 En respuesta a la crisis de producción y la pérdida de mercados de exportación, YPFB presenta su PLAN DE EXPLORACIÓN Y NUEVOS PROYECTOS.
@@ -307,14 +326,18 @@ Presidente YPFB
                 'urgency' => 'HIGH',
             ],
             'published_at' => '2025-11-18 10:00:00',
-        ]);
+            ]
+        );
 
         // November 22 - MAINTENANCE: Refinery Overhaul
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'MANTENIMIENTO URGENTE: Overhaul Refinería Guillermo Elder - Q1 2026',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'MANTENIMIENTO URGENTE: Overhaul Refinería Guillermo Elder - Q1 2026',
             'content' => "Notificación Técnica - Planificación Operativa
 
 La Refinería Guillermo Elder requerirá mantenimiento mayor durante Q1 2026 (45 días de parada).
@@ -366,14 +389,18 @@ Presidente YPFB
                 'estimated_cost_usd' => 2800000,
             ],
             'published_at' => '2025-11-22 14:00:00',
-        ]);
+            ]
+        );
 
         // November 24 - NEWS: Financial Restructuring
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'REESTRUCTURACIÓN FINANCIERA: Plan de estabilidad fiscal y ajuste tarifario',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'REESTRUCTURACIÓN FINANCIERA: Plan de estabilidad fiscal y ajuste tarifario',
             'content' => "Anuncio Oficial - Decisión Administrativa
 
 YPFB ha elaborado un plan integral de reestructuración financiera aprobado por la Presidencia de la República.
@@ -430,15 +457,19 @@ Presidente YPFB
                 'urgency' => 'HIGH',
             ],
             'published_at' => '2025-11-24 11:00:00',
-        ]);
+            ]
+        );
 
         // ===== DRAFT ANNOUNCEMENTS (En preparación) =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Modernización Logística: Sistema SCADA y optimización distribución',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Modernización Logística: Sistema SCADA y optimización distribución',
             'content' => "PROYECTO EN DESARROLLO
 
 Sistema de control automatizado (SCADA) para:
@@ -465,13 +496,17 @@ Estado: En evaluación de presupuesto.",
                 'summary' => 'Sistema SCADA moderno para logística de hidrocarburos',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Programa de Contratación: Ingenieros especializados en exploración',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Programa de Contratación: Ingenieros especializados en exploración',
             'content' => "CONVOCATORIA EN PREPARACIÓN
 
 YPFB abrirá línea de contratación para:
@@ -510,15 +545,19 @@ Estado: Pendiente aprobación final.",
                 'summary' => 'Programa de contratación de ingenieros especializados',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== SCHEDULED ANNOUNCEMENTS (Próximos a publicarse) =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Negociaciones internacionales: Alianza energética Bolivia-Ecuador',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Negociaciones internacionales: Alianza energética Bolivia-Ecuador',
             'content' => "COMUNICADO PRÓXIMO (26-11-2025)
 
 Yussef Akly viaja a Quito para:
@@ -558,13 +597,17 @@ Resultado esperado: Acuerdo firmado.",
                 'scheduled_for' => '2025-11-26T10:00:00Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Capacitación Anticorrupción: Programa obligatorio para todo personal',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Capacitación Anticorrupción: Programa obligatorio para todo personal',
             'content' => "ANUNCIO PROGRAMADO (01-12-2025)
 
 En línea con la política de tolerancia cero del Presidente Paz, YPFB implementa:
@@ -595,15 +638,19 @@ Estado: Módulos en revisión final.",
                 'deadline' => '2026-01-15T23:59:59Z',
             ],
             'published_at' => null,
-        ]);
+            ]
+        );
 
         // ===== ARCHIVED ANNOUNCEMENTS (Histórico de la crisis) =====
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Cambio administrativo: Transición de liderazgo en YPFB',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Cambio administrativo: Transición de liderazgo en YPFB',
             'content' => "ARCHIVADO - Información histórica
 
 El 07 de noviembre de 2025, el entonces Presidente Armin Ludwig Dorgathen Tapia fue separado del cargo por el Presidente Rodrigo Paz.
@@ -631,13 +678,17 @@ Este cambio marca el inicio de una nueva era en YPFB bajo Yussef Akly y la presi
                 'summary' => 'Cambio de administración - Separación de Armin Dorgathen',
             ],
             'published_at' => '2025-11-07 18:00:00',
-        ]);
+            ]
+        );
 
-        Announcement::create([
-            'id' => Str::uuid(),
-            'company_id' => $company->id,
+        // [IDEMPOTENCY] Use firstOrCreate to prevent duplicate announcements
+        Announcement::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'title' => 'Contexto: Crisis energética de Bolivia - Últimos 12 meses',
+            ],
+            [
             'author_id' => $admin->id,
-            'title' => 'Contexto: Crisis energética de Bolivia - Últimos 12 meses',
             'content' => "ARCHIVADO - Análisis situacional
 
 Durante 2024 y principios de 2025, YPFB enfrentó una crisis múltiple:
@@ -673,7 +724,8 @@ Contexto: Noviembre 2025 representa un punto de inflexión.",
                 'summary' => 'Análisis de crisis energética boliviana 2024-2025',
             ],
             'published_at' => '2025-11-08 14:00:00',
-        ]);
+            ]
+        );
 
         $this->command->info('✅ Anuncios YPFB creados exitosamente!');
         $this->command->info('📢 Anuncios publicados: 7');

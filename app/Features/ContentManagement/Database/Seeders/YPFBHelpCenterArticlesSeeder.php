@@ -57,17 +57,22 @@ class YPFBHelpCenterArticlesSeeder extends Seeder
 
         foreach ($articles as $articleData) {
             try {
-                HelpCenterArticle::create([
-                    'company_id' => $company->id,
-                    'category_id' => $category->id,
-                    'author_id' => $authorId,
-                    'title' => $articleData['title'],
-                    'excerpt' => $articleData['excerpt'],
-                    'content' => $articleData['content'],
-                    'status' => 'PUBLISHED',
-                    'views_count' => rand(0, 100),
-                    'published_at' => now(),
-                ]);
+                // [IDEMPOTENCY] Use firstOrCreate to prevent duplicates
+                HelpCenterArticle::firstOrCreate(
+                    [
+                        'company_id' => $company->id,
+                        'title' => $articleData['title'],
+                    ],
+                    [
+                        'category_id' => $category->id,
+                        'author_id' => $authorId,
+                        'excerpt' => $articleData['excerpt'],
+                        'content' => $articleData['content'],
+                        'status' => 'PUBLISHED',
+                        'views_count' => rand(0, 100),
+                        'published_at' => now(),
+                    ]
+                );
 
                 $this->command->info("  ✓ Article: {$articleData['title']}");
             } catch (\Exception $e) {

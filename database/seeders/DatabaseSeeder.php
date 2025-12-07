@@ -9,6 +9,7 @@ use App\Features\UserManagement\Database\Seeders\DefaultUserSeeder;
 use App\Features\CompanyManagement\Database\Seeders\LargeBolivianCompaniesSeeder;
 use App\Features\CompanyManagement\Database\Seeders\MediumBolivianCompaniesSeeder;
 use App\Features\CompanyManagement\Database\Seeders\SmallBolivianCompaniesSeeder;
+use App\Features\CompanyManagement\Database\Seeders\CompanyRequestApprovalSimulationSeeder;
 
 // Articles
 use App\Features\ContentManagement\Database\Seeders\PilAndinaHelpCenterArticlesSeeder;
@@ -43,6 +44,9 @@ class DatabaseSeeder extends Seeder
         $this->call(LargeBolivianCompaniesSeeder::class);
         $this->call(MediumBolivianCompaniesSeeder::class);
         $this->call(SmallBolivianCompaniesSeeder::class);
+
+        // 2.5. Company Request Approval Simulation (crea solicitudes aprobadas/pendientes/rechazadas)
+        $this->call(CompanyRequestApprovalSimulationSeeder::class);
 
         // 3. Articles (One by one)
         $this->call(PilAndinaHelpCenterArticlesSeeder::class);
