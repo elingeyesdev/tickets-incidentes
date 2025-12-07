@@ -7,6 +7,7 @@ use App\Features\Authentication\Http\Requests\PasswordResetConfirmRequest;
 use App\Features\Authentication\Http\Resources\PasswordResetStatusResource;
 use App\Features\Authentication\Http\Resources\PasswordResetResultResource;
 use App\Features\Authentication\Services\PasswordResetService;
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Shared\Helpers\DeviceInfoParser;
 use App\Shared\Exceptions\ValidationException;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,7 @@ class PasswordResetController
      */
     public function __construct(
         private readonly PasswordResetService $passwordResetService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -83,8 +85,16 @@ class PasswordResetController
             // Replicar exactamente ResetPasswordMutation
             $email = strtolower(trim($request->input('email') ?? ''));
 
+            // Buscar el usuario para el log (puede no existir)
+            $user = \App\Features\UserManagement\Models\User::where('email', $email)->first();
+
             // Solicitar reset - siempre retorna true
             $this->passwordResetService->requestReset($email);
+
+            // Registrar actividad (solo si el usuario existe)
+            if ($user) {
+                $this->activityLogService->logPasswordResetRequested($user->id, $email);
+            }
 
             // Retornar success=true incluso si email no existe (por seguridad)
             return response()->json([
@@ -224,6 +234,12 @@ class PasswordResetController
                     $deviceInfo
                 );
             }
+
+            // Registrar actividad de cambio de contraseña
+            $this->activityLogService->logPasswordChanged(
+                userId: $result['user']['id'],
+                method: 'reset'
+            );
 
             return response()
                 ->json(new PasswordResetResultResource($result), 200)

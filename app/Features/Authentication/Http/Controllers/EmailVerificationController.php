@@ -7,6 +7,7 @@ use App\Features\Authentication\Http\Resources\EmailVerificationStatusResource;
 use App\Features\Authentication\Http\Resources\EmailVerificationResultResource;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Exceptions\TokenInvalidException;
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class EmailVerificationController
      */
     public function __construct(
         private readonly AuthService $authService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -154,6 +156,9 @@ class EmailVerificationController
             } else {
                 $user = $this->authService->verifyEmailWithCode($code);
             }
+
+            // Registrar actividad
+            $this->activityLogService->logEmailVerified($user->id);
 
             \Illuminate\Support\Facades\Log::info('Email verified successfully', [
                 'user_id' => $user->id,

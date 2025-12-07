@@ -178,28 +178,13 @@
                             <div class="tab-pane fade show active" id="activityPane" role="tabpanel"
                                  aria-labelledby="activityTab">
 
-                                <div id="activityLoading" class="alert alert-info alert-dismissible">
-                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                    <h5><i class="icon fas fa-info"></i> Información</h5>
-                                    Cargando historial de actividad...
-                                </div>
-
-                                <!-- Tabla de Auditoría (Responsiva) -->
-                                <div id="activityContent" style="display: none;" class="table-responsive">
-                                    <table class="table table-hover table-striped table-sm">
-                                        <thead class="thead-light">
-                                            <tr>
-                                                <th style="width: 15%;">Evento ID</th>
-                                                <th style="width: 25%;">Acción</th>
-                                                <th style="width: 35%;">Detalles</th>
-                                                <th style="width: 25%;">Fecha</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="activityList">
-                                            <!-- Populated by JavaScript -->
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {{-- Activity Timeline Component (AdminLTE v3 Official) --}}
+                                @include('components.activity-timeline', [
+                                    'containerId' => 'profileActivityTimeline',
+                                    'userId' => null,
+                                    'initialLimit' => 15,
+                                    'showLoadMore' => true
+                                ])
                             </div>
                             <!-- /.tab-pane #activityPane -->
 
@@ -532,7 +517,8 @@ const API_ENDPOINTS = {
     updatePreferences: '/api/users/me/preferences',
     sessions: '/api/auth/sessions',
     deleteSession: (id) => `/api/auth/sessions/${id}`,
-    logout: '/api/auth/logout'
+    logout: '/api/auth/logout',
+    activityLogs: '/api/activity-logs/my'
 };
 
 const VALIDATION_MESSAGES = {
@@ -1163,8 +1149,10 @@ async function loadUserProfile(token) {
         isLoadingInitialPreferences = false;
         console.log('[Preferences] Carga inicial completada. Auto-guardado habilitado.');
 
-        // Cargar actividad simulada (demo)
-        loadActivityData();
+        // Inicializar timeline de actividad (token ya está en localStorage a este punto)
+        if (typeof initActivityTimeline === 'function') {
+            initActivityTimeline('profileActivityTimeline');
+        }
 
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -1222,34 +1210,6 @@ async function loadSessions(token) {
         console.error('Error loading sessions:', error);
         document.getElementById('sessionsLoading').innerHTML = '<div class="alert alert-danger">No se pudieron cargar las sesiones</div>';
     }
-}
-
-/**
- * Carga datos de actividad simulados (demo)
- * En producción, estos vendrían de una API
- */
-function loadActivityData() {
-    const activityList = document.getElementById('activityList');
-    const activities = [
-        { id: 1001, action: 'Perfil Actualizado', details: 'Nombre, Apellido', date: new Date().toLocaleString() },
-        { id: 1002, action: 'Sesión Iniciada', details: 'IP: 192.168.1.1', date: new Date(Date.now() - 3600000).toLocaleString() },
-        { id: 1003, action: 'Preferencias Guardadas', details: 'Tema, Idioma', date: new Date(Date.now() - 7200000).toLocaleString() }
-    ];
-
-    activityList.innerHTML = '';
-    activities.forEach(activity => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${activity.id}</td>
-            <td>${activity.action}</td>
-            <td>${activity.details}</td>
-            <td>${activity.date}</td>
-        `;
-        activityList.appendChild(tr);
-    });
-
-    document.getElementById('activityLoading').style.display = 'none';
-    document.getElementById('activityContent').style.display = 'block';
 }
 
 // =====================================

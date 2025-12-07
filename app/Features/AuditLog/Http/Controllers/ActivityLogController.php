@@ -68,6 +68,20 @@ class ActivityLogController extends Controller
                 schema: new OA\Schema(type: 'string', format: 'uuid')
             ),
             new OA\Parameter(
+                name: 'from',
+                description: 'Filter from date (ISO 8601 format)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date-time')
+            ),
+            new OA\Parameter(
+                name: 'to',
+                description: 'Filter to date (ISO 8601 format)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date-time')
+            ),
+            new OA\Parameter(
                 name: 'per_page',
                 description: 'Items per page',
                 in: 'query',
@@ -142,6 +156,26 @@ class ActivityLogController extends Controller
             $query->forEntity($entityType, $entityId);
         }
 
+        // Filtrar por rango de fechas
+        if ($from = $request->query('from')) {
+            try {
+                $fromDate = new \DateTime($from);
+                $fromDate->setTime(0, 0, 0); // Inicio del día
+                $query->where('created_at', '>=', $fromDate);
+            } catch (\Exception $e) {
+                // Ignorar fecha inválida
+            }
+        }
+        if ($to = $request->query('to')) {
+            try {
+                $toDate = new \DateTime($to);
+                $toDate->setTime(23, 59, 59); // Fin del día
+                $query->where('created_at', '<=', $toDate);
+            } catch (\Exception $e) {
+                // Ignorar fecha inválida
+            }
+        }
+
         // Paginación
         $perPage = min($request->query('per_page', 15), 100);
         $logs = $query->paginate($perPage);
@@ -173,6 +207,20 @@ class ActivityLogController extends Controller
                 schema: new OA\Schema(type: 'string', enum: ['authentication', 'tickets', 'users', 'companies'])
             ),
             new OA\Parameter(
+                name: 'from',
+                description: 'Filter from date (ISO 8601 format)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date-time')
+            ),
+            new OA\Parameter(
+                name: 'to',
+                description: 'Filter to date (ISO 8601 format)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', format: 'date-time')
+            ),
+            new OA\Parameter(
                 name: 'per_page',
                 description: 'Items per page',
                 in: 'query',
@@ -191,12 +239,46 @@ class ActivityLogController extends Controller
 
         $perPage = min($request->query('per_page', 15), 100);
         $category = $request->query('category');
+        $from = $request->query('from');
+        $to = $request->query('to');
 
-        $logs = $this->activityLogService->getUserActivity(
-            userId: $user->id,
-            category: $category,
-            perPage: $perPage
-        );
+        // Build query manually for date filters
+        $query = \App\Features\AuditLog\Models\ActivityLog::query()
+            ->forUser($user->id)
+            ->orderBy('created_at', 'desc');
+
+        // Apply category filter
+        if ($category) {
+            match ($category) {
+                'authentication' => $query->authActions(),
+                'tickets' => $query->ticketActions(),
+                'users' => $query->userActions(),
+                'companies' => $query->companyActions(),
+                default => null,
+            };
+        }
+
+        // Apply date filters
+        if ($from) {
+            try {
+                $fromDate = new \DateTime($from);
+                $fromDate->setTime(0, 0, 0); // Start of day
+                $query->where('created_at', '>=', $fromDate);
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+        if ($to) {
+            try {
+                $toDate = new \DateTime($to);
+                $toDate->setTime(23, 59, 59); // End of day
+                $query->where('created_at', '<=', $toDate);
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+
+        $logs = $query->paginate($perPage);
 
         return response()->json([
             'data' => ActivityLogResource::collection($logs),

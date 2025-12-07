@@ -11,6 +11,7 @@ use App\Features\TicketManagement\Models\TicketResponse;
 use App\Features\TicketManagement\Http\Requests\UploadAttachmentRequest;
 use App\Features\TicketManagement\Http\Resources\TicketAttachmentResource;
 use App\Features\TicketManagement\Services\AttachmentService;
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Shared\Helpers\JWTHelper;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -49,7 +50,8 @@ class TicketAttachmentController extends Controller
     use AuthorizesRequests;
 
     public function __construct(
-        private AttachmentService $attachmentService
+        private AttachmentService $attachmentService,
+        private ActivityLogService $activityLogService
     ) {}
 
     #[OA\Post(
@@ -271,6 +273,14 @@ class TicketAttachmentController extends Controller
         try {
             // Call service to upload
             $attachment = $this->attachmentService->upload($ticket, $file, $user, $response);
+
+            // Registrar actividad
+            $this->activityLogService->logTicketAttachmentAdded(
+                userId: $user->id,
+                ticketId: $ticket->id,
+                attachmentId: $attachment->id,
+                fileName: $attachment->file_name
+            );
 
             return response()->json([
                 'message' => 'Archivo subido exitosamente',
@@ -643,6 +653,14 @@ class TicketAttachmentController extends Controller
 
         try {
             $attachment = $this->attachmentService->upload($ticket, $file, $user, $response);
+
+            // Registrar actividad
+            $this->activityLogService->logTicketAttachmentAdded(
+                userId: $user->id,
+                ticketId: $ticket->id,
+                attachmentId: $attachment->id,
+                fileName: $attachment->file_name
+            );
 
             return response()->json([
                 'message' => 'Archivo subido exitosamente',

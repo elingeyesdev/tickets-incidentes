@@ -266,6 +266,18 @@ class TicketController extends Controller
 
         $ticket = $this->ticketService->create($request->validated(), $user);
 
+        // Registrar actividad de creación
+        $this->activityLogService->logTicketCreated(
+            userId: $user->id,
+            ticketId: $ticket->id,
+            ticketData: [
+                'ticket_code' => $ticket->ticket_code,
+                'title' => $ticket->title,
+                'priority' => $ticket->priority?->value,
+                'company_id' => $ticket->company_id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Ticket creado exitosamente',
             'data' => new TicketResource($ticket),

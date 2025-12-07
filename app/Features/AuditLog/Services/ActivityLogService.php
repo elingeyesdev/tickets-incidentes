@@ -445,4 +445,173 @@ class ActivityLogService
             ]
         );
     }
+
+    /**
+     * Registrar aprobación de solicitud de empresa
+     */
+    public function logCompanyRequestApproved(
+        string $adminId,
+        string $requestId,
+        string $companyName,
+        string $createdCompanyId,
+        string $adminEmail
+    ): void {
+        $this->log(
+            action: 'company_request_approved',
+            userId: $adminId,
+            entityType: 'company_request',
+            entityId: $requestId,
+            oldValues: ['status' => 'pending'],
+            newValues: [
+                'status' => 'approved',
+                'company_name' => $companyName,
+                'created_company_id' => $createdCompanyId,
+                'admin_email' => $adminEmail,
+            ]
+        );
+    }
+
+    /**
+     * Registrar rechazo de solicitud de empresa
+     */
+    public function logCompanyRequestRejected(
+        string $adminId,
+        string $requestId,
+        string $companyName,
+        string $reason
+    ): void {
+        $this->log(
+            action: 'company_request_rejected',
+            userId: $adminId,
+            entityType: 'company_request',
+            entityId: $requestId,
+            oldValues: ['status' => 'pending'],
+            newValues: [
+                'status' => 'rejected',
+                'company_name' => $companyName,
+                'reason' => $reason,
+            ]
+        );
+    }
+
+    // ==================== AUTHENTICATION ACTIONS ====================
+
+    /**
+     * Registrar registro de usuario
+     */
+    public function logRegister(string $userId, string $email): void
+    {
+        $this->log(
+            action: 'register',
+            userId: $userId,
+            entityType: 'user',
+            entityId: $userId,
+            newValues: ['email' => $email]
+        );
+    }
+
+    /**
+     * Registrar verificación de email
+     */
+    public function logEmailVerified(string $userId): void
+    {
+        $this->log(
+            action: 'email_verified',
+            userId: $userId,
+            entityType: 'user',
+            entityId: $userId
+        );
+    }
+
+    /**
+     * Registrar solicitud de reset de password
+     */
+    public function logPasswordResetRequested(?string $userId, string $email): void
+    {
+        $this->log(
+            action: 'password_reset_requested',
+            userId: $userId,
+            entityType: 'user',
+            entityId: $userId,
+            metadata: ['email' => $email]
+        );
+    }
+
+    /**
+     * Registrar cambio de password
+     */
+    public function logPasswordChanged(string $userId, string $method = 'reset'): void
+    {
+        $this->log(
+            action: 'password_changed',
+            userId: $userId,
+            entityType: 'user',
+            entityId: $userId,
+            metadata: ['method' => $method]
+        );
+    }
+
+    // ==================== ADDITIONAL TICKET ACTIONS ====================
+
+    /**
+     * Registrar eliminación de ticket
+     */
+    public function logTicketDeleted(string $userId, string $ticketId, array $ticketData = []): void
+    {
+        $this->log(
+            action: 'ticket_deleted',
+            userId: $userId,
+            entityType: 'ticket',
+            entityId: $ticketId,
+            oldValues: $ticketData
+        );
+    }
+
+    /**
+     * Registrar adjunto agregado a ticket
+     */
+    public function logTicketAttachmentAdded(string $userId, string $ticketId, string $attachmentId, ?string $fileName = null): void
+    {
+        $this->log(
+            action: 'ticket_attachment_added',
+            userId: $userId,
+            entityType: 'ticket',
+            entityId: $ticketId,
+            newValues: [
+                'attachment_id' => $attachmentId,
+                'file_name' => $fileName,
+            ]
+        );
+    }
+
+    // ==================== COMPANY ACTIONS ====================
+
+    /**
+     * Registrar creación de empresa
+     */
+    public function logCompanyCreated(string $userId, string $companyId, string $companyName): void
+    {
+        $this->log(
+            action: 'company_created',
+            userId: $userId,
+            entityType: 'company',
+            entityId: $companyId,
+            newValues: ['name' => $companyName]
+        );
+    }
+
+    /**
+     * Registrar actualización de perfil
+     */
+    public function logProfileUpdated(string $userId, ?array $oldValues = null, ?array $newValues = null): void
+    {
+        $this->log(
+            action: 'profile_updated',
+            userId: $userId,
+            entityType: 'user',
+            entityId: $userId,
+            oldValues: $oldValues,
+            newValues: $newValues
+        );
+    }
 }

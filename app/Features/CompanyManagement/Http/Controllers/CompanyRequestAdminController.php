@@ -12,6 +12,7 @@ use App\Features\CompanyManagement\Http\Requests\ApproveCompanyRequestRequest;
 use App\Features\CompanyManagement\Http\Requests\RejectCompanyRequestRequest;
 use App\Features\CompanyManagement\Http\Resources\CompanyApprovalResource;
 use App\Features\CompanyManagement\Http\Resources\CompanyRejectionResource;
+use App\Features\AuditLog\Services\ActivityLogService;
 use OpenApi\Attributes as OA;
 
 /**
@@ -29,6 +30,10 @@ use OpenApi\Attributes as OA;
  */
 class CompanyRequestAdminController extends Controller
 {
+    public function __construct(
+        protected ActivityLogService $activityLogService
+    ) {}
+
     /**
      * Display the company requests management view
      *
@@ -143,8 +148,19 @@ class CompanyRequestAdminController extends Controller
         ApproveCompanyRequestRequest $request,
         CompanyRequestService $requestService
     ): JsonResponse {
+        $currentUser = JWTHelper::getAuthenticatedUser();
+
         // Aprobar la solicitud usando el Service
-        $company = $requestService->approve($companyRequest, JWTHelper::getAuthenticatedUser());
+        $company = $requestService->approve($companyRequest, $currentUser);
+
+        // Registrar actividad
+        $this->activityLogService->logCompanyRequestApproved(
+            adminId: $currentUser->id,
+            requestId: $companyRequest->id,
+            companyName: $company->name,
+            createdCompanyId: $company->id,
+            adminEmail: $company->admin->email
+        );
 
         // Determinar si se creó nuevo usuario (verificar propiedad wasRecentlyCreated)
         $adminUser = $company->admin;
@@ -242,16 +258,27 @@ class CompanyRequestAdminController extends Controller
         RejectCompanyRequestRequest $request,
         CompanyRequestService $requestService
     ): JsonResponse {
+        $currentUser = JWTHelper::getAuthenticatedUser();
+
         // Guardar datos antes del rechazo (el Service puede modificar el objeto)
         $companyName = $companyRequest->company_name;
         $requestCode = $companyRequest->request_code;
         $notificationEmail = $companyRequest->admin_email;
+        $requestId = $companyRequest->id;
 
         // Rechazar la solicitud usando el Service
         $rejected = $requestService->reject(
             $companyRequest,
-            JWTHelper::getAuthenticatedUser(),
+            $currentUser,
             $request->reason
+        );
+
+        // Registrar actividad
+        $this->activityLogService->logCompanyRequestRejected(
+            adminId: $currentUser->id,
+            requestId: $requestId,
+            companyName: $companyName,
+            reason: $request->reason
         );
 
         // Preparar datos para el Resource

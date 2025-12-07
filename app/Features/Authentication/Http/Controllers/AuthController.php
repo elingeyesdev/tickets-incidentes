@@ -11,6 +11,7 @@ use App\Features\Authentication\Http\Resources\RefreshPayloadResource;
 use App\Features\Authentication\Models\RefreshToken;
 use App\Features\Authentication\Services\AuthService;
 use App\Features\Authentication\Services\TokenService;
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Shared\Helpers\DeviceInfoParser;
 use App\Shared\Exceptions\AuthenticationException;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,7 @@ class AuthController
     public function __construct(
         private readonly AuthService $authService,
         private readonly TokenService $tokenService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -221,7 +223,13 @@ class AuthController
             // 3. Delegar al servicio (TODA la lógica de negocio está aquí)
             $payload = $this->authService->register($input, $deviceInfo);
 
-            // 4. Retornar con refresh token en cookie (201 Created)
+            // 4. Registrar actividad de registro
+            $this->activityLogService->logRegister(
+                userId: $payload['user']['id'],
+                email: $payload['user']['email']
+            );
+
+            // 5. Retornar con refresh token en cookie (201 Created)
             return response()
                 ->json(new AuthPayloadResource($payload), 201)
                 ->cookie(

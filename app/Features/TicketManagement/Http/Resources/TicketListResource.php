@@ -25,9 +25,9 @@ class TicketListResource extends JsonResource
             'owner_agent_id' => $this->owner_agent_id,
 
             // Human-readable names
-            'creator_name' => $this->creator->profile->full_name ?? $this->creator->email,
-            'owner_agent_name' => $this->ownerAgent->profile->full_name ?? null,
-            'category_name' => $this->category->name,
+            'creator_name' => $this->creator?->profile?->full_name ?? $this->creator?->email ?? 'Usuario eliminado',
+            'owner_agent_name' => $this->ownerAgent?->profile?->full_name ?? $this->ownerAgent?->email ?? null,
+            'category_name' => $this->category?->name ?? 'Sin categoría',
             'area_name' => $this->area?->name,
 
             // Related data (loaded when needed)

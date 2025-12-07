@@ -214,35 +214,66 @@
                     
                     <!-- Tab: Activity (Timeline) -->
                     <div class="tab-pane fade" id="viewUserActivity" role="tabpanel">
-                        <div id="activityTimeline">
-                            <!-- Timeline will be populated dynamically -->
-                            <div class="timeline">
-                                <div class="time-label">
-                                    <span class="bg-secondary">Última Sesión</span>
-                                </div>
-                                <div>
-                                    <i class="fas fa-sign-in-alt bg-info"></i>
-                                    <div class="timeline-item">
-                                        <span class="time"><i class="fas fa-clock"></i> <span id="activityLastLogin">-</span></span>
-                                        <h3 class="timeline-header">Último inicio de sesión</h3>
-                                        <div class="timeline-body" id="activityLastLoginDetails">
-                                            Sin información disponible
-                                        </div>
+                        <div id="userActivityTimeline">
+                            <!-- Filters -->
+                            <div class="activity-filters mb-3">
+                                <div class="row align-items-end">
+                                    <div class="col-md-4 col-sm-6 mb-2">
+                                        <label class="form-label small text-muted mb-1">Período</label>
+                                        <select class="form-control form-control-sm" id="userActivityPeriod">
+                                            <option value="">Todo el historial</option>
+                                            <option value="today">Hoy</option>
+                                            <option value="week" selected>Última semana</option>
+                                            <option value="month">Último mes</option>
+                                            <option value="3months">Últimos 3 meses</option>
+                                        </select>
                                     </div>
-                                </div>
-                                <div>
-                                    <i class="fas fa-clock bg-secondary"></i>
-                                    <div class="timeline-item">
-                                        <span class="time"><i class="fas fa-clock"></i> <span id="activityLastActive">-</span></span>
-                                        <h3 class="timeline-header">Última actividad registrada</h3>
+                                    <div class="col-md-4 col-sm-6 mb-2">
+                                        <label class="form-label small text-muted mb-1">Categoría</label>
+                                        <select class="form-control form-control-sm" id="userActivityCategory">
+                                            <option value="">Todas las categorías</option>
+                                            <option value="auth">Autenticación</option>
+                                            <option value="ticket">Tickets</option>
+                                            <option value="user">Usuario</option>
+                                            <option value="company">Empresa</option>
+                                        </select>
                                     </div>
-                                </div>
-                                <div>
-                                    <i class="fas fa-ellipsis-h bg-gray"></i>
+                                    <div class="col-md-4 col-sm-12 mb-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-block" id="btnApplyUserActivityFilter">
+                                            <i class="fas fa-filter mr-1"></i>Filtrar
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="callout callout-info mt-3">
-                                <p class="mb-0"><i class="fas fa-info-circle"></i> El historial detallado de actividad estará disponible próximamente.</p>
+                            
+                            <!-- Loading state -->
+                            <div id="userActivityLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Cargando...</span>
+                                </div>
+                                <p class="text-muted mt-2">Cargando actividad...</p>
+                            </div>
+                            
+                            <!-- Timeline content (populated dynamically) - with max height and scroll -->
+                            <div id="userActivityContent" style="display: none; max-height: 400px; overflow-y: auto;">
+                                <div class="timeline" id="userTimelineContainer">
+                                    <!-- Timeline items inserted here -->
+                                </div>
+                                
+                                <!-- Load more button -->
+                                <div id="userActivityLoadMore" class="text-center mt-3" style="display: none;">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnLoadMoreUserActivity">
+                                        <i class="fas fa-history mr-1"></i> Cargar más
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Empty state -->
+                            <div id="userActivityEmpty" style="display: none;">
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-history fa-3x mb-3 text-secondary"></i>
+                                    <p>No hay actividad registrada para este usuario.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -387,6 +418,28 @@
                 $('#viewUserModal').modal('hide');
                 // Trigger delete modal (handled by parent) - pass flag to enable "back" button
                 $(document).trigger('openDeleteModal', [currentUserId, currentUserData, true]);
+            }
+        });
+        
+        // Load activity when activity tab is clicked
+        $('#tab-activity').on('shown.bs.tab', function() {
+            if (currentUserId && !userActivityLoaded) {
+                loadUserActivity(currentUserId);
+            }
+        });
+        
+        // Load more activity button
+        $('#btnLoadMoreUserActivity').on('click', function() {
+            if (currentUserId && userActivityHasMore) {
+                userActivityPage++;
+                loadUserActivity(currentUserId, true);
+            }
+        });
+        
+        // Activity filter button
+        $('#btnApplyUserActivityFilter').on('click', function() {
+            if (currentUserId) {
+                loadUserActivity(currentUserId, false);
             }
         });
         
@@ -726,10 +779,6 @@
             $('#viewCreatedAt').text(formatDate(userData.createdAt));
             $('#viewUpdatedAt').text(formatDate(userData.updatedAt));
             
-            // Activity tab
-            $('#activityLastLogin').text(formatDateTime(userData.lastLoginAt) || 'Nunca');
-            $('#activityLastActive').text(formatDateTime(userData.lastActivityAt) || '-');
-            
             // Hidden field for role assignment
             $('#assignRoleUserId').val(userData.id);
             
@@ -748,6 +797,11 @@
             $('#viewUserTabContent .tab-pane').removeClass('show active');
             $(activeTab.tab).addClass('active');
             $(activeTab.pane).addClass('show active');
+            
+            // If activity tab is initially selected, load activity immediately
+            if (initialTab === 'activity') {
+                loadUserActivity(userData.id);
+            }
         },
         
         close: function() {
@@ -792,6 +846,9 @@
         $('#assignRoleForm').find('.is-invalid').removeClass('is-invalid');
         $('#assignRoleForm').find('.invalid-feedback').remove();
         $('#assignRoleForm').find('.form-text').show();
+        
+        // Reset activity timeline
+        resetUserActivity();
     }
     
     // Toast helper (uses parent's toast or fallback)
@@ -840,6 +897,363 @@
         }
         
         showToast('error', errorMsg);
+    }
+    
+    // =====================================
+    // USER ACTIVITY TIMELINE FUNCTIONS
+    // =====================================
+    
+    let userActivityPage = 1;
+    let userActivityHasMore = false;
+    let userActivityLoaded = false;
+    
+    // Load activity for the current user
+    function loadUserActivity(userId, append = false) {
+        const token = localStorage.getItem('access_token');
+        if (!token || !userId) return;
+        
+        if (!append) {
+            userActivityPage = 1;
+            $('#userActivityLoading').show();
+            $('#userActivityContent').hide();
+            $('#userActivityEmpty').hide();
+        }
+        
+        // Build URL with filters
+        let url = `/api/activity-logs?user_id=${userId}&page=${userActivityPage}&per_page=15`;
+        
+        // Add date filter based on period selection
+        const period = $('#userActivityPeriod').val();
+        if (period) {
+            const now = new Date();
+            const to = now.toISOString().split('T')[0];
+            let from;
+            
+            switch (period) {
+                case 'today':
+                    from = to;
+                    break;
+                case 'week':
+                    from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    break;
+                case 'month':
+                    from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    break;
+                case '3months':
+                    from = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    break;
+            }
+            
+            if (from) url += `&from=${from}&to=${to}`;
+        }
+        
+        // Add category filter
+        const category = $('#userActivityCategory').val();
+        if (category) {
+            url += `&category=${category}`;
+        }
+        
+        $.ajax({
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            },
+            success: function(response) {
+                const logs = response.data || [];
+                const pagination = response.meta || {};
+                
+                userActivityHasMore = pagination.current_page < pagination.last_page;
+                
+                if (!append) {
+                    $('#userTimelineContainer').empty();
+                }
+                
+                if (logs.length === 0 && !append) {
+                    $('#userActivityLoading').hide();
+                    $('#userActivityEmpty').show();
+                    return;
+                }
+                
+                renderUserTimeline(logs, append);
+                
+                $('#userActivityLoading').hide();
+                $('#userActivityContent').show();
+                
+                if (userActivityHasMore) {
+                    $('#userActivityLoadMore').show();
+                } else {
+                    $('#userActivityLoadMore').hide();
+                }
+                
+                userActivityLoaded = true;
+            },
+            error: function(xhr) {
+                console.error('[UserActivity] Error loading activity:', xhr);
+                $('#userActivityLoading').html('<div class="alert alert-danger">Error al cargar la actividad</div>');
+            }
+        });
+    }
+    
+    // Render user activity timeline
+    function renderUserTimeline(logs, append) {
+        const $container = $('#userTimelineContainer');
+        
+        // Group logs by date
+        const grouped = groupLogsByDateUser(logs);
+        
+        Object.keys(grouped).forEach(dateLabel => {
+            // Add date label
+            const dateHtml = `
+                <div class="time-label">
+                    <span class="bg-secondary">${dateLabel}</span>
+                </div>
+            `;
+            $container.append(dateHtml);
+            
+            // Add each log entry
+            grouped[dateLabel].forEach(log => {
+                const icon = getActionIconUser(log.action);
+                const color = getActionColorUser(log.action);
+                const time = formatTimeUser(log.createdAt);
+                const details = formatLogDetailsUser(log);
+                
+                const itemHtml = `
+                    <div>
+                        <i class="${icon} bg-${color}"></i>
+                        <div class="timeline-item">
+                            <span class="time"><i class="fas fa-clock"></i> ${time}</span>
+                            <h3 class="timeline-header">${getActionLabelUser(log.action)}</h3>
+                            ${details ? `<div class="timeline-body">${details}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                $container.append(itemHtml);
+            });
+        });
+        
+        // Add end marker
+        if (!append || !userActivityHasMore) {
+            $container.append('<div><i class="fas fa-ellipsis-h bg-gray"></i></div>');
+        }
+    }
+    
+    // Group logs by date for user timeline
+    function groupLogsByDateUser(logs) {
+        const groups = {};
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        
+        logs.forEach(log => {
+            const logDate = new Date(log.createdAt).toDateString();
+            let label;
+            
+            if (logDate === today) {
+                label = 'Hoy';
+            } else if (logDate === yesterday) {
+                label = 'Ayer';
+            } else {
+                label = new Date(log.createdAt).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long'
+                });
+            }
+            
+            if (!groups[label]) groups[label] = [];
+            groups[label].push(log);
+        });
+        
+        return groups;
+    }
+    
+    // Get icon for action type
+    function getActionIconUser(action) {
+        const icons = {
+            'login': 'fas fa-sign-in-alt',
+            'logout': 'fas fa-sign-out-alt',
+            'login_failed': 'fas fa-exclamation-triangle',
+            'register': 'fas fa-user-plus',
+            'email_verified': 'fas fa-envelope-open-text',
+            'password_reset_requested': 'fas fa-unlock',
+            'password_changed': 'fas fa-key',
+            'profile_updated': 'fas fa-user-edit',
+            'ticket_created': 'fas fa-ticket-alt',
+            'ticket_updated': 'fas fa-edit',
+            'ticket_deleted': 'fas fa-trash',
+            'ticket_resolved': 'fas fa-check-double',
+            'ticket_closed': 'fas fa-check-circle',
+            'ticket_reopened': 'fas fa-undo',
+            'ticket_assigned': 'fas fa-user-plus',
+            'ticket_response_added': 'fas fa-comment',
+            'ticket_attachment_added': 'fas fa-paperclip',
+            'role_assigned': 'fas fa-user-tag',
+            'role_removed': 'fas fa-user-minus',
+            'user_status_changed': 'fas fa-toggle-on',
+            'company_created': 'fas fa-building',
+            'company_request_approved': 'fas fa-building',
+            'company_request_rejected': 'fas fa-building'
+        };
+        return icons[action] || 'fas fa-circle';
+    }
+    
+    // Get color for action type
+    function getActionColorUser(action) {
+        const colors = {
+            'login': 'info',
+            'logout': 'secondary',
+            'login_failed': 'danger',
+            'register': 'success',
+            'email_verified': 'success',
+            'password_reset_requested': 'warning',
+            'password_changed': 'warning',
+            'profile_updated': 'primary',
+            'ticket_created': 'success',
+            'ticket_updated': 'info',
+            'ticket_deleted': 'danger',
+            'ticket_resolved': 'success',
+            'ticket_closed': 'success',
+            'ticket_reopened': 'warning',
+            'ticket_assigned': 'primary',
+            'ticket_response_added': 'info',
+            'ticket_attachment_added': 'info',
+            'role_assigned': 'success',
+            'role_removed': 'danger',
+            'user_status_changed': 'warning',
+            'company_created': 'success',
+            'company_request_approved': 'success',
+            'company_request_rejected': 'danger'
+        };
+        return colors[action] || 'secondary';
+    }
+    
+    // Get human-readable label for action
+    function getActionLabelUser(action) {
+        const labels = {
+            'login': 'Inicio de sesión',
+            'logout': 'Cierre de sesión',
+            'login_failed': 'Intento de inicio de sesión fallido',
+            'register': 'Registro de cuenta',
+            'email_verified': 'Email verificado',
+            'password_reset_requested': 'Solicitud de recuperación de contraseña',
+            'password_changed': 'Contraseña cambiada',
+            'profile_updated': 'Perfil actualizado',
+            'ticket_created': 'Ticket creado',
+            'ticket_updated': 'Ticket actualizado',
+            'ticket_deleted': 'Ticket eliminado',
+            'ticket_resolved': 'Ticket resuelto',
+            'ticket_closed': 'Ticket cerrado',
+            'ticket_reopened': 'Ticket reabierto',
+            'ticket_assigned': 'Ticket asignado',
+            'ticket_response_added': 'Respuesta agregada al ticket',
+            'ticket_attachment_added': 'Adjunto agregado al ticket',
+            'role_assigned': 'Rol asignado',
+            'role_removed': 'Rol removido',
+            'user_status_changed': 'Estado de usuario cambiado',
+            'company_created': 'Empresa creada',
+            'company_request_approved': 'Solicitud de empresa aprobada',
+            'company_request_rejected': 'Solicitud de empresa rechazada'
+        };
+        return labels[action] || action;
+    }
+    
+    // Format log details with rich information
+    function formatLogDetailsUser(log) {
+        const parts = [];
+        
+        // Entity info with short ID
+        if (log.entityType && log.entityId) {
+            const shortId = log.entityId.substring(0, 8);
+            const entityLabels = {
+                'ticket': 'Ticket',
+                'user': 'Usuario',
+                'company': 'Empresa',
+                'company_request': 'Solicitud'
+            };
+            const label = entityLabels[log.entityType] || log.entityType;
+            parts.push(`<span class="badge badge-light">${label}: ${shortId}...</span>`);
+        }
+        
+        // Action-specific details
+        if (log.action === 'ticket_created' && log.newValues) {
+            if (log.newValues.ticket_code) parts.push(`<strong>${log.newValues.ticket_code}</strong>`);
+            if (log.newValues.title) parts.push(`"${truncateUser(log.newValues.title, 30)}"`);
+        }
+        
+        if (log.action === 'login_failed' && log.newValues) {
+            const reasonLabels = {
+                'user_not_found': 'Usuario no encontrado',
+                'invalid_password': 'Contraseña incorrecta',
+                'account_suspended': 'Cuenta suspendida',
+                'account_inactive': 'Cuenta inactiva'
+            };
+            if (log.newValues.reason) {
+                parts.push(`<span class="badge badge-danger">${reasonLabels[log.newValues.reason] || log.newValues.reason}</span>`);
+            }
+        }
+        
+        if (log.action === 'role_assigned' && log.newValues) {
+            if (log.newValues.role) parts.push(`<span class="badge badge-info">${log.newValues.role}</span>`);
+            if (log.newValues.company_name) parts.push(log.newValues.company_name);
+        }
+        
+        if (log.action === 'role_removed' && log.oldValues) {
+            if (log.oldValues.role) parts.push(`<span class="badge badge-secondary">${log.oldValues.role}</span>`);
+        }
+        
+        if (log.action === 'user_status_changed' && log.newValues && log.oldValues) {
+            parts.push(`<span class="text-muted">${log.oldValues.status}</span> → <span class="badge badge-warning">${log.newValues.status}</span>`);
+        }
+        
+        if (log.action === 'company_request_approved' && log.newValues) {
+            if (log.newValues.company_name) parts.push(`Empresa: <strong>${log.newValues.company_name}</strong>`);
+        }
+        
+        if (log.action === 'company_request_rejected' && log.newValues) {
+            if (log.newValues.company_name) parts.push(`Empresa: <strong>${log.newValues.company_name}</strong>`);
+            if (log.newValues.reason) parts.push(`Razón: "${truncateUser(log.newValues.reason, 30)}"`);
+        }
+        
+        if (log.action === 'ticket_attachment_added' && log.newValues) {
+            const fileName = log.newValues.file_name || log.newValues.filename || '';
+            const fileUrl = log.newValues.file_url || log.newValues.url || '';
+            if (fileUrl) {
+                parts.push(`<a href="${fileUrl}" target="_blank" class="text-primary"><i class="fas fa-paperclip"></i> ${truncateUser(fileName, 25)}</a>`);
+            } else {
+                parts.push(`<i class="fas fa-paperclip"></i> ${truncateUser(fileName, 25)}`);
+            }
+        }
+        
+        // IP Address
+        if (log.ipAddress) {
+            parts.push(`<small class="text-muted"><i class="fas fa-globe"></i> ${log.ipAddress}</small>`);
+        }
+        
+        return parts.join(' · ');
+    }
+    
+    // Truncate helper
+    function truncateUser(str, len) {
+        if (!str) return '';
+        return str.length > len ? str.substring(0, len) + '...' : str;
+    }
+    
+    // Format time for display
+    function formatTimeUser(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Reset activity state when modal closes
+    function resetUserActivity() {
+        userActivityPage = 1;
+        userActivityHasMore = false;
+        userActivityLoaded = false;
+        $('#userTimelineContainer').empty();
+        $('#userActivityLoading').show();
+        $('#userActivityContent').hide();
+        $('#userActivityEmpty').hide();
+        $('#userActivityLoadMore').hide();
     }
     
     // Wait for jQuery

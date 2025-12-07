@@ -80,6 +80,10 @@ Route::get('/tests/helpcenter-knowledge-base', function () {
     return view('tests.helpcenter-knowledge-base');
 })->name('tests.helpcenter.knowledge-base');
 
+// User Modals Lab - Design Proposals
+Route::get('/tests/user-modals', function () {
+    return view('tests.user-modals-lab');
+})->name('tests.user-modals');
 
 
 // ========== PUBLIC ROUTES ==========

@@ -7,6 +7,7 @@ use App\Features\Authentication\Events\UserLoggedIn;
 use App\Features\Authentication\Events\UserLoggedOut;
 use App\Features\Authentication\Events\UserRegistered;
 use App\Features\Authentication\Models\RefreshToken;
+use App\Features\AuditLog\Services\ActivityLogService;
 use App\Features\UserManagement\Models\Role;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
@@ -35,7 +36,8 @@ class AuthService
     public function __construct(
         private TokenService $tokenService,
         private UserService $userService,
-        private RoleService $roleService
+        private RoleService $roleService,
+        private ActivityLogService $activityLogService
     ) {
     }
 
@@ -123,11 +125,13 @@ class AuthService
         $user = User::where('email', $email)->first();
 
         if (!$user) {
+            $this->activityLogService->logLoginFailed($email, 'user_not_found');
             throw AuthenticationException::invalidCredentials();
         }
 
         // Verificar password
         if (!Hash::check($password, $user->password_hash)) {
+            $this->activityLogService->logLoginFailed($email, 'invalid_password');
             throw AuthenticationException::invalidCredentials();
         }
 
@@ -135,8 +139,10 @@ class AuthService
         if (!$user->isActive()) {
             // Diferenciar entre suspendido y eliminado
             if ($user->isSuspended()) {
+                $this->activityLogService->logLoginFailed($email, 'account_suspended');
                 throw AuthenticationException::accountSuspended();
             }
+            $this->activityLogService->logLoginFailed($email, 'account_inactive');
             throw AuthenticationException::invalidCredentials(); // Para deleted u otros estados
         }
 
