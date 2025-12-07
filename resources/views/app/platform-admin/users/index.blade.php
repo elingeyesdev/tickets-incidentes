@@ -242,7 +242,7 @@
 </div></div></div>
 
 {{-- Include Roles Modal Partial --}}
-@include('app.platform-admin.users.partials.roles-modal')
+{{-- Roles Modal Partial Removed - Integrated into View Modal --}}
 
 @endsection
 

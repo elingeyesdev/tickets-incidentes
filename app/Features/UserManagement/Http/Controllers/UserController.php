@@ -610,7 +610,13 @@ class UserController extends Controller
 
         // Status filter
         if ($request->filled('status')) {
-            $query->where('status', strtolower($request->input('status')));
+            $status = strtolower($request->input('status'));
+            
+            if ($status === 'deleted') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         // Email verified filter

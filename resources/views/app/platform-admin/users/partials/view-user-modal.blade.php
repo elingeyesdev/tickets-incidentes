@@ -476,10 +476,30 @@
             return;
         }
         
-        if (!confirm('¿Estás seguro de quitar este rol?')) {
-            return;
+        // Use SweetAlert2 if available, otherwise fallback to confirm
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Vas a quitar este rol del usuario",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, quitar rol',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeRemoveRole(userId, roleId);
+                }
+            });
+        } else {
+            if (confirm('¿Estás seguro de quitar este rol?')) {
+                executeRemoveRole(userId, roleId);
+            }
         }
-        
+    }
+
+    function executeRemoveRole(userId, roleId) {
         const token = localStorage.getItem('access_token');
         
         $.ajax({
