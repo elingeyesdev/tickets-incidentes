@@ -8,6 +8,49 @@
     <li class="breadcrumb-item active">Profile</li>
 @endsection
 
+@section('css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+<style>
+/* Country Code Select with Flags */
+.country-code-select {
+    font-family: inherit;
+}
+.country-code-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.country-code-option .fi {
+    width: 20px;
+    height: 15px;
+    border-radius: 2px;
+    box-shadow: 0 0 1px rgba(0,0,0,0.3);
+}
+/* Select2 Custom Template for Country Codes */
+.select2-country-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.select2-country-flag .fi {
+    flex-shrink: 0;
+}
+/* Avatar Upload Styles */
+.custom-file-label::after {
+    content: "Buscar" !important;
+}
+#current-avatar-container {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8f9fa;
+}
+#avatar-upload-progress .progress {
+    height: 8px;
+}
+</style>
+@endsection
+
 @section('content')
 <section class="content">
     <div class="container-fluid">
@@ -333,13 +376,13 @@
                                         <div class="col-sm-10">
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <select class="custom-select" id="profile-country-code" style="max-width: 120px;">
-                                                        <option value="+1">🇺🇸 +1</option>
-                                                        <option value="+52">🇲🇽 +52</option>
-                                                        <option value="+56">🇨🇱 +56</option>
-                                                        <option value="+54">🇦🇷 +54</option>
-                                                        <option value="+57">🇨🇴 +57</option>
-                                                        <option value="+591">🇧🇴 +591</option>
+                                                    <select class="custom-select country-code-select" id="profile-country-code" style="max-width: 140px;">
+                                                        <option value="+1" data-flag="us">US +1</option>
+                                                        <option value="+52" data-flag="mx">MX +52</option>
+                                                        <option value="+56" data-flag="cl">CL +56</option>
+                                                        <option value="+54" data-flag="ar">AR +54</option>
+                                                        <option value="+57" data-flag="co">CO +57</option>
+                                                        <option value="+591" data-flag="bo">BO +591</option>
                                                     </select>
                                                 </div>
                                                 <input type="tel" class="form-control" id="profile-telefono"
@@ -350,27 +393,63 @@
                                         </div>
                                     </div>
 
-                                    <!-- Avatar URL -->
+                                    <!-- Avatar Upload -->
                                     <div class="form-group row">
-                                        <label for="profile-avatar" class="col-sm-2 col-form-label">
+                                        <label for="profile-avatar-file" class="col-sm-2 col-form-label">
                                             <strong>Avatar</strong>
                                         </label>
                                         <div class="col-sm-10">
-                                            <input type="url" class="form-control" id="profile-avatar"
-                                                   name="profile_avatar" placeholder="https://ejemplo.com/avatar.jpg"
-                                                   maxlength="2048">
+                                            <!-- Current Avatar Preview -->
+                                            <div id="current-avatar-container" class="mb-3" style="display: none;">
+                                                <div class="d-flex align-items-center">
+                                                    <img id="current-avatar-img" src="" alt="Avatar actual"
+                                                         class="img-circle elevation-2"
+                                                         style="width: 80px; height: 80px; object-fit: cover;">
+                                                    <div class="ml-3">
+                                                        <span class="text-muted">Avatar actual</span>
+                                                        <button type="button" class="btn btn-xs btn-outline-danger ml-2" id="remove-avatar-btn">
+                                                            <i class="fas fa-times mr-1"></i>Eliminar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- File Input with Custom Styling -->
+                                            <div class="custom-file">
+                                                <input type="file" class="custom-file-input" id="profile-avatar-file"
+                                                       name="avatar" accept="image/jpeg,image/png,image/gif,image/webp">
+                                                <label class="custom-file-label" for="profile-avatar-file" id="avatar-file-label">
+                                                    Seleccionar imagen...
+                                                </label>
+                                            </div>
                                             <small class="form-text text-muted d-block mt-1">
-                                                URL válida (HTTP/HTTPS)
-                                                <button type="button" class="btn btn-link btn-sm p-0 ml-2" id="preview-avatar-btn">
-                                                    <i class="fas fa-eye mr-1"></i>Previsualizar
-                                                </button>
+                                                <i class="fas fa-info-circle mr-1"></i>
+                                                Formatos: JPEG, PNG, GIF, WebP. Máximo 5 MB.
                                             </small>
+                                            
+                                            <!-- Upload Progress -->
+                                            <div id="avatar-upload-progress" class="mt-2" style="display: none;">
+                                                <div class="progress">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                                         role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                                <small class="text-muted" id="avatar-upload-status">Subiendo...</small>
+                                            </div>
+                                            
+                                            <!-- New Avatar Preview -->
                                             <div id="avatar-preview" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                                                 <div class="text-center">
                                                     <img id="avatar-preview-img" src="" alt="Preview"
-                                                         style="max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover;">
+                                                         class="img-circle elevation-2"
+                                                         style="width: 120px; height: 120px; object-fit: cover;">
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i>Nueva imagen</span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            
+                                            <!-- Hidden field to store avatar URL for form submission -->
+                                            <input type="hidden" id="profile-avatar" name="profile_avatar" value="">
                                         </div>
                                     </div>
 
@@ -607,11 +686,8 @@ $(function() {
             profile_telefono: {
                 minlength: 8,
                 maxlength: 20
-            },
-            profile_avatar: {
-                maxlength: 2048,
-                url: true
             }
+            // profile_avatar ya no necesita validación - se maneja por el file upload
         },
         messages: VALIDATION_MESSAGES,
         errorElement: 'span',
@@ -631,6 +707,158 @@ $(function() {
     $('#pref-tema').select2({ theme: 'bootstrap4' });
     $('#pref-idioma').select2({ theme: 'bootstrap4' });
     $('#pref-timezone').select2({ theme: 'bootstrap4', placeholder: 'Selecciona una zona horaria' });
+
+    // Inicializar Select2 para Código de País con Banderas
+    function formatCountryOption(option) {
+        if (!option.id) return option.text;
+        const flag = $(option.element).data('flag');
+        if (flag) {
+            return $('<span class="select2-country-flag"><span class="fi fi-' + flag + '"></span> ' + option.text + '</span>');
+        }
+        return option.text;
+    }
+
+    $('#profile-country-code').select2({
+        theme: 'bootstrap4',
+        templateResult: formatCountryOption,
+        templateSelection: formatCountryOption,
+        minimumResultsForSearch: Infinity, // Disable search for small lists
+        width: '140px'
+    });
+
+    // =====================================
+    // AVATAR FILE UPLOAD HANDLERS
+    // =====================================
+    
+    const avatarFileInput = document.getElementById('profile-avatar-file');
+    const avatarFileLabel = document.getElementById('avatar-file-label');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const avatarPreviewImg = document.getElementById('avatar-preview-img');
+    const avatarHiddenInput = document.getElementById('profile-avatar');
+    const currentAvatarContainer = document.getElementById('current-avatar-container');
+    const currentAvatarImg = document.getElementById('current-avatar-img');
+    const removeAvatarBtn = document.getElementById('remove-avatar-btn');
+    const uploadProgress = document.getElementById('avatar-upload-progress');
+    const progressBar = uploadProgress ? uploadProgress.querySelector('.progress-bar') : null;
+    const uploadStatus = document.getElementById('avatar-upload-status');
+
+    // Handle file selection
+    if (avatarFileInput) {
+        avatarFileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Update label with filename
+            avatarFileLabel.textContent = file.name;
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Error', 'Formato no soportado. Usa JPEG, PNG, GIF o WebP.', 'danger');
+                avatarFileInput.value = '';
+                avatarFileLabel.textContent = 'Seleccionar imagen...';
+                return;
+            }
+
+            // Validate file size (5MB max)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                showToast('Error', 'La imagen no debe exceder 5 MB.', 'danger');
+                avatarFileInput.value = '';
+                avatarFileLabel.textContent = 'Seleccionar imagen...';
+                return;
+            }
+
+            // Show local preview before uploading
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                avatarPreviewImg.src = ev.target.result;
+                avatarPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload to server
+            await uploadAvatarFile(file);
+        });
+    }
+
+    // Handle remove avatar button
+    if (removeAvatarBtn) {
+        removeAvatarBtn.addEventListener('click', function() {
+            avatarHiddenInput.value = '';
+            currentAvatarContainer.style.display = 'none';
+            avatarPreview.style.display = 'none';
+            avatarFileInput.value = '';
+            avatarFileLabel.textContent = 'Seleccionar imagen...';
+            showToast('Información', 'Avatar eliminado. Guarda los cambios para confirmar.', 'info');
+        });
+    }
+
+    // Upload avatar file to server
+    async function uploadAvatarFile(file) {
+        const token = localStorage.getItem('access_token');
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        // Show progress
+        uploadProgress.style.display = 'block';
+        progressBar.style.width = '0%';
+        uploadStatus.textContent = 'Subiendo...';
+
+        try {
+            // Simulate progress for better UX
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                }
+            }, 100);
+
+            const response = await fetch('/api/users/me/avatar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            clearInterval(progressInterval);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al subir el avatar');
+            }
+
+            const data = await response.json();
+            
+            // Update progress to complete
+            progressBar.style.width = '100%';
+            uploadStatus.textContent = '¡Subido exitosamente!';
+
+            // Store the new avatar URL
+            avatarHiddenInput.value = data.data.avatarUrl;
+
+            // Update the main profile avatar
+            document.getElementById('profileAvatar').src = data.data.avatarUrl;
+
+            showToast('Éxito', 'Avatar subido correctamente', 'success');
+
+            // Hide progress after delay
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+            }, 1500);
+
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            progressBar.classList.remove('bg-primary');
+            progressBar.classList.add('bg-danger');
+            progressBar.style.width = '100%';
+            uploadStatus.textContent = 'Error: ' + error.message;
+            showToast('Error', error.message || 'No se pudo subir el avatar', 'danger');
+        }
+    }
 });
 
 // =====================================
@@ -805,29 +1033,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Botón Preview Avatar
-    const previewBtn = document.getElementById('preview-avatar-btn');
-    if (previewBtn) {
-        previewBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const url = document.getElementById('profile-avatar').value.trim();
-            if (url) {
-                const validation = await validateImageUrl(url);
-                if (validation.valid) {
-                    document.getElementById('avatar-preview-img').src = validation.url;
-                    document.getElementById('avatar-preview').style.display = 'block';
-                    showToast('Éxito', 'Imagen cargada correctamente', 'success');
-                } else {
-                    document.getElementById('avatar-preview').style.display = 'none';
-                    showToast('Error', validation.reason, 'danger');
-                }
-            } else {
-                showToast('Error', 'Ingresa una URL antes de previsualizar', 'warning');
-            }
-        });
-    }
-
     // Botón Logout All
+
     const logoutAllBtn = document.getElementById('logout-all-btn');
     if (logoutAllBtn) {
         logoutAllBtn.addEventListener('click', () => {
@@ -901,10 +1108,20 @@ async function loadUserProfile(token) {
         document.getElementById('profile-apellido').value = profile.lastName || '';
         document.getElementById('profile-avatar').value = profile.avatarUrl || '';
 
+        // Mostrar avatar actual si existe
+        const currentAvatarContainer = document.getElementById('current-avatar-container');
+        const currentAvatarImg = document.getElementById('current-avatar-img');
+        if (avatarUrl && currentAvatarContainer && currentAvatarImg) {
+            currentAvatarImg.src = avatarUrl;
+            currentAvatarContainer.style.display = 'block';
+        }
+
         if (profile.phoneNumber) {
             const phoneMatch = profile.phoneNumber.match(/^\+?(\d{1,3})?[\s-]?(\d+)$/);
             if (phoneMatch) {
-                document.getElementById('profile-country-code').value = '+' + (phoneMatch[1] || '1');
+                const countryCode = '+' + (phoneMatch[1] || '1');
+                document.getElementById('profile-country-code').value = countryCode;
+                $('#profile-country-code').val(countryCode).trigger('change'); // Update Select2
                 document.getElementById('profile-telefono').value = phoneMatch[2];
             } else {
                 document.getElementById('profile-telefono').value = profile.phoneNumber;
@@ -1048,15 +1265,6 @@ async function saveProfileData(token) {
         const lastName = document.getElementById('profile-apellido').value.trim();
         const avatarUrl = document.getElementById('profile-avatar').value.trim();
 
-        // Validar avatar si se proporciona
-        if (avatarUrl) {
-            const validation = await validateImageUrl(avatarUrl);
-            if (!validation.valid) {
-                showToast('Error de Imagen', validation.reason, 'danger');
-                return;
-            }
-        }
-
         const countryCode = document.getElementById('profile-country-code').value;
         const phoneNumberOnly = document.getElementById('profile-telefono').value.trim().replace(/\D/g, '');
         const phoneNumber = phoneNumberOnly ? countryCode + phoneNumberOnly : '';
@@ -1065,7 +1273,8 @@ async function saveProfileData(token) {
         if (firstName) data.firstName = firstName;
         if (lastName) data.lastName = lastName;
         if (phoneNumber) data.phoneNumber = phoneNumber;
-        if (avatarUrl) data.avatarUrl = avatarUrl;
+        // El avatar ya se guarda inmediatamente al subir, pero también lo enviamos por si se eliminó
+        if (avatarUrl !== undefined) data.avatarUrl = avatarUrl || null;
 
         const btn = document.getElementById('profile-submit-btn');
         const originalHtml = btn.innerHTML;
@@ -1219,11 +1428,32 @@ function restoreProfileDataToOriginal() {
     document.getElementById('profile-nombre').value = originalProfileData.nombre;
     document.getElementById('profile-apellido').value = originalProfileData.apellido;
     document.getElementById('profile-telefono').value = originalProfileData.telefono;
+    
+    // Restaurar código de país con Select2
     document.getElementById('profile-country-code').value = originalProfileData.countryCode;
+    $('#profile-country-code').val(originalProfileData.countryCode).trigger('change');
+    
+    // Restaurar avatar
     document.getElementById('profile-avatar').value = originalProfileData.avatar;
 
-    // Limpiar preview de avatar
+    // Limpiar preview de nueva imagen
     document.getElementById('avatar-preview').style.display = 'none';
+    
+    // Restaurar el avatar actual si existía
+    const currentAvatarContainer = document.getElementById('current-avatar-container');
+    const currentAvatarImg = document.getElementById('current-avatar-img');
+    if (originalProfileData.avatar && currentAvatarContainer && currentAvatarImg) {
+        currentAvatarImg.src = originalProfileData.avatar;
+        currentAvatarContainer.style.display = 'block';
+    } else if (currentAvatarContainer) {
+        currentAvatarContainer.style.display = 'none';
+    }
+    
+    // Limpiar file input
+    const avatarFileInput = document.getElementById('profile-avatar-file');
+    const avatarFileLabel = document.getElementById('avatar-file-label');
+    if (avatarFileInput) avatarFileInput.value = '';
+    if (avatarFileLabel) avatarFileLabel.textContent = 'Seleccionar imagen...';
 
     // Limpiar errores de validación
     $('#form-profile-data').validate().resetForm();
