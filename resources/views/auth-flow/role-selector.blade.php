@@ -25,37 +25,54 @@
         </button>
     </div>
 
-    <!-- Roles Container -->
+    <!-- Roles Container - Inspired by view-user-modal with original animations -->
     <div x-show="!loading && !error && roles.length > 0" id="rolesContainer">
         <template x-for="role in roles" :key="role.code + '-' + (role.company_id || 'null')">
-            <button
-                type="button"
-                class="role-card btn btn-light w-100 text-start"
-                :disabled="loading"
-                @click="selectRole(role.code, role.company_id)"
-            >
-                <!-- Role Icon -->
-                <div class="role-icon" :class="role.code.toLowerCase()">
-                    <i :class="getRoleIconClass(role.code)"></i>
-                </div>
+            <div class="role-card"
+                 @click="selectRole(role.code, role.company_id)"
+                 :class="{'role-card-disabled': loading}">
                 
-                <!-- Role Info -->
-                <div class="role-info">
-                    <div class="role-title" x-text="formatRoleName(role.code)"></div>
-                    <div class="role-description" x-text="getRoleDescription(role.code)"></div>
-                    <template x-if="role.company_name">
-                        <div class="role-company">
-                            <i class="fas fa-building"></i>
-                            <span x-text="role.company_name"></span>
+                <!-- Icon Box (64x64) or Company Logo - AdminLTE colors -->
+                <div class="role-icon-wrapper">
+                    <template x-if="role.logo_url">
+                        <img :src="role.logo_url" :alt="role.company_name + ' logo'" class="company-logo">
+                    </template>
+                    <template x-if="!role.logo_url">
+                        <div class="role-icon" :class="'bg-' + getRoleColor(role.code)">
+                            <i :class="getRoleIconClass(role.code) + ' text-white'"></i>
                         </div>
                     </template>
+                </div>
+                
+                <!-- Role Info - Compact layout -->
+                <div class="role-info">
+                    <h5 class="role-title mb-0">
+                        <span class="role-label">ROL</span> — 
+                        <span x-text="formatRoleName(role.code)"></span>
+                    </h5>
+                    <div class="role-meta">
+                        <code class="role-code" :class="'text-' + getRoleColor(role.code)" x-text="role.code"></code>
+                        <template x-if="role.company_name">
+                            <span class="role-company-inline">
+                                <i class="fas fa-building"></i> 
+                                <span x-text="role.company_name"></span>
+                            </span>
+                        </template>
+                        <template x-if="role.industry_name">
+                            <span class="role-industry">
+                                <i class="fas fa-industry"></i> 
+                                <span x-text="role.industry_name"></span>
+                            </span>
+                        </template>
+                    </div>
+                    <p class="role-description" x-text="getRoleDescription(role.code)"></p>
                 </div>
                 
                 <!-- Arrow -->
                 <div class="role-arrow">
                     <i class="fas fa-chevron-right"></i>
                 </div>
-            </button>
+            </div>
         </template>
     </div>
     
@@ -69,14 +86,14 @@
 
 <style>
     /* 
-     * Role Selector specific styles - OVERRIDE login/register card size
-     * Using body class selector to ensure specificity without affecting other pages
+     * Role Selector - Combining view-user-modal layout with original animations
+     * Professional design with smooth transitions
      */
     
     /* Make the role selector card wider */
     body.login-page .login-box,
     body.login-page .card {
-        max-width: 550px !important;
+        max-width: 580px !important;
         width: 100% !important;
     }
 
@@ -90,14 +107,14 @@
         gap: 0.75rem;
     }
 
+    /* Role card - original animations + view-user-modal structure */
     .role-card {
         cursor: pointer;
         transition: all 0.3s ease;
         border: 2px solid #e9ecef;
         border-radius: 12px;
-        min-height: auto;
-        padding: 1rem 1.25rem !important;
-        display: flex !important;
+        padding: 1rem 1.25rem;
+        display: flex;
         align-items: center;
         background: #fff;
     }
@@ -109,82 +126,119 @@
         background: #f8f9ff;
     }
 
-    .role-card:disabled {
-        opacity: 0.7;
-        cursor: wait;
+    .role-card:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
     }
 
-    .role-card .row {
-        width: 100%;
-        align-items: center;
-        margin: 0;
+    .role-card.role-card-disabled {
+        opacity: 0.7;
+        cursor: wait;
+        pointer-events: none;
+    }
+
+    /* Role icon - 64x64 like view-user-modal */
+    .role-icon-wrapper {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+    }
+
+    .company-logo {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        padding: 6px;
     }
 
     .role-icon {
         font-size: 1.5rem;
-        width: 50px;
-        height: 50px;
+        width: 64px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 10px;
-        flex-shrink: 0;
+        border-radius: 12px;
+        transition: transform 0.2s ease;
     }
 
-    .role-icon.platform_admin {
-        background-color: #cfe2ff;
-        color: #0c63e4;
+    .role-card:hover .role-icon {
+        transform: scale(1.05);
     }
 
-    .role-icon.company_admin {
-        background-color: #f8d7da;
-        color: #842029;
-    }
-
-    .role-icon.agent {
-        background-color: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .role-icon.user {
-        background-color: #fff3cd;
-        color: #664d03;
-    }
-
+    /* Role info section */
     .role-info {
         flex: 1;
         min-width: 0;
         padding: 0 1rem;
     }
 
+    .role-header {
+        margin-bottom: 0.25rem;
+    }
+
     .role-title {
         font-size: 1rem;
         font-weight: 600;
-        margin-bottom: 0.15rem;
         color: #212529;
+    }
+
+    .role-label {
+        font-weight: 400;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .role-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+    }
+
+    .role-code {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .role-company-inline {
+        font-size: 0.75rem;
+        color: #0d6efd;
+        font-weight: 500;
+    }
+
+    .role-company-inline i {
+        margin-right: 0.15rem;
+    }
+
+    .role-industry {
+        font-size: 0.75rem;
+        color: #6c757d;
     }
 
     .role-description {
         font-size: 0.8rem;
         color: #6c757d;
         line-height: 1.3;
-        margin-bottom: 0;
+        margin: 0.35rem 0 0 0;
     }
 
-    .role-company {
-        font-size: 0.75rem;
-        color: #0d6efd;
-        margin-top: 0.25rem;
-    }
-
-    .role-company i {
-        margin-right: 0.25rem;
-    }
-
+    /* Arrow indicator */
     .role-arrow {
         color: #007bff;
         font-size: 1.25rem;
         flex-shrink: 0;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+    }
+
+    .role-card:hover .role-arrow {
+        opacity: 1;
+        transform: translateX(3px);
     }
 
     /* Responsive adjustments */
@@ -195,9 +249,11 @@
             margin: 0 auto;
         }
         
+        .role-icon-wrapper,
+        .company-logo,
         .role-icon {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             font-size: 1.25rem;
         }
         
@@ -270,7 +326,7 @@
             getRoleIconClass(roleCode) {
                 const icons = {
                     'PLATFORM_ADMIN': 'fas fa-crown',
-                    'COMPANY_ADMIN': 'fas fa-building',
+                    'COMPANY_ADMIN': 'fas fa-user-tie',
                     'AGENT': 'fas fa-headset',
                     'USER': 'fas fa-user'
                 };
@@ -291,7 +347,21 @@
             },
 
             /**
-             * Load available roles from JWT
+             * Get AdminLTE color class for role (matching view-user-modal)
+             */
+            getRoleColor(roleCode) {
+                const colors = {
+                    'PLATFORM_ADMIN': 'danger',
+                    'COMPANY_ADMIN': 'warning',
+                    'AGENT': 'info',
+                    'USER': 'primary'
+                };
+                return colors[roleCode] || 'secondary';
+            },
+
+            /**
+             * Load available roles from API (enriched with company data)
+             * Falls back to JWT decoding if API fails
              */
             async loadRoles() {
                 try {
@@ -306,7 +376,7 @@
                         return;
                     }
 
-                    // Decode JWT to get roles
+                    // Decode JWT as fallback (in case API fails)
                     const payload = this.decodeJWT(accessToken);
 
                     if (!payload || !payload.roles || payload.roles.length === 0) {
@@ -318,7 +388,35 @@
                         return;
                     }
 
+                    // Set basic roles from JWT (fallback)
                     this.roles = payload.roles;
+
+                    // Try to enrich with API data (logo, industry, etc.)
+                    try {
+                        const response = await fetch('/api/auth/available-roles', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.data) {
+                                // Replace with enriched data (includes logo_url, industry_name, etc.)
+                                this.roles = data.data;
+                                console.log('[Role Selector] Roles enriched with company data');
+                            }
+                        } else {
+                            console.warn('[Role Selector] Could not enrich roles, using basic JWT data');
+                        }
+                    } catch (apiError) {
+                        console.warn('[Role Selector] API enrichment failed, using basic JWT data:', apiError);
+                        // Continue with JWT data (already set above)
+                    }
+
                     this.loading = false;
 
                 } catch (error) {

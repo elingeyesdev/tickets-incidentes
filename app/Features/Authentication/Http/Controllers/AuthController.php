@@ -1041,10 +1041,16 @@ class AuthController
                 'dashboard_path' => $dashboardPaths[$role['code']] ?? '/app/dashboard',
             ];
 
-            // Agregar company_name si tiene empresa
+            // Agregar datos de empresa si tiene company_id (COMPANY_ADMIN, AGENT)
             if ($role['company_id']) {
                 $company = \App\Features\CompanyManagement\Models\Company::find($role['company_id']);
-                $enriched['company_name'] = $company?->name ?? null;
+                if ($company) {
+                    $enriched['company_name'] = $company->name;
+                    $enriched['logo_url'] = $company->logo_url;
+                    $enriched['industry_name'] = $company->industry?->name ?? null;
+                    $enriched['primary_color'] = $company->primary_color;
+                    $enriched['status'] = $company->status;
+                }
             }
 
             return $enriched;
