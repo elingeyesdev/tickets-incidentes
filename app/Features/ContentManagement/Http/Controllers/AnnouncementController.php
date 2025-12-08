@@ -183,22 +183,24 @@ class AnnouncementController extends Controller
         // 3. Build base query
         $query = Announcement::query();
 
-        // 4. Apply role-based visibility filters
-        if ($visibilityService->isPlatformAdmin($user)) {
+        // 4. Apply role-based visibility filters - MIGRADO: Usar rol ACTIVO
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
+
+        if ($activeRole === 'PLATFORM_ADMIN') {
             // PLATFORM_ADMIN sees EVERYTHING
             if (isset($validated['company_id'])) {
                 $query->where('company_id', $validated['company_id']);
             }
-        } elseif ($user->hasRole('COMPANY_ADMIN')) {
-            // COMPANY_ADMIN sees only their company
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-            if (!$companyId) {
+        } elseif ($activeRole === 'COMPANY_ADMIN') {
+            // COMPANY_ADMIN sees only their ACTIVE company
+            if (!$activeCompanyId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized: Invalid company context',
                 ], 403);
             }
-            $query->where('company_id', $companyId);
+            $query->where('company_id', $activeCompanyId);
         } else {
             // AGENT and USER: only PUBLISHED from followed companies
             $followedCompanyIds = \DB::table('business.user_company_followers')
@@ -356,8 +358,12 @@ class AnnouncementController extends Controller
 
         $user = auth()->user();
 
+        // MIGRADO: Usar rol ACTIVO del usuario
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
+
         // 1. PLATFORM_ADMIN can see any announcement
-        if ($visibilityService->isPlatformAdmin($user)) {
+        if ($activeRole === 'PLATFORM_ADMIN') {
             $announcement->load(['company', 'author.profile']);
             return response()->json([
                 'success' => true,
@@ -365,17 +371,15 @@ class AnnouncementController extends Controller
             ], 200);
         }
 
-        // 2. COMPANY_ADMIN can see any announcement from their company
-        if ($user->hasRole('COMPANY_ADMIN')) {
-            try {
-                $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-            } catch (\Exception $e) {
+        // 2. COMPANY_ADMIN can see any announcement from their ACTIVE company
+        if ($activeRole === 'COMPANY_ADMIN') {
+            if (!$activeCompanyId) {
                 return response()->json([
                     'message' => 'Unauthorized or invalid JWT',
                 ], 401);
             }
 
-            if ($announcement->company_id !== $userCompanyId) {
+            if ($announcement->company_id !== $activeCompanyId) {
                 return response()->json([
                     'message' => 'Insufficient permissions',
                 ], 403);
@@ -513,9 +517,9 @@ class AnnouncementController extends Controller
      */
     public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to user's company (from JWT)
+        // Validate that announcement belongs to user's active company (from JWT)
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -763,9 +767,9 @@ class AnnouncementController extends Controller
      */
     public function destroy(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to user's company (from JWT)
+        // Validate that announcement belongs to user's active company (from JWT)
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',

@@ -187,12 +187,11 @@ class UserController extends Controller
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
 
-        // Authorization check
-        $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
-        $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
-        $isAgent = $currentUser->hasRole('AGENT');
+        // Authorization check - MIGRADO: Usar rol ACTIVO
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
 
-        if (!$isPlatformAdmin && !$isCompanyAdmin && !$isAgent) {
+        if (!in_array($activeRole, ['PLATFORM_ADMIN', 'COMPANY_ADMIN', 'AGENT'])) {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to list users',
@@ -281,13 +280,11 @@ class UserController extends Controller
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
 
-        // Authorization check
-        $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
-        $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
-        $isAgent = $currentUser->hasRole('AGENT');
+        // Authorization check - MIGRADO: Usar rol ACTIVO
+        $activeRole = JWTHelper::getActiveRoleCode();
 
         // Allow user to view themselves
-        if (!$isPlatformAdmin && !$isCompanyAdmin && !$isAgent && $currentUser->id != $id) {
+        if (!in_array($activeRole, ['PLATFORM_ADMIN', 'COMPANY_ADMIN', 'AGENT']) && $currentUser->id != $id) {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'You do not have permission to view user details',
@@ -308,25 +305,19 @@ class UserController extends Controller
             ], 404);
         }
 
-        // Company admin scope: can only view users from their companies
-        if ($isCompanyAdmin && !$isPlatformAdmin) {
-            // Get current user's company IDs
-            $currentUserCompanyIds = $currentUser->userRoles()
-                ->where('is_active', true)
-                ->whereNotNull('company_id')
-                ->pluck('company_id')
-                ->toArray();
+        // Company admin scope: can only view users from their ACTIVE company - MIGRADO
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
 
-            // Check if target user belongs to any of the same companies
+        if (in_array($activeRole, ['COMPANY_ADMIN', 'AGENT']) && $activeCompanyId) {
+            // Check if target user belongs to the ACTIVE company
             $targetUserCompanyIds = $user->userRoles()
                 ->where('is_active', true)
                 ->whereNotNull('company_id')
                 ->pluck('company_id')
                 ->toArray();
 
-            $hasSharedCompany = !empty(array_intersect($currentUserCompanyIds, $targetUserCompanyIds));
-
-            if (!$hasSharedCompany) {
+            if (!in_array($activeCompanyId, $targetUserCompanyIds)) {
                 return response()->json([
                     'code' => 'INSUFFICIENT_PERMISSIONS',
                     'message' => 'You can only view users from your company',
@@ -406,8 +397,8 @@ class UserController extends Controller
     {
         $currentUser = JWTHelper::getAuthenticatedUser();
 
-        // Authorization: Only PLATFORM_ADMIN
-        if (!$currentUser->hasRole('PLATFORM_ADMIN')) {
+        // Authorization: Only PLATFORM_ADMIN - MIGRADO: Usar rol ACTIVO
+        if (JWTHelper::getActiveRoleCode() !== 'PLATFORM_ADMIN') {
             return response()->json([
                 'code' => 'INSUFFICIENT_PERMISSIONS',
                 'message' => 'Only platform administrators can update user status',
@@ -587,25 +578,17 @@ class UserController extends Controller
      */
     protected function applyFilters($query, Request $request, User $currentUser)
     {
-        // Company admin and Agent scope: only see users from their company
-        $isPlatformAdmin = $currentUser->hasRole('PLATFORM_ADMIN');
-        $isCompanyAdmin = $currentUser->hasRole('COMPANY_ADMIN');
-        $isAgent = $currentUser->hasRole('AGENT');
+        // Company admin and Agent scope: only see users from their ACTIVE company
+        // MIGRADO: Usar rol ACTIVO y company_id ACTIVO
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
 
-        if (($isCompanyAdmin || $isAgent) && !$isPlatformAdmin) {
-            // Get company IDs for current user
-            $companyIds = $currentUser->userRoles()
-                ->where('is_active', true)
-                ->whereNotNull('company_id')
-                ->pluck('company_id')
-                ->toArray();
-
-            if (!empty($companyIds)) {
-                $query->whereHas('userRoles', function ($q) use ($companyIds) {
-                    $q->where('is_active', true)
-                      ->whereIn('company_id', $companyIds);
-                });
-            }
+        if (in_array($activeRole, ['COMPANY_ADMIN', 'AGENT']) && $activeCompanyId) {
+            // Filter by ACTIVE company only
+            $query->whereHas('userRoles', function ($q) use ($activeCompanyId) {
+                $q->where('is_active', true)
+                  ->where('company_id', $activeCompanyId);
+            });
         }
 
         // Search filter (email, user_code, profile name)

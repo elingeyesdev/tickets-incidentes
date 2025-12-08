@@ -1,858 +1,855 @@
 @extends('layouts.authenticated')
 
-@section('title', 'Gestión de Solicitudes - Dashboard')
-
+@section('title', 'Gestión de Solicitudes - Platform Admin')
 @section('content_header', 'Gestión de Solicitudes de Empresa')
 
 @section('breadcrumbs')
-    <li class="breadcrumb-item"><a href="/app/admin/dashboard">Admin</a></li>
+    <li class="breadcrumb-item"><a href="/app/admin/dashboard">Dashboard</a></li>
     <li class="breadcrumb-item active">Solicitudes</li>
 @endsection
 
 @section('content')
-<!-- Row 1: Filters and Actions -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card card-primary card-outline">
-            <div class="card-body p-3">
-                <div class="row align-items-center">
-                    <!-- Filter by Status -->
-                    <div class="col-lg-3 col-md-4 col-sm-12 mb-2">
-                        <label for="filter-status" class="mb-1">Filtrar por Estado:</label>
-                        <select id="filter-status" class="form-control form-control-sm">
-                            <option value="">Todas las solicitudes</option>
-                            <option value="pending">Pendientes</option>
+
+{{-- Statistics Small Boxes (AdminLTE v3 Official) --}}
+<div class="row">
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-total" class="small-box bg-info" style="cursor:pointer" data-filter="">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Total Solicitudes</p>
+            </div>
+            <div class="icon"><i class="fas fa-file-invoice"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-pending" class="small-box bg-warning" style="cursor:pointer" data-filter="pending">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Pendientes</p>
+            </div>
+            <div class="icon"><i class="fas fa-clock"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-approved" class="small-box bg-success" style="cursor:pointer" data-filter="approved">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Aprobadas</p>
+            </div>
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 col-sm-12">
+        <div id="stat-rejected" class="small-box bg-danger" style="cursor:pointer" data-filter="rejected">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Rechazadas</p>
+            </div>
+            <div class="icon"><i class="fas fa-times-circle"></i></div>
+        </div>
+    </div>
+</div>
+
+{{-- Requests Table Card --}}
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-invoice"></i> Solicitudes de Empresas</h3>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button type="button" class="btn btn-tool" data-card-widget="maximize">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        {{-- Filters Section --}}
+        <div class="p-3 border-bottom bg-light">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Buscar</label>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Empresa, email o código...">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Estado</label>
+                        <select class="form-control form-control-sm" id="statusFilter">
+                            <option value="">Todos</option>
+                            <option value="pending" selected>Pendientes</option>
                             <option value="approved">Aprobadas</option>
                             <option value="rejected">Rechazadas</option>
                         </select>
                     </div>
-
-                    <!-- Search Box -->
-                    <div class="col-lg-5 col-md-5 col-sm-12 mb-2">
-                        <label for="search-requests" class="mb-1">Buscar:</label>
-                        <input type="text" id="search-requests" class="form-control form-control-sm"
-                               placeholder="Buscar por nombre empresa o email...">
-                    </div>
-
-                    <!-- Refresh Button -->
-                    <div class="col-lg-2 col-md-3 col-sm-12 mb-2 d-flex align-items-end">
-                        <button id="btn-refresh" class="btn btn-primary btn-sm">
-                            <i class="fas fa-sync-alt"></i> Refrescar
-                        </button>
-                    </div>
-
-                    <!-- Stats -->
-                    <div class="col-lg-2 col-md-12 col-sm-12 mb-2 text-right">
-                        <small class="text-muted">Total: <strong id="total-count">0</strong></small>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Industria</label>
+                        <select class="form-control form-control-sm" id="industryFilter">
+                            <option value="">Todas</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 2: Requests Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-file-invoice"></i> Solicitudes de Empresas
-                </h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
+                <div class="col-md-2">
+                    <div class="form-group mb-2">
+                        <label class="text-sm mb-1">Ordenar por</label>
+                        <select class="form-control form-control-sm" id="orderByFilter">
+                            <option value="created_at">Más recientes</option>
+                            <option value="company_name">Nombre empresa</option>
+                            <option value="admin_email">Email</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="text-sm mb-1 d-block">&nbsp;</label>
+                    <button type="button" class="btn btn-default btn-sm" id="btnResetFilters">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnRefresh">
+                        <i class="fas fa-sync-alt"></i> Refrescar
                     </button>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table id="requests-table" class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width: 12%;">Código</th>
-                                <th style="width: 20%;">Empresa</th>
-                                <th style="width: 18%;">Email Admin</th>
-                                <th style="width: 12%;">Industria</th>
-                                <th style="width: 10%;">Estado</th>
-                                <th style="width: 13%;">Fecha Registro</th>
-                                <th style="width: 15%;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Loaded dynamically via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
+        </div>
+
+        {{-- Loading Spinner --}}
+        <div id="loadingSpinner" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+            <p class="text-muted mt-3">Cargando solicitudes...</p>
+        </div>
+
+        {{-- Table --}}
+        <div id="tableContainer" style="display:none">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:10%">Código</th>
+                            <th style="width:22%">Empresa</th>
+                            <th style="width:18%">Email Admin</th>
+                            <th style="width:12%">Industria</th>
+                            <th style="width:10%">Estado</th>
+                            <th style="width:12%">Fecha</th>
+                            <th style="width:16%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestsTableBody"></tbody>
+                </table>
             </div>
-            <div class="card-footer">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i>
-                    Los datos se cargan dinámicamente desde la API
-                </small>
-            </div>
+        </div>
+
+        {{-- Error Message --}}
+        <div id="errorMessage" class="alert alert-danger m-3" style="display:none">
+            <i class="fas fa-exclamation-circle"></i> <span id="errorText"></span>
+        </div>
+    </div>
+
+    {{-- Footer: Pagination --}}
+    <div class="card-footer border-top py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted" id="paginationInfo">Mostrando 0 de 0</small>
+            <nav><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></nav>
         </div>
     </div>
 </div>
 
-<!-- Modal 1: View Details -->
-<div class="modal fade" id="modal-details" tabindex="-1" role="dialog" aria-labelledby="modalDetailsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="modalDetailsLabel">
-                    <i class="fas fa-info-circle"></i> Detalles de Solicitud
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <!-- Left Column: Company Data -->
-                    <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Información de la Empresa</h6>
+{{-- Include Modal Partials --}}
+@include('app.platform-admin.requests.partials.view-request-modal')
+@include('app.platform-admin.requests.partials.approve-request-modal')
+@include('app.platform-admin.requests.partials.reject-request-modal')
 
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Código de Solicitud:</label>
-                            <p class="mb-2"><strong id="detail-request-code">-</strong></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Nombre de Empresa:</label>
-                            <p class="mb-2"><strong id="detail-company-name">-</strong></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Razón Social:</label>
-                            <p class="mb-2" id="detail-legal-name">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Email Administrador:</label>
-                            <p class="mb-2" id="detail-admin-email">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Teléfono:</label>
-                            <p class="mb-2" id="detail-phone">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Sitio Web:</label>
-                            <p class="mb-2" id="detail-website">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Industria:</label>
-                            <p class="mb-2" id="detail-industry">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Usuarios Estimados:</label>
-                            <p class="mb-2" id="detail-users">-</p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Contact & Additional Data -->
-                    <div class="col-md-6">
-                        <h6 class="border-bottom pb-2 mb-3">Información de Contacto</h6>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Dirección:</label>
-                            <p class="mb-2" id="detail-address">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Ciudad:</label>
-                            <p class="mb-2" id="detail-city">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">País:</label>
-                            <p class="mb-2" id="detail-country">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Código Postal:</label>
-                            <p class="mb-2" id="detail-postal">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Tax ID (RUT/NIT):</label>
-                            <p class="mb-2" id="detail-tax-id">-</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Descripción del Negocio:</label>
-                            <textarea class="form-control" id="detail-description" rows="4" readonly></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="text-muted mb-1">Fecha de Registro:</label>
-                            <p class="mb-2" id="detail-created-at">-</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Review Information (if status != pending) -->
-                <div id="review-info" class="row mt-3" style="display: none;">
-                    <div class="col-12">
-                        <hr>
-                        <h6 class="border-bottom pb-2 mb-3">Información de Revisión</h6>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="text-muted mb-1">Revisado por:</label>
-                        <p class="mb-2" id="detail-reviewed-by">-</p>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="text-muted mb-1">Fecha de Revisión:</label>
-                        <p class="mb-2" id="detail-reviewed-at">-</p>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="text-muted mb-1">Estado:</label>
-                        <p class="mb-2" id="detail-status-badge">-</p>
-                    </div>
-                    <div class="col-12" id="rejection-reason-container" style="display: none;">
-                        <label class="text-muted mb-1">Motivo de Rechazo:</label>
-                        <textarea class="form-control" id="detail-rejection-reason" rows="3" readonly></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-                <button type="button" id="btn-modal-approve" class="btn btn-success" style="display: none;">
-                    <i class="fas fa-check"></i> Aprobar
-                </button>
-                <button type="button" id="btn-modal-reject" class="btn btn-danger" style="display: none;">
-                    <i class="fas fa-ban"></i> Rechazar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 2: Approve Request -->
-<div class="modal fade" id="modal-approve" tabindex="-1" role="dialog" aria-labelledby="modalApproveLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-success">
-                <h5 class="modal-title text-white" id="modalApproveLabel">
-                    <i class="fas fa-check-circle"></i> Aprobar Solicitud
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>¿Deseas aprobar la solicitud <span id="approve-request-code">-</span>?</strong>
-                </div>
-
-                <p>Se creará la empresa <strong id="approve-company-name">-</strong> y se enviarán credenciales de acceso a <strong id="approve-admin-email">-</strong>.</p>
-
-                <div class="form-group">
-                    <div class="icheck-primary">
-                        <input type="checkbox" id="send-email-checkbox" checked>
-                        <label for="send-email-checkbox">
-                            Enviar email de bienvenida con credenciales
-                        </label>
-                    </div>
-                </div>
-
-                <input type="hidden" id="approve-request-id">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-confirm-approve" class="btn btn-success">
-                    <i class="fas fa-check"></i> Confirmar Aprobación
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 3: Reject Request -->
-<div class="modal fade" id="modal-reject" tabindex="-1" role="dialog" aria-labelledby="modalRejectLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger">
-                <h5 class="modal-title text-white" id="modalRejectLabel">
-                    <i class="fas fa-ban"></i> Rechazar Solicitud
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>¿Deseas rechazar la solicitud <span id="reject-request-code">-</span>?</strong>
-                </div>
-
-                <p>Esta acción notificará al solicitante <strong id="reject-admin-email">-</strong> sobre el rechazo.</p>
-
-                <div class="form-group">
-                    <label for="rejection-reason">Motivo del rechazo: <span class="text-danger">*</span></label>
-                    <textarea
-                        id="rejection-reason"
-                        class="form-control"
-                        rows="4"
-                        placeholder="Explica la razón del rechazo (mínimo 10 caracteres)..."
-                        required
-                        minlength="10"></textarea>
-                    <small class="form-text text-muted">
-                        <span id="char-count">0</span> / 10 caracteres mínimos
-                    </small>
-                </div>
-
-                <input type="hidden" id="reject-request-id">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button type="button" id="btn-confirm-reject" class="btn btn-danger" disabled>
-                    <i class="fas fa-ban"></i> Confirmar Rechazo
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
-@section('js')
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // =====================================================================
-        // CONFIGURATION
-        // =====================================================================
+(function() {
+    'use strict';
+    console.log('[Requests] Initializing...');
 
-        const token = window.tokenManager?.getAccessToken();
-        const apiUrl = '/api';
+    // =========================================================================
+    // CONFIGURATION
+    // =========================================================================
+    const CONFIG = {
+        API_BASE: '/api',
+        TOAST_DELAY: 3000,
+        DEBOUNCE_DELAY: 400,
+        PER_PAGE: 15
+    };
 
-        // Store current request data
-        let allRequests = [];
-        let currentRequest = null;
+    // =========================================================================
+    // STATE (Centralized)
+    // =========================================================================
+    const state = {
+        requests: [],
+        currentRequest: null,
+        currentPage: 1,
+        filters: {
+            status: 'pending',
+            industry_id: '',
+            search: '',
+            order_by: 'created_at',
+            order_direction: 'desc'
+        },
+        isLoading: false,
+        isOperating: false,
+        meta: null,
+        links: null,
+        industries: [],
+        industriesLoaded: false
+    };
 
-        // =====================================================================
-        // FUNCTION 1: loadRequests(status = null)
-        // Fetches all company requests from API with optional status filter
-        // =====================================================================
+    // =========================================================================
+    // UTILITIES
+    // =========================================================================
+    const Utils = {
+        getToken() {
+            return window.tokenManager?.getAccessToken() || localStorage.getItem('access_token');
+        },
 
-        function loadRequests(status = null) {
-            if (!token) {
-                showAlert('error', 'No se encontró token de autenticación');
-                return;
+        escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('es-ES', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        },
+
+        translateError(error) {
+            const status = error.status;
+            const data = error.data;
+
+            if (status === 401) return 'Sesión expirada. Por favor recarga la página.';
+            if (status === 403) return data?.message || 'No tienes permiso para esta acción.';
+            if (status === 404) return 'Solicitud no encontrada.';
+            if (status === 422 && data?.errors) {
+                return Object.values(data.errors).flat().join('. ');
             }
+            return data?.message || 'Error al procesar la solicitud.';
+        },
 
-            // Build URL with optional status filter
-            let url = `${apiUrl}/company-requests`;
-            if (status) {
-                url += `?status=${status}`;
-            }
+        getStatusBadge(status) {
+            const s = (status || '').toLowerCase();
+            const badges = {
+                pending: '<span class="badge badge-warning"><i class="fas fa-clock"></i> Pendiente</span>',
+                approved: '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Aprobada</span>',
+                rejected: '<span class="badge badge-danger"><i class="fas fa-times-circle"></i> Rechazada</span>'
+            };
+            return badges[s] || '<span class="badge badge-secondary">Desconocido</span>';
+        },
 
-            // Show loading state
-            const tbody = document.querySelector('#requests-table tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...</td></tr>';
+        getIndustryBadge(industryName, industryId) {
+            const colors = ['badge-primary', 'badge-info', 'badge-success', 'badge-secondary'];
+            const colorIndex = industryId ? (industryId.charCodeAt(0)) % colors.length : 0;
+            return `<span class="badge ${colors[colorIndex]}">${this.escapeHtml(industryName)}</span>`;
+        }
+    };
 
-            // Fetch requests from API
-            fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.data && Array.isArray(data.data)) {
-                    // Store requests for client-side filtering
-                    allRequests = Array.isArray(data.data) ? data.data : [data.data];
+    // =========================================================================
+    // TOAST (AdminLTE v3 Official)
+    // =========================================================================
+    const Toast = {
+        success(message, title = 'Éxito') {
+            $(document).Toasts('create', {
+                class: 'bg-success',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY,
+                icon: 'fas fa-check-circle'
+            });
+        },
 
-                    // Render table
-                    renderRequestsTable(allRequests);
+        error(message, title = 'Error') {
+            $(document).Toasts('create', {
+                class: 'bg-danger',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY + 2000,
+                icon: 'fas fa-exclamation-circle'
+            });
+        },
 
-                    // Update total count
-                    document.getElementById('total-count').textContent = data.meta?.total || allRequests.length;
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Error al cargar solicitudes</td></tr>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading requests:', error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Error de conexión: ' + error.message + '</td></tr>';
+        warning(message, title = 'Advertencia') {
+            $(document).Toasts('create', {
+                class: 'bg-warning',
+                title: title,
+                body: message,
+                autohide: true,
+                delay: CONFIG.TOAST_DELAY,
+                icon: 'fas fa-exclamation-triangle'
             });
         }
+    };
 
-        // =====================================================================
-        // FUNCTION: renderRequestsTable(requests)
-        // Renders the requests table with data
-        // =====================================================================
+    // Expose showToast globally for modals
+    window.showToast = function(type, message) {
+        if (type === 'success') Toast.success(message);
+        else if (type === 'error') Toast.error(message);
+        else if (type === 'warning') Toast.warning(message);
+        else Toast.success(message);
+    };
 
-        function renderRequestsTable(requests) {
-            const tbody = document.querySelector('#requests-table tbody');
+    // =========================================================================
+    // API LAYER
+    // =========================================================================
+    const API = {
+        async loadRequests() {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            UI.showLoading();
 
-            if (!requests || requests.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted"><i class="fas fa-inbox"></i> No hay solicitudes disponibles</td></tr>';
+            try {
+                const params = new URLSearchParams({
+                    page: state.currentPage,
+                    per_page: CONFIG.PER_PAGE
+                });
+
+                if (state.filters.status) params.append('status', state.filters.status);
+                if (state.filters.industry_id) params.append('industry_id', state.filters.industry_id);
+                if (state.filters.search) params.append('search', state.filters.search);
+                if (state.filters.order_by) params.append('order_by', state.filters.order_by);
+                if (state.filters.order_direction) params.append('order_direction', state.filters.order_direction);
+
+                const response = await fetch(`${CONFIG.API_BASE}/company-requests?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${Utils.getToken()}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw { status: response.status, data: data };
+                }
+
+                state.requests = data.data || [];
+                state.meta = data.meta;
+                state.links = data.links;
+
+                UI.hideLoading();
+                UI.renderTable();
+                UI.updatePagination();
+                this.loadStatistics();
+
+            } catch (error) {
+                console.error('[Requests] Load error:', error);
+                UI.showError(Utils.translateError(error));
+            } finally {
+                state.isLoading = false;
+            }
+        },
+
+        async loadStatistics() {
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${Utils.getToken()}`,
+                    'Accept': 'application/json'
+                };
+
+                const [totalRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
+                    fetch(`${CONFIG.API_BASE}/company-requests?per_page=1`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/company-requests?per_page=1&status=pending`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/company-requests?per_page=1&status=approved`, { headers }),
+                    fetch(`${CONFIG.API_BASE}/company-requests?per_page=1&status=rejected`, { headers })
+                ]);
+
+                const [totalData, pendingData, approvedData, rejectedData] = await Promise.all([
+                    totalRes.json(),
+                    pendingRes.json(),
+                    approvedRes.json(),
+                    rejectedRes.json()
+                ]);
+
+                const total = totalData.meta?.total || 0;
+                const pending = pendingData.meta?.total || 0;
+                const approved = approvedData.meta?.total || 0;
+                const rejected = rejectedData.meta?.total || 0;
+
+                // Update small-box stats
+                $('#stat-total .inner h3').text(total);
+                $('#stat-pending .inner h3').text(pending);
+                $('#stat-approved .inner h3').text(approved);
+                $('#stat-rejected .inner h3').text(rejected);
+
+            } catch (error) {
+                console.error('[Requests] Stats error:', error);
+            }
+        },
+
+        async loadIndustries() {
+            if (state.industriesLoaded) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE}/company-industries`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                state.industries = data.data || [];
+                state.industriesLoaded = true;
+
+                // Populate filter dropdown
+                const $select = $('#industryFilter');
+                $select.html('<option value="">Todas</option>');
+                state.industries.forEach(ind => {
+                    $select.append(`<option value="${ind.id}">${Utils.escapeHtml(ind.name)}</option>`);
+                });
+
+            } catch (error) {
+                console.error('[Requests] Industries error:', error);
+            }
+        },
+
+        async approveRequest(requestId, sendEmail) {
+            const response = await fetch(`${CONFIG.API_BASE}/company-requests/${requestId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Utils.getToken()}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ send_email: sendEmail })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+
+            return data;
+        },
+
+        async rejectRequest(requestId, reason) {
+            const response = await fetch(`${CONFIG.API_BASE}/company-requests/${requestId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Utils.getToken()}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw { status: response.status, data: data };
+            }
+
+            return data;
+        }
+    };
+
+    // =========================================================================
+    // UI LAYER
+    // =========================================================================
+    const UI = {
+        showLoading() {
+            $('#loadingSpinner').show();
+            $('#tableContainer, #errorMessage').hide();
+        },
+
+        hideLoading() {
+            $('#loadingSpinner').hide();
+            $('#tableContainer').show();
+        },
+
+        showError(message) {
+            $('#loadingSpinner, #tableContainer').hide();
+            $('#errorText').text(message);
+            $('#errorMessage').show();
+        },
+
+        renderTable() {
+            const $tbody = $('#requestsTableBody');
+
+            if (!state.requests.length) {
+                $tbody.html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay solicitudes disponibles</p>
+                        </td>
+                    </tr>
+                `);
                 return;
             }
 
-            tbody.innerHTML = requests.map(req => {
-                // Format status badge
-                const statusBadge = getStatusBadge(req.status);
-
-                // Format date
-                const createdDate = formatDate(req.createdAt);
-
-                // Show action buttons only for pending requests
-                const isPending = req.status === 'PENDING' || req.status === 'pending';
+            $tbody.html(state.requests.map(request => {
+                const industryName = request.industry?.name || 'N/A';
+                const industryId = request.industry?.id || '';
+                const isPending = (request.status || '').toLowerCase() === 'pending';
 
                 return `
-                    <tr data-id="${req.id}">
-                        <td><code>${req.requestCode || 'N/A'}</code></td>
+                    <tr data-id="${request.id}">
+                        <td><code>${Utils.escapeHtml(request.requestCode || 'N/A')}</code></td>
                         <td>
-                            <strong>${req.companyName || 'N/A'}</strong><br>
-                            <small class="text-muted">${(req.industry && req.industry.name) || 'N/A'}</small>
+                            <strong>${Utils.escapeHtml(request.companyName || 'N/A')}</strong><br>
+                            <small class="text-muted">${Utils.escapeHtml(request.legalName || '')}</small>
                         </td>
-                        <td>${req.adminEmail || 'N/A'}</td>
-                        <td><span class="badge badge-secondary">${(req.industry && req.industry.name) || 'N/A'}</span></td>
-                        <td>${statusBadge}</td>
-                        <td><small>${createdDate}</small></td>
-                        <td>
-                            <button class="btn btn-sm btn-primary btn-view-details" data-id="${req.id}" title="Ver Detalles">
+                        <td><small>${Utils.escapeHtml(request.adminEmail || 'N/A')}</small></td>
+                        <td>${Utils.getIndustryBadge(industryName, industryId)}</td>
+                        <td>${Utils.getStatusBadge(request.status)}</td>
+                        <td><small>${Utils.formatDate(request.createdAt)}</small></td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-primary btn-view" data-id="${request.id}" title="Ver Detalles">
                                 <i class="fas fa-eye"></i>
                             </button>
                             ${isPending ? `
-                                <button class="btn btn-sm btn-success btn-approve" data-id="${req.id}" title="Aprobar">
+                                <button class="btn btn-sm btn-success btn-approve" data-id="${request.id}" title="Aprobar">
                                     <i class="fas fa-check"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger btn-reject" data-id="${req.id}" title="Rechazar">
+                                <button class="btn btn-sm btn-danger btn-reject" data-id="${request.id}" title="Rechazar">
                                     <i class="fas fa-ban"></i>
                                 </button>
                             ` : ''}
                         </td>
                     </tr>
                 `;
-            }).join('');
+            }).join(''));
 
-            // Attach event listeners to action buttons
-            attachActionListeners();
-        }
+            this.attachRowEvents();
+        },
 
-        // =====================================================================
-        // FUNCTION: getStatusBadge(status)
-        // Returns the HTML for status badge
-        // =====================================================================
+        attachRowEvents() {
+            $('.btn-view').off('click').on('click', function() {
+                Modals.openView($(this).data('id'));
+            });
+            $('.btn-approve').off('click').on('click', function() {
+                Modals.openApprove($(this).data('id'));
+            });
+            $('.btn-reject').off('click').on('click', function() {
+                Modals.openReject($(this).data('id'));
+            });
+        },
 
-        function getStatusBadge(status) {
-            const statusLower = status ? status.toLowerCase() : '';
-            const badges = {
-                'pending': '<span class="badge badge-warning"><i class="fas fa-clock"></i> Pendiente</span>',
-                'approved': '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Aprobada</span>',
-                'rejected': '<span class="badge badge-danger"><i class="fas fa-times-circle"></i> Rechazada</span>'
-            };
-            return badges[statusLower] || '<span class="badge badge-secondary">Desconocido</span>';
-        }
+        updatePagination() {
+            const meta = state.meta;
+            const links = state.links;
 
-        // =====================================================================
-        // FUNCTION: formatDate(dateString)
-        // Formats ISO date to readable format
-        // =====================================================================
+            // Calculate from/to
+            const from = meta && meta.total > 0 ? ((meta.current_page - 1) * meta.per_page) + 1 : 0;
+            const to = meta ? Math.min(meta.current_page * meta.per_page, meta.total) : 0;
+            $('#paginationInfo').text(`Mostrando ${from} a ${to} de ${meta?.total || 0}`);
 
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
+            const $controls = $('#paginationControls');
+            $controls.empty();
 
-            const date = new Date(dateString);
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
-            return date.toLocaleDateString('es-ES', options);
-        }
+            if (!meta || meta.last_page <= 1) return;
 
-        // =====================================================================
-        // FUNCTION 2: openDetailsModal(requestId)
-        // Opens the details modal and populates it with request data
-        // =====================================================================
+            // Previous button
+            $controls.append(`
+                <li class="page-item ${!links?.prev ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-action="prev"><i class="fas fa-chevron-left"></i></a>
+                </li>
+            `);
 
-        function openDetailsModal(requestId) {
-            // Find request in stored data
-            currentRequest = allRequests.find(r => r.id === requestId);
+            // Page numbers (max 5 visible)
+            const maxButtons = 5;
+            let startPage = Math.max(1, meta.current_page - Math.floor(maxButtons / 2));
+            let endPage = Math.min(meta.last_page, startPage + maxButtons - 1);
 
-            if (!currentRequest) {
-                showAlert('error', 'No se encontró la solicitud');
-                return;
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
             }
 
-            // Populate modal fields - LEFT COLUMN
-            document.getElementById('detail-request-code').textContent = currentRequest.requestCode || 'N/A';
-            document.getElementById('detail-company-name').textContent = currentRequest.companyName || 'N/A';
-            document.getElementById('detail-legal-name').textContent = currentRequest.legalName || 'N/A';
-            document.getElementById('detail-admin-email').textContent = currentRequest.adminEmail || 'N/A';
-            document.getElementById('detail-phone').textContent = currentRequest.phone || 'N/A';
+            for (let i = startPage; i <= endPage; i++) {
+                $controls.append(`
+                    <li class="page-item ${i === meta.current_page ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `);
+            }
 
-            // Website with link
-            const website = currentRequest.website || 'N/A';
-            document.getElementById('detail-website').innerHTML = website !== 'N/A'
-                ? `<a href="${website}" target="_blank">${website} <i class="fas fa-external-link-alt"></i></a>`
-                : website;
+            // Next button
+            $controls.append(`
+                <li class="page-item ${!links?.next ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-action="next"><i class="fas fa-chevron-right"></i></a>
+                </li>
+            `);
 
-            document.getElementById('detail-industry').textContent = (currentRequest.industry && currentRequest.industry.name) || 'N/A';
-            document.getElementById('detail-users').textContent = currentRequest.estimatedUsers || 'N/A';
+            // Pagination click handlers
+            $controls.find('a').on('click', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                const action = $(this).data('action');
 
-            // Populate modal fields - RIGHT COLUMN
-            document.getElementById('detail-address').textContent = currentRequest.contactAddress || 'N/A';
-            document.getElementById('detail-city').textContent = currentRequest.contactCity || 'N/A';
-            document.getElementById('detail-country').textContent = currentRequest.contactCountry || 'N/A';
-            document.getElementById('detail-postal').textContent = currentRequest.contactPostalCode || 'N/A';
-            document.getElementById('detail-tax-id').textContent = currentRequest.taxId || 'N/A';
-            document.getElementById('detail-description').value = currentRequest.businessDescription || 'N/A';
-            document.getElementById('detail-created-at').textContent = formatDate(currentRequest.createdAt);
-
-            // Show/hide review information
-            const reviewInfo = document.getElementById('review-info');
-            const statusLower = currentRequest.status?.toLowerCase();
-            if (statusLower !== 'pending') {
-                reviewInfo.style.display = 'block';
-                document.getElementById('detail-reviewed-by').textContent = currentRequest.reviewer?.name || currentRequest.reviewer?.email || 'N/A';
-                document.getElementById('detail-reviewed-at').textContent = formatDate(currentRequest.reviewedAt);
-                document.getElementById('detail-status-badge').innerHTML = getStatusBadge(currentRequest.status);
-
-                // Show rejection reason if rejected
-                const rejectionContainer = document.getElementById('rejection-reason-container');
-                if (statusLower === 'rejected' && currentRequest.rejectionReason) {
-                    rejectionContainer.style.display = 'block';
-                    document.getElementById('detail-rejection-reason').value = currentRequest.rejectionReason;
-                } else {
-                    rejectionContainer.style.display = 'none';
+                if (page) {
+                    state.currentPage = page;
+                } else if (action === 'prev' && state.currentPage > 1) {
+                    state.currentPage--;
+                } else if (action === 'next' && state.currentPage < meta.last_page) {
+                    state.currentPage++;
                 }
+
+                API.loadRequests();
+            });
+        },
+
+        updateFilterSelection() {
+            $('.small-box').removeClass('elevation-3');
+            const status = state.filters.status;
+            if (status === 'pending') {
+                $('#stat-pending').addClass('elevation-3');
+            } else if (status === 'approved') {
+                $('#stat-approved').addClass('elevation-3');
+            } else if (status === 'rejected') {
+                $('#stat-rejected').addClass('elevation-3');
             } else {
-                reviewInfo.style.display = 'none';
+                $('#stat-total').addClass('elevation-3');
             }
-
-            // Show action buttons only for pending requests
-            const isPending = statusLower === 'pending';
-            document.getElementById('btn-modal-approve').style.display = isPending ? 'inline-block' : 'none';
-            document.getElementById('btn-modal-reject').style.display = isPending ? 'inline-block' : 'none';
-
-            // Open modal
-            $('#modal-details').modal('show');
         }
+    };
 
-        // =====================================================================
-        // FUNCTION 3: approveRequest(requestId)
-        // Shows confirmation modal and handles request approval
-        // =====================================================================
-
-        function approveRequest(requestId) {
-            // Find request
-            const request = allRequests.find(r => r.id === requestId);
-
+    // =========================================================================
+    // MODALS CONTROLLER
+    // =========================================================================
+    const Modals = {
+        openView(requestId) {
+            const request = state.requests.find(r => r.id === requestId);
             if (!request) {
-                showAlert('error', 'No se encontró la solicitud');
+                Toast.error('Solicitud no encontrada');
                 return;
             }
+            state.currentRequest = request;
 
-            // Populate approval modal
-            document.getElementById('approve-request-code').textContent = request.requestCode || 'N/A';
-            document.getElementById('approve-company-name').textContent = request.companyName || 'N/A';
-            document.getElementById('approve-admin-email').textContent = request.adminEmail || 'N/A';
-            document.getElementById('approve-request-id').value = requestId;
-            document.getElementById('send-email-checkbox').checked = true;
-
-            // Close details modal if open
-            $('#modal-details').modal('hide');
-
-            // Open approval modal
-            $('#modal-approve').modal('show');
-        }
-
-        // =====================================================================
-        // FUNCTION: confirmApprove()
-        // Sends POST request to approve the company request
-        // =====================================================================
-
-        function confirmApprove() {
-            const requestId = document.getElementById('approve-request-id').value;
-            const sendEmail = document.getElementById('send-email-checkbox').checked;
-
-            if (!requestId) {
-                showAlert('error', 'ID de solicitud no encontrado');
-                return;
+            if (typeof ViewRequestModal !== 'undefined') {
+                ViewRequestModal.open(request);
+            } else {
+                Toast.error('Error al abrir modal de vista');
             }
+        },
 
-            // Disable button to prevent double-click
-            const btnConfirm = document.getElementById('btn-confirm-approve');
-            btnConfirm.disabled = true;
-            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
-            // POST to API
-            fetch(`${apiUrl}/company-requests/${requestId}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    send_email: sendEmail
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success || data.data?.success) {
-                    showAlert('success', data.data?.message || data.message || 'Solicitud aprobada exitosamente');
-                    $('#modal-approve').modal('hide');
-                    loadRequests(); // Reload table
-                } else {
-                    showAlert('error', data.message || 'Error al aprobar la solicitud');
-                }
-            })
-            .catch(error => {
-                console.error('Error approving request:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
-            })
-            .finally(() => {
-                // Re-enable button
-                btnConfirm.disabled = false;
-                btnConfirm.innerHTML = '<i class="fas fa-check"></i> Confirmar Aprobación';
-            });
-        }
-
-        // =====================================================================
-        // FUNCTION 4: rejectRequest(requestId)
-        // Shows rejection modal and handles request rejection
-        // =====================================================================
-
-        function rejectRequest(requestId) {
-            // Find request
-            const request = allRequests.find(r => r.id === requestId);
-
+        openApprove(requestId) {
+            const request = state.requests.find(r => r.id === requestId);
             if (!request) {
-                showAlert('error', 'No se encontró la solicitud');
+                Toast.error('Solicitud no encontrada');
                 return;
             }
+            state.currentRequest = request;
 
-            // Populate rejection modal
-            document.getElementById('reject-request-code').textContent = request.requestCode || 'N/A';
-            document.getElementById('reject-admin-email').textContent = request.adminEmail || 'N/A';
-            document.getElementById('reject-request-id').value = requestId;
-            document.getElementById('rejection-reason').value = '';
-            document.getElementById('char-count').textContent = '0';
-            document.getElementById('btn-confirm-reject').disabled = true;
+            if (typeof ApproveRequestModal !== 'undefined') {
+                ApproveRequestModal.open(request);
+            } else {
+                Toast.error('Error al abrir modal de aprobación');
+            }
+        },
 
-            // Close details modal if open
-            $('#modal-details').modal('hide');
-
-            // Open rejection modal
-            $('#modal-reject').modal('show');
-        }
-
-        // =====================================================================
-        // FUNCTION: confirmReject()
-        // Sends POST request to reject the company request
-        // =====================================================================
-
-        function confirmReject() {
-            const requestId = document.getElementById('reject-request-id').value;
-            const reason = document.getElementById('rejection-reason').value.trim();
-
-            if (!requestId) {
-                showAlert('error', 'ID de solicitud no encontrado');
+        openReject(requestId) {
+            const request = state.requests.find(r => r.id === requestId);
+            if (!request) {
+                Toast.error('Solicitud no encontrada');
                 return;
             }
+            state.currentRequest = request;
 
-            if (reason.length < 10) {
-                showAlert('error', 'El motivo debe tener al menos 10 caracteres');
-                return;
+            if (typeof RejectRequestModal !== 'undefined') {
+                RejectRequestModal.open(request);
+            } else {
+                Toast.error('Error al abrir modal de rechazo');
             }
+        },
 
-            // Disable button
-            const btnConfirm = document.getElementById('btn-confirm-reject');
-            btnConfirm.disabled = true;
-            btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        async handleApprove(requestId, sendEmail) {
+            if (state.isOperating) return;
+            state.isOperating = true;
 
-            // POST to API
-            fetch(`${apiUrl}/company-requests/${requestId}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    reason: reason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success || data.data?.success) {
-                    showAlert('success', data.data?.message || data.message || 'Solicitud rechazada exitosamente');
-                    $('#modal-reject').modal('hide');
-                    loadRequests(); // Reload table
-                } else {
-                    showAlert('error', data.message || 'Error al rechazar la solicitud');
-                }
-            })
-            .catch(error => {
-                console.error('Error rejecting request:', error);
-                showAlert('error', 'Error de conexión: ' + error.message);
-            })
-            .finally(() => {
-                // Re-enable button
-                btnConfirm.disabled = false;
-                btnConfirm.innerHTML = '<i class="fas fa-ban"></i> Confirmar Rechazo';
-            });
-        }
+            ApproveRequestModal.setLoading(true);
 
-        // =====================================================================
-        // FUNCTION 5: filterByStatus(status)
-        // Filters requests by status
-        // =====================================================================
+            try {
+                const result = await API.approveRequest(requestId, sendEmail);
+                Toast.success(result.data?.message || result.message || 'Solicitud aprobada exitosamente');
+                ApproveRequestModal.close();
+                API.loadRequests();
 
-        function filterByStatus(status) {
-            loadRequests(status);
-        }
+            } catch (error) {
+                console.error('[Requests] Approve error:', error);
+                ApproveRequestModal.showError(Utils.translateError(error));
+                ApproveRequestModal.setLoading(false);
 
-        // =====================================================================
-        // FUNCTION 6: searchRequests(query)
-        // Client-side search filter for company name and email
-        // =====================================================================
-
-        function searchRequests(query) {
-            query = query.toLowerCase().trim();
-
-            if (!query) {
-                renderRequestsTable(allRequests);
-                return;
+            } finally {
+                state.isOperating = false;
             }
+        },
 
-            const filtered = allRequests.filter(req => {
-                const companyName = (req.companyName || '').toLowerCase();
-                const email = (req.adminEmail || '').toLowerCase();
-                const code = (req.requestCode || '').toLowerCase();
+        async handleReject(requestId, reason) {
+            if (state.isOperating) return;
+            state.isOperating = true;
 
-                return companyName.includes(query) ||
-                       email.includes(query) ||
-                       code.includes(query);
-            });
+            RejectRequestModal.setLoading(true);
 
-            renderRequestsTable(filtered);
+            try {
+                const result = await API.rejectRequest(requestId, reason);
+                Toast.success(result.data?.message || result.message || 'Solicitud rechazada exitosamente');
+                RejectRequestModal.close();
+                API.loadRequests();
+
+            } catch (error) {
+                console.error('[Requests] Reject error:', error);
+                RejectRequestModal.showError(Utils.translateError(error));
+                RejectRequestModal.setLoading(false);
+
+            } finally {
+                state.isOperating = false;
+            }
         }
+    };
 
-        // =====================================================================
-        // FUNCTION: showAlert(type, message)
-        // Shows toast notification
-        // =====================================================================
-
-        function showAlert(type, message) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
-            });
-
-            Toast.fire({
-                icon: type,
-                title: message
-            });
-        }
-
-        // =====================================================================
-        // ATTACH EVENT LISTENERS TO ACTION BUTTONS
-        // =====================================================================
-
-        function attachActionListeners() {
-            // View details buttons
-            document.querySelectorAll('.btn-view-details').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    openDetailsModal(this.dataset.id);
-                });
-            });
-
-            // Approve buttons
-            document.querySelectorAll('.btn-approve').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    approveRequest(this.dataset.id);
-                });
-            });
-
-            // Reject buttons
-            document.querySelectorAll('.btn-reject').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    rejectRequest(this.dataset.id);
-                });
-            });
-        }
-
-        // =====================================================================
-        // EVENT LISTENERS
-        // =====================================================================
-
-        // Filter by status
-        document.getElementById('filter-status').addEventListener('change', function() {
-            const status = this.value;
-            filterByStatus(status || null);
+    // =========================================================================
+    // EVENT HANDLERS INITIALIZATION
+    // =========================================================================
+    function initEvents() {
+        // Search with debounce
+        let searchTimer;
+        $('#searchInput').on('input', function() {
+            clearTimeout(searchTimer);
+            const value = $(this).val().trim();
+            searchTimer = setTimeout(() => {
+                state.filters.search = value;
+                state.currentPage = 1;
+                API.loadRequests();
+            }, CONFIG.DEBOUNCE_DELAY);
         });
 
-        // Search box
-        document.getElementById('search-requests').addEventListener('input', function() {
-            searchRequests(this.value);
+        // Filter handlers
+        $('#statusFilter').on('change', function() {
+            state.filters.status = $(this).val();
+            state.currentPage = 1;
+            UI.updateFilterSelection();
+            API.loadRequests();
+        });
+
+        $('#industryFilter').on('change', function() {
+            state.filters.industry_id = $(this).val();
+            state.currentPage = 1;
+            API.loadRequests();
+        });
+
+        $('#orderByFilter').on('change', function() {
+            state.filters.order_by = $(this).val();
+            API.loadRequests();
+        });
+
+        // Reset filters
+        $('#btnResetFilters').on('click', function() {
+            state.filters = {
+                status: 'pending',
+                industry_id: '',
+                search: '',
+                order_by: 'created_at',
+                order_direction: 'desc'
+            };
+            state.currentPage = 1;
+
+            $('#searchInput').val('');
+            $('#statusFilter').val('pending');
+            $('#industryFilter').val('');
+            $('#orderByFilter').val('created_at');
+
+            UI.updateFilterSelection();
+            API.loadRequests();
         });
 
         // Refresh button
-        document.getElementById('btn-refresh').addEventListener('click', function() {
-            const currentFilter = document.getElementById('filter-status').value;
-            loadRequests(currentFilter || null);
+        $('#btnRefresh').on('click', () => API.loadRequests());
+
+        // Small-box click handlers for filtering
+        $('#stat-total').on('click', () => {
+            state.filters.status = '';
+            state.currentPage = 1;
+            $('#statusFilter').val('');
+            UI.updateFilterSelection();
+            API.loadRequests();
         });
 
-        // Approve button in details modal
-        document.getElementById('btn-modal-approve').addEventListener('click', function() {
-            if (currentRequest) {
-                approveRequest(currentRequest.id);
-            }
+        $('#stat-pending').on('click', () => {
+            state.filters.status = 'pending';
+            state.currentPage = 1;
+            $('#statusFilter').val('pending');
+            UI.updateFilterSelection();
+            API.loadRequests();
         });
 
-        // Reject button in details modal
-        document.getElementById('btn-modal-reject').addEventListener('click', function() {
-            if (currentRequest) {
-                rejectRequest(currentRequest.id);
-            }
+        $('#stat-approved').on('click', () => {
+            state.filters.status = 'approved';
+            state.currentPage = 1;
+            $('#statusFilter').val('approved');
+            UI.updateFilterSelection();
+            API.loadRequests();
         });
 
-        // Confirm approve button
-        document.getElementById('btn-confirm-approve').addEventListener('click', confirmApprove);
-
-        // Confirm reject button
-        document.getElementById('btn-confirm-reject').addEventListener('click', confirmReject);
-
-        // Character counter for rejection reason
-        document.getElementById('rejection-reason').addEventListener('input', function() {
-            const count = this.value.length;
-            document.getElementById('char-count').textContent = count;
-            document.getElementById('btn-confirm-reject').disabled = count < 10;
+        $('#stat-rejected').on('click', () => {
+            state.filters.status = 'rejected';
+            state.currentPage = 1;
+            $('#statusFilter').val('rejected');
+            UI.updateFilterSelection();
+            API.loadRequests();
         });
 
-        // =====================================================================
-        // INITIALIZE: Load all requests on page load
-        // =====================================================================
+        // Modal events from partials
+        $(document).on('openApproveModal', function(e, requestId) {
+            Modals.openApprove(requestId);
+        });
 
-        loadRequests();
-    });
+        $(document).on('openRejectModal', function(e, requestId) {
+            Modals.openReject(requestId);
+        });
+
+        $(document).on('confirmApproveRequest', function(e, requestId, sendEmail) {
+            Modals.handleApprove(requestId, sendEmail);
+        });
+
+        $(document).on('confirmRejectRequest', function(e, requestId, reason) {
+            Modals.handleReject(requestId, reason);
+        });
+    }
+
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    async function init() {
+        const token = Utils.getToken();
+        if (!token) {
+            Toast.error('Token de autenticación no encontrado');
+            UI.showError('Error de autenticación. Por favor inicie sesión nuevamente.');
+            return;
+        }
+
+        initEvents();
+        UI.updateFilterSelection();
+
+        // Load industries for filter
+        await API.loadIndustries();
+
+        // Load requests
+        await API.loadRequests();
+
+        console.log('[Requests] ✓ Initialized successfully');
+    }
+
+    // Start when DOM is ready
+    $(document).ready(init);
+
+})();
 </script>
-
-<!-- SweetAlert2 for notifications -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-@endsection
+@endpush

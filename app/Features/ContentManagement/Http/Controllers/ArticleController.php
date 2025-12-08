@@ -470,7 +470,7 @@ class ArticleController extends Controller
     {
         $article = $this->articleService->createArticle(
             $request->validated(),
-            JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN'),
+            JWTHelper::getActiveCompanyId(),
             auth()->user()->id
         );
 
@@ -612,7 +612,7 @@ class ArticleController extends Controller
             $article = $this->articleService->updateArticle(
                 $id,
                 $request->validated(),
-                JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN')
+                JWTHelper::getActiveCompanyId()
             );
 
             return response()->json([
@@ -738,7 +738,7 @@ class ArticleController extends Controller
         try {
             $published = $this->articleService->publishArticle(
                 $article,
-                JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN')
+                JWTHelper::getActiveCompanyId()
             );
 
             return response()->json([
@@ -877,7 +877,7 @@ class ArticleController extends Controller
         try {
             $unpublished = $this->articleService->unpublishArticle(
                 $article,
-                JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN')
+                JWTHelper::getActiveCompanyId()
             );
 
             return response()->json([
@@ -988,7 +988,7 @@ class ArticleController extends Controller
         try {
             $this->articleService->deleteArticle(
                 $article,
-                JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN')
+                JWTHelper::getActiveCompanyId()
             );
 
             return response()->json([

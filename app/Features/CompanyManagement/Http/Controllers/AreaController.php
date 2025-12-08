@@ -326,8 +326,8 @@ class AreaController extends Controller
     {
         // NO necesita authorize aquí - ya está protegido por middleware role:COMPANY_ADMIN
 
-        // Obtener company_id del JWT token
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Obtener company_id del rol activo (active_role en JWT)
+        $companyId = JWTHelper::getActiveCompanyId();
 
         if (!$companyId) {
             return response()->json([
@@ -500,8 +500,8 @@ class AreaController extends Controller
             ], 404);
         }
 
-        // Verificar que el área pertenece a la empresa del COMPANY_ADMIN (JWT)
-        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que el área pertenece a la empresa del rol activo (active_role en JWT)
+        $companyId = JWTHelper::getActiveCompanyId();
         if ($area->company_id !== $companyId) {
             return response()->json([
                 'success' => false,
@@ -613,8 +613,8 @@ class AreaController extends Controller
             ], 404);
         }
 
-        // Verificar que el área pertenece a la empresa del COMPANY_ADMIN (JWT)
-        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que el área pertenece a la empresa del rol activo (active_role en JWT)
+        $companyId = JWTHelper::getActiveCompanyId();
         if ($area->company_id !== $companyId) {
             return response()->json([
                 'success' => false,

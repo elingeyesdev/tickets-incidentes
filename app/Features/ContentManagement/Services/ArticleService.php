@@ -8,6 +8,7 @@ use App\Features\ContentManagement\Models\HelpCenterArticle;
 use App\Features\ContentManagement\Models\ArticleCategory;
 use App\Features\ContentManagement\Events\ArticlePublished;
 use App\Features\UserManagement\Models\User;
+use App\Shared\Helpers\JWTHelper;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -286,18 +287,18 @@ class ArticleService
         // 3. VALIDAR VISIBILIDAD SEGÚN ROL
 
         // PLATFORM_ADMIN: Ve todo
-        if ($user->hasRole('PLATFORM_ADMIN')) {
+        // MIGRADO: Usar rol ACTIVO del usuario
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
+
+        if ($activeRole === 'PLATFORM_ADMIN') {
             // Permitir acceso, no incrementar views
             return $article;
         }
 
-        // COMPANY_ADMIN: Solo su empresa
-        if ($user->hasRole('COMPANY_ADMIN')) {
-            $adminRole = $user->userRoles()
-                ->where('role_code', 'COMPANY_ADMIN')
-                ->first();
-
-            if (!$adminRole || $adminRole->company_id !== $article->company_id) {
+        // COMPANY_ADMIN: Solo su empresa ACTIVA
+        if ($activeRole === 'COMPANY_ADMIN') {
+            if (!$activeCompanyId || $activeCompanyId !== $article->company_id) {
                 throw new AuthorizationException('Forbidden: You do not have permission to view this article');
             }
 
@@ -305,14 +306,10 @@ class ArticleService
             return $article;
         }
 
-        // AGENT: Solo PUBLISHED de su company
-        if ($user->hasRole('AGENT')) {
-            $agentRole = $user->userRoles()
-                ->where('role_code', 'AGENT')
-                ->first();
-
+        // AGENT: Solo PUBLISHED de su company ACTIVA
+        if ($activeRole === 'AGENT') {
             // Validar que tiene asignada una compañía
-            if (!$agentRole || !$agentRole->company_id) {
+            if (!$activeCompanyId) {
                 throw new AuthorizationException('Forbidden: You do not have permission to view this article');
             }
 
@@ -321,8 +318,8 @@ class ArticleService
                 throw new AuthorizationException('Forbidden: You do not have permission to view this article');
             }
 
-            // Solo de su compañía
-            if ($agentRole->company_id !== $article->company_id) {
+            // Solo de su compañía ACTIVA
+            if ($activeCompanyId !== $article->company_id) {
                 throw new AuthorizationException('Forbidden: You do not have permission to view this article');
             }
 
@@ -331,7 +328,7 @@ class ArticleService
         }
 
         // USER: Solo PUBLISHED de empresas que sigue
-        if ($user->hasRole('USER')) {
+        if ($activeRole === 'USER') {
             // Validar estado
             if ($article->status !== 'PUBLISHED') {
                 throw new AuthorizationException('Forbidden: You do not have permission to view this article');
@@ -379,7 +376,11 @@ class ArticleService
         $requestedCompanyId = $filters['company_id'] ?? null;
 
         // 2. VALIDACIÓN CROSS-COMPANY Y DETERMINACIÓN DE EMPRESAS
-        if ($user->hasRole('PLATFORM_ADMIN')) {
+        // MIGRADO: Usar rol ACTIVO del usuario
+        $activeRole = JWTHelper::getActiveRoleCode();
+        $activeCompanyId = JWTHelper::getActiveCompanyId();
+
+        if ($activeRole === 'PLATFORM_ADMIN') {
             // PLATFORM_ADMIN: Ve TODO sin restricción
             // Si especifica company_id, filtra por esa empresa
             if ($requestedCompanyId) {
@@ -387,24 +388,18 @@ class ArticleService
             }
             // Sin restricción de status (ve todos por defecto)
 
-        } elseif ($user->hasRole('COMPANY_ADMIN')) {
-            // COMPANY_ADMIN: Solo su empresa
-            $adminRole = $user->userRoles()
-                ->where('role_code', 'COMPANY_ADMIN')
-                ->first();
-
-            if (!$adminRole || !$adminRole->company_id) {
-                throw new Exception('Usuario no tiene empresa asignada', 500);
+        } elseif ($activeRole === 'COMPANY_ADMIN') {
+            // COMPANY_ADMIN: Solo su empresa ACTIVA
+            if (!$activeCompanyId) {
+                throw new Exception('Usuario no tiene empresa asignada en rol activo', 500);
             }
 
-            $adminCompanyId = $adminRole->company_id;
-
-            // Si especifica ?company_id, validar que sea su empresa
-            if ($requestedCompanyId && $requestedCompanyId !== $adminCompanyId) {
+            // Si especifica ?company_id, validar que sea su empresa activa
+            if ($requestedCompanyId && $requestedCompanyId !== $activeCompanyId) {
                 throw new Exception('Forbidden: No tienes permiso para acceder a artículos de otra empresa', 403);
             }
 
-            $query->where('company_id', $adminCompanyId);
+            $query->where('company_id', $activeCompanyId);
 
             // Status default ADMIN: todos (DRAFT + PUBLISHED)
             if (!isset($filters['status'])) {
@@ -415,24 +410,18 @@ class ArticleService
                 $query->where('status', $status);
             }
 
-        } elseif ($user->hasRole('AGENT')) {
-            // AGENT: Solo PUBLISHED de su empresa
-            $agentRole = $user->userRoles()
-                ->where('role_code', 'AGENT')
-                ->first();
-
-            if (!$agentRole || !$agentRole->company_id) {
-                throw new Exception('Usuario no tiene empresa asignada', 500);
+        } elseif ($activeRole === 'AGENT') {
+            // AGENT: Solo PUBLISHED de su empresa ACTIVA
+            if (!$activeCompanyId) {
+                throw new Exception('Usuario no tiene empresa asignada en rol activo', 500);
             }
 
-            $agentCompanyId = $agentRole->company_id;
-
-            // Si especifica ?company_id, validar que sea su empresa
-            if ($requestedCompanyId && $requestedCompanyId !== $agentCompanyId) {
+            // Si especifica ?company_id, validar que sea su empresa activa
+            if ($requestedCompanyId && $requestedCompanyId !== $activeCompanyId) {
                 throw new Exception('Forbidden: No tienes permiso para acceder a artículos de otra empresa', 403);
             }
 
-            $query->where('company_id', $agentCompanyId);
+            $query->where('company_id', $activeCompanyId);
 
             // Status default AGENT: solo PUBLISHED (hardcoded)
             // AGENT NUNCA puede ver DRAFT

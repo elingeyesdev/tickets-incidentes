@@ -5,6 +5,7 @@ namespace App\Features\Authentication\Http\Controllers;
 use App\Features\Authentication\Http\Requests\RegisterRequest;
 use App\Features\Authentication\Http\Requests\LoginRequest;
 use App\Features\Authentication\Http\Requests\GoogleLoginRequest;
+use App\Features\Authentication\Http\Requests\SelectRoleRequest;
 use App\Features\Authentication\Http\Resources\AuthPayloadResource;
 use App\Features\Authentication\Http\Resources\AuthStatusResource;
 use App\Features\Authentication\Http\Resources\RefreshPayloadResource;
@@ -823,4 +824,237 @@ class AuthController
         $sanitized = strip_tags(trim($name));
         return ucwords($sanitized);
     }
+
+    // ==================== ACTIVE ROLE METHODS (NEW) ====================
+
+    /**
+     * Select/Change Active Role
+     *
+     * Permite al usuario seleccionar o cambiar el rol activo.
+     * Genera un nuevo JWT con el active_role seleccionado.
+     *
+     * @param SelectRoleRequest $request
+     * @return JsonResponse
+     */
+    #[OA\Post(
+        path: '/api/auth/select-role',
+        operationId: 'select_active_role',
+        description: 'Allows the user to select or change their active role. Generates a new JWT access token with the selected role as active_role. The user must have the specified role in their roles array.',
+        summary: 'Select or change active role',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['role_code'],
+                properties: [
+                    new OA\Property(
+                        property: 'role_code',
+                        description: 'Role code to set as active',
+                        type: 'string',
+                        enum: ['PLATFORM_ADMIN', 'COMPANY_ADMIN', 'AGENT', 'USER'],
+                        example: 'COMPANY_ADMIN'
+                    ),
+                    new OA\Property(
+                        property: 'company_id',
+                        description: 'Company UUID (required for COMPANY_ADMIN and AGENT)',
+                        type: 'string',
+                        format: 'uuid',
+                        nullable: true,
+                        example: '550e8400-e29b-41d4-a716-446655440000'
+                    ),
+                ],
+                type: 'object'
+            )
+        ),
+        tags: ['Authentication'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Role selected successfully, new JWT generated',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'accessToken', type: 'string', example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
+                        new OA\Property(property: 'tokenType', type: 'string', example: 'Bearer'),
+                        new OA\Property(property: 'expiresIn', type: 'integer', example: 2592000),
+                        new OA\Property(
+                            property: 'activeRole',
+                            properties: [
+                                new OA\Property(property: 'code', type: 'string', example: 'COMPANY_ADMIN'),
+                                new OA\Property(property: 'company_id', type: 'string', format: 'uuid', nullable: true),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Invalid role selection (user does not have this role)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'You do not have this role assigned'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated',
+            ),
+        ]
+    )]
+    public function selectRole(SelectRoleRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+        $validated = $request->validated();
+
+        $roleCode = $validated['role_code'];
+        $companyId = $validated['company_id'] ?? null;
+
+        // Obtener todos los roles del usuario
+        $userRoles = $user->getAllRolesForJWT();
+
+        // Verificar que el usuario tiene el rol solicitado
+        $hasRole = collect($userRoles)->contains(function ($role) use ($roleCode, $companyId) {
+            $codeMatches = $role['code'] === $roleCode;
+            
+            // Para roles sin empresa (PLATFORM_ADMIN, USER), company_id debe ser null
+            if (in_array($roleCode, ['PLATFORM_ADMIN', 'USER'])) {
+                return $codeMatches && ($role['company_id'] === null || $role['company_id'] === $companyId);
+            }
+            
+            // Para roles con empresa (COMPANY_ADMIN, AGENT), company_id debe coincidir
+            return $codeMatches && $role['company_id'] === $companyId;
+        });
+
+        if (!$hasRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have the requested role',
+                'code' => 'ROLE_NOT_ASSIGNED',
+            ], 403);
+        }
+
+        // Construir el active_role
+        $activeRole = [
+            'code' => $roleCode,
+            'company_id' => $companyId,
+        ];
+
+        // Generar nuevo access token con el active_role
+        $sessionId = request()->attributes->get('jwt_payload')['session_id'] ?? null;
+        $accessToken = $this->tokenService->generateAccessToken($user, $sessionId, $activeRole);
+
+        // Log de actividad
+        $this->activityLogService->log(
+            $user->id,
+            'auth',
+            'role_switched',
+            null,
+            null,
+            ['from' => request()->attributes->get('jwt_payload')['active_role'] ?? null, 'to' => $activeRole]
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'access_token' => $accessToken,
+                'token_type' => 'Bearer',
+                'expires_at' => now()->addMinutes((int) config('jwt.ttl'))->toIso8601String(),
+                'active_role' => $activeRole,
+            ],
+        ]);
+    }
+
+    /**
+     * Get Available Roles
+     *
+     * Retorna los roles disponibles del usuario para cambiar.
+     *
+     * @return JsonResponse
+     */
+    #[OA\Get(
+        path: '/api/auth/available-roles',
+        operationId: 'get_available_roles',
+        description: 'Returns all roles available to the authenticated user, along with the currently active role.',
+        summary: 'Get available roles for switching',
+        security: [['bearerAuth' => []]],
+        tags: ['Authentication'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Available roles retrieved successfully',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'roles',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'code', type: 'string', example: 'COMPANY_ADMIN'),
+                                    new OA\Property(property: 'company_id', type: 'string', format: 'uuid', nullable: true),
+                                    new OA\Property(property: 'company_name', type: 'string', nullable: true, example: 'Acme Corp'),
+                                    new OA\Property(property: 'dashboard_path', type: 'string', example: '/app/company/dashboard'),
+                                ],
+                                type: 'object'
+                            )
+                        ),
+                        new OA\Property(
+                            property: 'activeRole',
+                            properties: [
+                                new OA\Property(property: 'code', type: 'string', example: 'USER'),
+                                new OA\Property(property: 'company_id', type: 'string', format: 'uuid', nullable: true),
+                            ],
+                            type: 'object',
+                            nullable: true
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Unauthenticated',
+            ),
+        ]
+    )]
+    public function availableRoles(): JsonResponse
+    {
+        $user = auth()->user();
+        $payload = request()->attributes->get('jwt_payload');
+
+        $roles = $user->getAllRolesForJWT();
+
+        // Enriquecer con información adicional
+        $enrichedRoles = collect($roles)->map(function ($role) {
+            $dashboardPaths = [
+                'PLATFORM_ADMIN' => '/app/admin/dashboard',
+                'COMPANY_ADMIN' => '/app/company/dashboard',
+                'AGENT' => '/app/agent/dashboard',
+                'USER' => '/app/user/dashboard',
+            ];
+
+            $enriched = [
+                'code' => $role['code'],
+                'company_id' => $role['company_id'] ?? null,
+                'dashboard_path' => $dashboardPaths[$role['code']] ?? '/app/dashboard',
+            ];
+
+            // Agregar company_name si tiene empresa
+            if ($role['company_id']) {
+                $company = \App\Features\CompanyManagement\Models\Company::find($role['company_id']);
+                $enriched['company_name'] = $company?->name ?? null;
+            }
+
+            return $enriched;
+        })->values()->toArray();
+
+        return response()->json([
+            'success' => true,
+            'data' => $enrichedRoles,
+            'active_role' => $payload['active_role'] ?? null,
+        ]);
+    }
 }
+

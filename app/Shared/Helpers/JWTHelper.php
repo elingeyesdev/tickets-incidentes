@@ -182,4 +182,98 @@ class JWTHelper
             ->values()
             ->toArray();
     }
+
+    // ==================== ACTIVE ROLE METHODS (NEW) ====================
+
+    /**
+     * Get the active role from JWT.
+     *
+     * Returns the role currently selected by the user.
+     * If no active_role claim exists (backward compatibility), falls back to
+     * the first role in the roles array.
+     *
+     * @return array ['code' => string, 'company_id' => ?string]
+     * @throws AuthenticationException If user is not authenticated
+     */
+    public static function getActiveRole(): array
+    {
+        $payload = request()->attributes->get('jwt_payload');
+
+        if (!$payload) {
+            throw new AuthenticationException('JWT payload not found in request');
+        }
+
+        // Check if active_role exists in JWT (new system)
+        if (isset($payload['active_role'])) {
+            $activeRole = $payload['active_role'];
+            
+            // Convert stdClass to array if needed
+            if (is_object($activeRole)) {
+                return (array) $activeRole;
+            }
+            
+            return $activeRole;
+        }
+
+        // Backward compatibility: If no active_role, use first available role
+        // This ensures existing JWTs without active_role still work
+        $roles = self::getRoles();
+        
+        if (empty($roles)) {
+            return ['code' => 'USER', 'company_id' => null];
+        }
+
+        return $roles[0];
+    }
+
+    /**
+     * Get the active role code.
+     *
+     * Returns the code of the role currently active (e.g., 'COMPANY_ADMIN').
+     *
+     * @return string The active role code
+     * @throws AuthenticationException If user is not authenticated
+     */
+    public static function getActiveRoleCode(): string
+    {
+        return self::getActiveRole()['code'];
+    }
+
+    /**
+     * Get the company_id of the active role.
+     *
+     * Returns the company ID associated with the active role, or null
+     * if the active role doesn't have a company context (PLATFORM_ADMIN, USER).
+     *
+     * @return string|null The company UUID or null
+     * @throws AuthenticationException If user is not authenticated
+     */
+    public static function getActiveCompanyId(): ?string
+    {
+        return self::getActiveRole()['company_id'] ?? null;
+    }
+
+    /**
+     * Check if the active role matches the given role code.
+     *
+     * @param string $roleCode The role code to check against (e.g., 'AGENT')
+     * @return bool True if the active role matches, false otherwise
+     * @throws AuthenticationException If user is not authenticated
+     */
+    public static function isActiveRole(string $roleCode): bool
+    {
+        return self::getActiveRoleCode() === $roleCode;
+    }
+
+    /**
+     * Check if the active role is one of the given role codes.
+     *
+     * @param array<string> $roleCodes Array of role codes to check
+     * @return bool True if the active role is in the array, false otherwise
+     * @throws AuthenticationException If user is not authenticated
+     */
+    public static function isActiveRoleOneOf(array $roleCodes): bool
+    {
+        return in_array(self::getActiveRoleCode(), $roleCodes, true);
+    }
 }

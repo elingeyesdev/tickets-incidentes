@@ -12,6 +12,7 @@ class TicketResponsePolicy
 {
     /**
      * Crear respuesta: creador del ticket, agent o company admin de la compañía.
+     * Usa el rol ACTIVO para determinar la empresa.
      */
     public function create(User $user, Ticket $ticket): bool
     {
@@ -20,16 +21,20 @@ class TicketResponsePolicy
             return true;
         }
 
-        // Agent o Company Admin de la compañía puede responder
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        if (!$companyId) {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Agent o Company Admin con rol ACTIVO puede responder
+        // Solo si el rol activo es AGENT o COMPANY_ADMIN y pertenece a la empresa del ticket
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if (!in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
+            return false;
         }
+        
+        $companyId = JWTHelper::getActiveCompanyId();
         return $companyId && $ticket->company_id === $companyId;
     }
 
     /**
      * Ver respuestas: creador del ticket, agent o company admin de la compañía.
+     * Usa el rol ACTIVO para determinar la empresa.
      */
     public function viewAny(User $user, Ticket $ticket): bool
     {
@@ -38,11 +43,13 @@ class TicketResponsePolicy
             return true;
         }
 
-        // Agent o Company Admin de la compañía puede ver
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        if (!$companyId) {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Agent o Company Admin con rol ACTIVO puede ver
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if (!in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
+            return false;
         }
+        
+        $companyId = JWTHelper::getActiveCompanyId();
         return $companyId && $ticket->company_id === $companyId;
     }
 

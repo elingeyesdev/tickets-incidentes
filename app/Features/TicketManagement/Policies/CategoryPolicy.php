@@ -21,28 +21,28 @@ class CategoryPolicy
     /**
      * Determinar si el usuario puede crear categorías
      *
-     * Solo COMPANY_ADMIN puede crear categorías
+     * Solo COMPANY_ADMIN con rol activo puede crear categorías
      */
     public function create(User $user): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        return JWTHelper::hasRoleFromJWT('COMPANY_ADMIN');
+        // El rol activo debe ser COMPANY_ADMIN
+        return JWTHelper::getActiveRoleCode() === 'COMPANY_ADMIN';
     }
 
     /**
      * Determinar si el usuario puede actualizar una categoría
      *
-     * Solo COMPANY_ADMIN de la misma empresa puede actualizar
+     * Solo COMPANY_ADMIN con rol activo de la misma empresa puede actualizar
      */
     public function update(User $user, Category $category): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
+        // El rol activo debe ser COMPANY_ADMIN
+        if (JWTHelper::getActiveRoleCode() !== 'COMPANY_ADMIN') {
             return false;
         }
 
-        // Verificar que la categoría pertenece a la empresa del admin
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que la categoría pertenece a la empresa del rol activo
+        $companyId = JWTHelper::getActiveCompanyId();
 
         return $companyId && $category->company_id === $companyId;
     }
@@ -50,17 +50,17 @@ class CategoryPolicy
     /**
      * Determinar si el usuario puede eliminar una categoría
      *
-     * Solo COMPANY_ADMIN de la misma empresa puede eliminar
+     * Solo COMPANY_ADMIN con rol activo de la misma empresa puede eliminar
      */
     public function delete(User $user, Category $category): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
+        // El rol activo debe ser COMPANY_ADMIN
+        if (JWTHelper::getActiveRoleCode() !== 'COMPANY_ADMIN') {
             return false;
         }
 
-        // Verificar que la categoría pertenece a la empresa del admin
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que la categoría pertenece a la empresa del rol activo
+        $companyId = JWTHelper::getActiveCompanyId();
 
         return $companyId && $category->company_id === $companyId;
     }

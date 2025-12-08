@@ -131,9 +131,9 @@ class AnnouncementActionController
      */
     public function publish(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to user's company
+        // Validate that announcement belongs to user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -270,9 +270,9 @@ class AnnouncementActionController
      */
     public function schedule(ScheduleAnnouncementRequest $request, Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to the user's company
+        // Validate that announcement belongs to the user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -403,9 +403,9 @@ class AnnouncementActionController
      */
     public function unschedule(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to user's company
+        // Validate that announcement belongs to user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -559,9 +559,9 @@ class AnnouncementActionController
      */
     public function archive(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to the user's company
+        // Validate that announcement belongs to the user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -686,9 +686,9 @@ class AnnouncementActionController
      */
     public function restore(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to the user's company
+        // Validate that announcement belongs to the user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',

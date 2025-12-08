@@ -118,10 +118,10 @@ class MaintenanceAnnouncementController extends Controller
     {
         $validated = $request->validated();
 
-        // Get company_id from JWT token using JWTHelper
-        // JWTHelper extracts company_id for COMPANY_ADMIN role from JWT payload
+        // Get company_id from active role in JWT token
+        // Uses getActiveCompanyId() to get the company from the ACTIVE role
         try {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $companyId = JWTHelper::getActiveCompanyId();
 
             if (!$companyId) {
                 abort(403, 'Usuario no tiene compañía asignada');
@@ -268,9 +268,9 @@ class MaintenanceAnnouncementController extends Controller
      */
     public function markStart(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to user's company
+        // Validate that announcement belongs to user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',
@@ -400,9 +400,9 @@ class MaintenanceAnnouncementController extends Controller
      */
     public function markComplete(Announcement $announcement): JsonResponse
     {
-        // Validate that announcement belongs to the user's company
+        // Validate that announcement belongs to the user's active company
         try {
-            $userCompanyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $userCompanyId = JWTHelper::getActiveCompanyId();
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Unauthorized or invalid JWT',

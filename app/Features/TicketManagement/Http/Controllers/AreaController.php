@@ -100,8 +100,8 @@ class AreaController extends Controller
         // Autorización mediante Policy
         $this->authorize('create', Area::class);
 
-        // Obtener company_id del JWT token
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Obtener company_id del rol activo (debe ser COMPANY_ADMIN)
+        $companyId = JWTHelper::getActiveCompanyId();
 
         if (!$companyId) {
             return response()->json([

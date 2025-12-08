@@ -96,6 +96,10 @@ Route::prefix('auth')->group(function () {
 
         // ========== Onboarding ==========
         Route::post('/onboarding/completed', [OnboardingController::class, 'markCompleted'])->name('auth.onboarding.completed');
+
+        // ========== Active Role Management (NEW) ==========
+        Route::post('/select-role', [AuthController::class, 'selectRole'])->name('auth.select-role');
+        Route::get('/available-roles', [AuthController::class, 'availableRoles'])->name('auth.available-roles');
     });
 });
 

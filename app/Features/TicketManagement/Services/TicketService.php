@@ -102,22 +102,14 @@ class TicketService
 
     /**
      * Determina el rol del usuario desde JWT
+     * 
+     * MIGRADO: Ahora usa el rol ACTIVO seleccionado por el usuario
+     * en lugar de prioridad fija.
      */
     private function getUserRole(User $user): string
     {
-        if (JWTHelper::hasRoleFromJWT('PLATFORM_ADMIN')) {
-            return 'PLATFORM_ADMIN';
-        }
-        if (JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
-            return 'COMPANY_ADMIN';
-        }
-        if (JWTHelper::hasRoleFromJWT('AGENT')) {
-            return 'AGENT';
-        }
-        if (JWTHelper::hasRoleFromJWT('USER')) {
-            return 'USER';
-        }
-        return 'USER'; // Fallback
+        // Usar el rol actualmente activo del usuario
+        return JWTHelper::getActiveRoleCode();
     }
 
     /**
@@ -220,18 +212,9 @@ class TicketService
             return;
         }
 
-        // Si es COMPANY_ADMIN: ve todos los tickets de su empresa
-        if ($userRole === 'COMPANY_ADMIN') {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-            if ($companyId) {
-                $query->where('company_id', $companyId);
-            }
-            return;
-        }
-
-        // Si es AGENT: ve todos los tickets de su empresa
-        if ($userRole === 'AGENT') {
-            $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        // Si es COMPANY_ADMIN o AGENT: ve todos los tickets de su empresa ACTIVA
+        if ($userRole === 'COMPANY_ADMIN' || $userRole === 'AGENT') {
+            $companyId = JWTHelper::getActiveCompanyId();
             if ($companyId) {
                 $query->where('company_id', $companyId);
             }

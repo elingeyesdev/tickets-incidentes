@@ -10,6 +10,7 @@ use App\Shared\Exceptions\AuthenticationException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -32,12 +33,25 @@ class TokenService
      *
      * @param User $user
      * @param string|null $sessionId ID de sesión único para este login
+     * @param array|null $activeRole Rol activo seleccionado por el usuario ['code' => string, 'company_id' => ?string]
      * @return string JWT token
      */
-    public function generateAccessToken(User $user, ?string $sessionId = null): string
+    public function generateAccessToken(User $user, ?string $sessionId = null, ?array $activeRole = null): string
     {
         $now = time();
         $ttl = (int) config('jwt.ttl') * 60; // TTL en segundos
+
+        $roles = $user->getAllRolesForJWT();
+
+        // Si no se proporciona active_role explícitamente, determinarlo automáticamente
+        if ($activeRole === null) {
+            // Si el usuario tiene un solo rol, auto-seleccionarlo
+            if (count($roles) === 1) {
+                $activeRole = $roles[0];
+            }
+            // Si tiene múltiples roles, activeRole será null y el frontend
+            // deberá redirigir a /role-selector
+        }
 
         $payload = [
             // Claims estándar
@@ -51,7 +65,8 @@ class TokenService
             'user_id' => $user->id,
             'email' => $user->email,
             'session_id' => $sessionId ?? Str::random(32),
-            'roles' => $user->getAllRolesForJWT(),
+            'roles' => $roles,
+            'active_role' => $activeRole, // ← NUEVO CLAIM
         ];
 
         return JWT::encode($payload, config('jwt.secret'), config('jwt.algo'));
@@ -215,9 +230,50 @@ class TokenService
         $oldRefreshToken->revoke($user->id);
         $newRefreshTokenData = $this->createRefreshToken($user, $mergedDeviceInfo);
 
+        // CRITICAL: Preservar el active_role del access token anterior
+        // Esto mantiene el contexto de rol seleccionado por el usuario
+        // Intentamos obtener el active_role de múltiples fuentes:
+        // 1. Desde el middleware (si el token aún es válido)
+        // 2. Decodificando el token directamente (si expiró pero queremos preservar el active_role)
+        $activeRole = null;
+        $oldPayload = request()->attributes->get('jwt_payload');
+        
+        if ($oldPayload && isset($oldPayload['active_role'])) {
+            // El token aún era válido y pasó por middleware
+            $activeRole = $oldPayload['active_role'];
+        } else {
+            // El token expiró, intentamos decodificarlo ignorando expiración
+            try {
+                $oldAccessToken = request()->bearerToken() 
+                    ?? request()->cookie('jwt_token')
+                    ?? request()->header('Authorization');
+                
+                if ($oldAccessToken) {
+                    // Remover 'Bearer ' prefix si existe
+                    $oldAccessToken = str_replace('Bearer ', '', $oldAccessToken);
+                    
+                    // Decodificar ignorando expiración (leeway grande)
+                    $originalLeeway = JWT::$leeway;
+                    JWT::$leeway = 365 * 24 * 60 * 60; // 1 año para ignorar expiración
+                    $decoded = JWT::decode($oldAccessToken, new Key(config('jwt.secret'), config('jwt.algo')));
+                    JWT::$leeway = $originalLeeway; // Restaurar leeway original
+                    
+                    if (isset($decoded->active_role)) {
+                        $activeRole = (array) $decoded->active_role;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Si falla la decodificación, active_role será null y se auto-seleccionará
+                Log::debug('Could not decode expired access token to preserve active_role', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Generar nuevo access token usando el ID del nuevo RefreshToken como session_id
+        // y preservando el active_role
         $sessionId = $newRefreshTokenData['model']->id;
-        $accessToken = $this->generateAccessToken($user, $sessionId);
+        $accessToken = $this->generateAccessToken($user, $sessionId, $activeRole);
 
         return [
             'access_token' => $accessToken,

@@ -18,7 +18,7 @@ class UpdateArticleRequest extends FormRequest
 
     public function rules(): array
     {
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        $companyId = JWTHelper::getActiveCompanyId();
         $articleId = $this->route('article'); // ID del artículo desde la ruta
 
         return [

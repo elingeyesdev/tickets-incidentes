@@ -34,8 +34,8 @@ class StoreAreaRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Obtener company_id del JWT para validar unicidad
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Obtener company_id del rol ACTIVO en el JWT
+        $companyId = JWTHelper::getActiveCompanyId();
 
         return [
             'name' => [

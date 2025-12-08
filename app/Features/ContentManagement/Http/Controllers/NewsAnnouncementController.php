@@ -150,10 +150,10 @@ class NewsAnnouncementController extends Controller
     {
         $validated = $request->validated();
 
-        // Get company_id from JWT token using JWTHelper
-        //  extracts company_id for the COMPANY_ADMIN role from JWT payload
+        // Get company_id from active role in JWT token
+        // Uses getActiveCompanyId() to get the company from the ACTIVE role
         try {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            $companyId = JWTHelper::getActiveCompanyId();
 
             if (!$companyId) {
                 return response()->json([

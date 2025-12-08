@@ -108,7 +108,8 @@ class ActivityLogController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = JWTHelper::getAuthenticatedUser();
-        $isAdmin = JWTHelper::hasRoleFromJWT('PLATFORM_ADMIN') || JWTHelper::hasRoleFromJWT('COMPANY_ADMIN');
+        // MIGRADO: Usar rol ACTIVO del usuario
+        $isAdmin = JWTHelper::isActiveRoleOneOf(['PLATFORM_ADMIN', 'COMPANY_ADMIN']);
 
         // Determinar qué usuario consultar
         $targetUserId = $request->query('user_id');
@@ -331,7 +332,8 @@ class ActivityLogController extends Controller
     {
         // Verificar permisos según el tipo de entidad
         $user = JWTHelper::getAuthenticatedUser();
-        $isAdmin = JWTHelper::hasRoleFromJWT('PLATFORM_ADMIN') || JWTHelper::hasRoleFromJWT('COMPANY_ADMIN');
+        // MIGRADO: Usar rol ACTIVO del usuario
+        $isAdmin = JWTHelper::isActiveRoleOneOf(['PLATFORM_ADMIN', 'COMPANY_ADMIN']);
 
         // Para tickets, verificar que el usuario tenga acceso al ticket
         if ($entityType === 'ticket' && !$isAdmin) {

@@ -11,9 +11,10 @@
 @section('content')
 
 {{-- Statistics Small Boxes (matching articles style) --}}
-<div class="row">
+<div class="row" id="statsRow">
     <div class="col-lg-3 col-md-6 col-sm-12">
         <div id="stat-total" class="small-box bg-info" style="cursor:pointer" data-filter="">
+            <div class="overlay dark" id="stat-total-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
             <div class="inner">
                 <h3>0</h3>
                 <p>Total Empresas</p>
@@ -23,6 +24,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-12">
         <div id="stat-active" class="small-box bg-success" style="cursor:pointer" data-filter="active">
+            <div class="overlay dark" id="stat-active-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
             <div class="inner">
                 <h3>0</h3>
                 <p>Activas</p>
@@ -32,6 +34,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-12">
         <div id="stat-suspended" class="small-box bg-warning" style="cursor:pointer" data-filter="suspended">
+            <div class="overlay dark" id="stat-suspended-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
             <div class="inner">
                 <h3>0</h3>
                 <p>Suspendidas</p>
@@ -41,6 +44,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-12">
         <div id="stat-requests" class="small-box bg-purple" style="cursor:pointer" data-action="requests">
+            <div class="overlay dark" id="stat-requests-overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
             <div class="inner">
                 <h3>0</h3>
                 <p>Solicitudes Pendientes</p>
@@ -51,7 +55,11 @@
 </div>
 
 {{-- Companies Table Card --}}
-<div class="card card-outline card-primary">
+<div class="card card-outline card-primary" id="companiesTableCard">
+    {{-- Loading Overlay - AdminLTE v3 Official Pattern --}}
+    <div class="overlay" id="tableOverlay" style="display:none;">
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+    </div>
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-building"></i> Empresas del Sistema</h3>
         <div class="card-tools">
@@ -385,6 +393,9 @@
         },
         
         async loadStatistics() {
+            // Show overlays on stats cards
+            $('#stat-total-overlay, #stat-active-overlay, #stat-suspended-overlay, #stat-requests-overlay').show();
+            
             try {
                 const headers = {
                     'Authorization': `Bearer ${Utils.getToken()}`,
@@ -418,6 +429,9 @@
                 
             } catch (error) {
                 console.error('[Companies] Stats error:', error);
+            } finally {
+                // Hide overlays
+                $('#stat-total-overlay, #stat-active-overlay, #stat-suspended-overlay, #stat-requests-overlay').hide();
             }
         },
         
@@ -453,17 +467,19 @@
     // =========================================================================
     const UI = {
         showLoading() {
+            $('#tableOverlay').show();
             $('#loadingSpinner').show();
             $('#tableContainer, #errorMessage').hide();
         },
         
         hideLoading() {
+            $('#tableOverlay').hide();
             $('#loadingSpinner').hide();
             $('#tableContainer').show();
         },
         
         showError(message) {
-            $('#loadingSpinner, #tableContainer').hide();
+            $('#tableOverlay, #loadingSpinner, #tableContainer').hide();
             $('#errorText').text(message);
             $('#errorMessage').show();
         },

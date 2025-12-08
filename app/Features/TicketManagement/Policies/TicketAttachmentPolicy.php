@@ -24,6 +24,7 @@ class TicketAttachmentPolicy
 {
     /**
      * Subir attachment a ticket: creador del ticket, agent o company admin de la compañía.
+     * Usa el rol ACTIVO para determinar la empresa.
      */
     public function upload(User $user, Ticket $ticket): bool
     {
@@ -32,11 +33,13 @@ class TicketAttachmentPolicy
             return true;
         }
 
-        // Agent o Company Admin de la compañía puede subir
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        if (!$companyId) {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Agent o Company Admin con rol ACTIVO puede subir
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if (!in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
+            return false;
         }
+        
+        $companyId = JWTHelper::getActiveCompanyId();
         return $companyId && $ticket->company_id === $companyId;
     }
 
@@ -57,6 +60,7 @@ class TicketAttachmentPolicy
 
     /**
      * Ver attachments: creador del ticket, agent o company admin de la compañía.
+     * Usa el rol ACTIVO para determinar la empresa.
      */
     public function viewAny(User $user, Ticket $ticket): bool
     {
@@ -65,11 +69,13 @@ class TicketAttachmentPolicy
             return true;
         }
 
-        // Agent o Company Admin de la compañía puede ver
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
-        if (!$companyId) {
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Agent o Company Admin con rol ACTIVO puede ver
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if (!in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
+            return false;
         }
+        
+        $companyId = JWTHelper::getActiveCompanyId();
         return $companyId && $ticket->company_id === $companyId;
     }
 

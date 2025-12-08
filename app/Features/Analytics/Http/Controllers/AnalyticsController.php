@@ -45,13 +45,14 @@ class AnalyticsController extends Controller
     )]
     public function dashboard(): JsonResponse
     {
-        $user = JWTHelper::getAuthenticatedUser();
-        
-        // Ensure user is COMPANY_ADMIN and get their company ID
-        $companyId = $user->activeRoles()
-            ->where('role_code', 'COMPANY_ADMIN')
-            ->value('company_id');
+        // Verificar que el rol activo sea COMPANY_ADMIN
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if ($activeRole !== 'COMPANY_ADMIN') {
+            return response()->json(['message' => 'Active role must be COMPANY_ADMIN.'], 403);
+        }
 
+        // Obtener company_id del rol activo
+        $companyId = JWTHelper::getActiveCompanyId();
         if (!$companyId) {
             return response()->json(['message' => 'User is not a company admin or has no company assigned.'], 403);
         }
@@ -120,11 +121,14 @@ class AnalyticsController extends Controller
     {
         $user = JWTHelper::getAuthenticatedUser();
         
-        // Ensure user is AGENT and get their company ID
-        $companyId = $user->activeRoles()
-            ->where('role_code', 'AGENT')
-            ->value('company_id');
+        // Verificar que el rol activo sea AGENT
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if ($activeRole !== 'AGENT') {
+            return response()->json(['message' => 'Active role must be AGENT.'], 403);
+        }
 
+        // Obtener company_id del rol activo
+        $companyId = JWTHelper::getActiveCompanyId();
         if (!$companyId) {
             return response()->json(['message' => 'User is not an agent or has no company assigned.'], 403);
         }
@@ -160,10 +164,10 @@ class AnalyticsController extends Controller
     )]
     public function platformDashboard(): JsonResponse
     {
-        // Ensure user is PLATFORM_ADMIN
-        $user = JWTHelper::getAuthenticatedUser();
-        if (!$user->hasRole('PLATFORM_ADMIN')) {
-             return response()->json(['message' => 'Unauthorized'], 403);
+        // Verificar que el rol activo sea PLATFORM_ADMIN
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if ($activeRole !== 'PLATFORM_ADMIN') {
+             return response()->json(['message' => 'Active role must be PLATFORM_ADMIN.'], 403);
         }
 
         $stats = $this->analyticsService->getPlatformDashboardStats();
@@ -222,10 +226,10 @@ class AnalyticsController extends Controller
     )]
     public function companyStats(string $companyId): JsonResponse
     {
-        // Ensure user is PLATFORM_ADMIN
-        $user = JWTHelper::getAuthenticatedUser();
-        if (!$user->hasRole('PLATFORM_ADMIN')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        // Verificar que el rol activo sea PLATFORM_ADMIN
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if ($activeRole !== 'PLATFORM_ADMIN') {
+            return response()->json(['message' => 'Active role must be PLATFORM_ADMIN.'], 403);
         }
 
         // Verify company exists

@@ -90,8 +90,10 @@ class ResponseService
      */
     private function determineAuthorType(User $user): AuthorType
     {
-        // Si tiene rol AGENT, es autor tipo AGENT
-        if (JWTHelper::hasRoleFromJWT('AGENT')) {
+        // MIGRADO: Usar el rol ACTIVO del usuario
+        $activeRole = JWTHelper::getActiveRoleCode();
+        
+        if ($activeRole === 'AGENT') {
             return AuthorType::AGENT;
         }
 

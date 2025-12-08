@@ -1320,8 +1320,8 @@ class CompanyController extends Controller
      */
     public function getAreasEnabled(): JsonResponse
     {
-        // Obtener company_id del JWT
-        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Obtener company_id del rol ACTIVO en el JWT
+        $companyId = \App\Shared\Helpers\JWTHelper::getActiveCompanyId();
 
         if (!$companyId) {
             return response()->json([
@@ -1457,8 +1457,8 @@ class CompanyController extends Controller
             'enabled' => 'required|boolean',
         ]);
 
-        // Obtener company_id del JWT
-        $companyId = \App\Shared\Helpers\JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Obtener company_id del rol ACTIVO en el JWT
+        $companyId = \App\Shared\Helpers\JWTHelper::getActiveCompanyId();
 
         if (!$companyId) {
             return response()->json([

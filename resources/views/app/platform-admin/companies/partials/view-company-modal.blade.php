@@ -237,31 +237,31 @@
                     
                     {{-- Tab: Estadísticas (First) --}}
                     <div class="tab-pane fade show active" id="viewCompanyStats" role="tabpanel">
-                        {{-- Main Stats - Clean info-box style --}}
+                        {{-- Main Stats - Clean info-box style with subtle colors --}}
                         <div class="row">
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-headset"></i></span>
+                                    <span class="info-box-icon bg-info"><i class="fas fa-headset"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Agentes Activos</span>
+                                        <span class="info-box-text">Agentes Activos</span>
                                         <span class="info-box-number" id="statActiveAgents">0</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-ticket-alt"></i></span>
+                                    <span class="info-box-icon bg-primary"><i class="fas fa-ticket-alt"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Total Tickets</span>
+                                        <span class="info-box-text">Total Tickets</span>
                                         <span class="info-box-number" id="statTotalTickets">0</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-folder-open"></i></span>
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-folder-open"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Tickets Abiertos</span>
+                                        <span class="info-box-text">Tickets Abiertos</span>
                                         <span class="info-box-number" id="statOpenTickets">0</span>
                                     </div>
                                 </div>
@@ -301,27 +301,27 @@
                         <div class="row">
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border mb-3">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-bullhorn"></i></span>
+                                    <span class="info-box-icon bg-success"><i class="fas fa-bullhorn"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Anuncios</span>
+                                        <span class="info-box-text">Anuncios</span>
                                         <span class="info-box-number" id="statAnnouncements">0</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border mb-3">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-book"></i></span>
+                                    <span class="info-box-icon bg-indigo"><i class="fas fa-book"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Artículos</span>
+                                        <span class="info-box-text">Artículos</span>
                                         <span class="info-box-number" id="statArticles">0</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-6">
                                 <div class="info-box shadow-none border mb-3">
-                                    <span class="info-box-icon bg-light text-secondary"><i class="fas fa-heart"></i></span>
+                                    <span class="info-box-icon bg-danger"><i class="fas fa-heart"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text text-muted">Seguidores</span>
+                                        <span class="info-box-text">Seguidores</span>
                                         <span class="info-box-number" id="statFollowers">0</span>
                                     </div>
                                 </div>
@@ -1056,9 +1056,9 @@
             $('#viewCompanyStats').addClass('show active');
             $('#tabAreasNav').hide();
             
-            // Show loading
-            $('#viewCompanyLoading').show();
+            // Show modal with overlay
             $('#viewCompanyModal').modal('show');
+            $('#viewCompanyLoading').show();
             
             try {
                 const [companyResponse, hasAreas] = await Promise.all([
@@ -1069,19 +1069,45 @@
                 const companyData = companyResponse.data || companyResponse;
                 populateModal(companyData, hasAreas);
                 
-                // Auto-load stats since it's the first tab
-                await loadStats(companyId);
+                // Hide overlay - modal content is ready
+                $('#viewCompanyLoading').hide();
                 
+                // Store company ID for later
                 $('#viewCompanyModal').data('company-id', companyId);
+                
+                // Pre-load ALL tabs in background (non-blocking)
+                // This improves UX by having data ready when user switches tabs
+                setTimeout(async () => {
+                    try {
+                        // Load stats first (visible tab)
+                        await loadStats(companyId);
+                        
+                        // Then load other tabs in parallel (background)
+                        const backgroundLoads = [
+                            loadTeamMembers(companyId),
+                            loadCategories(companyId)
+                        ];
+                        
+                        // Only load areas if enabled
+                        if (hasAreas) {
+                            backgroundLoads.push(loadAreas(companyId));
+                        }
+                        
+                        await Promise.all(backgroundLoads);
+                        
+                        console.log('[ViewCompanyModal] All tabs pre-loaded');
+                    } catch (bgError) {
+                        console.warn('[ViewCompanyModal] Background load error:', bgError);
+                    }
+                }, 100);
                 
             } catch (error) {
                 console.error('[ViewCompanyModal] Error:', error);
+                $('#viewCompanyLoading').hide();
                 if (typeof window.showToast === 'function') {
                     window.showToast('error', 'Error al cargar datos de la empresa');
                 }
             }
-            
-            $('#viewCompanyLoading').hide();
         }
     };
     

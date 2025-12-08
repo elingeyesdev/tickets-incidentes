@@ -47,6 +47,7 @@ class TicketRatingPolicy
 
     /**
      * Ver rating: creador del ticket o agent de la compañía.
+     * Usa el rol ACTIVO para determinar la empresa.
      */
     public function view(User $user, Ticket $ticket): bool
     {
@@ -55,10 +56,13 @@ class TicketRatingPolicy
             return true;
         }
 
-        // Agent/Admin de la compañía puede ver
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT')
-            ?? JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-
+        // Agent/Admin con rol ACTIVO puede ver
+        $activeRole = JWTHelper::getActiveRoleCode();
+        if (!in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
+            return false;
+        }
+        
+        $companyId = JWTHelper::getActiveCompanyId();
         return $companyId && $ticket->company_id === $companyId;
     }
 }

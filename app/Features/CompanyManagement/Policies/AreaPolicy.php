@@ -21,28 +21,28 @@ class AreaPolicy
     /**
      * Determinar si el usuario puede crear áreas
      *
-     * Solo COMPANY_ADMIN puede crear áreas
+     * Solo COMPANY_ADMIN con rol ACTIVO puede crear áreas
      */
     public function create(User $user): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        return JWTHelper::hasRoleFromJWT('COMPANY_ADMIN');
+        // El rol ACTIVO debe ser COMPANY_ADMIN
+        return JWTHelper::isActiveRole('COMPANY_ADMIN');
     }
 
     /**
      * Determinar si el usuario puede actualizar un área
      *
-     * Solo COMPANY_ADMIN de la misma empresa puede actualizar
+     * Solo COMPANY_ADMIN con rol ACTIVO de la misma empresa puede actualizar
      */
     public function update(User $user, Area $area): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
+        // El rol ACTIVO debe ser COMPANY_ADMIN
+        if (!JWTHelper::isActiveRole('COMPANY_ADMIN')) {
             return false;
         }
 
-        // Verificar que el área pertenece a la empresa del admin
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que el área pertenece a la empresa del rol ACTIVO
+        $companyId = JWTHelper::getActiveCompanyId();
 
         return $companyId && $area->company_id === $companyId;
     }
@@ -50,17 +50,17 @@ class AreaPolicy
     /**
      * Determinar si el usuario puede eliminar un área
      *
-     * Solo COMPANY_ADMIN de la misma empresa puede eliminar
+     * Solo COMPANY_ADMIN con rol ACTIVO de la misma empresa puede eliminar
      */
     public function delete(User $user, Area $area): bool
     {
-        // Debe tener el rol COMPANY_ADMIN
-        if (!JWTHelper::hasRoleFromJWT('COMPANY_ADMIN')) {
+        // El rol ACTIVO debe ser COMPANY_ADMIN
+        if (!JWTHelper::isActiveRole('COMPANY_ADMIN')) {
             return false;
         }
 
-        // Verificar que el área pertenece a la empresa del admin
-        $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+        // Verificar que el área pertenece a la empresa del rol ACTIVO
+        $companyId = JWTHelper::getActiveCompanyId();
 
         return $companyId && $area->company_id === $companyId;
     }

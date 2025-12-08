@@ -26,8 +26,8 @@ class AgentController extends Controller
         // Get authenticated user from JWT
         $user = JWTHelper::getAuthenticatedUser();
 
-        // Get company ID from JWT if available
-        $companyId = JWTHelper::getCompanyIdFromJWT('AGENT');
+        // Get company ID from active role in JWT
+        $companyId = JWTHelper::getActiveCompanyId();
 
         // In a real application, you would fetch agent-specific statistics
         // For now, we'll pass mock data to demonstrate the dashboard structure
