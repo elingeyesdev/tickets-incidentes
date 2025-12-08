@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Spatie Permission Roles (for web.php Blade integration)
+        // Must run BEFORE user seeders to allow role assignment
+        $this->call(SpatieRolesSeeder::class);
+
         // 1. Core System Data
         $this->call(RolesSeeder::class);
         $this->call(CompanyIndustrySeeder::class);

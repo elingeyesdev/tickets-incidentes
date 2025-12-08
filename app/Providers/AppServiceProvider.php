@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Features\UserManagement\Models\UserRole;
+use App\Observers\UserRoleSpatieObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Observer for Spatie sync
+        // Sincroniza automáticamente auth.user_roles con tablas de Spatie
+        UserRole::observe(UserRoleSpatieObserver::class);
+
         // Load migrations from shared infrastructure and feature directories
         // Order matters: Shared first (extensions, schemas), then features
         $this->loadMigrationsFrom([

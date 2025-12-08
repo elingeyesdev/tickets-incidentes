@@ -273,17 +273,31 @@
 
         // IMPORTANT: Define getUserFromJWT globally BEFORE navbar tries to use it
         // This is needed because navbar.blade.php is rendered synchronously
-        window.getUserFromJWT = function () {
+        // Cache to avoid repeated parsing and logging
+        let _cachedUserData = null;
+        let _cacheTimestamp = 0;
+        const CACHE_TTL = 5000; // 5 seconds cache
+
+        window.getUserFromJWT = function (forceRefresh = false) {
             const token = localStorage.getItem('access_token');
             const expiryTimestamp = localStorage.getItem('helpdesk_token_expiry');
 
-            if (!token || !expiryTimestamp) return null;
+            if (!token || !expiryTimestamp) {
+                _cachedUserData = null;
+                return null;
+            }
+
+            // Return cached data if still valid (avoid repeated parsing/logging)
+            const now = Date.now();
+            if (!forceRefresh && _cachedUserData && (now - _cacheTimestamp) < CACHE_TTL) {
+                return _cachedUserData;
+            }
 
             // Check if token is expired
-            const now = Date.now();
             const expiry = parseInt(expiryTimestamp, 10);
             if (now >= expiry) {
                 console.log('[getUserFromJWT] Token expired');
+                _cachedUserData = null;
                 return null;
             }
 
@@ -292,13 +306,14 @@
 
                 // Get active role - PRIORITY: from JWT claim, then localStorage, then infer
                 let activeRole = null;
+                let roleSource = null;
 
                 // 1. First check if JWT has active_role claim (set by select-role API)
                 if (payload.active_role) {
                     activeRole = payload.active_role;
+                    roleSource = 'jwt_claim';
                     // Sync to localStorage for consistency
                     localStorage.setItem('active_role', JSON.stringify(activeRole));
-                    console.log('[getUserFromJWT] Active role from JWT claim:', activeRole);
                 }
                 // 2. Fallback to localStorage
                 else {
@@ -306,6 +321,7 @@
                     if (activeRoleStr) {
                         try {
                             activeRole = JSON.parse(activeRoleStr);
+                            roleSource = 'localStorage';
                         } catch (e) {
                             console.error('[getUserFromJWT] Error parsing active_role:', e);
                         }
@@ -321,20 +337,29 @@
                         company_id: role.company_id || null,
                         company_name: role.company_name || null
                      };
+                     roleSource = 'auto_inferred';
                      // Save for consistency
                      localStorage.setItem('active_role', JSON.stringify(activeRole));
-                     console.log('[getUserFromJWT] Auto-detected active role from token:', activeRole);
                 }
 
-                return {
+                // Only log once per cache refresh (not every call)
+                if (activeRole && roleSource) {
+                    console.log('[getUserFromJWT] Active role:', activeRole.code, '(source:', roleSource + ')');
+                }
+
+                _cachedUserData = {
                     name: payload.name || 'User',
                     email: payload.email || '',
                     activeRole: activeRole,
                     roles: payload.roles || [],
                     hasMultipleRoles: payload.roles && payload.roles.length > 1
                 };
+                _cacheTimestamp = now;
+
+                return _cachedUserData;
             } catch (error) {
                 console.error('[getUserFromJWT] Error parsing JWT:', error);
+                _cachedUserData = null;
                 return null;
             }
         };

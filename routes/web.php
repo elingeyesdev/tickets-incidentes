@@ -227,7 +227,8 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'redirect'])->name('dashboard');
 
     // Platform Admin Dashboard (PLATFORM_ADMIN role)
-    Route::middleware('role:PLATFORM_ADMIN')->prefix('admin')->group(function () {
+    // Usa spatie.active_role: verifica rol en Spatie + active_role en JWT
+    Route::middleware('spatie.active_role:PLATFORM_ADMIN')->prefix('admin')->group(function () {
         Route::get('/dashboard', [PlatformAdminController::class, 'dashboard'])
             ->name('dashboard.platform-admin');
 
@@ -247,7 +248,8 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     });
 
     // Company Admin Dashboard (COMPANY_ADMIN role)
-    Route::middleware('role:COMPANY_ADMIN')->prefix('company')->group(function () {
+    // Usa spatie.active_role: verifica rol en Spatie + active_role en JWT
+    Route::middleware('spatie.active_role:COMPANY_ADMIN')->prefix('company')->group(function () {
         Route::get('/dashboard', [CompanyAdminController::class, 'dashboard'])
             ->name('dashboard.company-admin');
 
@@ -343,7 +345,8 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     });
 
     // Agent Dashboard (AGENT role)
-    Route::middleware('role:AGENT')->prefix('agent')->group(function () {
+    // Usa spatie.active_role: verifica rol en Spatie + active_role en JWT
+    Route::middleware('spatie.active_role:AGENT')->prefix('agent')->group(function () {
         Route::get('/dashboard', [AgentController::class, 'dashboard'])
             ->name('dashboard.agent');
 
@@ -380,7 +383,8 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
     });
 
     // User Dashboard (USER role)
-    Route::middleware('role:USER')->prefix('user')->group(function () {
+    // Usa spatie.active_role: verifica rol en Spatie + active_role en JWT
+    Route::middleware('spatie.active_role:USER')->prefix('user')->group(function () {
         Route::get('/dashboard', [UserController::class, 'dashboard'])
             ->name('dashboard.user');
 

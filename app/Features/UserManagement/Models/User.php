@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * User Model
@@ -48,6 +49,7 @@ class User extends Model implements Authenticatable
 {
     use HasFactory;
     use HasUuid;
+    use HasRoles;
     use Auditable;
     use SoftDeletes;
     use AuthenticatableTrait;
@@ -449,10 +451,15 @@ class User extends Model implements Authenticatable
     }
 
     /**
-     * Asignar un rol al usuario (V10.1)
+     * Asignar un rol al usuario (V10.1) - SISTEMA HELPDESK
      *
-     * IMPORTANTE: Normaliza automáticamente roleCode a UPPERCASE_SNAKE_CASE
-     * para consistencia con la BD.
+     * IMPORTANTE: Este método SOBRESCRIBE el de Spatie\Permission\Traits\HasRoles
+     * porque necesitamos manejar company_id para multi-tenancy.
+     * 
+     * Los métodos de clase tienen prioridad sobre los de traits, así que
+     * este método se ejecuta en lugar del de Spatie cuando se llama assignRole().
+     * 
+     * La sincronización con Spatie se hace automáticamente via UserRoleSpatieObserver.
      *
      * @param string $roleCode Código del rol (USER, AGENT, COMPANY_ADMIN, PLATFORM_ADMIN)
      * @param string|null $companyId ID de la empresa (requerido para AGENT y COMPANY_ADMIN)

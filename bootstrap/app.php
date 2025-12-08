@@ -72,11 +72,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.auth' => \App\Http\Middleware\JWT\JWTAuthenticationMiddleware::class,           // ← Autenticación OPCIONAL
             'jwt.require' => \App\Http\Middleware\JWT\RequireJWTAuthentication::class,        // ← Autenticación OBLIGATORIA
             'auth:api' => AuthenticateJwt::class,  // ← Para REST API authentication (legacy)
-            'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,  // ← Role-based authorization (JWT active_role)
             'role.selected' => \App\Http\Middleware\EnsureRoleSelected::class,  // ← Ensure user has selected active role
             'company.ownership' => \App\Features\CompanyManagement\Http\Middleware\EnsureCompanyOwnership::class,  // ← Company ownership validation
             'throttle.user' => \App\Http\Middleware\ThrottleByUser::class,  // ← User-based rate limiting (requires JWT)
             'jwt.guest' => \App\Http\Middleware\RedirectIfAuthenticatedJWT::class, // ← Redirect if authenticated (for login/register pages)
+            
+            // Spatie Permission middlewares (for web.php views)
+            'spatie.role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'spatie.permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'spatie.role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            
+            // Middleware híbrido: Spatie + JWT active_role (RECOMENDADO para web.php)
+            'spatie.active_role' => \App\Http\Middleware\SpatieRoleWithActiveRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
