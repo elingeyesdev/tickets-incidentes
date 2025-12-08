@@ -29,16 +29,6 @@
                     </a>
                 </li>
 
-                <!-- Switch Role Option (Only if multiple roles) -->
-                <template x-if="hasMultipleRoles">
-                    <li class="nav-item">
-                        <a href="/auth-flow/role-selector" class="nav-link text-info">
-                            <i class="nav-icon fas fa-exchange-alt"></i>
-                            <p>Cambiar Rol</p>
-                        </a>
-                    </li>
-                </template>
-
                 <!-- Platform Admin Menu -->
                 <template x-if="activeRole === 'PLATFORM_ADMIN'">
                     <div>
@@ -190,6 +180,16 @@
                             </a>
                         </li>
                     </div>
+                </template>
+
+                <!-- Switch Role (Only if multiple roles) - Above Logout -->
+                <template x-if="hasMultipleRoles">
+                    <li class="nav-item">
+                        <a href="/auth-flow/role-selector" class="nav-link text-info">
+                            <i class="nav-icon fas fa-exchange-alt"></i>
+                            <p>Cambiar Rol</p>
+                        </a>
+                    </li>
                 </template>
 
                 <!-- Logout (All roles) -->

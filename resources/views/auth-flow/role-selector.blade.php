@@ -9,11 +9,11 @@
     </p>
 
     <!-- Loading State -->
-    <div x-show="loading" class="text-center">
+    <div x-show="loading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="sr-only">Cargando...</span>
         </div>
-        <p class="text-muted mt-2">Cargando roles disponibles...</p>
+        <p class="text-muted mt-3 mb-0">Cargando roles disponibles...</p>
     </div>
 
     <!-- Error State -->
@@ -26,102 +26,113 @@
     </div>
 
     <!-- Roles Container -->
-    <div x-show="!loading && !error && roles.length > 0" id="rolesContainer" style="display: none;">
+    <div x-show="!loading && !error && roles.length > 0" id="rolesContainer">
         <template x-for="role in roles" :key="role.code + '-' + (role.company_id || 'null')">
             <button
                 type="button"
-                class="role-card btn btn-light w-100 text-start p-4 mb-3"
+                class="role-card btn btn-light w-100 text-start"
                 :disabled="loading"
                 @click="selectRole(role.code, role.company_id)"
             >
-                <div class="row align-items-center">
-                    <div class="col-md-2 text-center">
-                        <div class="role-icon" :class="role.code.toLowerCase()">
-                            <i :class="getRoleIconClass(role.code)"></i>
+                <!-- Role Icon -->
+                <div class="role-icon" :class="role.code.toLowerCase()">
+                    <i :class="getRoleIconClass(role.code)"></i>
+                </div>
+                
+                <!-- Role Info -->
+                <div class="role-info">
+                    <div class="role-title" x-text="formatRoleName(role.code)"></div>
+                    <div class="role-description" x-text="getRoleDescription(role.code)"></div>
+                    <template x-if="role.company_name">
+                        <div class="role-company">
+                            <i class="fas fa-building"></i>
+                            <span x-text="role.company_name"></span>
                         </div>
-                    </div>
-                    <div class="col-md-7">
-                        <div class="role-title" x-text="formatRoleName(role.code)"></div>
-                        <div class="role-description" x-text="getRoleDescription(role.code)"></div>
-                        <template x-if="role.company_name">
-                            <small class="text-muted d-block">
-                                <i class="fas fa-building me-1"></i>
-                                <span x-text="role.company_name"></span>
-                            </small>
-                        </template>
-                    </div>
-                    <div class="col-md-3 text-end">
-                        <i class="fas fa-arrow-right text-primary" style="font-size: 1.5rem;"></i>
-                    </div>
+                    </template>
+                </div>
+                
+                <!-- Arrow -->
+                <div class="role-arrow">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </button>
         </template>
     </div>
+    
+    <!-- Back to Login Link -->
+    <div x-show="!loading" class="text-center mt-4">
+        <a href="/login" class="text-muted small" @click="localStorage.clear()">
+            <i class="fas fa-arrow-left mr-1"></i> Volver al inicio de sesión
+        </a>
+    </div>
 </div>
 
 <style>
-    /* Default AdminLTE v3 login card sizing */
-    body .login-page .card {
-        max-width: 400px !important;
+    /* 
+     * Role Selector specific styles - OVERRIDE login/register card size
+     * Using body class selector to ensure specificity without affecting other pages
+     */
+    
+    /* Make the role selector card wider */
+    body.login-page .login-box,
+    body.login-page .card {
+        max-width: 550px !important;
         width: 100% !important;
     }
 
-    body .card-body {
+    body.login-page .card-body {
         padding: 2rem !important;
     }
 
-    body .login-page {
+    body.login-page {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    body .login-box {
-        width: 100%;
-        max-width: 400px !important;
     }
 
     #rolesContainer {
         display: flex !important;
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .role-card {
         cursor: pointer;
         transition: all 0.3s ease;
         border: 2px solid #e9ecef;
-        border-radius: 8px;
+        border-radius: 12px;
         min-height: auto;
-        padding: 1.25rem !important;
+        padding: 1rem 1.25rem !important;
         display: flex !important;
         align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
+        background: #fff;
     }
 
     .role-card:hover {
         border-color: #007bff;
-        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.25);
         transform: translateY(-2px);
+        background: #f8f9ff;
     }
 
-    .role-card.active {
-        border-color: #007bff;
-        background-color: #f0f7ff !important;
+    .role-card:disabled {
+        opacity: 0.7;
+        cursor: wait;
     }
 
     .role-card .row {
         width: 100%;
         align-items: center;
+        margin: 0;
     }
 
     .role-icon {
-        font-size: 2rem;
-        width: 60px;
-        height: 60px;
+        font-size: 1.5rem;
+        width: 50px;
+        height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
+        border-radius: 10px;
+        flex-shrink: 0;
     }
 
     .role-icon.platform_admin {
@@ -144,35 +155,67 @@
         color: #664d03;
     }
 
+    .role-info {
+        flex: 1;
+        min-width: 0;
+        padding: 0 1rem;
+    }
+
     .role-title {
         font-size: 1rem;
         font-weight: 600;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.15rem;
+        color: #212529;
     }
 
     .role-description {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         color: #6c757d;
-        line-height: 1.4;
+        line-height: 1.3;
+        margin-bottom: 0;
     }
 
-    .role-card .col-md-2,
-    .role-card .col-md-7,
-    .role-card .col-md-3 {
-        flex: none !important;
+    .role-company {
+        font-size: 0.75rem;
+        color: #0d6efd;
+        margin-top: 0.25rem;
     }
 
-    .role-card .col-md-2 {
-        width: auto !important;
+    .role-company i {
+        margin-right: 0.25rem;
     }
 
-    .role-card .col-md-7 {
-        flex: 1 !important;
-        min-width: 0;
+    .role-arrow {
+        color: #007bff;
+        font-size: 1.25rem;
+        flex-shrink: 0;
     }
 
-    .role-card .col-md-3 {
-        width: auto !important;
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        body.login-page .login-box,
+        body.login-page .card {
+            max-width: 95% !important;
+            margin: 0 auto;
+        }
+        
+        .role-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+        
+        .role-info {
+            padding: 0 0.75rem;
+        }
+        
+        .role-title {
+            font-size: 0.9rem;
+        }
+        
+        .role-description {
+            font-size: 0.75rem;
+        }
     }
 </style>
 @stop

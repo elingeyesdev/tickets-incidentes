@@ -20,14 +20,6 @@
             </span>
         </li>
 
-        <!-- Switch Role Button (Only visible if user has multiple roles) -->
-        <li class="nav-item" x-data="roleSwitchButton()" x-init="init()" x-show="hasMultipleRoles" x-cloak>
-            <a class="nav-link" href="/auth-flow/role-selector" title="Cambiar Rol Activo">
-                <i class="fas fa-exchange-alt text-info"></i>
-                <span class="d-none d-lg-inline ml-1 text-info">Cambiar Rol</span>
-            </a>
-        </li>
-
         <!-- Notifications Dropdown Menu -->
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">
@@ -68,14 +60,22 @@
                 </a>
                 <div class="dropdown-divider"></div>
                 <a href="/profile" class="dropdown-item">
-                    <i class="fas fa-user mr-2"></i> My Profile
+                    <i class="fas fa-user mr-2"></i> Mi Perfil
                 </a>
                 <a href="/settings" class="dropdown-item">
-                    <i class="fas fa-cog mr-2"></i> Settings
+                    <i class="fas fa-cog mr-2"></i> Configuración
                 </a>
+                <template x-if="hasMultipleRoles">
+                    <div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/auth-flow/role-selector" class="dropdown-item text-info">
+                            <i class="fas fa-exchange-alt mr-2"></i> Cambiar Rol
+                        </a>
+                    </div>
+                </template>
                 <div class="dropdown-divider"></div>
-                <a href="#" @click.prevent="logout()" class="dropdown-item">
-                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                <a href="#" @click.prevent="logout()" class="dropdown-item text-danger">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
                 </a>
             </div>
         </li>
@@ -153,6 +153,7 @@
         return {
             userName: 'User',
             userEmail: '',
+            hasMultipleRoles: false,
             _initialized: false,
 
             init() {
@@ -176,6 +177,7 @@
                     if (userData) {
                         this.userName = userData.name || 'User';
                         this.userEmail = userData.email || '';
+                        this.hasMultipleRoles = userData.hasMultipleRoles || false;
                     }
                 }
             },
@@ -192,40 +194,4 @@
         };
     }
 
-    /**
-     * Role Switch Button Component
-     * Shows "Change Role" button only if user has multiple roles
-     */
-    function roleSwitchButton() {
-        return {
-            hasMultipleRoles: false,
-            _initialized: false,
-
-            init() {
-                if (this._initialized) return;
-                this._initialized = true;
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                        setTimeout(() => this.checkMultipleRoles(), 100);
-                    });
-                } else {
-                    setTimeout(() => this.checkMultipleRoles(), 100);
-                }
-            },
-
-            checkMultipleRoles() {
-                const token = localStorage.getItem('access_token');
-                if (!token) return;
-
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    this.hasMultipleRoles = payload.roles && payload.roles.length > 1;
-                    console.log('[RoleSwitchButton] Has multiple roles:', this.hasMultipleRoles);
-                } catch (e) {
-                    console.error('[RoleSwitchButton] Error checking roles:', e);
-                }
-            }
-        };
-    }
 </script>
