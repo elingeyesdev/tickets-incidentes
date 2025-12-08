@@ -13,7 +13,7 @@
         <div class="spinner-border text-primary" role="status">
             <span class="sr-only">Cargando...</span>
         </div>
-        <p class="text-muted mt-3 mb-0">Cargando roles disponibles...</p>
+        <p class="text-muted mt-3 mb-0" x-text="loadingMessage"></p>
     </div>
 
     <!-- Error State -->
@@ -82,10 +82,6 @@
 
     body.login-page .card-body {
         padding: 2rem !important;
-    }
-
-    body.login-page {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
     #rolesContainer {
@@ -226,6 +222,7 @@
     function roleSelector() {
         return {
             loading: true,
+            loadingMessage: 'Cargando roles disponibles...',
             error: false,
             errorMessage: '',
             roles: [],
@@ -355,6 +352,7 @@
                 try {
                     this.loading = true;
                     this.error = false;
+                    this.loadingMessage = 'Enviando petición a Helpdesk API...';
 
                     // Get current access token
                     const accessToken = localStorage.getItem('access_token');
@@ -384,6 +382,8 @@
                         throw new Error(data.message || 'Error al seleccionar el rol');
                     }
 
+                    this.loadingMessage = 'Cambiando de rol...';
+
                     // Save NEW JWT with active_role claim to localStorage
                     const newAccessToken = data.data.access_token;
                     localStorage.setItem('access_token', newAccessToken);
@@ -393,6 +393,8 @@
                     localStorage.setItem('active_role', JSON.stringify(activeRole));
 
                     console.log('[RoleSelector] Role selected successfully:', activeRole);
+
+                    this.loadingMessage = 'Redirigiendo al dashboard...';
 
                     // Redirect through prepare-web to set cookie with NEW token
                     const dashboardUrl = this.getDashboardUrl(roleCode);

@@ -28,6 +28,9 @@ use App\Features\ContentManagement\Database\Seeders\CerveceriaBolividanaAnnounce
 // Tickets
 use App\Features\TicketManagement\Database\Seeders\PilAndinaTicketsSeeder;
 
+// Test Users
+use App\Features\UserManagement\Database\Seeders\MultiRoleTestUserSeeder;
+
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -64,5 +67,8 @@ class DatabaseSeeder extends Seeder
 
         // 5. Tickets
         $this->call(PilAndinaTicketsSeeder::class);
+
+        // 6. Test Users (Multi-role user for testing active_role system)
+        $this->call(MultiRoleTestUserSeeder::class);
     }
 }
