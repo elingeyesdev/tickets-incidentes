@@ -290,18 +290,29 @@
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
 
-                // Get active role from localStorage (set during login)
+                // Get active role - PRIORITY: from JWT claim, then localStorage, then infer
                 let activeRole = null;
-                const activeRoleStr = localStorage.getItem('active_role');
-                if (activeRoleStr) {
-                    try {
-                        activeRole = JSON.parse(activeRoleStr);
-                    } catch (e) {
-                        console.error('[getUserFromJWT] Error parsing active_role:', e);
+
+                // 1. First check if JWT has active_role claim (set by select-role API)
+                if (payload.active_role) {
+                    activeRole = payload.active_role;
+                    // Sync to localStorage for consistency
+                    localStorage.setItem('active_role', JSON.stringify(activeRole));
+                    console.log('[getUserFromJWT] Active role from JWT claim:', activeRole);
+                }
+                // 2. Fallback to localStorage
+                else {
+                    const activeRoleStr = localStorage.getItem('active_role');
+                    if (activeRoleStr) {
+                        try {
+                            activeRole = JSON.parse(activeRoleStr);
+                        } catch (e) {
+                            console.error('[getUserFromJWT] Error parsing active_role:', e);
+                        }
                     }
                 }
 
-                // Fallback: If no active_role in localStorage, try to infer from token payload
+                // 3. Final fallback: If no active_role anywhere, try to infer from token payload
                 if (!activeRole && payload.roles && payload.roles.length > 0) {
                      // Auto-select first role (usually USER for new registrations)
                      const role = payload.roles[0];
@@ -319,6 +330,8 @@
                     name: payload.name || 'User',
                     email: payload.email || '',
                     activeRole: activeRole,
+                    roles: payload.roles || [],
+                    hasMultipleRoles: payload.roles && payload.roles.length > 1
                 };
             } catch (error) {
                 console.error('[getUserFromJWT] Error parsing JWT:', error);

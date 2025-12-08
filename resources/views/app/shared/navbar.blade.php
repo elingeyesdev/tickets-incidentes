@@ -20,6 +20,14 @@
             </span>
         </li>
 
+        <!-- Switch Role Button (Only visible if user has multiple roles) -->
+        <li class="nav-item" x-data="roleSwitchButton()" x-init="init()" x-show="hasMultipleRoles" x-cloak>
+            <a class="nav-link" href="/auth-flow/role-selector" title="Cambiar Rol Activo">
+                <i class="fas fa-exchange-alt text-info"></i>
+                <span class="d-none d-lg-inline ml-1 text-info">Cambiar Rol</span>
+            </a>
+        </li>
+
         <!-- Notifications Dropdown Menu -->
         <li class="nav-item dropdown">
             <a class="nav-link" data-toggle="dropdown" href="#">
@@ -179,6 +187,43 @@
                     // Fallback logout
                     localStorage.clear();
                     window.location.href = '/login';
+                }
+            }
+        };
+    }
+
+    /**
+     * Role Switch Button Component
+     * Shows "Change Role" button only if user has multiple roles
+     */
+    function roleSwitchButton() {
+        return {
+            hasMultipleRoles: false,
+            _initialized: false,
+
+            init() {
+                if (this._initialized) return;
+                this._initialized = true;
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        setTimeout(() => this.checkMultipleRoles(), 100);
+                    });
+                } else {
+                    setTimeout(() => this.checkMultipleRoles(), 100);
+                }
+            },
+
+            checkMultipleRoles() {
+                const token = localStorage.getItem('access_token');
+                if (!token) return;
+
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    this.hasMultipleRoles = payload.roles && payload.roles.length > 1;
+                    console.log('[RoleSwitchButton] Has multiple roles:', this.hasMultipleRoles);
+                } catch (e) {
+                    console.error('[RoleSwitchButton] Error checking roles:', e);
                 }
             }
         };

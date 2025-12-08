@@ -29,6 +29,16 @@
                     </a>
                 </li>
 
+                <!-- Switch Role Option (Only if multiple roles) -->
+                <template x-if="hasMultipleRoles">
+                    <li class="nav-item">
+                        <a href="/auth-flow/role-selector" class="nav-link text-info">
+                            <i class="nav-icon fas fa-exchange-alt"></i>
+                            <p>Cambiar Rol</p>
+                        </a>
+                    </li>
+                </template>
+
                 <!-- Platform Admin Menu -->
                 <template x-if="activeRole === 'PLATFORM_ADMIN'">
                     <div>
@@ -203,6 +213,7 @@
         return {
             activeRole: null,
             userName: 'User',
+            hasMultipleRoles: false,
 
             init() {
                 this.loadUserData();
@@ -235,19 +246,33 @@
                         this.activeRole = userData.activeRole.code;
                         console.log('Sidebar: Active role detected:', this.activeRole);
                         this.loadCompanyRequestsCount(); // Load counts only after role is detected
-                        return;
                     }
                 }
 
+                // Check if user has multiple roles
+                this.checkMultipleRoles();
+
                 // If no role found and we haven't retried too many times, wait and retry
                 // This handles the race condition where sidebar inits before token injection script finishes
-                if (attempts < 5) {
+                if (!this.activeRole && attempts < 5) {
                     setTimeout(() => {
                         this.waitForTokenAndDetectRole(attempts + 1);
                     }, 100);
-                } else {
+                } else if (!this.activeRole) {
                     console.warn('Sidebar: No active role found in JWT after retries');
-                    this.activeRole = null;
+                }
+            },
+
+            checkMultipleRoles() {
+                const token = localStorage.getItem('access_token');
+                if (!token) return;
+
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    this.hasMultipleRoles = payload.roles && payload.roles.length > 1;
+                    console.log('[Sidebar] Has multiple roles:', this.hasMultipleRoles);
+                } catch (e) {
+                    console.error('[Sidebar] Error checking multiple roles:', e);
                 }
             },
 

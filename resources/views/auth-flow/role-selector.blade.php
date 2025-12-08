@@ -27,10 +27,11 @@
 
     <!-- Roles Container -->
     <div x-show="!loading && !error && roles.length > 0" id="rolesContainer" style="display: none;">
-        <template x-for="role in roles" :key="role.code">
+        <template x-for="role in roles" :key="role.code + '-' + (role.company_id || 'null')">
             <button
                 type="button"
                 class="role-card btn btn-light w-100 text-start p-4 mb-3"
+                :disabled="loading"
                 @click="selectRole(role.code, role.company_id)"
             >
                 <div class="row align-items-center">
@@ -303,44 +304,62 @@
 
             /**
              * Select a role and redirect to dashboard
+             * 
+             * IMPORTANT: This calls the API to get a NEW JWT with the active_role claim.
+             * The backend needs the active_role in the JWT to enforce policies correctly.
              */
             async selectRole(roleCode, companyId) {
                 try {
+                    this.loading = true;
+                    this.error = false;
+
                     // Get current access token
                     const accessToken = localStorage.getItem('access_token');
 
-                    // Decode JWT to get role data
-                    const payload = this.decodeJWT(accessToken);
-                    const roles = payload.roles || [];
-
-                    // Find the selected role in available roles
-                    const selectedRole = roles.find(role => {
-                        const sameCode = role.code === roleCode;
-                        const sameCompany = (role.company_id === null && companyId === null) ||
-                                           (role.company_id === companyId);
-                        return sameCode && sameCompany;
-                    });
-
-                    if (!selectedRole) {
-                        throw new Error('Role not found in your available roles');
+                    if (!accessToken) {
+                        window.location.href = '/login';
+                        return;
                     }
 
-                    // Save active role to localStorage
-                    const activeRole = {
-                        code: selectedRole.code,
-                        company_id: selectedRole.company_id || null,
-                        company_name: selectedRole.company_name || null
-                    };
+                    // Call API to select role and get NEW JWT with active_role claim
+                    const response = await fetch('/api/auth/select-role', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            role_code: roleCode,
+                            company_id: companyId || null
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Error al seleccionar el rol');
+                    }
+
+                    // Save NEW JWT with active_role claim to localStorage
+                    const newAccessToken = data.data.access_token;
+                    localStorage.setItem('access_token', newAccessToken);
+
+                    // Save active role to localStorage for quick access
+                    const activeRole = data.data.active_role;
                     localStorage.setItem('active_role', JSON.stringify(activeRole));
 
-                    // Redirect to role dashboard (NOT to prepare-web since token is already in localStorage)
+                    console.log('[RoleSelector] Role selected successfully:', activeRole);
+
+                    // Redirect through prepare-web to set cookie with NEW token
                     const dashboardUrl = this.getDashboardUrl(roleCode);
-                    window.location.href = dashboardUrl;
+                    window.location.href = `/auth/prepare-web?token=${newAccessToken}&redirect=${encodeURIComponent(dashboardUrl)}`;
 
                 } catch (error) {
                     console.error('Error selecting role:', error);
                     this.errorMessage = 'Error al seleccionar el rol: ' + error.message;
                     this.error = true;
+                    this.loading = false;
                 }
             }
         };
