@@ -6,7 +6,9 @@ use App\Shared\Enums\UserStatus;
 use App\Shared\Traits\HasUuid;
 use App\Shared\Traits\Auditable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Illuminate\Foundation\Auth\Access\Authorizable as AuthorizableTrait;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -45,7 +47,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read UserProfile $profile
  * @property-read \Illuminate\Database\Eloquent\Collection<UserRole> $userRoles
  */
-class User extends Model implements Authenticatable
+class User extends Model implements Authenticatable, Authorizable
 {
     use HasFactory;
     use HasUuid;
@@ -53,6 +55,7 @@ class User extends Model implements Authenticatable
     use Auditable;
     use SoftDeletes;
     use AuthenticatableTrait;
+    use AuthorizableTrait;
 
     /**
      * Factory para el modelo
