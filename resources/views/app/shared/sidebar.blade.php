@@ -185,7 +185,7 @@
                 <!-- Switch Role (Only if multiple roles) - Above Logout -->
                 <template x-if="hasMultipleRoles">
                     <li class="nav-item">
-                        <a href="/auth-flow/role-selector" class="nav-link text-info">
+                        <a href="/auth-flow/role-selector" class="nav-link">
                             <i class="nav-icon fas fa-exchange-alt"></i>
                             <p>Cambiar Rol</p>
                         </a>

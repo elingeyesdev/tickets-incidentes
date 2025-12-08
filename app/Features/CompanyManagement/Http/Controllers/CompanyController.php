@@ -530,10 +530,15 @@ class CompanyController extends Controller
             $query->where('name', 'ILIKE', "%{$request->search}%");
         }
 
-        // Si es COMPANY_ADMIN, solo su empresa
-        $user = JWTHelper::getAuthenticatedUser();
-        if ($user->hasRole('COMPANY_ADMIN')) {
-            $query->where('admin_user_id', $user->id);
+        // Si el ROL ACTIVO es COMPANY_ADMIN, solo mostrar su empresa
+        // IMPORTANTE: Usamos getActiveRoleCode() en lugar de hasRole() porque
+        // un usuario puede tener múltiples roles, y debemos filtrar según el
+        // rol con el que está operando actualmente, no todos sus roles.
+        if (JWTHelper::getActiveRoleCode() === 'COMPANY_ADMIN') {
+            $companyId = JWTHelper::getActiveCompanyId();
+            if ($companyId) {
+                $query->where('id', $companyId);
+            }
         }
 
         // Ordenamiento
