@@ -69,6 +69,12 @@ class AnalyticsService
             'assigned_tickets' => $this->getAgentAssignedTickets($agentId),
             'unassigned_tickets' => $this->getCompanyUnassignedTickets($companyId),
             'recent_articles' => $this->getRecentArticles(),
+            // New enhanced metrics for agent dashboard
+            'weekly_activity' => $this->getAgentWeeklyActivity($agentId),
+            'priority_distribution' => $this->getAgentPriorityDistribution($agentId),
+            'performance_metrics' => $this->getAgentPerformanceMetrics($agentId),
+            'agent_profile' => $this->getAgentProfile($agentId),
+            'recent_activity' => $this->getAgentRecentActivity($agentId),
         ];
     }
 
@@ -726,6 +732,223 @@ class AnalyticsService
             'active' => $categoryCounts[true] ?? $categoryCounts[1] ?? 0,
             'inactive' => $categoryCounts[false] ?? $categoryCounts[0] ?? 0,
         ];
+    }
+
+    // =========================================================================
+    // ENHANCED AGENT DASHBOARD METHODS
+    // =========================================================================
+
+    /**
+     * Get agent's weekly activity (tickets resolved per day for last 7 days).
+     */
+    private function getAgentWeeklyActivity(string $agentId): array
+    {
+        $data = Ticket::where('owner_agent_id', $agentId)
+            ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
+            ->where('updated_at', '>=', now()->subDays(6)->startOfDay())
+            ->select(
+                DB::raw("TO_CHAR(updated_at, 'YYYY-MM-DD') as day"),
+                DB::raw('count(*) as total')
+            )
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('total', 'day')
+            ->toArray();
+
+        // Fill missing days with 0
+        $result = [];
+        $dayNames = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $dayKey = $date->format('Y-m-d');
+            $result[$dayKey] = $data[$dayKey] ?? 0;
+            $dayNames[] = $date->locale('es')->isoFormat('ddd'); // Mon, Tue, etc
+        }
+
+        return [
+            'labels' => $dayNames,
+            'data' => array_values($result),
+        ];
+    }
+
+    /**
+     * Get agent's ticket distribution by priority.
+     */
+    private function getAgentPriorityDistribution(string $agentId): array
+    {
+        $stats = Ticket::where('owner_agent_id', $agentId)
+            ->whereIn('status', [TicketStatus::OPEN, TicketStatus::PENDING])
+            ->select('priority', DB::raw('count(*) as total'))
+            ->groupBy('priority')
+            ->pluck('total', 'priority')
+            ->toArray();
+
+        $total = array_sum($stats);
+
+        return [
+            'high' => [
+                'count' => $stats[TicketPriority::HIGH->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::HIGH->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'medium' => [
+                'count' => $stats[TicketPriority::MEDIUM->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::MEDIUM->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'low' => [
+                'count' => $stats[TicketPriority::LOW->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::LOW->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Get agent's performance metrics (workload, open rate, pending rate, resolution rate).
+     */
+    private function getAgentPerformanceMetrics(string $agentId): array
+    {
+        // Get counts for all agent's tickets
+        $statusCounts = Ticket::where('owner_agent_id', $agentId)
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        $total = array_sum($statusCounts);
+        $open = $statusCounts[TicketStatus::OPEN->value] ?? 0;
+        $pending = $statusCounts[TicketStatus::PENDING->value] ?? 0;
+        $resolved = $statusCounts[TicketStatus::RESOLVED->value] ?? 0;
+        $closed = $statusCounts[TicketStatus::CLOSED->value] ?? 0;
+
+        // Active tickets = open + pending
+        $activeTickets = $open + $pending;
+        
+        // Resolved today
+        $resolvedToday = Ticket::where('owner_agent_id', $agentId)
+            ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
+            ->whereDate('updated_at', now()->today())
+            ->count();
+
+        // Capacity assumption: 20 tickets is 100% workload
+        $workloadCapacity = 20;
+        $workloadPercentage = min(100, round(($activeTickets / $workloadCapacity) * 100));
+
+        // Open rate: percentage of active tickets that are open
+        $openRate = $activeTickets > 0 ? round(($open / $activeTickets) * 100) : 0;
+        
+        // Pending rate: percentage of active tickets that are pending
+        $pendingRate = $activeTickets > 0 ? round(($pending / $activeTickets) * 100) : 0;
+
+        // Resolution rate: resolved+closed vs total
+        $resolutionRate = $total > 0 ? round((($resolved + $closed) / $total) * 100) : 0;
+
+        return [
+            'workload' => $workloadPercentage,
+            'open_rate' => $openRate,
+            'pending_rate' => $pendingRate,
+            'resolution_rate' => $resolutionRate,
+            'active_tickets' => $activeTickets,
+            'resolved_today' => $resolvedToday,
+        ];
+    }
+
+    /**
+     * Get agent's profile information.
+     */
+    private function getAgentProfile(string $agentId): array
+    {
+        $user = User::with('profile')->find($agentId);
+        
+        if (!$user) {
+            return [
+                'name' => 'Unknown',
+                'role' => 'Agent',
+                'avatar_url' => null,
+                'member_since' => null,
+                'total_resolved' => 0,
+                'total_assigned' => 0,
+            ];
+        }
+
+        // Get total resolved tickets (all time)
+        $totalResolved = Ticket::where('owner_agent_id', $agentId)
+            ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
+            ->count();
+
+        // Get total assigned tickets (currently active)
+        $totalAssigned = Ticket::where('owner_agent_id', $agentId)
+            ->whereIn('status', [TicketStatus::OPEN, TicketStatus::PENDING])
+            ->count();
+
+        return [
+            'name' => $user->displayName ?? $user->name,
+            'role' => 'Agente de Soporte',
+            'avatar_url' => $user->avatarUrl,
+            'member_since' => $user->created_at?->translatedFormat('M Y'),
+            'total_resolved' => $totalResolved,
+            'total_assigned' => $totalAssigned,
+        ];
+    }
+
+    /**
+     * Get agent's recent activity (timeline events).
+     */
+    private function getAgentRecentActivity(string $agentId, int $limit = 5): array
+    {
+        // Get recent tickets that were updated by this agent
+        $recentTickets = Ticket::where('owner_agent_id', $agentId)
+            ->orderBy('updated_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        $activities = [];
+        $today = now()->startOfDay();
+        $yesterday = now()->subDay()->startOfDay();
+
+        foreach ($recentTickets as $ticket) {
+            $isResolved = in_array($ticket->status, [TicketStatus::RESOLVED, TicketStatus::CLOSED]);
+            
+            // Determine the activity type based on status
+            if ($isResolved) {
+                $type = 'resolved';
+                $icon = 'fas fa-check-circle';
+                $color = 'bg-success';
+                $message = "Ticket #{$ticket->ticket_code} resuelto";
+            } elseif ($ticket->status === TicketStatus::PENDING) {
+                $type = 'pending';
+                $icon = 'fas fa-clock';
+                $color = 'bg-warning';
+                $message = "Ticket #{$ticket->ticket_code} en espera";
+            } else {
+                $type = 'assigned';
+                $icon = 'fas fa-ticket-alt';
+                $color = 'bg-info';
+                $message = "Ticket #{$ticket->ticket_code} asignado";
+            }
+
+            // Group by date
+            $updatedAt = $ticket->updated_at;
+            if ($updatedAt >= $today) {
+                $dateGroup = 'Hoy';
+            } elseif ($updatedAt >= $yesterday) {
+                $dateGroup = 'Ayer';
+            } else {
+                $dateGroup = $updatedAt->translatedFormat('d M Y');
+            }
+
+            $activities[] = [
+                'type' => $type,
+                'icon' => $icon,
+                'color' => $color,
+                'message' => $message,
+                'description' => $ticket->title,
+                'time' => $updatedAt->format('h:i A'),
+                'date_group' => $dateGroup,
+                'ticket_code' => $ticket->ticket_code,
+            ];
+        }
+
+        return $activities;
     }
 }
 
