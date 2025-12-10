@@ -361,6 +361,57 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'COMPANY_ADMIN'
             ]);
         })->where('any', '.*')->name('company.tickets.wildcard');
+
+        // Company Admin Reports - Views
+        Route::get('/reports/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.reports.tickets', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.reports.tickets');
+
+        Route::get('/reports/agents', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.reports.agents', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.reports.agents');
+
+        Route::get('/reports/summary', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.reports.summary', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.reports.summary');
+
+        Route::get('/reports/company', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.reports.company', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.reports.company');
+
+        // Company Admin Reports - Downloads
+        Route::get('/reports/tickets/excel', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'ticketsExcel'])
+            ->name('company.reports.tickets.excel');
+        Route::get('/reports/tickets/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'ticketsPdf'])
+            ->name('company.reports.tickets.pdf');
+        Route::get('/reports/agents/excel', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'agentsExcel'])
+            ->name('company.reports.agents.excel');
+        Route::get('/reports/agents/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'agentsPdf'])
+            ->name('company.reports.agents.pdf');
+        Route::get('/reports/summary/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'summaryPdf'])
+            ->name('company.reports.summary.pdf');
+        Route::get('/reports/company/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'companyPdf'])
+            ->name('company.reports.company.pdf');
     });
 
     // Agent Dashboard (AGENT role)

@@ -114,6 +114,42 @@
                                 <p>Artículos</p>
                             </a>
                         </li>
+                        <li class="nav-header">REPORTES</li>
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>
+                                    Reportes
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/app/company/reports/tickets" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Tickets</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/app/company/reports/agents" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Agentes</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/app/company/reports/summary" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Resumen Operativo</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/app/company/reports/company" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Empresa y Equipo</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                         <li class="nav-header">CONFIGURACIÓN</li>
                         <li class="nav-item">
                             <a href="/app/company/settings" class="nav-link">
@@ -122,16 +158,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/profile" class="nav-link">
+                            <a href="{{ route('app.profile') }}" class="nav-link">
                                 <i class="nav-icon fas fa-user"></i>
                                 <p>Perfil</p>
-                            </a>
-                        </li>
-                        <li class="nav-header text-warning">DEBUG</li>
-                        <li class="nav-item">
-                            <a href="#" @click.prevent="testRefresh()" class="nav-link text-warning">
-                                <i class="nav-icon fas fa-sync-alt"></i>
-                                <p>Test Refresh Token</p>
                             </a>
                         </li>
                     </div>
