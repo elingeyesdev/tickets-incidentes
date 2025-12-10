@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Features\Reports\Exports;
 
 use App\Features\CompanyManagement\Models\Company;
+use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use App\Features\TicketManagement\Models\Ticket;
 use Illuminate\Support\Facades\DB;
@@ -134,37 +135,112 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
 }
 
 /**
- * Summary Sheet
+ * Summary Sheet - Detailed breakdown with company listings
  */
 class GrowthSummarySheet implements FromArray, WithHeadings, WithStyles, ShouldAutoSize, WithTitle
 {
     public function array(): array
     {
-        return [
-            ['Total Empresas', Company::count()],
-            ['Empresas Activas', Company::where('status', 'active')->count()],
-            ['Empresas Suspendidas', Company::where('status', 'suspended')->count()],
-            ['Total Usuarios', User::count()],
-            ['Total Tickets', Ticket::count()],
+        $activeCompanies = Company::where('status', 'active')->get();
+        $suspendedCompanies = Company::where('status', 'suspended')->get();
+        $inactiveCompanies = Company::where('status', 'inactive')->get();
+        
+        $rows = [
+            // General Summary
+            ['RESUMEN GENERAL'],
+            [''],
+            ['Total Empresas en Sistema', Company::count()],
+            ['Total Usuarios Registrados', User::count()],
+            ['Total Tickets Generados', Ticket::count()],
+            ['Solicitudes Pendientes', CompanyRequest::where('status', 'pending')->count()],
+            [''],
+            
+            // Companies by Status - Active
+            ['EMPRESAS ACTIVAS (' . $activeCompanies->count() . ')'],
+            [''],
+            ['Empresa', 'Código', 'Fecha Registro', 'Total Usuarios'],
         ];
+
+        foreach ($activeCompanies as $company) {
+            $userCount = \App\Features\UserManagement\Models\UserRole::where('company_id', $company->id)->distinct('user_id')->count('user_id');
+            $rows[] = [
+                $company->name,
+                $company->company_code,
+                $company->created_at->format('d/m/Y'),
+                $userCount,
+            ];
+        }
+
+        $rows[] = [''];
+        $rows[] = ['EMPRESAS SUSPENDIDAS (' . $suspendedCompanies->count() . ')'];
+        $rows[] = [''];
+        $rows[] = ['Empresa', 'Código', 'Fecha Registro', 'Motivo'];
+
+        foreach ($suspendedCompanies as $company) {
+            $rows[] = [
+                $company->name,
+                $company->company_code,
+                $company->created_at->format('d/m/Y'),
+                'Suspendida por administración',
+            ];
+        }
+
+        if ($inactiveCompanies->count() > 0) {
+            $rows[] = [''];
+            $rows[] = ['EMPRESAS INACTIVAS (' . $inactiveCompanies->count() . ')'];
+            $rows[] = [''];
+            $rows[] = ['Empresa', 'Código', 'Fecha Registro'];
+
+            foreach ($inactiveCompanies as $company) {
+                $rows[] = [
+                    $company->name,
+                    $company->company_code,
+                    $company->created_at->format('d/m/Y'),
+                ];
+            }
+        }
+
+        return $rows;
     }
 
     public function headings(): array
     {
-        return ['Métrica', 'Valor'];
+        return [];
     }
 
     public function styles(Worksheet $sheet): array
     {
-        return [
+        $styles = [
+            // Title style
             1 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'color' => ['rgb' => '17A2B8'], // Info blue
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
+            // Section headers style (Active, Suspended, Inactive)
+            8 => [
+                'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'color' => ['rgb' => '28a745'],
                 ],
             ],
         ];
+
+        // Apply header style to table headers
+        $activeCount = Company::where('status', 'active')->count();
+        $suspendedHeaderRow = 11 + $activeCount;
+        $styles[$suspendedHeaderRow] = [
+            'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'color' => ['rgb' => 'dc3545'],
+            ],
+        ];
+
+        return $styles;
     }
 
     public function title(): string

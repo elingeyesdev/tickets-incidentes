@@ -468,6 +468,31 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'USER'
             ]);
         })->name('user.tickets.manage');
+
+        // User Reports
+        Route::get('/reports/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.user.reports.tickets', [
+                'user' => $user,
+            ]);
+        })->name('user.reports.tickets');
+
+        Route::get('/reports/activity', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.user.reports.activity', [
+                'user' => $user,
+            ]);
+        })->name('user.reports.activity');
+
+        // User Reports Downloads
+        Route::get('/reports/tickets/excel', [\App\Features\Reports\Http\Controllers\UserReportController::class, 'ticketsExcel'])
+            ->name('user.reports.tickets.excel');
+        Route::get('/reports/tickets/pdf', [\App\Features\Reports\Http\Controllers\UserReportController::class, 'ticketsPdf'])
+            ->name('user.reports.tickets.pdf');
+        Route::get('/reports/activity/excel', [\App\Features\Reports\Http\Controllers\UserReportController::class, 'activityExcel'])
+            ->name('user.reports.activity.excel');
+        Route::get('/reports/activity/pdf', [\App\Features\Reports\Http\Controllers\UserReportController::class, 'activityPdf'])
+            ->name('user.reports.activity.pdf');
     });
 
     // Generic Tickets Routes (will redirect to role-specific route)

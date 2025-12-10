@@ -201,7 +201,7 @@ class PlatformReportController
     {
         $status = $request->get('status');
         
-        $query = CompanyRequest::with(['reviewedBy']);
+        $query = CompanyRequest::with(['reviewer', 'createdCompany']);
         
         if ($status) {
             $query->where('status', $status);

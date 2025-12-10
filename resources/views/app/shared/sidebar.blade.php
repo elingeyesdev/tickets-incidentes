@@ -186,6 +186,30 @@
                                 <p>Centro de Ayuda</p>
                             </a>
                         </li>
+                        <li class="nav-header">REPORTES</li>
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-export"></i>
+                                <p>
+                                    Mis Reportes
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/app/user/reports/tickets" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Historial de Tickets</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/app/user/reports/activity" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Resumen de Actividad</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                         <li class="nav-header">CUENTA</li>
                         <li class="nav-item">
                             <a href="{{ route('app.profile') }}" class="nav-link">

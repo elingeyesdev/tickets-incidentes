@@ -11,18 +11,20 @@
             font-size: 11px; 
             color: #333;
             line-height: 1.4;
+            padding: 20px;
         }
         
         .header {
             text-align: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 3px solid #28a745;
+            border-bottom: 3px solid #000;
         }
         .header h1 {
-            color: #28a745;
+            color: #000;
             font-size: 22px;
             margin-bottom: 5px;
+            text-transform: uppercase;
         }
         .header .subtitle {
             color: #6c757d;
@@ -42,12 +44,13 @@
             display: inline-block;
             width: 23%;
             margin-right: 2%;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
+            background: #f8f9fa;
+            border: 2px solid #000;
             border-radius: 8px;
             padding: 15px;
             text-align: center;
             vertical-align: top;
+            min-height: 80px;
         }
         .summary-card:last-child {
             margin-right: 0;
@@ -55,18 +58,14 @@
         .summary-card .value {
             font-size: 24px;
             font-weight: bold;
-            color: #007bff;
+            color: #000;
         }
         .summary-card .label {
             font-size: 10px;
-            color: #6c757d;
+            color: #333;
             text-transform: uppercase;
             margin-top: 5px;
         }
-        .summary-card.success .value { color: #28a745; }
-        .summary-card.warning .value { color: #ffc107; }
-        .summary-card.info .value { color: #17a2b8; }
-        .summary-card.purple .value { color: #6f42c1; }
         
         /* Section */
         .section {
@@ -75,10 +74,10 @@
         .section-title {
             font-size: 14px;
             font-weight: bold;
-            color: #495057;
+            color: #000;
             margin-bottom: 10px;
             padding-bottom: 5px;
-            border-bottom: 2px solid #28a745;
+            border-bottom: 2px solid #000;
         }
         
         /* Table */
@@ -92,7 +91,7 @@
             text-align: center;
         }
         th {
-            background-color: #28a745;
+            background-color: #000;
             color: white;
             font-weight: bold;
             font-size: 10px;
@@ -102,7 +101,7 @@
             background-color: #f8f9fa;
         }
         .highlight {
-            background-color: #d4edda !important;
+            background-color: #dee2e6 !important;
             font-weight: bold;
         }
         
@@ -128,19 +127,19 @@
     
     {{-- Summary Cards --}}
     <div class="summary-grid">
-        <div class="summary-card info">
+        <div class="summary-card">
             <div class="value">{{ number_format($data['summary']['total_companies']) }}</div>
             <div class="label">Total Empresas</div>
         </div>
-        <div class="summary-card success">
+        <div class="summary-card">
             <div class="value">{{ number_format($data['summary']['total_users']) }}</div>
             <div class="label">Total Usuarios</div>
         </div>
-        <div class="summary-card warning">
+        <div class="summary-card">
             <div class="value">{{ number_format($data['summary']['total_tickets']) }}</div>
             <div class="label">Total Tickets</div>
         </div>
-        <div class="summary-card purple">
+        <div class="summary-card">
             <div class="value">{{ number_format($data['summary']['pending_requests']) }}</div>
             <div class="label">Solicitudes Pendientes</div>
         </div>
@@ -151,15 +150,15 @@
         <div class="section-title">🚀 Crecimiento en el Periodo ({{ $months }} meses)</div>
         <div class="summary-grid">
             <div class="summary-card" style="width: 30%;">
-                <div class="value" style="color: #007bff;">+{{ number_format($data['summary']['new_companies_period']) }}</div>
+                <div class="value">+{{ number_format($data['summary']['new_companies_period']) }}</div>
                 <div class="label">Nuevas Empresas</div>
             </div>
             <div class="summary-card" style="width: 30%;">
-                <div class="value" style="color: #28a745;">+{{ number_format($data['summary']['new_users_period']) }}</div>
+                <div class="value">+{{ number_format($data['summary']['new_users_period']) }}</div>
                 <div class="label">Nuevos Usuarios</div>
             </div>
             <div class="summary-card" style="width: 30%;">
-                <div class="value" style="color: #fd7e14;">+{{ number_format($data['summary']['new_tickets_period']) }}</div>
+                <div class="value">+{{ number_format($data['summary']['new_tickets_period']) }}</div>
                 <div class="label">Nuevos Tickets</div>
             </div>
         </div>

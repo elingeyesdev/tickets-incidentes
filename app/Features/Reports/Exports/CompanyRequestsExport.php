@@ -32,7 +32,7 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function collection()
     {
-        $query = CompanyRequest::with(['reviewedBy']);
+        $query = CompanyRequest::with(['reviewer', 'createdCompany']);
         
         if ($this->status) {
             $query->where('status', $this->status);
@@ -76,7 +76,7 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
             $this->translateStatus($request->status),
             $request->created_at?->format('d/m/Y H:i') ?? 'N/A',
             $request->reviewed_at?->format('d/m/Y H:i') ?? 'Pendiente',
-            $request->reviewedBy?->email ?? 'N/A',
+            $request->reviewer?->email ?? 'N/A',
             $request->rejection_reason ?? '-',
         ];
     }

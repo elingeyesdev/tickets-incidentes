@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Reporte de Empresas</title>
+    <title>Historial de Tickets</title>
     <style>
         /* Reset and base */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,13 +20,12 @@
             text-align: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 3px solid #000;
+            border-bottom: 3px solid #17a2b8;
         }
         .header h1 {
-            color: #000;
+            color: #17a2b8;
             font-size: 22px;
             margin-bottom: 5px;
-            text-transform: uppercase;
         }
         .header .subtitle {
             color: #6c757d;
@@ -40,15 +39,15 @@
         
         /* Summary box */
         .summary-box {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background-color: #e7f5f8;
+            border: 1px solid #17a2b8;
             border-radius: 5px;
             padding: 12px 15px;
             margin-bottom: 20px;
         }
         .summary-box .title {
             font-weight: bold;
-            color: #495057;
+            color: #17a2b8;
             margin-bottom: 8px;
         }
         .summary-box .stats {
@@ -77,7 +76,7 @@
             vertical-align: middle;
         }
         th {
-            background-color: #000;
+            background-color: #17a2b8;
             color: white;
             font-weight: bold;
             font-size: 10px;
@@ -85,9 +84,6 @@
         }
         tr:nth-child(even) {
             background-color: #f8f9fa;
-        }
-        tr:hover {
-            background-color: #e9ecef;
         }
         
         /* Badges */
@@ -99,20 +95,13 @@
             font-weight: bold;
             text-transform: uppercase;
         }
-        .badge-success {
-            background-color: #28a745;
-            color: white;
-        }
-        .badge-warning {
-            background-color: #ffc107;
-            color: #212529;
-        }
-        .badge-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
+        .badge-danger { background-color: #dc3545; color: white; }
+        .badge-warning { background-color: #ffc107; color: #212529; }
+        .badge-info { background-color: #17a2b8; color: white; }
+        .badge-success { background-color: #28a745; color: white; }
+        .badge-secondary { background-color: #6c757d; color: white; }
         
-        /* Code style */
+        /* Code */
         code {
             background-color: #e9ecef;
             padding: 2px 5px;
@@ -130,42 +119,37 @@
             font-size: 9px;
             color: #6c757d;
         }
-        
-        /* Page break */
-        .page-break {
-            page-break-after: always;
-        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📊 Reporte de Empresas</h1>
-        <div class="subtitle">Sistema Helpdesk - Platform Admin</div>
+        <h1>🎫 Historial de Tickets</h1>
+        <div class="subtitle">Reporte de {{ $userName }}</div>
         <div class="meta">
             Generado: {{ $generatedAt->format('d/m/Y H:i:s') }} | 
-            Filtro: {{ $status ? ucfirst($status) : 'Todas' }} |
-            Total: {{ count($companies) }} empresas
+            Filtro: {{ $status ? ucfirst(strtolower($status)) : 'Todos' }} |
+            Total: {{ count($tickets) }} tickets
         </div>
     </div>
     
     {{-- Summary --}}
     <div class="summary-box">
-        <div class="title">📈 Resumen</div>
+        <div class="title">📊 Resumen</div>
         <div class="stats">
             <span class="stat-item">
-                <span class="stat-value">{{ count($companies) }}</span> Total
+                <span class="stat-value">{{ $summary['total'] }}</span> Total
             </span>
             <span class="stat-item">
-                <span class="stat-value">{{ $companies->where('status', 'active')->count() }}</span> Activas
+                <span class="stat-value">{{ $summary['open'] }}</span> Abiertos
             </span>
             <span class="stat-item">
-                <span class="stat-value">{{ $companies->where('status', 'suspended')->count() }}</span> Suspendidas
+                <span class="stat-value">{{ $summary['pending'] }}</span> Pendientes
             </span>
             <span class="stat-item">
-                <span class="stat-value">{{ $companies->sum('agents_count') }}</span> Total Agentes
+                <span class="stat-value">{{ $summary['resolved'] }}</span> Resueltos
             </span>
             <span class="stat-item">
-                <span class="stat-value">{{ $companies->sum('tickets_count') }}</span> Total Tickets
+                <span class="stat-value">{{ $summary['closed'] }}</span> Cerrados
             </span>
         </div>
     </div>
@@ -174,45 +158,54 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 10%">Código</th>
-                <th style="width: 22%">Empresa</th>
-                <th style="width: 18%">Email Soporte</th>
-                <th style="width: 15%">Industria</th>
+                <th style="width: 12%">Código</th>
+                <th style="width: 28%">Asunto</th>
+                <th style="width: 15%">Empresa</th>
+                <th style="width: 12%">Categoría</th>
+                <th style="width: 10%">Prioridad</th>
                 <th style="width: 10%">Estado</th>
-                <th style="width: 8%">Agentes</th>
-                <th style="width: 8%">Tickets</th>
-                <th style="width: 9%">Creación</th>
+                <th style="width: 13%">Fecha</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($companies as $company)
+            @forelse($tickets as $ticket)
             <tr>
-                <td><code>{{ $company->company_code ?? 'N/A' }}</code></td>
+                <td><code>{{ $ticket->ticket_code ?? 'N/A' }}</code></td>
+                <td>{{ Str::limit($ticket->title, 45) }}</td>
+                <td>{{ $ticket->company?->name ?? 'N/A' }}</td>
+                <td>{{ $ticket->category?->name ?? 'Sin categoría' }}</td>
                 <td>
-                    <strong>{{ $company->name }}</strong>
-                    @if($company->legal_name)
-                    <br><small style="color: #6c757d;">{{ $company->legal_name }}</small>
-                    @endif
-                </td>
-                <td>{{ $company->support_email ?? 'N/A' }}</td>
-                <td>{{ $company->industry?->name ?? 'N/A' }}</td>
-                <td>
-                    @if($company->status === 'active')
-                        <span class="badge badge-success">Activa</span>
-                    @elseif($company->status === 'suspended')
-                        <span class="badge badge-warning">Suspendida</span>
+                    @php
+                        $priority = $ticket->priority?->value ?? $ticket->priority;
+                    @endphp
+                    @if($priority === 'HIGH')
+                        <span class="badge badge-danger">Alta</span>
+                    @elseif($priority === 'MEDIUM')
+                        <span class="badge badge-warning">Media</span>
                     @else
-                        <span class="badge badge-secondary">{{ $company->status ?? 'N/A' }}</span>
+                        <span class="badge badge-success">Baja</span>
                     @endif
                 </td>
-                <td style="text-align: center;">{{ $company->agents_count ?? 0 }}</td>
-                <td style="text-align: center;">{{ $company->tickets_count ?? 0 }}</td>
-                <td>{{ $company->created_at?->format('d/m/Y') ?? 'N/A' }}</td>
+                <td>
+                    @php
+                        $status = $ticket->status?->value ?? $ticket->status;
+                    @endphp
+                    @if($status === 'OPEN')
+                        <span class="badge badge-danger">Abierto</span>
+                    @elseif($status === 'PENDING')
+                        <span class="badge badge-warning">Pendiente</span>
+                    @elseif($status === 'RESOLVED')
+                        <span class="badge badge-info">Resuelto</span>
+                    @else
+                        <span class="badge badge-success">Cerrado</span>
+                    @endif
+                </td>
+                <td>{{ $ticket->created_at?->format('d/m/Y H:i') ?? 'N/A' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align: center; padding: 20px; color: #6c757d;">
-                    No se encontraron empresas con los filtros seleccionados.
+                <td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;">
+                    No se encontraron tickets con los filtros seleccionados.
                 </td>
             </tr>
             @endforelse
@@ -221,7 +214,7 @@
     
     <div class="footer">
         <strong>Helpdesk Platform</strong> - Reporte generado automáticamente<br>
-        Este documento es confidencial y de uso interno.
+        Este documento es para uso personal del usuario.
     </div>
 </body>
 </html>

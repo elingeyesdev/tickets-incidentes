@@ -11,18 +11,20 @@
             font-size: 11px; 
             color: #333;
             line-height: 1.4;
+            padding: 20px;
         }
         
         .header {
             text-align: center;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 3px solid #6f42c1;
+            border-bottom: 3px solid #000;
         }
         .header h1 {
-            color: #6f42c1;
+            color: #000;
             font-size: 22px;
             margin-bottom: 5px;
+            text-transform: uppercase;
         }
         .header .subtitle {
             color: #6c757d;
@@ -53,10 +55,8 @@
         .summary-box .stat-value {
             font-weight: bold;
             font-size: 14px;
+            color: #000;
         }
-        .summary-box .stat-value.pending { color: #ffc107; }
-        .summary-box .stat-value.approved { color: #28a745; }
-        .summary-box .stat-value.rejected { color: #dc3545; }
         
         table {
             width: 100%;
@@ -70,7 +70,7 @@
             vertical-align: middle;
         }
         th {
-            background-color: #6f42c1;
+            background-color: #000;
             color: white;
             font-weight: bold;
             font-size: 9px;
@@ -134,13 +134,13 @@
             <span class="stat-value">{{ count($requests) }}</span> Total
         </span>
         <span class="stat-item">
-            <span class="stat-value pending">{{ $requests->where('status', 'pending')->count() }}</span> Pendientes
+            <span class="stat-value">{{ $requests->where('status', 'pending')->count() }}</span> Pendientes
         </span>
         <span class="stat-item">
-            <span class="stat-value approved">{{ $requests->where('status', 'approved')->count() }}</span> Aprobadas
+            <span class="stat-value">{{ $requests->where('status', 'approved')->count() }}</span> Aprobadas
         </span>
         <span class="stat-item">
-            <span class="stat-value rejected">{{ $requests->where('status', 'rejected')->count() }}</span> Rechazadas
+            <span class="stat-value">{{ $requests->where('status', 'rejected')->count() }}</span> Rechazadas
         </span>
     </div>
     
@@ -183,7 +183,7 @@
                 </td>
                 <td>{{ $request->created_at?->format('d/m/Y') ?? 'N/A' }}</td>
                 <td>{{ $request->reviewed_at?->format('d/m/Y') ?? '-' }}</td>
-                <td>{{ $request->reviewedBy?->email ?? '-' }}</td>
+                <td>{{ $request->reviewer?->email ?? '-' }}</td>
             </tr>
             @if($request->status === 'rejected' && $request->rejection_reason)
             <tr>
