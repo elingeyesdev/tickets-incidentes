@@ -84,21 +84,30 @@ class PlatformAdminController extends Controller
             ->pluck('total', 'month')
             ->toArray();
 
-        // Build labels and data arrays
+        // Build labels and data arrays (ACUMULADO para mostrar crecimiento)
         $labels = [];
         $companiesData = [];
         $usersData = [];
         $ticketsData = [];
+
+        $companiesAccum = 0;
+        $usersAccum = 0;
+        $ticketsAccum = 0;
 
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $monthKey = $date->format('Y-m');
             $monthLabel = $date->locale('es')->isoFormat('MMM YYYY'); // "Dic 2024"
             
+            // Acumular valores mes a mes
+            $companiesAccum += $companiesPerMonth[$monthKey] ?? 0;
+            $usersAccum += $usersPerMonth[$monthKey] ?? 0;
+            $ticketsAccum += $ticketsPerMonth[$monthKey] ?? 0;
+            
             $labels[] = ucfirst($monthLabel);
-            $companiesData[] = $companiesPerMonth[$monthKey] ?? 0;
-            $usersData[] = $usersPerMonth[$monthKey] ?? 0;
-            $ticketsData[] = $ticketsPerMonth[$monthKey] ?? 0;
+            $companiesData[] = $companiesAccum;
+            $usersData[] = $usersAccum;
+            $ticketsData[] = $ticketsAccum;
         }
 
         return [

@@ -27,6 +27,7 @@ use App\Features\ContentManagement\Database\Seeders\CerveceriaBolividanaAnnounce
 
 // Tickets
 use App\Features\TicketManagement\Database\Seeders\PilAndinaTicketsSeeder;
+use App\Features\TicketManagement\Database\Seeders\PilAndinaAugOctTicketsSeeder;
 
 // Test Users
 use App\Features\UserManagement\Database\Seeders\MultiRoleTestUserSeeder;
@@ -56,7 +57,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanyRequestApprovalSimulationSeeder::class);
 
         // 3. Articles (One by one)
-        $this->call(PilAndinaArticlesSeeder::class);
+        // $this->call(PilAndinaArticlesSeeder::class); // Comentado - archivo no existe
         $this->call(BancoFassilHelpCenterArticlesSeeder::class);
         $this->call(YPFBHelpCenterArticlesSeeder::class);
         $this->call(TigoHelpCenterArticlesSeeder::class);
@@ -71,6 +72,7 @@ class DatabaseSeeder extends Seeder
 
         // 5. Tickets
         $this->call(PilAndinaTicketsSeeder::class);
+        $this->call(PilAndinaAugOctTicketsSeeder::class); // Históricos Ago-Oct 2025
 
         // 6. Test Users (Multi-role user for testing active_role system)
         $this->call(MultiRoleTestUserSeeder::class);

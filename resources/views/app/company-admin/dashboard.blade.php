@@ -92,7 +92,7 @@
 <!-- Row 2: Charts -->
 <div class="row">
     <!-- Ticket Status Chart -->
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card card-outline card-secondary">
             <div class="card-header">
                 <h3 class="card-title">Estado de Tickets</h3>
@@ -114,11 +114,34 @@
         </div>
     </div>
 
-    <!-- Tickets Over Time Chart -->
-    <div class="col-md-6">
+    <!-- Ticket Priority Chart -->
+    <div class="col-md-4">
         <div class="card card-outline card-secondary">
             <div class="card-header">
-                <h3 class="card-title">Evolución de Tickets (Últimos 6 meses)</h3>
+                <h3 class="card-title">Tickets por Prioridad</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 250px;">
+                    <canvas id="ticketPriorityChart"></canvas>
+                </div>
+            </div>
+            <!-- Loading Overlay -->
+            <div class="overlay" id="overlay-ticket-priority">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets Over Time Chart -->
+    <div class="col-md-4">
+        <div class="card card-outline card-secondary">
+            <div class="card-header">
+                <h3 class="card-title">Tickets Creados por Mes</h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
@@ -138,13 +161,16 @@
     </div>
 </div>
 
-<!-- Row 3: Recent Tickets and Team -->
+<!-- Row 3: Top Agents and Team -->
 <div class="row">
-    <!-- Recent Tickets Table -->
+    <!-- Top 5 Agents by Performance -->
     <div class="col-md-8">
         <div class="card card-outline card-secondary">
             <div class="card-header">
-                <h3 class="card-title">Tickets Recientes</h3>
+                <h3 class="card-title">
+                    <i class="fas fa-trophy text-warning mr-1"></i>
+                    Top 5 Agentes por Performance
+                </h3>
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
@@ -155,26 +181,22 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th style="width: 20%;">Código</th>
-                            <th style="width: 40%;">Título</th>
-                            <th style="width: 20%;">Creador</th>
-                            <th style="width: 20%;">Estado</th>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 30%;">Agente</th>
+                            <th style="width: 20%;" class="text-center">Asignados</th>
+                            <th style="width: 20%;" class="text-center">Resueltos</th>
+                            <th style="width: 25%;" class="text-center">Tasa de Resolución</th>
                         </tr>
                     </thead>
-                    <tbody id="recentTicketsBody">
+                    <tbody id="topAgentsBody">
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-3">Cargando...</td>
+                            <td colspan="5" class="text-center text-muted py-3">Cargando...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer clearfix">
-                <a href="/app/company/tickets" class="btn btn-sm btn-primary float-right">
-                    Ver todos los tickets
-                </a>
-            </div>
             <!-- Loading Overlay -->
-            <div class="overlay" id="overlay-recent-tickets">
+            <div class="overlay" id="overlay-top-agents">
                 <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
@@ -355,6 +377,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (!data) return;
 
+            console.log('[Company Dashboard] Data received:', data);
+
             // Update KPI cards
             document.getElementById('total-agents').textContent = data.kpi.total_agents;
             document.getElementById('total-articles').textContent = data.kpi.total_articles;
@@ -372,19 +396,33 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('resolution-rate').textContent = resolutionRate + '%';
 
             // Render Tables and Lists
-            renderRecentTickets(data.recent_tickets);
-            renderTeamMembers(data.team_members);
-            renderCategories(data.categories);
+            if (data.top_agents) {
+                renderTopAgents(data.top_agents);
+            }
+            if (data.team_members) {
+                renderTeamMembers(data.team_members);
+            }
+            if (data.categories) {
+                renderCategories(data.categories);
+            }
 
             // Initialize Charts
-            initializeTicketStatusChart(
-                data.ticket_status.OPEN,
-                data.ticket_status.PENDING,
-                data.ticket_status.RESOLVED,
-                data.ticket_status.CLOSED
-            );
+            if (data.ticket_status) {
+                initializeTicketStatusChart(
+                    data.ticket_status.OPEN,
+                    data.ticket_status.PENDING,
+                    data.ticket_status.RESOLVED,
+                    data.ticket_status.CLOSED
+                );
+            }
 
-            initializeTicketsOverTimeChart(data.tickets_over_time);
+            if (data.ticket_priority) {
+                initializeTicketPriorityChart(data.ticket_priority);
+            }
+
+            if (data.tickets_over_time) {
+                initializeTicketsOverTimeChart(data.tickets_over_time);
+            }
         })
         .catch(error => {
             console.error('[Company Admin Dashboard] Error loading dashboard:', error);
@@ -402,25 +440,37 @@ document.addEventListener('DOMContentLoaded', function() {
 // RENDER FUNCTIONS
 // =====================================================================
 
-function renderRecentTickets(tickets) {
-    const tbody = document.getElementById('recentTicketsBody');
+function renderTopAgents(agents) {
+    const tbody = document.getElementById('topAgentsBody');
     tbody.innerHTML = '';
 
-    if (tickets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin tickets recientes</td></tr>';
+    if (agents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No hay datos de agentes</td></tr>';
         return;
     }
 
-    tickets.forEach(ticket => {
+    agents.forEach(agent => {
         const row = document.createElement('tr');
+        const rankBadge = agent.rank === 1 ? '<i class="fas fa-medal text-warning"></i>' : agent.rank;
+        
+        // Progress bar color based on resolution rate
+        let progressColor = 'bg-danger';
+        if (agent.resolution_rate >= 80) progressColor = 'bg-success';
+        else if (agent.resolution_rate >= 50) progressColor = 'bg-warning';
+
         row.innerHTML = `
-            <td><a href="/app/company/tickets/${ticket.ticket_code}">${ticket.ticket_code}</a></td>
-            <td>${ticket.title}</td>
-            <td>${ticket.creator_name}</td>
+            <td class="text-center"><strong>${rankBadge}</strong></td>
             <td>
-                <span class="badge ${getStatusBadgeClass(ticket.status)}">
-                    ${getStatusLabel(ticket.status)}
-                </span>
+                <strong>${agent.name}</strong><br>
+                <small class="text-muted">${agent.email}</small>
+            </td>
+            <td class="text-center"><span class="badge badge-info">${agent.assigned}</span></td>
+            <td class="text-center"><span class="badge badge-success">${agent.resolved}</span></td>
+            <td>
+                <div class="progress progress-xs">
+                    <div class="progress-bar ${progressColor}" style="width: ${agent.resolution_rate}%"></div>
+                </div>
+                <small class="text-center d-block mt-1">${agent.resolution_rate}%</small>
             </td>
         `;
         tbody.appendChild(row);
@@ -501,6 +551,37 @@ function initializeTicketStatusChart(open, pending, resolved, closed) {
             datasets: [{
                 data: [open, pending, resolved, closed],
                 backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function initializeTicketPriorityChart(priorityData) {
+    const ctx = document.getElementById('ticketPriorityChart');
+    if (!ctx) return;
+
+    if (window.ticketPriorityChartInstance) {
+        window.ticketPriorityChartInstance.destroy();
+    }
+
+    window.ticketPriorityChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: priorityData.labels,
+            datasets: [{
+                data: priorityData.data,
+                backgroundColor: priorityData.colors,
                 borderColor: '#fff',
                 borderWidth: 2
             }]

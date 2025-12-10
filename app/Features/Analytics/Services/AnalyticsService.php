@@ -16,6 +16,7 @@ use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Models\Area;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AnalyticsService
 {
@@ -27,15 +28,48 @@ class AnalyticsService
      */
     public function getCompanyDashboardStats(string $companyId): array
     {
-        return [
-            'kpi' => $this->getKpiStats($companyId),
-            'ticket_status' => $this->getTicketStatusStats($companyId),
-            'tickets_over_time' => $this->getTicketsOverTime($companyId),
-            'recent_tickets' => $this->getRecentTickets($companyId),
-            'team_members' => $this->getTeamStats($companyId),
-            'categories' => $this->getCategoryStats($companyId),
-            'performance' => $this->getPerformanceStats($companyId),
-        ];
+        try {
+            Log::info('Getting company dashboard stats for company: ' . $companyId);
+            
+            $kpi = $this->getKpiStats($companyId);
+            Log::info('KPI stats retrieved');
+            
+            $ticketStatus = $this->getTicketStatusStats($companyId);
+            Log::info('Ticket status stats retrieved');
+            
+            $ticketPriority = $this->getTicketPriorityStats($companyId);
+            Log::info('Ticket priority stats retrieved');
+            
+            $ticketsOverTime = $this->getTicketsOverTime($companyId);
+            Log::info('Tickets over time retrieved');
+            
+            $topAgents = $this->getTopAgentsByPerformance($companyId);
+            Log::info('Top agents retrieved: ' . count($topAgents));
+            
+            $teamMembers = $this->getTeamStats($companyId);
+            Log::info('Team members retrieved');
+            
+            $categories = $this->getCategoryStats($companyId);
+            Log::info('Categories retrieved');
+            
+            $performance = $this->getPerformanceStats($companyId);
+            Log::info('Performance stats retrieved');
+            
+            return [
+                'kpi' => $kpi,
+                'ticket_status' => $ticketStatus,
+                'ticket_priority' => $ticketPriority,
+                'tickets_over_time' => $ticketsOverTime,
+                'top_agents' => $topAgents,
+                'team_members' => $teamMembers,
+                'categories' => $categories,
+                'performance' => $performance,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in getCompanyDashboardStats: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            throw $e;
+        }
     }
 
     /**
@@ -406,6 +440,87 @@ class AnalyticsService
             'RESOLVED' => $stats[TicketStatus::RESOLVED->value] ?? 0,
             'CLOSED' => $stats[TicketStatus::CLOSED->value] ?? 0,
         ];
+    }
+
+    /**
+     * Get ticket counts by priority.
+     */
+    private function getTicketPriorityStats(string $companyId): array
+    {
+        $stats = Ticket::where('company_id', $companyId)
+            ->whereNotNull('priority')
+            ->select('priority', DB::raw('count(*) as total'))
+            ->groupBy('priority')
+            ->pluck('total', 'priority')
+            ->toArray();
+
+        return [
+            'labels' => ['Baja', 'Media', 'Alta'],
+            'data' => [
+                $stats['low'] ?? 0,
+                $stats['medium'] ?? 0,
+                $stats['high'] ?? 0,
+            ],
+            'colors' => ['#28a745', '#ffc107', '#dc3545'], // green, yellow, red
+        ];
+    }
+
+    /**
+     * Get top agents by performance.
+     */
+    private function getTopAgentsByPerformance(string $companyId, int $limit = 5): array
+    {
+        $agents = User::with('profile')
+            ->whereHas('userRoles', function ($q) use ($companyId) {
+                $q->where('company_id', $companyId)
+                  ->where('role_code', 'AGENT');
+            })
+            ->get();
+
+        // Calculate stats for each agent
+        $agentStats = $agents->map(function ($agent) use ($companyId) {
+            $assignedCount = Ticket::where('company_id', $companyId)
+                ->where('owner_agent_id', $agent->id)
+                ->count();
+
+            $resolvedCount = Ticket::where('company_id', $companyId)
+                ->where('owner_agent_id', $agent->id)
+                ->whereIn('status', ['resolved', 'closed'])
+                ->count();
+
+            $resolutionRate = $assignedCount > 0 
+                ? round(($resolvedCount / $assignedCount) * 100) 
+                : 0;
+
+            $fullName = $agent->profile 
+                ? trim($agent->profile->first_name . ' ' . $agent->profile->last_name)
+                : $agent->email;
+
+            return [
+                'agent' => $agent,
+                'name' => $fullName,
+                'email' => $agent->email,
+                'assigned' => $assignedCount,
+                'resolved' => $resolvedCount,
+                'resolution_rate' => $resolutionRate,
+            ];
+        })
+        ->filter(fn($stats) => $stats['assigned'] > 0)
+        ->sortByDesc('resolved')
+        ->sortByDesc('assigned')
+        ->take($limit)
+        ->values();
+
+        return $agentStats->map(function ($stats, $index) {
+            return [
+                'rank' => $index + 1,
+                'name' => $stats['name'],
+                'email' => $stats['email'],
+                'assigned' => $stats['assigned'],
+                'resolved' => $stats['resolved'],
+                'resolution_rate' => $stats['resolution_rate'],
+            ];
+        })->toArray();
     }
 
     /**

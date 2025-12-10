@@ -53,6 +53,9 @@ use Illuminate\Support\Facades\Storage;
 class LargeBolivianCompaniesSeeder extends Seeder
 {
     private const PASSWORD = 'mklmklmkl';
+    
+    // Contador para distribuir fechas
+    private int $companyIndex = 0;
 
     private const COMPANIES = [
         [
@@ -765,14 +768,20 @@ class LargeBolivianCompaniesSeeder extends Seeder
                 // [IDEMPOTENCY] Verificar si la empresa ya existe por company_code
                 if (Company::where('company_code', $companyData['company_code'])->exists()) {
                     $this->command->info("[OK] Empresa {$companyData['company_code']} ya existe, saltando...");
+                    $this->companyIndex++;
                     continue;
                 }
+
+                // Generar fecha aleatoria para esta empresa (julio - diciembre 2025)
+                $createdAt = $this->getDistributedDate($this->companyIndex, count(self::COMPANIES));
+                $this->command->info("  📅 Fecha de registro: {$createdAt->format('Y-m-d H:i:s')}");
 
                 // 1. Crear Company Admin
                 $admin = $this->createUser(
                     $companyData['company_admin']['first_name'],
                     $companyData['company_admin']['last_name'],
                     $companyData['company_admin']['email'],
+                    $createdAt
                 );
 
                 // 2. Obtener industry_id
@@ -823,7 +832,13 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     'settings' => ['areas_enabled' => true], // Configuración directa (empresas grandes usan áreas)
                 ], $admin);
 
+                // Actualizar created_at de la empresa
+                $company->created_at = $createdAt;
+                $company->updated_at = $createdAt;
+                $company->save();
+
                 $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
+                $this->companyIndex++;
 
                 // 5. Asignar rol COMPANY_ADMIN
                 UserRole::create([
@@ -833,12 +848,17 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     'is_active' => true,
                 ]);
 
-                // 6. Crear Agentes
+                // 6. Crear Agentes (escalonados días/semanas después de la empresa)
+                $agentIndex = 0;
                 foreach ($companyData['agents'] as $agentData) {
+                    // Cada agente se crea entre 3-30 días después de la empresa
+                    $agentCreatedAt = $createdAt->copy()->addDays(rand(3, 30))->addHours(rand(8, 18))->addMinutes(rand(0, 59));
+                    
                     $agent = $this->createUser(
                         $agentData['first_name'],
                         $agentData['last_name'],
                         $agentData['email'],
+                        $agentCreatedAt
                     );
 
                     UserRole::create([
@@ -848,7 +868,8 @@ class LargeBolivianCompaniesSeeder extends Seeder
                         'is_active' => true,
                     ]);
 
-                    $this->command->info("  └─ Agente creado: {$agent->email}");
+                    $this->command->info("  └─ Agente creado: {$agent->email} ({$agentCreatedAt->format('Y-m-d')})");
+                    $agentIndex++;
                 }
 
                 // 7. Crear Áreas para la empresa
@@ -907,22 +928,25 @@ class LargeBolivianCompaniesSeeder extends Seeder
         }
     }
 
-    private function createUser(string $firstName, string $lastName, string $email): User
+    private function createUser(string $firstName, string $lastName, string $email, $createdAt = null): User
     {
         $userCode = CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code');
+        $timestamp = $createdAt ?? now();
 
         $user = User::create([
             'user_code' => $userCode,
             'email' => $email,
             'password_hash' => Hash::make(self::PASSWORD),
             'email_verified' => true,
-            'email_verified_at' => now(),
+            'email_verified_at' => $timestamp,
             'status' => UserStatus::ACTIVE,
             'auth_provider' => 'local',
             'terms_accepted' => true,
-            'terms_accepted_at' => now(),
+            'terms_accepted_at' => $timestamp,
             'terms_version' => 'v2.1',
-            'onboarding_completed_at' => now(),
+            'onboarding_completed_at' => $timestamp,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
         ]);
 
         $user->profile()->create([
@@ -935,5 +959,28 @@ class LargeBolivianCompaniesSeeder extends Seeder
         ]);
 
         return $user;
+    }
+
+    /**
+     * Genera una fecha aleatoria distribuida entre julio y diciembre 2025
+     * Distribuye uniformemente las empresas a lo largo de 6 meses
+     */
+    private function getDistributedDate(int $index, int $total): \Carbon\Carbon
+    {
+        // Rango: Julio 1, 2025 - Diciembre 10, 2025
+        $startDate = \Carbon\Carbon::create(2025, 7, 1, 0, 0, 0);
+        $endDate = \Carbon\Carbon::create(2025, 12, 10, 23, 59, 59);
+        
+        $totalDays = $startDate->diffInDays($endDate);
+        
+        // Distribuir empresas uniformemente
+        $daysPerCompany = $totalDays / $total;
+        $baseDays = (int)($index * $daysPerCompany);
+        
+        // Agregar aleatoriedad dentro del segmento (±3 días)
+        $randomDays = rand(-3, 3);
+        $finalDays = max(0, min($totalDays, $baseDays + $randomDays));
+        
+        return $startDate->copy()->addDays($finalDays)->addHours(rand(8, 18))->addMinutes(rand(0, 59));
     }
 }
