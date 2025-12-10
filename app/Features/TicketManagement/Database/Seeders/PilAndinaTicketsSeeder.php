@@ -99,10 +99,13 @@ class PilAndinaTicketsSeeder extends Seeder
 
     private function loadAgents(): void
     {
-        // Los agentes son coordinadores técnicos/supervisores de turno
+        // Cargar todos los agentes disponibles para distribuir tickets
         $this->agents = [
             'maria' => User::where('email', 'maria.condori@pilandina.com.bo')->first(),
             'roberto' => User::where('email', 'roberto.flores@pilandina.com.bo')->first(),
+            'ana' => User::where('email', 'ana.mamani@pilandina.com.bo')->first(),
+            'carlos' => User::where('email', 'carlos.gutierrez@pilandina.com.bo')->first(),
+            'lucia' => User::where('email', 'lucia.quispe@pilandina.com.bo')->first(),
         ];
     }
 
@@ -353,7 +356,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket3Pending(): void
     {
         $user = $this->users['Carmen'];
-        $agent = $this->agents['maria'];
+        $agent = $this->agents['ana'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00003',
@@ -412,7 +415,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket4Pending(): void
     {
         $user = $this->users['Leticia'];
-        $agent = $this->agents['roberto'];
+        $agent = $this->agents['carlos'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00004',
@@ -485,7 +488,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket6Closed(): void
     {
         $user = $this->users['Diego'];
-        $agent = $this->agents['maria'];
+        $agent = $this->agents['lucia'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00006',
@@ -554,7 +557,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket7Resolved(): void
     {
         $user = $this->users['Marcos'];
-        $agent = $this->agents['roberto'];
+        $agent = $this->agents['ana'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00007',
@@ -611,7 +614,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket8Pending(): void
     {
         $user = $this->users['Carmen'];
-        $agent = $this->agents['maria'];
+        $agent = $this->agents['carlos'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00008',
@@ -670,7 +673,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket9Closed(): void
     {
         $user = $this->users['Patricia'];
-        $agent = $this->agents['roberto'];
+        $agent = $this->agents['lucia'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00009',
@@ -755,7 +758,7 @@ class PilAndinaTicketsSeeder extends Seeder
     private function createTicket11Pending(): void
     {
         $user = $this->users['Marcos'];
-        $agent = $this->agents['maria'];
+        $agent = $this->agents['roberto'];
 
         $ticket = Ticket::create([
             'ticket_code' => 'TKT-2025-00011',

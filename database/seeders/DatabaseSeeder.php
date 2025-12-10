@@ -31,6 +31,7 @@ use App\Features\TicketManagement\Database\Seeders\PilAndinaAugOctTicketsSeeder;
 
 // Test Users
 use App\Features\UserManagement\Database\Seeders\MultiRoleTestUserSeeder;
+use App\Features\UserManagement\Database\Seeders\LukeMontenegroUserSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -76,5 +77,8 @@ class DatabaseSeeder extends Seeder
 
         // 6. Test Users (Multi-role user for testing active_role system)
         $this->call(MultiRoleTestUserSeeder::class);
+
+        // 7. Demo User for User Dashboard (Luke Montenegro)
+        $this->call(LukeMontenegroUserSeeder::class);
     }
 }

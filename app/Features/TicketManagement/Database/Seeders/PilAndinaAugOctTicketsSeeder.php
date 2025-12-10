@@ -93,6 +93,9 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
         $this->agents = [
             'maria' => User::where('email', 'maria.condori@pilandina.com.bo')->first(),
             'roberto' => User::where('email', 'roberto.flores@pilandina.com.bo')->first(),
+            'ana' => User::where('email', 'ana.mamani@pilandina.com.bo')->first(),
+            'carlos' => User::where('email', 'carlos.gutierrez@pilandina.com.bo')->first(),
+            'lucia' => User::where('email', 'lucia.quispe@pilandina.com.bo')->first(),
         ];
     }
 
@@ -120,6 +123,13 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
         return 'TKT-2025-' . str_pad($this->ticketCounter++, 5, '0', STR_PAD_LEFT);
     }
 
+    private function getRandomAgent(): User
+    {
+        $agentKeys = array_keys($this->agents);
+        $randomKey = $agentKeys[array_rand($agentKeys)];
+        return $this->agents[$randomKey];
+    }
+
     // ==================== AGOSTO 2025 ====================
     private function createAugustTickets(): void
     {
@@ -131,7 +141,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 3, 16, 0),
             Carbon::create(2025, 8, 4, 10, 0),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Mantenimiento preventivo - Línea PLT-1000',
             "María,\n\nSegún el cronograma de mantenimiento preventivo, la línea PLT-1000 debe recibir servicio esta semana.\n\n¿Coordinamos con producción para programar la parada?",
@@ -157,7 +167,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 9, 14, 20),
             Carbon::create(2025, 8, 10, 11, 0),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Calibración de sensores de temperatura',
             "Equipo,\n\nLos sensores de temperatura de las cámaras de frío necesitan calibración anual.\n\nAdjunto cronograma propuesto.",
@@ -183,7 +193,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 16, 9, 45),
             Carbon::create(2025, 8, 17, 14, 0),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Optimización de línea de pasteurización',
             "María,\n\nHe identificado un cuello de botella en la línea de pasteurización.\n\nCon un ajuste podríamos aumentar throughput 15%.",
@@ -209,7 +219,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 21, 11, 0),
             Carbon::create(2025, 8, 22, 9, 30),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Repuesto filtros de aire línea PLT-2000',
             "María,\n\nLos filtros de aire de la línea PLT-2000 están al 80% de capacidad.\n\nConviene reemplazarlos ahora antes que afecten producción.",
@@ -235,7 +245,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 27, 13, 20),
             Carbon::create(2025, 8, 28, 11, 0),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Capacitación operadores - Nueva maquinaria',
             "María,\n\nLa nueva envasadora automática llega la próxima semana.\n\nNecesitamos capacitar a 8 operadores antes de la instalación.",
@@ -260,7 +270,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 8, 29, 11, 30),
             Carbon::create(2025, 8, 30, 14, 0),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Upgrade software sistema SCADA',
             "María,\n\nEl proveedor de SCADA lanzó actualización con mejoras de seguridad.\n\n¿Procedemos con upgrade?",
@@ -291,7 +301,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 3, 14, 0),
             Carbon::create(2025, 9, 4, 10, 0),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['quality_problem'],
             'Inspección sanitaria - Preparación documentación',
             "María,\n\nLa inspección sanitaria está programada para el 15 de septiembre.\n\nNecesito revisar documentación obligatoria.",
@@ -315,7 +325,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 9, 15, 20),
             Carbon::create(2025, 9, 10, 13, 0),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Ajuste de recetas - Producto bajo en grasa',
             "María,\n\nAlgunos lotes salen con contenido graso ligeramente bajo.\n\nNecesito ajustar parámetros de formulación.",
@@ -339,7 +349,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 15, 10, 15),
             Carbon::create(2025, 9, 16, 16, 0),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['safety_concern'],
             'Fuga menor amoniaco - Sistema refrigeración',
             "URGENTE María,\n\nDetectamos fuga menor de amoniaco en compresor CR-03.\n\nÁrea evacuada preventivamente.",
@@ -363,7 +373,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 21, 11, 0),
             Carbon::create(2025, 9, 22, 14, 30),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['quality_problem'],
             'Certificación ISO 22000 - Auditoría interna',
             "María,\n\nProgramemos auditoría interna antes de certificación ISO 22000.\n\nPropongo última semana de septiembre.",
@@ -386,7 +396,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 24, 13, 45),
             Carbon::create(2025, 9, 25, 10, 15),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Actualización firmware controladores PLC',
             "María,\n\nLos PLCs de línea tienen firmware desactualizado.\n\nVersión nueva corrige bugs críticos.",
@@ -408,7 +418,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 26, 10, 30),
             Carbon::create(2025, 9, 27, 15, 0),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['quality_problem'],
             'Desviación pH en lotes matutinos',
             "María,\n\nLotes del turno mañana presentan pH ligeramente elevado.\n\nPosible problema calibración medidores.",
@@ -430,7 +440,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 9, 29, 14, 30),
             Carbon::create(2025, 9, 30, 10, 45),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Implementación sistema Kanban almacén',
             "María,\n\nPropongo implementar sistema Kanban para gestión de inventario.\n\nReduciría tiempos de búsqueda 40%.",
@@ -461,7 +471,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 10, 5, 10, 45),
             Carbon::create(2025, 10, 6, 15, 0),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['quality_problem'],
             'Lote yogur con viscosidad fuera de rango',
             "María,\n\nLote YG-2025-0234 tiene viscosidad 15% por debajo del estándar.\n\nPosible error en tiempo de fermentación.",
@@ -484,7 +494,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 10, 10, 11, 30),
             Carbon::create(2025, 10, 11, 15, 20),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Parada programada - Limpieza profunda líneas',
             "María,\n\nEn 2 semanas toca limpieza profunda de todas las líneas.\n\nNecesito coordinar parada de 48 horas.",
@@ -506,7 +516,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 10, 17, 14, 0),
             Carbon::create(2025, 10, 18, 11, 15),
             $this->users[0],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Sistema de etiquetado - Impresión defectuosa',
             "María,\n\nLa impresora de etiquetas está generando códigos barra ilegibles.\n\nAfecta trazabilidad del producto.",
@@ -528,7 +538,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
             Carbon::create(2025, 10, 25, 13, 15),
             Carbon::create(2025, 10, 26, 10, 0),
             $this->users[2],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['production_delay'],
             'Optimización cambio sabores línea yogur',
             "María,\n\nEl cambio entre sabores toma 45 minutos.\n\nCon mejor procedimiento podríamos reducir a 25 minutos.",
@@ -550,7 +560,7 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
         $this->createPendingTicket(
             Carbon::create(2025, 10, 30, 14, 45),
             $this->users[4],
-            $this->agents['maria'],
+            $this->getRandomAgent(),
             $this->categories['equipment_issue'],
             'Evaluación compra pasteurizador adicional',
             "María,\n\nCon el crecimiento proyectado para 2026, necesitaremos capacidad adicional.\n\n¿Evaluamos inversión en pasteurizador nuevo?",

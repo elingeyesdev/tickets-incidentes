@@ -85,6 +85,12 @@ class AnalyticsService
             'ticket_status' => $this->getUserTicketStatusStats($userId),
             'recent_tickets' => $this->getUserRecentTickets($userId),
             'recent_articles' => $this->getRecentArticles(),
+            // Datos adicionales para cumplir con requisitos de dashboard estadístico
+            'profile' => $this->getUserProfile($userId),
+            'priority_distribution' => $this->getUserPriorityDistribution($userId),
+            'tickets_trend' => $this->getUserTicketsTrend($userId),
+            'top_companies' => $this->getTopFollowedCompanies(),
+            'top_articles' => $this->getTopViewedArticles(),
         ];
     }
 
@@ -1064,6 +1070,149 @@ class AnalyticsService
         }
 
         return $activities;
+    }
+
+    // =========================================================================
+    // USER DASHBOARD ENHANCEMENT METHODS
+    // =========================================================================
+
+    /**
+     * Get user's profile information for dashboard.
+     */
+    private function getUserProfile(string $userId): array
+    {
+        $user = User::with('profile')->find($userId);
+        
+        if (!$user) {
+            return [
+                'name' => 'Usuario',
+                'avatar_url' => null,
+                'member_since' => null,
+                'email' => null,
+            ];
+        }
+
+        // Get resolution rate
+        $totalTickets = Ticket::where('created_by_user_id', $userId)->count();
+        $resolvedTickets = Ticket::where('created_by_user_id', $userId)
+            ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
+            ->count();
+        $resolutionRate = $totalTickets > 0 ? round(($resolvedTickets / $totalTickets) * 100) : 0;
+
+        return [
+            'name' => $user->profile?->display_name ?? $user->email,
+            'avatar_url' => $user->profile?->avatar_url,
+            'member_since' => $user->created_at?->translatedFormat('M Y'),
+            'email' => $user->email,
+            'total_tickets' => $totalTickets,
+            'resolved_tickets' => $resolvedTickets,
+            'resolution_rate' => $resolutionRate,
+        ];
+    }
+
+    /**
+     * Get user's ticket distribution by priority.
+     */
+    private function getUserPriorityDistribution(string $userId): array
+    {
+        $stats = Ticket::where('created_by_user_id', $userId)
+            ->select('priority', DB::raw('count(*) as total'))
+            ->groupBy('priority')
+            ->pluck('total', 'priority')
+            ->toArray();
+
+        $total = array_sum($stats);
+
+        return [
+            'high' => [
+                'count' => $stats[TicketPriority::HIGH->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::HIGH->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'medium' => [
+                'count' => $stats[TicketPriority::MEDIUM->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::MEDIUM->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'low' => [
+                'count' => $stats[TicketPriority::LOW->value] ?? 0,
+                'percentage' => $total > 0 ? round((($stats[TicketPriority::LOW->value] ?? 0) / $total) * 100) : 0,
+            ],
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Get user's ticket creation trend over last 6 months.
+     */
+    private function getUserTicketsTrend(string $userId): array
+    {
+        $data = Ticket::where('created_by_user_id', $userId)
+            ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
+            ->select(
+                DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
+                DB::raw('count(*) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        // Fill missing months with 0
+        $result = [];
+        $labels = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $month = $date->format('Y-m');
+            $result[$month] = $data[$month] ?? 0;
+            $labels[] = $date->translatedFormat('M');
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => array_values($result),
+        ];
+    }
+
+    /**
+     * Get top 5 most followed companies.
+     */
+    private function getTopFollowedCompanies(int $limit = 5): array
+    {
+        return Company::active()
+            ->withCount('followers')
+            ->orderBy('followers_count', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(function ($company) {
+                return [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'logo_url' => $company->logo_url,
+                    'followers_count' => $company->followers_count,
+                    'industry' => $company->industry?->name ?? 'General',
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get top 5 most viewed articles.
+     */
+    private function getTopViewedArticles(int $limit = 5): array
+    {
+        return HelpCenterArticle::published()
+            ->orderBy('views_count', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(function ($article) {
+                return [
+                    'id' => $article->id,
+                    'title' => $article->title,
+                    'views_count' => $article->views_count,
+                    'category' => $article->category?->name ?? 'General',
+                    'published_at' => $article->published_at?->diffForHumans(),
+                ];
+            })
+            ->toArray();
     }
 }
 
