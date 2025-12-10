@@ -1,0 +1,423 @@
+# 📢 REGLAS: SEEDERS DE ANUNCIOS
+## Enterprise Helpdesk System
+
+---
+
+## 🎯 OBJETIVO
+
+Crear anuncios realistas que simulen comunicaciones reales de empresas a sus usuarios, conectados con incidentes, mantenimientos y eventos del sistema.
+
+---
+
+## ⚙️ CONFIGURACIÓN
+
+```
+PERÍODO:    5 enero 2025 - 8 diciembre 2025
+VOLUMEN:    10-30 anuncios por empresa
+TIPOS:      4 tipos obligatorios (MAINTENANCE, INCIDENT, NEWS, ALERT)
+```
+
+### Idempotencia
+```php
+if (CompanyAnnouncement::where('company_id', $company->id)->exists()) {
+    return; // Ya existen anuncios
+}
+```
+
+---
+
+## 📋 TIPOS DE ANUNCIOS (4 Obligatorios)
+
+### 1. MAINTENANCE (Mantenimientos)
+**Distribución:** 25-30% del total
+
+**Metadata requerida:**
+```json
+{
+  "urgency": "LOW|MEDIUM|HIGH",
+  "scheduled_start": "2025-06-15T02:00:00Z",
+  "scheduled_end": "2025-06-15T06:00:00Z",
+  "actual_start": "2025-06-15T02:05:00Z",    // Si ya ocurrió
+  "actual_end": "2025-06-15T05:45:00Z",      // Si ya ocurrió
+  "is_emergency": false,
+  "affected_services": ["banca_online", "app_movil"]
+}
+```
+
+**Patrones:**
+- 70% programados (scheduled_start en futuro o pasado reciente)
+- 30% emergencias (is_emergency: true)
+- Horarios nocturnos: 80% entre 00:00-06:00
+- Horarios diurnos: 20% (solo emergencias)
+- Duración típica: 2-6 horas
+
+### 2. INCIDENT (Incidentes)
+**Distribución:** 20-25% del total
+
+**Metadata requerida:**
+```json
+{
+  "urgency": "MEDIUM|HIGH|CRITICAL",
+  "resolution_content": "Servicios restaurados. Causa: sobrecarga de red...",
+  "affected_services": ["red_norte", "atencion_clientes"],
+  "started_at": "2025-08-10T09:15:00Z",
+  "resolved_at": "2025-08-10T11:30:00Z"      // Si ya fue resuelto
+}
+```
+
+**Patrones:**
+- 60% resueltos (con resolved_at)
+- 40% en curso (sin resolved_at, en el pasado reciente)
+- Duración: 30 min - 6 horas
+- Horarios pico: 9:00-11:00 AM, 2:00-4:00 PM
+
+### 3. NEWS (Noticias)
+**Distribución:** 35-40% del total
+
+**Metadata requerida:**
+```json
+{
+  "news_type": "feature_release|policy_update|general_update",
+  "target_audience": "all_users|premium_users|business_clients",
+  "summary": "Breve resumen de 2-3 líneas",
+  "call_to_action": "Actualiza tu app ahora"
+}
+```
+
+**Patrones:**
+- 50% feature_release (nuevas funcionalidades)
+- 30% policy_update (cambios de políticas)
+- 20% general_update (comunicados generales)
+
+### 4. ALERT (Alertas)
+**Distribución:** 10-15% del total
+
+**Metadata requerida:**
+```json
+{
+  "urgency": "HIGH|CRITICAL",
+  "alert_type": "security|system|service|compliance",
+  "message": "Mensaje corto y directo",
+  "action_required": true,
+  "action_description": "Actualiza tu contraseña antes del 20/12",
+  "started_at": "2025-11-01T00:00:00Z",
+  "ended_at": "2025-12-20T23:59:59Z",        // Deadline
+  "affected_services": ["todos"]
+}
+```
+
+**Patrones:**
+- 70% action_required: true
+- 60% security alerts
+- 40% system/service/compliance
+- Duración activa: 7-30 días
+
+---
+
+## 📊 ESTADOS DE PUBLICACIÓN
+
+### Distribución
+```
+PUBLISHED:  75-80%  - Visible para usuarios
+SCHEDULED:  10-15%  - Programados (futuro cercano)
+DRAFT:      5-10%   - En edición
+ARCHIVED:   0-5%    - Antiguos archivados
+```
+
+### Reglas
+- **PUBLISHED:** `published_at` en el pasado
+- **SCHEDULED:** `published_at` en el futuro (próximos 7-30 días)
+- **DRAFT:** `published_at = null`
+- **ARCHIVED:** Anuncios publicados hace +6 meses
+
+---
+
+## 🔗 COHERENCIA CON TICKETS
+
+### Patrón 1: Incidente Masivo
+```
+09:15 - INCIDENT PUBLISHED
+        "Caída del servicio - En resolución"
+        urgency: CRITICAL
+        
+09:20 - 8-12 TICKETS similares
+        "No puedo acceder"
+        "Error en el sistema"
+        
+11:30 - INCIDENT UPDATED
+        + resolution_content: "Restaurado"
+        + resolved_at: now()
+```
+
+### Patrón 2: Mantenimiento Programado
+```
+Lunes 10:00 - MAINTENANCE SCHEDULED
+              "Mantenimiento sábado 2am-6am"
+              scheduled_for: sábado futuro
+              
+Sábado 02:00 - (Ejecutar mantenimiento)
+               actual_start registrado
+               
+Sábado 05:45 - actual_end registrado
+
+Lunes 08:30 - 2-4 TICKETS
+              "¿Ya terminó el mantenimiento?"
+```
+
+### Patrón 3: Nueva Funcionalidad
+```
+01/08 - NEWS PUBLISHED
+        "Nueva función: Pagos QR"
+        news_type: feature_release
+        
+03/08 - 6-10 TICKETS
+        "¿Cómo usar QR?"
+        "No encuentro la función"
+        
+05/08 - ARTÍCULO Help Center
+        "Guía: Pagos con código QR"
+```
+
+### Patrón 4: Alerta de Seguridad
+```
+01/11 - ALERT PUBLISHED
+        "Actualiza tu contraseña"
+        urgency: HIGH
+        action_required: true
+        ended_at: 20/12
+        
+02/11 - 15-20 TICKETS
+        "¿Cómo cambiar contraseña?"
+        "Error al actualizar"
+        
+05/11 - ARTÍCULO Help Center
+        "Cambio de contraseña segura"
+```
+
+---
+
+## 📅 DISTRIBUCIÓN TEMPORAL
+
+### Por Trimestre (2025)
+```
+Q1 2025 (Ene-Mar):  20%  - Lanzamiento y ajustes iniciales
+Q2 2025 (Abr-Jun):  25%  - Incremento de actividad
+Q3 2025 (Jul-Sep):  30%  - Pico de actividad y nuevas funciones
+Q4 2025 (Oct-Dic):  25%  - Estabilización y cierres
+```
+
+### Horarios por Tipo
+```
+MAINTENANCE:
+- 80% entre 00:00-06:00 (madrugada)
+- 20% entre 10:00-18:00 (solo emergencias)
+
+INCIDENT:
+- 40% entre 09:00-11:00 (mañana)
+- 35% entre 14:00-16:00 (tarde)
+- 25% horarios variados
+
+NEWS:
+- 60% entre 08:00-10:00 (inicio jornada)
+- 40% entre 14:00-17:00 (tarde)
+
+ALERT:
+- 70% entre 08:00-12:00 (alta visibilidad)
+- 30% horarios variados
+```
+
+---
+
+---
+
+## ✅ CHECKLIST DE CALIDAD
+
+### Antes de Generar
+```
+☐ Verificar que NO existan anuncios previos (idempotencia)
+☐ Identificar industria de la empresa
+☐ Revisar tickets existentes para coherencia
+☐ Definir servicios críticos de la empresa (affected_services)
+```
+
+### Durante Generación
+```
+☐ Volumen: 10-30 anuncios
+☐ Distribución de tipos: 25% MAINT, 22% INC, 38% NEWS, 12% ALERT
+☐ Estados: 77% PUBLISHED, 12% SCHEDULED, 8% DRAFT, 3% ARCHIVED
+☐ Fechas dentro del rango (5 ene 2025 - 8 dic 2025)
+☐ Metadata completa según tipo
+☐ affected_services específicos de la industria
+☐ Horarios coherentes con tipo de anuncio
+```
+
+### Validaciones Críticas
+```
+☐ SCHEDULED: published_at en el futuro
+☐ PUBLISHED: published_at en el pasado
+☐ MAINTENANCE: scheduled_start < scheduled_end
+☐ MAINTENANCE pasados: actual_start y actual_end presentes
+☐ INCIDENT resueltos: resolved_at presente
+☐ ALERT: ended_at en el futuro o pasado reciente
+☐ No anuncios publicados después de 8 dic 2025
+```
+
+---
+
+## 🎨 BUENAS PRÁCTICAS
+
+### Títulos
+- Claros y específicos: "Mantenimiento banca online - Sábado 15/06"
+- No genéricos: ❌ "Mantenimiento del sistema"
+- Incluir fecha si aplica
+- Máximo 80 caracteres
+
+### Contenido
+- Primera línea: Resumen del qué y cuándo
+- Segunda parte: Detalles y afectaciones
+- Tercera parte: Qué hacer o esperar
+- Tono profesional pero accesible
+- 100-500 palabras
+
+### affected_services
+- Nombres específicos: "banca_online", "cajeros_zona_norte"
+- No genéricos: ❌ "sistema", "plataforma"
+- Relacionados con la industria
+- Array con 1-4 servicios
+
+### Urgency Levels
+```
+LOW:      Informativo, sin afectación crítica
+MEDIUM:   Afectación moderada, puede esperar
+HIGH:     Requiere atención pronta
+CRITICAL: Urgente, afectación severa
+```
+
+---
+
+## 📝 ESTRUCTURA DEL SEEDER
+
+```php
+class [Company]AnnouncementsSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $company = Company::where('name', 'Nombre')->first();
+        
+        // Idempotencia
+        if (CompanyAnnouncement::where('company_id', $company->id)->exists()) {
+            return;
+        }
+
+        $announcements = [
+            // MAINTENANCE (25-30%)
+            [
+                'type' => 'MAINTENANCE',
+                'title' => '...',
+                'content' => '...',
+                'status' => 'PUBLISHED',
+                'metadata' => [
+                    'urgency' => 'MEDIUM',
+                    'scheduled_start' => '2025-06-15T02:00:00Z',
+                    'scheduled_end' => '2025-06-15T06:00:00Z',
+                    'actual_start' => '2025-06-15T02:05:00Z',
+                    'actual_end' => '2025-06-15T05:50:00Z',
+                    'is_emergency' => false,
+                    'affected_services' => ['banca_online', 'app_movil']
+                ],
+                'created_at' => '2025-06-10 10:00:00',
+                'published_at' => '2025-06-10 10:30:00'
+            ],
+            
+            // INCIDENT (20-25%)
+            [
+                'type' => 'INCIDENT',
+                'title' => '...',
+                'content' => '...',
+                'status' => 'PUBLISHED',
+                'metadata' => [
+                    'urgency' => 'HIGH',
+                    'resolution_content' => 'Servicios restaurados...',
+                    'affected_services' => ['red_zona_sur'],
+                    'started_at' => '2025-08-10T09:15:00Z',
+                    'resolved_at' => '2025-08-10T11:30:00Z'
+                ],
+                'created_at' => '2025-08-10 09:20:00',
+                'published_at' => '2025-08-10 09:25:00'
+            ],
+            
+            // NEWS (35-40%)
+            [
+                'type' => 'NEWS',
+                'title' => '...',
+                'content' => '...',
+                'status' => 'PUBLISHED',
+                'metadata' => [
+                    'news_type' => 'feature_release',
+                    'target_audience' => 'all_users',
+                    'summary' => 'Breve resumen...',
+                    'call_to_action' => 'Actualiza tu app'
+                ],
+                'created_at' => '2025-08-01 08:00:00',
+                'published_at' => '2025-08-01 08:30:00'
+            ],
+            
+            // ALERT (10-15%)
+            [
+                'type' => 'ALERT',
+                'title' => '...',
+                'content' => '...',
+                'status' => 'PUBLISHED',
+                'metadata' => [
+                    'urgency' => 'CRITICAL',
+                    'alert_type' => 'security',
+                    'message' => 'Actualiza tu contraseña',
+                    'action_required' => true,
+                    'action_description' => 'Cambio obligatorio...',
+                    'started_at' => '2025-11-01T00:00:00Z',
+                    'ended_at' => '2025-12-20T23:59:59Z',
+                    'affected_services' => ['todos']
+                ],
+                'created_at' => '2025-10-28 09:00:00',
+                'published_at' => '2025-11-01 00:00:00'
+            ]
+        ];
+
+        foreach ($announcements as $data) {
+            CompanyAnnouncement::create([
+                'company_id' => $company->id,
+                'author_id' => $company->admin_user_id,
+                'type' => $data['type'],
+                'title' => $data['title'],
+                'content' => $data['content'],
+                'status' => $data['status'],
+                'metadata' => $data['metadata'],
+                'published_at' => $data['published_at'],
+                'created_at' => $data['created_at'],
+                'updated_at' => $data['created_at']
+            ]);
+        }
+    }
+}
+```
+
+---
+
+## 🎯 MÉTRICAS DE ÉXITO
+
+```
+✓ 10-30 anuncios por empresa
+✓ Los 4 tipos presentes (MAINTENANCE, INCIDENT, NEWS, ALERT)
+✓ Metadata completa y coherente
+✓ Fechas realistas y ordenadas
+✓ Conexión con tickets (2-3 escenarios mínimo)
+✓ affected_services específicos de industria
+✓ 0 anuncios en el futuro después de 8 dic 2025
+✓ Estados coherentes con fechas
+```
+
+---
+
+**VERSIÓN:** 1.0  
+**FECHA:** 8 Diciembre 2025  
+**ESTADO:** Producción ✓

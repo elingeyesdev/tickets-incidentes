@@ -12,7 +12,7 @@ use App\Features\CompanyManagement\Database\Seeders\SmallBolivianCompaniesSeeder
 use App\Features\CompanyManagement\Database\Seeders\CompanyRequestApprovalSimulationSeeder;
 
 // Articles
-use App\Features\ContentManagement\Database\Seeders\PilAndinaHelpCenterArticlesSeeder;
+use App\Features\ContentManagement\Database\Seeders\PilAndinaArticlesSeeder;
 use App\Features\ContentManagement\Database\Seeders\BancoFassilHelpCenterArticlesSeeder;
 use App\Features\ContentManagement\Database\Seeders\YPFBHelpCenterArticlesSeeder;
 use App\Features\ContentManagement\Database\Seeders\TigoHelpCenterArticlesSeeder;
@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanyRequestApprovalSimulationSeeder::class);
 
         // 3. Articles (One by one)
-        $this->call(PilAndinaHelpCenterArticlesSeeder::class);
+        $this->call(PilAndinaArticlesSeeder::class);
         $this->call(BancoFassilHelpCenterArticlesSeeder::class);
         $this->call(YPFBHelpCenterArticlesSeeder::class);
         $this->call(TigoHelpCenterArticlesSeeder::class);

@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\CompanyAdminController;
 use App\Http\Controllers\Dashboard\AgentController;
 use App\Http\Controllers\Dashboard\UserController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
+use App\Features\Reports\Http\Controllers\PlatformReportController;
 use App\Shared\Helpers\JWTHelper;
 
 // ========== TESTING ROUTES (Development Only) ==========
@@ -245,6 +246,24 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         Route::get('/users', function () {
             return view('app.platform-admin.users.index');
         })->name('admin.users.index');
+
+        // Reports Center
+        Route::get('/reports', [PlatformReportController::class, 'index'])
+            ->name('admin.reports.index');
+        
+        // Reports Downloads
+        Route::get('/reports/companies/excel', [PlatformReportController::class, 'companiesExcel'])
+            ->name('admin.reports.companies.excel');
+        Route::get('/reports/companies/pdf', [PlatformReportController::class, 'companiesPdf'])
+            ->name('admin.reports.companies.pdf');
+        Route::get('/reports/growth/excel', [PlatformReportController::class, 'growthExcel'])
+            ->name('admin.reports.growth.excel');
+        Route::get('/reports/growth/pdf', [PlatformReportController::class, 'growthPdf'])
+            ->name('admin.reports.growth.pdf');
+        Route::get('/reports/requests/excel', [PlatformReportController::class, 'requestsExcel'])
+            ->name('admin.reports.requests.excel');
+        Route::get('/reports/requests/pdf', [PlatformReportController::class, 'requestsPdf'])
+            ->name('admin.reports.requests.pdf');
     });
 
     // Company Admin Dashboard (COMPANY_ADMIN role)

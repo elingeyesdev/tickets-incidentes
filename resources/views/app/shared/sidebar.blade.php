@@ -62,6 +62,12 @@
                                 </p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="/app/admin/reports" class="nav-link">
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>Reportes</p>
+                            </a>
+                        </li>
                         <li class="nav-header">CUENTA</li>
                         <li class="nav-item">
                             <a href="{{ route('app.profile') }}" class="nav-link">

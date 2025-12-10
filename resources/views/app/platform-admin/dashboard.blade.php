@@ -89,7 +89,54 @@
     </div>
 </div>
 
-<!-- Row 2: Real-time API Traffic Chart (AdminLTE Flot Interactive Style) -->
+<!-- Row 2: Business Metrics Charts (Client-Relevant) -->
+<div class="row">
+    <!-- Platform Growth Chart (Line/Bar Chart) -->
+    <div class="col-md-8">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Crecimiento de la Plataforma (Últimos 6 meses)
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart">
+                    <canvas id="platformGrowthChart" style="min-height: 280px; height: 280px; max-height: 280px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Industry Distribution Chart (Donut) -->
+    <div class="col-md-4">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-industry"></i>
+                    Empresas por Industria
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart">
+                    <canvas id="industryDistributionChart" style="min-height: 280px; height: 280px; max-height: 280px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Real-time API Traffic Chart (AdminLTE Flot Interactive Style) -->
 <div class="row">
     <!-- Chart Column (8 cols) -->
     <div class="col-md-9">
@@ -1027,6 +1074,127 @@ function initializeRequestsStatusChart(data) {
         }
     });
 }
+
+// Gráfico de Crecimiento de Plataforma
+function initializePlatformGrowthChart() {
+    const ctx = document.getElementById('platformGrowthChart');
+    if (!ctx) return;
+
+    const growthData = @json($growthData);
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: growthData.labels,
+            datasets: [
+                {
+                    label: 'Empresas',
+                    data: growthData.companies,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Usuarios',
+                    data: growthData.users,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Tickets',
+                    data: growthData.tickets,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, padding: 10 }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 10,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+// Gráfico de Distribución por Industria
+function initializeIndustryDistributionChart() {
+    const ctx = document.getElementById('industryDistributionChart');
+    if (!ctx) return;
+
+    const industryData = @json($industryData);
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: industryData.labels,
+            datasets: [{
+                data: industryData.data,
+                backgroundColor: industryData.colors,
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 10,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Inicializar nuevos gráficos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    initializePlatformGrowthChart();
+    initializeIndustryDistributionChart();
+});
 
 </script>
 @endpush

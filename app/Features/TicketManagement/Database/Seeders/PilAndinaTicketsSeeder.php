@@ -87,13 +87,13 @@ class PilAndinaTicketsSeeder extends Seeder
             ->where('is_active', true)
             ->get();
 
-        // PIL Andina es manufacturing, usa categorías creadas automáticamente
+        // PIL Andina es food_and_beverage, mapear a las categorías auto-creadas
         $this->categories = [
-            'equipment_issue' => $categories->firstWhere('name', 'Soporte Técnico'),
-            'production_delay' => $categories->firstWhere('name', 'Problema de Producción'),
-            'quality_problem' => $categories->firstWhere('name', 'Control de Calidad'),
-            'supply_chain' => $categories->firstWhere('name', 'Logística y Distribución'),
-            'safety_concern' => $categories->firstWhere('name', 'Seguridad Alimentaria'),
+            'equipment_issue' => $categories->firstWhere('name', 'Incidente de Producción'),
+            'production_delay' => $categories->firstWhere('name', 'Incidente de Producción'),
+            'quality_problem' => $categories->firstWhere('name', 'Problema de Calidad del Producto'),
+            'supply_chain' => $categories->firstWhere('name', 'Problema de Cadena de Frío/Logística'),
+            'safety_concern' => $categories->firstWhere('name', 'Incidente de Seguridad Alimentaria'),
         ];
     }
 
