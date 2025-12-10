@@ -31,7 +31,7 @@ class CompanyIndustrySeeder extends Seeder
             [
                 'code' => 'finance',
                 'name' => 'Finanzas',
-                'description' => 'Bancos, seguros, inversiones',
+                'description' => 'Seguros, inversiones',
             ],
             [
                 'code' => 'retail',
@@ -46,7 +46,7 @@ class CompanyIndustrySeeder extends Seeder
             [
                 'code' => 'real_estate',
                 'name' => 'Bienes Raíces',
-                'description' => 'Inmobiliarias, construcción',
+                'description' => 'Inmobiliarias, arrendamiento',
             ],
             [
                 'code' => 'hospitality',
@@ -73,7 +73,6 @@ class CompanyIndustrySeeder extends Seeder
                 'name' => 'Energía',
                 'description' => 'Electricidad, petróleo, renovables',
             ],
-            // Nuevas industrias añadidas para mayor granularidad
             [
                 'code' => 'telecommunications',
                 'name' => 'Telecomunicaciones',
@@ -110,9 +109,9 @@ class CompanyIndustrySeeder extends Seeder
                 'description' => 'Clínicas veterinarias, servicios de cuidado animal y tiendas para mascotas',
             ],
             [
-                'code' => 'beverage',
-                'name' => 'Bebidas',
-                'description' => 'Productores y distribuidores de bebidas (cervecerías, bebidas no alcohólicas)',
+                'code' => 'insurance',
+                'name' => 'Seguros',
+                'description' => 'Seguros de vida, seguros comerciales, seguros de salud y pólizas especializadas',
             ],
             [
                 'code' => 'agriculture',
@@ -128,6 +127,16 @@ class CompanyIndustrySeeder extends Seeder
                 'code' => 'non_profit',
                 'name' => 'ONGs',
                 'description' => 'Organizaciones sin fines de lucro',
+            ],
+            [
+                'code' => 'construction',
+                'name' => 'Construcción',
+                'description' => 'Empresas constructoras, obras civiles, proyectos inmobiliarios',
+            ],
+            [
+                'code' => 'environment',
+                'name' => 'Medio Ambiente',
+                'description' => 'Consultorías ambientales, reciclaje, energías renovables, ONGs ambientales',
             ],
             [
                 'code' => 'other',

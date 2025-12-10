@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
  * 2. YPFB (CMP-2025-00002) - Petróleo y Gas (8 áreas) - Empresa estatal estratégica
  * 3. Entel (CMP-2025-00003) - Telecomunicaciones (7 áreas) - Empresa estatal líder telecom
  * 4. Tigo (CMP-2025-00004) - Telecomunicaciones (7 áreas) - Multinacional (Millicom)
- * 5. CBN (CMP-2025-00005) - Bebidas (7 áreas) - Multinacional (AB InBev)
+ * 5. CBN (CMP-2025-00005) - Alimentos y Bebidas (13 áreas) - Multinacional (AB InBev)
  * 6. Banco Mercantil Santa Cruz (CMP-2025-00006) - Servicios Financieros (7 áreas) - Banco más grande
  *
  * Estructura de logos (determinística, sin timestamps):
@@ -519,7 +519,7 @@ class LargeBolivianCompaniesSeeder extends Seeder
             'tax_id' => '151095874',
             'legal_rep' => 'Alejandro Reyes Montoya',
             'website' => 'https://www.cbn.bo',
-            'industry_code' => 'beverage',
+            'industry_code' => 'food_and_beverage',
             'primary_color' => '#C8102E',
             'secondary_color' => '#FFD700',
             'logo_filename' => 'cbn-logo.png',
@@ -582,36 +582,56 @@ class LargeBolivianCompaniesSeeder extends Seeder
             ],
             'areas' => [
                 [
-                    'name' => 'Producción Avícola',
-                    'description' => 'Incubación, crianza, engorde, beneficio y procesamiento de aves',
+                    'name' => 'Producción de Cerveza',
+                    'description' => 'Malteado, fermentación, maduración, procesamiento de bebidas',
                 ],
                 [
-                    'name' => 'Elaboración de Alimentos',
-                    'description' => 'Producción de pastas, harinas, galletas, chocolates y conservas',
+                    'name' => 'Envasado y Embotellado',
+                    'description' => 'Llenado, etiquetado, encajonado y preparación para distribución',
                 ],
                 [
-                    'name' => 'Control de Calidad y Laboratorio',
-                    'description' => 'Pruebas microbiológicas, análisis físico-químicos, certifi ISO 22000',
+                    'name' => 'Control de Calidad',
+                    'description' => 'Pruebas de sabor, carbonatación, microbiología, cumplimiento de normas',
+                ],
+                [
+                    'name' => 'Laboratorio',
+                    'description' => 'Análisis químicos, pruebas técnicas, certificaciones',
                 ],
                 [
                     'name' => 'Logística y Cadena de Frío',
                     'description' => 'Almacenamiento en frío, distribución nacional, gestión de inventarios',
                 ],
                 [
-                    'name' => 'Ventas, Canales y Comercial',
+                    'name' => 'Ventas y Comercial',
                     'description' => 'Gestión de clientes mayoristas, minoristas, negociaciones comerciales',
                 ],
                 [
-                    'name' => 'Recursos Humanos y Desarrollo',
-                    'description' => 'Nómina, selección, capacitación, seguridad y salud ocupacional',
+                    'name' => 'Recursos Humanos',
+                    'description' => 'Nómina, selección, capacitación, relaciones laborales',
                 ],
                 [
-                    'name' => 'Administración, Finanzas y Legal',
-                    'description' => 'Contabilidad, tesorería, asuntos legales, cumplimiento normativo',
+                    'name' => 'Finanzas',
+                    'description' => 'Contabilidad, presupuestos, análisis financiero',
                 ],
                 [
-                    'name' => 'Mantenimiento e Infraestructura',
-                    'description' => 'Mantenimiento de equipos, sistemas productivos, seguridad industrial',
+                    'name' => 'Tesorería',
+                    'description' => 'Gestión de caja, cobranzas, pagos',
+                ],
+                [
+                    'name' => 'Asuntos Legales',
+                    'description' => 'Contratos, litigios, asuntos corporativos',
+                ],
+                [
+                    'name' => 'Cumplimiento y Regulación',
+                    'description' => 'Normativas sanitarias, auditorías, compliance',
+                ],
+                [
+                    'name' => 'Mantenimiento',
+                    'description' => 'Mantenimiento preventivo y correctivo de equipos',
+                ],
+                [
+                    'name' => 'Seguridad Industrial',
+                    'description' => 'Seguridad laboral, salud ocupacional, medio ambiente',
                 ],
             ],
         ],
@@ -731,10 +751,12 @@ class LargeBolivianCompaniesSeeder extends Seeder
     {
         $this->command->info('🏢 Creando 6 empresas bolivianas GRANDES con datos profesionales...');
 
-        // [IDEMPOTENCY] Verificar si las 6 empresas ya existen
-        $existingCount = Company::whereIn('company_code', ['CMP-2025-00001', 'CMP-2025-00002', 'CMP-2025-00003', 'CMP-2025-00004', 'CMP-2025-00005', 'CMP-2025-00006'])->count();
-        if ($existingCount >= 6) {
-            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+        // [IDEMPOTENCY] Verificar si ya existen todas las empresas grandes
+        $codes = array_column(self::COMPANIES, 'company_code');
+        $existingCount = Company::whereIn('company_code', $codes)->count();
+
+        if ($existingCount >= count(self::COMPANIES)) {
+            $this->command->info('[OK] Todas las empresas grandes ya existen. Saltando ejecución.');
             return;
         }
 
@@ -760,8 +782,13 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     continue;
                 }
 
-                // 3. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
-                // Usar company_code fijo del array (determinístico, no genera automáticamente)
+                // 3. Preparar Logo y URL (ANTES de crear para optimizar queries)
+                $logoUrl = null;
+                if (isset($companyData['logo_filename'])) {
+                    $logoUrl = $this->publishLogoAndGetUrl($companyData['company_code'], $companyData['logo_filename']);
+                }
+
+                // 4. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
                 $companyService = app(CompanyService::class);
                 $company = $companyService->create([
                     'company_code' => $companyData['company_code'],
@@ -780,6 +807,8 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     'legal_representative' => $companyData['legal_rep'],
                     'primary_color' => $companyData['primary_color'],
                     'secondary_color' => $companyData['secondary_color'],
+                    'logo_url' => $logoUrl,
+                    'favicon_url' => $logoUrl, // Usamos el mismo logo como favicon por defecto
                     'business_hours' => [
                         'monday' => ['open' => '08:30', 'close' => '18:00'],
                         'tuesday' => ['open' => '08:30', 'close' => '18:00'],
@@ -791,11 +820,12 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     'timezone' => 'America/La_Paz',
                     'status' => 'active',
                     'industry_id' => $industry->id,
+                    'settings' => ['areas_enabled' => true], // Configuración directa (empresas grandes usan áreas)
                 ], $admin);
 
                 $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
 
-                // 4. Asignar rol COMPANY_ADMIN
+                // 5. Asignar rol COMPANY_ADMIN
                 UserRole::create([
                     'user_id' => $admin->id,
                     'role_code' => 'COMPANY_ADMIN',
@@ -803,7 +833,7 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     'is_active' => true,
                 ]);
 
-                // 5. Crear 2 Agentes
+                // 6. Crear Agentes
                 foreach ($companyData['agents'] as $agentData) {
                     $agent = $this->createUser(
                         $agentData['first_name'],
@@ -821,7 +851,7 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     $this->command->info("  └─ Agente creado: {$agent->email}");
                 }
 
-                // 6. Crear Áreas para la empresa
+                // 7. Crear Áreas para la empresa
                 $areasCount = count($companyData['areas']);
                 $this->command->info("  ├─ Creando {$areasCount} áreas para la empresa...");
                 foreach ($companyData['areas'] as $areaData) {
@@ -834,18 +864,8 @@ class LargeBolivianCompaniesSeeder extends Seeder
                     $this->command->info("  │  └─ Área '{$areaData['name']}' creada");
                 }
 
-                // 7. Activar areas_enabled en settings de la empresa
-                $company->update([
-                    'settings' => array_merge(
-                        $company->settings ?? [],
-                        ['areas_enabled' => true]
-                    ),
-                ]);
-                $this->command->info("  └─ Funcionalidad de áreas activada");
-
-                // 8. Publicar logo si existe
-                if (isset($companyData['logo_filename'])) {
-                    $this->publishLogo($company, $companyData['logo_filename']);
+                if ($logoUrl) {
+                    $this->command->info("  └─ Logo publicado: {$logoUrl}");
                 }
 
             } catch (\Exception $e) {
@@ -857,87 +877,34 @@ class LargeBolivianCompaniesSeeder extends Seeder
     }
 
     /**
-     * Publicar logo de empresa (SOLID: Single Responsibility Principle)
-     *
-     * Copia logo desde resources a storage con estructura determinística:
-     * - Origen: app/Features/CompanyManagement/resources/logos/{filename}
-     * - Destino: storage/app/public/company-logos/{company_code}/{filename}
-     * - URL: asset("storage/company-logos/{company_code}/{filename}")
-     *
-     * Beneficios:
-     * - Sin timestamps → misma URL en cada ejecución
-     * - company_code fijo → misma carpeta siempre
-     * - Idempotente → no duplica logos en recreaciones de BD
+     * Copia el logo y retorna la URL pública.
+     * Se ejecuta ANTES de crear la empresa para incluir la URL en el INSERT inicial.
      */
-    private function publishLogo(Company $company, string $logoFilename): void
+    private function publishLogoAndGetUrl(string $companyCode, string $logoFilename): ?string
     {
-        $sourcePath = $this->getLogoSourcePath($logoFilename);
+        $sourcePath = app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
 
-        if (!$this->validateLogoFile($sourcePath, $logoFilename)) {
-            return;
+        if (!file_exists($sourcePath)) {
+            $this->command->warn("  ⚠  Logo no encontrado en resources: {$logoFilename}");
+            return null;
         }
 
         try {
-            $destinationPath = $this->copyLogoToStorage($company, $logoFilename, $sourcePath);
-            $this->updateCompanyLogoUrl($company, $destinationPath);
+            $storagePath = "company-logos/{$companyCode}";
 
-            $this->command->info("  └─ Logo publicado: {$destinationPath}");
+            if (!Storage::disk('public')->exists($storagePath)) {
+                Storage::disk('public')->makeDirectory($storagePath);
+            }
+
+            $fullPath = "{$storagePath}/{$logoFilename}";
+            $fileContent = file_get_contents($sourcePath);
+            Storage::disk('public')->put($fullPath, $fileContent);
+
+            return asset("storage/{$fullPath}");
         } catch (\Exception $e) {
-            $this->command->error("  ❌ Error publicando logo: {$e->getMessage()}");
+            $this->command->error("  ❌ Error copiando logo: {$e->getMessage()}");
+            return null;
         }
-    }
-
-    /**
-     * Obtener ruta completa del logo en resources
-     */
-    private function getLogoSourcePath(string $logoFilename): string
-    {
-        return app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
-    }
-
-    /**
-     * Validar que el archivo de logo existe
-     */
-    private function validateLogoFile(string $sourcePath, string $logoFilename): bool
-    {
-        if (!file_exists($sourcePath)) {
-            $this->command->warn("  ⚠️  Logo no encontrado: {$logoFilename}");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Copiar logo desde resources a storage público (SOLID: Open/Closed Principle)
-     * Estructura determinística sin timestamps
-     */
-    private function copyLogoToStorage(Company $company, string $logoFilename, string $sourcePath): string
-    {
-        $fileContent = file_get_contents($sourcePath);
-
-        // Estructura: company-logos/{company_code}/{filename}
-        $storagePath = "company-logos/{$company->company_code}";
-
-        // Crear directorio si no existe
-        if (!Storage::disk('public')->exists($storagePath)) {
-            Storage::disk('public')->makeDirectory($storagePath);
-        }
-
-        // Guardar archivo (sin timestamp, siempre el mismo nombre)
-        $fullPath = "{$storagePath}/{$logoFilename}";
-        Storage::disk('public')->put($fullPath, $fileContent);
-
-        return $fullPath;
-    }
-
-    /**
-     * Actualizar URL del logo en la empresa
-     */
-    private function updateCompanyLogoUrl(Company $company, string $storagePath): void
-    {
-        $logoUrl = asset("storage/{$storagePath}");
-        $company->update(['logo_url' => $logoUrl]);
     }
 
     private function createUser(string $firstName, string $lastName, string $email): User
@@ -969,5 +936,4 @@ class LargeBolivianCompaniesSeeder extends Seeder
 
         return $user;
     }
-
 }

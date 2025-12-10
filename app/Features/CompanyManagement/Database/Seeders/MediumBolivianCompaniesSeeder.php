@@ -103,23 +103,47 @@ class MediumBolivianCompaniesSeeder extends Seeder
             'areas' => [
                 [
                     'name' => 'Operaciones Bancarias',
-                    'description' => 'Procesamiento de transacciones, tesorería, créditos y colocaciones',
+                    'description' => 'Procesamiento de transacciones, clearing interbancario',
+                ],
+                [
+                    'name' => 'Créditos y Colocaciones',
+                    'description' => 'Créditos empresariales, créditos personales, análisis crediticio',
                 ],
                 [
                     'name' => 'Atención al Cliente',
                     'description' => 'Servicio al cliente, resolución de consultas, gestión de reclamos',
                 ],
                 [
+                    'name' => 'Gestión de Riesgos',
+                    'description' => 'Riesgo crediticio, riesgo operacional, análisis de exposición, AML/CFT',
+                ],
+                [
+                    'name' => 'Cumplimiento Regulatorio',
+                    'description' => 'Compliance normativo, auditorías internas, normativas, KYC',
+                ],
+                [
                     'name' => 'Tecnología',
-                    'description' => 'Sistemas bancarios, seguridad digital, infraestructura TI',
+                    'description' => 'Sistemas bancarios, seguridad digital, ciberseguridad, infraestructura TI',
+                ],
+                [
+                    'name' => 'Finanzas',
+                    'description' => 'Presupuestos, análisis financiero',
+                ],
+                [
+                    'name' => 'Contabilidad',
+                    'description' => 'Registros contables, reportes financieros',
+                ],
+                [
+                    'name' => 'Tesorería',
+                    'description' => 'Gestión de caja, cobranzas, pagos',
                 ],
                 [
                     'name' => 'Recursos Humanos',
                     'description' => 'Nómina, contratación, capacitación',
                 ],
                 [
-                    'name' => 'Administración',
-                    'description' => 'Contabilidad, finanzas, asuntos legales',
+                    'name' => 'Asuntos Legales',
+                    'description' => 'Contratos, litigios, responsabilidad civil, asuntos corporativos',
                 ],
             ],
         ],
@@ -170,20 +194,52 @@ class MediumBolivianCompaniesSeeder extends Seeder
             ],
             'areas' => [
                 [
-                    'name' => 'Operaciones de Tienda',
-                    'description' => 'Gestión de supermercados y farmacias, inventarios, atención al cliente',
+                    'name' => 'Operaciones de Tiendas',
+                    'description' => 'Gestión de supermercados y sucursales, atención en tienda, horarios operativos',
+                ],
+                [
+                    'name' => 'Gestión de Inventarios',
+                    'description' => 'Reposición, control de stock, inventario físico, rotación de productos',
+                ],
+                [
+                    'name' => 'Control de Calidad',
+                    'description' => 'Inspección de productos, estándares de calidad',
+                ],
+                [
+                    'name' => 'Perecibles y Cadena de Frío',
+                    'description' => 'Manejo de perecederos, almacenamiento en frío, temperatura controlada',
                 ],
                 [
                     'name' => 'Logística y Distribución',
-                    'description' => 'Cadena de suministro, almacenes, transporte de productos',
+                    'description' => 'Cadena de suministro, almacenes centrales, transporte de productos',
+                ],
+                [
+                    'name' => 'Ventas y Comercial',
+                    'description' => 'Negociaciones comerciales, canales de venta',
+                ],
+                [
+                    'name' => 'Promociones y Precios',
+                    'description' => 'Ofertas, estrategia de precios, promociones',
+                ],
+                [
+                    'name' => 'Atención al Cliente',
+                    'description' => 'Servicio en cajas, devoluciones, quejas, satisfacción del cliente',
                 ],
                 [
                     'name' => 'Recursos Humanos',
                     'description' => 'Nómina, contratación, capacitación de personal',
                 ],
                 [
-                    'name' => 'Administración',
-                    'description' => 'Contabilidad, finanzas, asuntos legales, TI',
+                    'name' => 'Finanzas',
+                    'description' => 'Presupuestos, análisis financiero',
+                ],
+                [
+                    'name' => 'Contabilidad',
+                    'description' => 'Registros contables, reportes financieros',
+                ],
+                [
+                    'name' => 'Sistemas e IT',
+                    'description' => 'Sistemas de puntos de venta, inventarios, infraestructura TI',
                 ],
             ],
         ],
@@ -240,23 +296,55 @@ class MediumBolivianCompaniesSeeder extends Seeder
             'areas' => [
                 [
                     'name' => 'Producción Avícola',
-                    'description' => 'Incubación, crianza, engorde, procesamiento de aves',
+                    'description' => 'Incubación, crianza, engorde, faenado de aves',
                 ],
                 [
                     'name' => 'Procesamiento de Alimentos',
-                    'description' => 'Fabricación de pastas, harinas, galletas, chocolates',
+                    'description' => 'Fabricación de pastas, harinas, galletas, chocolates, líneas de producción',
                 ],
                 [
                     'name' => 'Control de Calidad',
-                    'description' => 'ISO 9001, ISO 22000, buenas prácticas de manufactura',
+                    'description' => 'ISO 9001, ISO 22000, buenas prácticas de manufactura, análisis de productos',
                 ],
                 [
-                    'name' => 'Logística y Distribución',
-                    'description' => 'Cadena de frío, distribución nacional, gestión de inventarios',
+                    'name' => 'Logística',
+                    'description' => 'Cadena de frío, almacenamiento',
                 ],
                 [
-                    'name' => 'Administración',
-                    'description' => 'Finanzas, recursos humanos, sistemas, asuntos legales',
+                    'name' => 'Distribución',
+                    'description' => 'Distribución nacional, gestión de inventarios',
+                ],
+                [
+                    'name' => 'Recursos Humanos',
+                    'description' => 'Nómina, contratación, capacitación, relaciones laborales',
+                ],
+                [
+                    'name' => 'Seguridad y Salud Ocupacional',
+                    'description' => 'Seguridad laboral, salud ocupacional, protección ambiental',
+                ],
+                [
+                    'name' => 'Finanzas',
+                    'description' => 'Presupuestos, análisis financiero',
+                ],
+                [
+                    'name' => 'Contabilidad',
+                    'description' => 'Contabilidad general, registros contables, reportes financieros',
+                ],
+                [
+                    'name' => 'Tesorería',
+                    'description' => 'Gestión de caja, cobranzas, pagos',
+                ],
+                [
+                    'name' => 'Asuntos Legales',
+                    'description' => 'Contratos, litigios, asuntos corporativos',
+                ],
+                [
+                    'name' => 'Cumplimiento Normativo',
+                    'description' => 'Cumplimiento normativo sanitario, regulaciones avícolas y alimentarias',
+                ],
+                [
+                    'name' => 'Sistemas e IT',
+                    'description' => 'Infraestructura TI, sistemas administrativos, automatización, ciberseguridad',
                 ],
             ],
         ],
@@ -307,20 +395,60 @@ class MediumBolivianCompaniesSeeder extends Seeder
             ],
             'areas' => [
                 [
-                    'name' => 'Operaciones de Farmacia',
+                    'name' => 'Operaciones de Farmacias',
                     'description' => 'Gestión de 176 sucursales, atención farmacéutica, dispensación de medicamentos',
                 ],
                 [
-                    'name' => 'Control de Calidad y BPA',
-                    'description' => 'Buenas Prácticas de Almacenamiento, certificación Agemed, farmacovigilancia',
+                    'name' => 'Control de Calidad',
+                    'description' => 'Inspecciones de calidad, estándares de productos',
                 ],
                 [
-                    'name' => 'Logística y Distribución',
-                    'description' => 'Cadena de suministro farmacéutico, almacenes, inventarios',
+                    'name' => 'Buenas Prácticas de Almacenamiento (BPA)',
+                    'description' => 'Certificación Agemed, control de temperatura, almacenamiento seguro',
                 ],
                 [
-                    'name' => 'Administración',
-                    'description' => 'Finanzas, recursos humanos, sistemas, asuntos legales',
+                    'name' => 'Farmacovigilancia',
+                    'description' => 'Farmacovigilancia, reportes de seguridad de medicamentos',
+                ],
+                [
+                    'name' => 'Cumplimiento Regulatorio',
+                    'description' => 'Cumplimiento normativas sanitarias, regulaciones farmacéuticas, auditorías',
+                ],
+                [
+                    'name' => 'Logística',
+                    'description' => 'Cadena de suministro farmacéutico, almacenes centrales',
+                ],
+                [
+                    'name' => 'Distribución',
+                    'description' => 'Transporte seguro de medicamentos, gestión de inventarios',
+                ],
+                [
+                    'name' => 'Atención al Cliente',
+                    'description' => 'Atención farmacéutica, resolución de consultas, gestión de reclamos',
+                ],
+                [
+                    'name' => 'Servicio al Cliente',
+                    'description' => 'Consultas farmacéuticas, información de medicamentos',
+                ],
+                [
+                    'name' => 'Recursos Humanos',
+                    'description' => 'Nómina, contratación, capacitación de farmacéuticos y personal',
+                ],
+                [
+                    'name' => 'Finanzas',
+                    'description' => 'Presupuestos, análisis financiero',
+                ],
+                [
+                    'name' => 'Contabilidad',
+                    'description' => 'Contabilidad general, registros contables, reportes financieros',
+                ],
+                [
+                    'name' => 'Tesorería',
+                    'description' => 'Gestión de caja, cobranzas, pagos',
+                ],
+                [
+                    'name' => 'Sistemas e IT',
+                    'description' => 'Sistemas de gestión farmacéutica, infraestructura TI, inventarios automatizados, ciberseguridad',
                 ],
             ],
         ],
@@ -330,10 +458,12 @@ class MediumBolivianCompaniesSeeder extends Seeder
     {
         $this->command->info('🏢 Creando empresas bolivianas MEDIANAS con datos profesionales...');
 
-        // [IDEMPOTENCY] Verificar si las 4 empresas MEDIANAS ya existen
-        $existingCount = Company::whereIn('company_code', ['CMP-2025-00007', 'CMP-2025-00008', 'CMP-2025-00009', 'CMP-2025-00010'])->count();
-        if ($existingCount >= 4) {
-            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+        // [IDEMPOTENCY] Verificar si ya existen todas las empresas medianas
+        $codes = array_column(self::COMPANIES, 'company_code');
+        $existingCount = Company::whereIn('company_code', $codes)->count();
+
+        if ($existingCount >= count(self::COMPANIES)) {
+            $this->command->info('[OK] Todas las empresas medianas ya existen. Saltando ejecución.');
             return;
         }
 
@@ -359,8 +489,13 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     continue;
                 }
 
-                // 3. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
-                // Usar company_code fijo del array (determinístico, no genera automáticamente)
+                // 3. Preparar Logo y URL (ANTES de crear para optimizar queries)
+                $logoUrl = null;
+                if (isset($companyData['logo_filename'])) {
+                    $logoUrl = $this->publishLogoAndGetUrl($companyData['company_code'], $companyData['logo_filename']);
+                }
+
+                // 4. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
                 $companyService = app(CompanyService::class);
                 $company = $companyService->create([
                     'company_code' => $companyData['company_code'],
@@ -379,6 +514,8 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     'legal_representative' => $companyData['legal_rep'],
                     'primary_color' => $companyData['primary_color'],
                     'secondary_color' => $companyData['secondary_color'],
+                    'logo_url' => $logoUrl,
+                    'favicon_url' => $logoUrl, // Usamos el mismo logo como favicon por defecto
                     'business_hours' => [
                         'monday' => ['open' => '08:30', 'close' => '18:00'],
                         'tuesday' => ['open' => '08:30', 'close' => '18:00'],
@@ -390,11 +527,12 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     'timezone' => 'America/La_Paz',
                     'status' => 'active',
                     'industry_id' => $industry->id,
+                    'settings' => ['areas_enabled' => true], // Configuración directa (empresas medianas usan áreas)
                 ], $admin);
 
                 $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
 
-                // 4. Asignar rol COMPANY_ADMIN
+                // 5. Asignar rol COMPANY_ADMIN
                 UserRole::create([
                     'user_id' => $admin->id,
                     'role_code' => 'COMPANY_ADMIN',
@@ -402,7 +540,7 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     'is_active' => true,
                 ]);
 
-                // 5. Crear Agentes
+                // 6. Crear Agentes
                 foreach ($companyData['agents'] as $agentData) {
                     $agent = $this->createUser(
                         $agentData['first_name'],
@@ -420,7 +558,7 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     $this->command->info("  └─ Agente creado: {$agent->email}");
                 }
 
-                // 6. Crear Áreas para la empresa
+                // 7. Crear Áreas para la empresa
                 $areasCount = count($companyData['areas']);
                 $this->command->info("  ├─ Creando {$areasCount} áreas para la empresa...");
                 foreach ($companyData['areas'] as $areaData) {
@@ -433,18 +571,8 @@ class MediumBolivianCompaniesSeeder extends Seeder
                     $this->command->info("  │  └─ Área '{$areaData['name']}' creada");
                 }
 
-                // 7. Activar areas_enabled en settings de la empresa
-                $company->update([
-                    'settings' => array_merge(
-                        $company->settings ?? [],
-                        ['areas_enabled' => true]
-                    ),
-                ]);
-                $this->command->info("  └─ Funcionalidad de áreas activada");
-
-                // 8. Publicar logo si existe
-                if (isset($companyData['logo_filename'])) {
-                    $this->publishLogo($company, $companyData['logo_filename']);
+                if ($logoUrl) {
+                    $this->command->info("  └─ Logo publicado: {$logoUrl}");
                 }
 
             } catch (\Exception $e) {
@@ -456,87 +584,34 @@ class MediumBolivianCompaniesSeeder extends Seeder
     }
 
     /**
-     * Publicar logo de empresa (SOLID: Single Responsibility Principle)
-     *
-     * Copia logo desde resources a storage con estructura determinística:
-     * - Origen: app/Features/CompanyManagement/resources/logos/{filename}
-     * - Destino: storage/app/public/company-logos/{company_code}/{filename}
-     * - URL: asset("storage/company-logos/{company_code}/{filename}")
-     *
-     * Beneficios:
-     * - Sin timestamps → misma URL en cada ejecución
-     * - company_code fijo → misma carpeta siempre
-     * - Idempotente → no duplica logos en recreaciones de BD
+     * Copia el logo y retorna la URL pública.
+     * Se ejecuta ANTES de crear la empresa para incluir la URL en el INSERT inicial.
      */
-    private function publishLogo(Company $company, string $logoFilename): void
+    private function publishLogoAndGetUrl(string $companyCode, string $logoFilename): ?string
     {
-        $sourcePath = $this->getLogoSourcePath($logoFilename);
+        $sourcePath = app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
 
-        if (!$this->validateLogoFile($sourcePath, $logoFilename)) {
-            return;
+        if (!file_exists($sourcePath)) {
+            $this->command->warn("  ⚠  Logo no encontrado en resources: {$logoFilename}");
+            return null;
         }
 
         try {
-            $destinationPath = $this->copyLogoToStorage($company, $logoFilename, $sourcePath);
-            $this->updateCompanyLogoUrl($company, $destinationPath);
+            $storagePath = "company-logos/{$companyCode}";
 
-            $this->command->info("  └─ Logo publicado: {$destinationPath}");
+            if (!Storage::disk('public')->exists($storagePath)) {
+                Storage::disk('public')->makeDirectory($storagePath);
+            }
+
+            $fullPath = "{$storagePath}/{$logoFilename}";
+            $fileContent = file_get_contents($sourcePath);
+            Storage::disk('public')->put($fullPath, $fileContent);
+
+            return asset("storage/{$fullPath}");
         } catch (\Exception $e) {
-            $this->command->error("  ❌ Error publicando logo: {$e->getMessage()}");
+            $this->command->error("  ❌ Error copiando logo: {$e->getMessage()}");
+            return null;
         }
-    }
-
-    /**
-     * Obtener ruta completa del logo en resources
-     */
-    private function getLogoSourcePath(string $logoFilename): string
-    {
-        return app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
-    }
-
-    /**
-     * Validar que el archivo de logo existe
-     */
-    private function validateLogoFile(string $sourcePath, string $logoFilename): bool
-    {
-        if (!file_exists($sourcePath)) {
-            $this->command->warn("  ⚠️  Logo no encontrado: {$logoFilename}");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Copiar logo desde resources a storage público (SOLID: Open/Closed Principle)
-     * Estructura determinística sin timestamps
-     */
-    private function copyLogoToStorage(Company $company, string $logoFilename, string $sourcePath): string
-    {
-        $fileContent = file_get_contents($sourcePath);
-
-        // Estructura: company-logos/{company_code}/{filename}
-        $storagePath = "company-logos/{$company->company_code}";
-
-        // Crear directorio si no existe
-        if (!Storage::disk('public')->exists($storagePath)) {
-            Storage::disk('public')->makeDirectory($storagePath);
-        }
-
-        // Guardar archivo (sin timestamp, siempre el mismo nombre)
-        $fullPath = "{$storagePath}/{$logoFilename}";
-        Storage::disk('public')->put($fullPath, $fileContent);
-
-        return $fullPath;
-    }
-
-    /**
-     * Actualizar URL del logo en la empresa
-     */
-    private function updateCompanyLogoUrl(Company $company, string $storagePath): void
-    {
-        $logoUrl = asset("storage/{$storagePath}");
-        $company->update(['logo_url' => $logoUrl]);
     }
 
     private function createUser(string $firstName, string $lastName, string $email): User
@@ -568,5 +643,4 @@ class MediumBolivianCompaniesSeeder extends Seeder
 
         return $user;
     }
-
 }

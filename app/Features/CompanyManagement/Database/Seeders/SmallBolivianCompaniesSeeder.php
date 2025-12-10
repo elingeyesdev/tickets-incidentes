@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Storage;
 class SmallBolivianCompaniesSeeder extends Seeder
 {
     private const PASSWORD = 'mklmklmkl';
+
     private const COMPANIES = [
         [
             'company_code' => 'CMP-2025-00011',
@@ -193,7 +194,7 @@ class SmallBolivianCompaniesSeeder extends Seeder
             'tax_id' => '1020304054',
             'legal_rep' => 'Roberto Gómez',
             'website' => 'https://tiendas3b.com.bo',
-            'industry_code' => 'retail',
+            'industry_code' => 'supermarket',
             'primary_color' => '#E31E24',
             'secondary_color' => '#FFFFFF',
             'logo_filename' => '3B-market-logo.png',
@@ -216,14 +217,18 @@ class SmallBolivianCompaniesSeeder extends Seeder
             ],
         ],
     ];
+
     public function run(): void
     {
         $this->command->info('🏢 Creando 5 empresas bolivianas PEQUEÑAS...');
 
-        // [IDEMPOTENCY] Verificar si las 5 empresas PEQUEÑAS ya existen
-        $existingCount = Company::whereIn('company_code', ['CMP-2025-00011', 'CMP-2025-00012', 'CMP-2025-00013', 'CMP-2025-00014', 'CMP-2025-00015'])->count();
-        if ($existingCount >= 5) {
-            $this->command->info('[OK] Seeder ya fue ejecutado anteriormente. Saltando ejecución para evitar duplicados.');
+        // [IDEMPOTENCY] Verificar si ya existen un numero significativo de estas empresas
+        // Verificamos por claves para ser más precisos
+        $codes = array_column(self::COMPANIES, 'company_code');
+        $existingCount = Company::whereIn('company_code', $codes)->count();
+        
+        if ($existingCount >= count(self::COMPANIES)) {
+            $this->command->info('[OK] Todas las empresas pequeñas ya existen. Saltando ejecución.');
             return;
         }
 
@@ -241,13 +246,22 @@ class SmallBolivianCompaniesSeeder extends Seeder
                     $companyData['company_admin']['last_name'],
                     $companyData['company_admin']['email'],
                 );
+
                 // 2. Obtener industry_id
                 $industry = CompanyIndustry::where('code', $companyData['industry_code'])->first();
                 if (!$industry) {
                     $this->command->error("❌ Industria no encontrada: {$companyData['industry_code']}");
                     continue;
                 }
-                // 3. Crear Empresa
+
+                // 3. Preparar Logos y URLs
+                $logoUrl = null;
+                if (isset($companyData['logo_filename'])) {
+                    // Copiar y obtener URL antes de crear para insertar en un solo query
+                    $logoUrl = $this->publishLogoAndGetUrl($companyData['company_code'], $companyData['logo_filename']);
+                }
+
+                // 4. Crear Empresa
                 $companyService = app(CompanyService::class);
                 $company = $companyService->create([
                     'company_code' => $companyData['company_code'],
@@ -266,6 +280,8 @@ class SmallBolivianCompaniesSeeder extends Seeder
                     'legal_representative' => $companyData['legal_rep'],
                     'primary_color' => $companyData['primary_color'],
                     'secondary_color' => $companyData['secondary_color'],
+                    'logo_url' => $logoUrl,
+                    'favicon_url' => $logoUrl, // Usamos el mismo logo como favicon por defecto
                     'business_hours' => [
                         'monday' => ['open' => '09:00', 'close' => '18:00'],
                         'tuesday' => ['open' => '09:00', 'close' => '18:00'],
@@ -277,93 +293,83 @@ class SmallBolivianCompaniesSeeder extends Seeder
                     'timezone' => 'America/La_Paz',
                     'status' => 'active',
                     'industry_id' => $industry->id,
+                    'settings' => ['areas_enabled' => false], // Configuración directa
                 ], $admin);
+
                 $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
-                // 4. Asignar rol COMPANY_ADMIN
+
+                // 5. Asignar rol COMPANY_ADMIN
                 UserRole::create([
                     'user_id' => $admin->id,
                     'role_code' => 'COMPANY_ADMIN',
                     'company_id' => $company->id,
                     'is_active' => true,
                 ]);
-                // 5. Crear 2 Agentes
+
+                // 6. Crear Agentes
                 foreach ($companyData['agents'] as $agentData) {
                     $agent = $this->createUser(
                         $agentData['first_name'],
                         $agentData['last_name'],
                         $agentData['email'],
                     );
+
                     UserRole::create([
                         'user_id' => $agent->id,
                         'role_code' => 'AGENT',
                         'company_id' => $company->id,
                         'is_active' => true,
                     ]);
+
                     $this->command->info("  └─ Agente creado: {$agent->email}");
                 }
-                // 6. Desactivar areas_enabled (Empresas pequeñas no usan áreas)
-                $company->update([
-                    'settings' => array_merge(
-                        $company->settings ?? [],
-                        ['areas_enabled' => false]
-                    ),
-                ]);
-                $this->command->info("  └─ Configuración: Áreas desactivadas");
-                // 7. Publicar logo si existe
-                if (isset($companyData['logo_filename'])) {
-                    $this->publishLogo($company, $companyData['logo_filename']);
+                
+                if ($logoUrl) {
+                    $this->command->info("  └─ Logo publicado: {$logoUrl}");
                 }
+
             } catch (\Exception $e) {
                 $this->command->error("❌ Error creando empresa: {$e->getMessage()}");
             }
         }
+
         $this->command->info('✅ Seeder de empresas pequeñas completado con éxito!');
     }
-    private function publishLogo(Company $company, string $logoFilename): void
+
+    /**
+     * Copia el logo y retorna la URL pública.
+     */
+    private function publishLogoAndGetUrl(string $companyCode, string $logoFilename): ?string
     {
-        $sourcePath = $this->getLogoSourcePath($logoFilename);
-        if (!$this->validateLogoFile($sourcePath, $logoFilename)) {
-            return;
-        }
-        try {
-            $destinationPath = $this->copyLogoToStorage($company, $logoFilename, $sourcePath);
-            $this->updateCompanyLogoUrl($company, $destinationPath);
-            $this->command->info("  └─ Logo publicado: {$destinationPath}");
-        } catch (\Exception $e) {
-            $this->command->error("  ❌ Error publicando logo: {$e->getMessage()}");
-        }
-    }
-    private function getLogoSourcePath(string $logoFilename): string
-    {
-        return app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
-    }
-    private function validateLogoFile(string $sourcePath, string $logoFilename): bool
-    {
+        $sourcePath = app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
+
         if (!file_exists($sourcePath)) {
-            $this->command->warn("  ⚠  Logo no encontrado: {$logoFilename}");
-            return false;
+            $this->command->warn("  ⚠  Logo no encontrado en resources: {$logoFilename}");
+            return null;
         }
-        return true;
-    }
-    private function copyLogoToStorage(Company $company, string $logoFilename, string $sourcePath): string
-    {
-        $fileContent = file_get_contents($sourcePath);
-        $storagePath = "company-logos/{$company->company_code}";
-        if (!Storage::disk('public')->exists($storagePath)) {
-            Storage::disk('public')->makeDirectory($storagePath);
+
+        try {
+            $storagePath = "company-logos/{$companyCode}";
+            
+            if (!Storage::disk('public')->exists($storagePath)) {
+                Storage::disk('public')->makeDirectory($storagePath);
+            }
+
+            $fullPath = "{$storagePath}/{$logoFilename}";
+            $fileContent = file_get_contents($sourcePath);
+            Storage::disk('public')->put($fullPath, $fileContent);
+
+            return asset("storage/{$fullPath}");
+        } catch (\Exception $e) {
+            $this->command->error("  ❌ Error copiando logo: {$e->getMessage()}");
+            return null;
         }
-        $fullPath = "{$storagePath}/{$logoFilename}";
-        Storage::disk('public')->put($fullPath, $fileContent);
-        return $fullPath;
     }
-    private function updateCompanyLogoUrl(Company $company, string $storagePath): void
-    {
-        $logoUrl = asset("storage/{$storagePath}");
-        $company->update(['logo_url' => $logoUrl]);
-    }
+
     private function createUser(string $firstName, string $lastName, string $email): User
     {
         $userCode = CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code');
+
         $user = User::create([
             'user_code' => $userCode,
             'email' => $email,
@@ -377,6 +383,7 @@ class SmallBolivianCompaniesSeeder extends Seeder
             'terms_version' => 'v2.1',
             'onboarding_completed_at' => now(),
         ]);
+
         $user->profile()->create([
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -385,6 +392,7 @@ class SmallBolivianCompaniesSeeder extends Seeder
             'language' => 'es',
             'timezone' => 'America/La_Paz',
         ]);
+
         return $user;
     }
 }

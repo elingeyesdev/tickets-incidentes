@@ -29,553 +29,599 @@ final class DefaultCategoriesByIndustry
     private const CATEGORIES_MAP = [
         'technology' => [
             [
-                'name' => 'Reporte de Error',
-                'description' => 'Reportes de errores, fallos y comportamientos inesperados en la aplicación',
+                'name' => 'Reporte de Error/Bug',
+                'description' => 'Algo funciona incorrectamente, comportamiento inesperado, crash, excepción',
             ],
             [
                 'name' => 'Solicitud de Funcionalidad',
-                'description' => 'Solicitudes de nuevas funcionalidades y mejoras al sistema',
+                'description' => 'Solicitud de nuevas features, mejoras, cambios',
             ],
             [
                 'name' => 'Problema de Rendimiento',
-                'description' => 'Problemas de rendimiento, velocidad y optimización',
+                'description' => 'Aplicación lenta, timeouts, recursos agotados',
             ],
             [
-                'name' => 'Cuenta y Acceso',
-                'description' => 'Problemas de autenticación, permisos y acceso a la plataforma',
+                'name' => 'Consulta Técnica',
+                'description' => 'Preguntas sobre uso, documentación, integración',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte técnico general e instalación',
+                'name' => 'Problema de Acceso/Autenticación',
+                'description' => 'No puede loguear, credenciales incorrectas, permisos',
             ],
         ],
 
         'healthcare' => [
             [
-                'name' => 'Atención al Paciente',
-                'description' => 'Consultas y soporte directo para pacientes',
+                'name' => 'Problema con Cita',
+                'description' => 'No puedo agendar, necesito cambiar hora, quiero cancelar',
             ],
             [
-                'name' => 'Problema con Citas',
-                'description' => 'Problemas con citas, reprogramación o cancelaciones',
+                'name' => 'Problema de Acceso al Sistema',
+                'description' => 'No puedo entrar a sistema EMR, credenciales no funcionan',
             ],
             [
-                'name' => 'Historial Médico',
-                'description' => 'Solicitudes de acceso o actualización de historiales médicos',
+                'name' => 'Solicitud de Historial Médico',
+                'description' => 'Necesito acceso a mi historial, imprimir resultado',
             ],
             [
-                'name' => 'Acceso al Sistema',
-                'description' => 'Problemas de acceso al sistema médico y credenciales',
+                'name' => 'Consulta sobre Cobertura',
+                'description' => '¿Qué cubre el seguro? ¿Qué medicinas están cubiertas?',
             ],
             [
-                'name' => 'Facturación y Seguros',
-                'description' => 'Consultas sobre facturación, cobros e seguros',
+                'name' => 'Problema de Facturación',
+                'description' => 'Cobro incorrecto, duplicado, en deuda',
             ],
         ],
 
         'education' => [
             [
-                'name' => 'Problema con Curso',
-                'description' => 'Problemas con acceso a cursos, materiales o plataforma de aprendizaje',
+                'name' => 'Problema con Acceso al Curso',
+                'description' => 'No puedo entrar a clase virtual, no veo materiales',
             ],
             [
-                'name' => 'Calificaciones y Evaluaciones',
-                'description' => 'Consultas sobre calificaciones, evaluaciones y resultados académicos',
+                'name' => 'Consulta sobre Calificaciones',
+                'description' => '¿Cuál es mi nota final? ¿Cuándo salen notas?',
             ],
             [
-                'name' => 'Acceso a la Cuenta',
-                'description' => 'Problemas de acceso a cuenta de estudiante o docente',
+                'name' => 'Solicitud de Documento Académico',
+                'description' => 'Necesito certificado de notas, transcripción',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte técnico para herramientas educativas',
+                'name' => 'Problema Técnico de Plataforma',
+                'description' => 'Plataforma lenta, video no carga, error al enviar tarea',
             ],
             [
-                'name' => 'Solicitud Administrativa',
-                'description' => 'Solicitudes de documentación académica, certificados y trámites',
+                'name' => 'Queja sobre Servicio Educativo',
+                'description' => 'Maestro desapareció, clase desorganizada, contenido malo',
             ],
         ],
 
         'finance' => [
             [
-                'name' => 'Problema de Cuenta',
-                'description' => 'Problemas con cuentas, saldos y movimientos',
+                'name' => 'Problema de Cuenta/Inversión',
+                'description' => 'Saldo no coincide, desaparición de fondos',
+            ],
+            [
+                'name' => 'Solicitud sobre Póliza/Producto',
+                'description' => 'Quiero cambiar de plan, información sobre producto nuevo',
             ],
             [
                 'name' => 'Problema de Transacción',
-                'description' => 'Problemas con transacciones, transferencias o pagos',
+                'description' => 'Transferencia no llegó, retiro rechazado, demora',
             ],
             [
-                'name' => 'Problema de Seguridad',
-                'description' => 'Reportes de actividad sospechosa o problemas de seguridad',
+                'name' => 'Reporte de Seguridad/Fraude',
+                'description' => 'Veo movimientos sospechosos, creo que me robaron',
             ],
             [
-                'name' => 'Cumplimiento y Regulación',
-                'description' => 'Consultas sobre cumplimiento normativo y regulaciones',
-            ],
-            [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte técnico y problemas con plataformas de banca digital',
+                'name' => 'Consulta sobre Políticas',
+                'description' => '¿Cuál es la tasa de interés? ¿Qué comisiones cobran?',
             ],
         ],
 
         'retail' => [
             [
                 'name' => 'Problema con Pedido',
-                'description' => 'Problemas con pedidos, devoluciones o modificaciones',
+                'description' => 'Pedido no llegó, llegó incompleto, llegó dañado',
             ],
             [
                 'name' => 'Problema de Pago',
-                'description' => 'Problemas de pago, reembolsos o transacciones fallidas',
+                'description' => 'Transacción rechazada, cobrado dos veces, dinero aún no refundado',
             ],
             [
-                'name' => 'Envío y Entrega',
-                'description' => 'Consultas sobre envío, seguimiento y entrega de productos',
+                'name' => 'Solicitud de Devolución/Cambio',
+                'description' => 'Quiero devolver, cambiar por otro tamaño, no me gusta',
             ],
             [
-                'name' => 'Devolución de Producto',
-                'description' => 'Solicitudes de devolución, cambio o reemplazo de productos',
+                'name' => 'Consulta sobre Envío',
+                'description' => '¿Dónde está mi pedido? ¿Cuándo llega? ¿Costo del envío?',
             ],
             [
-                'name' => 'Acceso a la Cuenta',
-                'description' => 'Problemas de acceso a cuenta, contraseña u perfil',
+                'name' => 'Queja sobre Calidad del Producto',
+                'description' => 'Producto de mala calidad, no como se describe',
             ],
         ],
 
         'manufacturing' => [
             [
-                'name' => 'Problema de Equipo',
-                'description' => 'Problemas y mantenimiento de equipos e maquinaria',
+                'name' => 'Problema de Equipo/Máquina',
+                'description' => 'Máquina se dañó, línea paró, mantenimiento urgente',
             ],
             [
-                'name' => 'Retraso en Producción',
-                'description' => 'Reportes de retrasos en producción o cuellos de botella',
+                'name' => 'Problema de Calidad del Producto',
+                'description' => 'Producto fuera de tolerancia, defecto en lote, tasa de rechazo alta',
             ],
             [
-                'name' => 'Problema de Calidad',
-                'description' => 'Problemas de calidad, defectos o control de calidad',
+                'name' => 'Problema de Cadena de Suministro',
+                'description' => 'Proveedor retrasado, materia prima defectuosa, falta stock',
             ],
             [
-                'name' => 'Cadena de Suministro',
-                'description' => 'Consultas sobre proveedores, materias primas y logística',
+                'name' => 'Consulta sobre Proceso/Especificación',
+                'description' => 'Cómo funciona este proceso? Cuáles son las tolerancias?',
             ],
             [
-                'name' => 'Problema de Seguridad',
-                'description' => 'Reportes de problemas de seguridad e higiene industrial',
+                'name' => 'Solicitud de Cambio de Proceso',
+                'description' => 'Necesito cambiar temperatura, velocidad de línea, parámetros',
             ],
         ],
 
         'real_estate' => [
             [
-                'name' => 'Consulta de Propiedad',
-                'description' => 'Consultas sobre propiedades, disponibilidad y características',
+                'name' => 'Solicitud de Información de Propiedad',
+                'description' => 'Quiero saber propiedades disponibles, área, características',
             ],
             [
-                'name' => 'Arrendamiento y Contrato',
-                'description' => 'Consultas sobre contratos, términos de arrendamiento',
+                'name' => 'Problema con Arrendamiento/Contrato',
+                'description' => 'Disputa sobre cláusulas, renovación, términos no claros',
             ],
             [
                 'name' => 'Solicitud de Mantenimiento',
-                'description' => 'Solicitudes de reparación y mantenimiento de propiedades',
+                'description' => 'Reparación de baño, gotera, falla de electricidad, daño',
             ],
             [
-                'name' => 'Problema de Facturación',
-                'description' => 'Problemas con rentas, pagos y facturación',
+                'name' => 'Problema de Facturación/Pago de Renta',
+                'description' => 'Renta cobrada incorrectamente, pago no procesó, aumento sin aviso',
             ],
             [
-                'name' => 'Solicitud de Documento',
-                'description' => 'Solicitud de documentos, certificados y permisos',
+                'name' => 'Consulta sobre Disponibilidad/Términos',
+                'description' => 'Cuál es el precio? Hay depósito de garantía? Cuánto es el contrato?',
             ],
         ],
 
         'hospitality' => [
             [
-                'name' => 'Problema de Reservación',
-                'description' => 'Problemas con reservaciones, cancelaciones o modificaciones',
+                'name' => 'Problema con Reservación',
+                'description' => 'No puedo hacer reserva online, error en booking, sistema no funciona',
             ],
             [
-                'name' => 'Queja de Habitación y Servicio',
-                'description' => 'Quejas sobre calidad de habitación, limpieza y servicio',
+                'name' => 'Queja sobre Habitación/Servicio',
+                'description' => 'Habitación sucia, hay insectos, ruido de huéspedes, servicio lento',
             ],
             [
-                'name' => 'Problema de Facturación',
-                'description' => 'Problemas con cargos, facturas o refunds',
+                'name' => 'Problema de Facturación/Cobro',
+                'description' => 'Cobro incorrecto, cargo no autorizado, problema con reembolso',
             ],
             [
-                'name' => 'Solicitud de Mantenimiento',
-                'description' => 'Reportes de daños, averías o necesidades de reparación',
+                'name' => 'Solicitud de Servicio Especial',
+                'description' => 'Quiero room service, late checkout, extra towels, rollaway bed',
             ],
             [
-                'name' => 'Atención al Huésped',
-                'description' => 'Soporte general y consultas de huéspedes durante su estadía',
+                'name' => 'Problema de Equipo/Infraestructura',
+                'description' => 'Baño no funciona, A/C roto, wifi no funciona, agua fría',
             ],
         ],
 
         'transportation' => [
             [
-                'name' => 'Rastreo de Envío',
-                'description' => 'Consultas sobre ubicación y estado de envíos',
-            ],
-            [
-                'name' => 'Problema de Entrega',
-                'description' => 'Problemas de entrega, retrasos o daños en tránsito',
+                'name' => 'Problema de Envío/Entrega',
+                'description' => 'Envío no llegó, llegó dañado, se perdió, retraso significativo',
             ],
             [
                 'name' => 'Problema de Vehículo',
-                'description' => 'Problemas mecánicos y mantenimiento de vehículos',
+                'description' => 'Camión descompuesto, falla mecánica, necesita mantenimiento urgente',
+            ],
+            [
+                'name' => 'Consulta de Rastreo',
+                'description' => '¿Dónde está mi paquete? ¿Cuándo llega? Estado del envío',
             ],
             [
                 'name' => 'Reporte de Conductor',
-                'description' => 'Reportes sobre comportamiento de conductores y seguridad',
+                'description' => 'Conductor fue grosero, conducción riesgosa, comportamiento inapropiado',
             ],
             [
-                'name' => 'Facturación',
-                'description' => 'Consultas sobre facturas, pagos y costos de transporte',
+                'name' => 'Solicitud de Logística',
+                'description' => 'Cambiar fecha, agregar parada, cambiar dirección de entrega',
             ],
         ],
 
         'professional_services' => [
             [
-                'name' => 'Problema de Proyecto',
-                'description' => 'Problemas con proyectos, cronogramas y alcance de trabajo',
+                'name' => 'Problema con Proyecto',
+                'description' => 'Retraso, scope creep, comunicación falla',
             ],
             [
-                'name' => 'Documentos y Reportes',
-                'description' => 'Solicitudes de documentación, reportes e informes',
+                'name' => 'Solicitud de Documentación/Reporte',
+                'description' => 'Necesito reporte del proyecto',
             ],
             [
-                'name' => 'Disputa de Facturación',
-                'description' => 'Disputas por facturas, costos y términos de pago',
+                'name' => 'Problema de Facturación/Cobro',
+                'description' => 'Factura incorrecta, disputa de costos',
             ],
             [
-                'name' => 'Consulta de Cumplimiento',
-                'description' => 'Consultas sobre normas, regulaciones y cumplimiento',
+                'name' => 'Consulta sobre Progreso/Status',
+                'description' => '¿Cómo va el proyecto?',
             ],
             [
-                'name' => 'Acceso a la Cuenta',
-                'description' => 'Problemas de acceso a plataformas y sistemas de gestión',
+                'name' => 'Queja sobre Servicio',
+                'description' => 'No estoy satisfecho con el trabajo',
             ],
         ],
 
         'media' => [
             [
-                'name' => 'Problema de Campaña',
-                'description' => 'Problemas con campañas publicitarias y ejecución',
+                'name' => 'Solicitud de Contenido/Diseño',
+                'description' => 'Necesito banner, video, contenido',
             ],
             [
-                'name' => 'Solicitud de Contenido',
-                'description' => 'Solicitudes de creación, edición o publicación de contenido',
+                'name' => 'Problema con Campaña',
+                'description' => 'Campaña no se publicó, error en ejecución',
             ],
             [
-                'name' => 'Diseño y Creatividad',
-                'description' => 'Solicitudes de diseño, creatividad y material visual',
+                'name' => 'Consulta sobre Disponibilidad/Precios',
+                'description' => '¿Hay disponibilidad? ¿Cuál es el precio?',
             ],
             [
-                'name' => 'Problema de Facturación',
-                'description' => 'Problemas con facturas, servicios y pagos',
+                'name' => 'Problema de Facturación/Servicios',
+                'description' => 'Cobro incorrecto, servicio no entregado',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte técnico para plataformas de publicación',
+                'name' => 'Queja sobre Calidad',
+                'description' => 'Diseño no es lo que pedí, resultado pobre',
             ],
         ],
 
         'energy' => [
             [
-                'name' => 'Interrupción del Servicio',
-                'description' => 'Reportes de cortes de servicio, apagones y falta de suministro',
+                'name' => 'Incidente de Interrupción del Servicio',
+                'description' => 'Se cortó la luz, no hay suministro, apagón en zona',
             ],
             [
-                'name' => 'Disputa de Facturación',
-                'description' => 'Disputas por consumo, facturas y cargos',
+                'name' => 'Problema de Equipo/Infraestructura',
+                'description' => 'Medidor dañado, instalación defectuosa, mantenimiento urgente',
             ],
             [
-                'name' => 'Problema de Seguridad',
-                'description' => 'Reportes de peligros, riesgos y problemas de seguridad',
+                'name' => 'Problema de Facturación',
+                'description' => 'Consumo no coincide, cobro muy alto, error en cálculo',
             ],
             [
-                'name' => 'Problema de Equipo',
-                'description' => 'Problemas con medidores, instalaciones y equipos',
+                'name' => 'Reporte de Seguridad',
+                'description' => 'Línea suelta, transformador peligroso, peligro de electrocución',
             ],
             [
-                'name' => 'Solicitud de Mantenimiento',
-                'description' => 'Solicitudes de mantenimiento preventivo y correctivo',
+                'name' => 'Consulta sobre Consumo/Tarifas',
+                'description' => 'Cómo bajo consumo? Cuál es mi tarifa? Qué plan es mejor?',
             ],
         ],
 
         'telecommunications' => [
             [
                 'name' => 'Incidente de Red',
-                'description' => 'Cortes de red, torres, conectividad móvil o fija',
+                'description' => 'Internet caído, sin señal móvil, servicio completamente interrumpido',
             ],
             [
                 'name' => 'Degradación de Servicio',
-                'description' => 'Latencia, baja velocidad, jitter y problemas de calidad de servicio',
+                'description' => 'Internet muy lento, llamadas cortadas, jitter en video',
             ],
             [
-                'name' => 'Instalación y Activación',
-                'description' => 'Solicitudes de activación de líneas, migraciones o instalaciones',
+                'name' => 'Solicitud de Activación/Cambio',
+                'description' => 'Activar línea móvil, instalar fibra, cambiar a plan superior',
             ],
             [
-                'name' => 'Facturación y Planes',
-                'description' => 'Consultas sobre facturas, cargos y cambios de plan',
+                'name' => 'Problema de Facturación',
+                'description' => 'Cobro incorrecto, cargo duplicado, cargo no autorizado',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte técnico general para equipos y servicios de telecomunicaciones',
+                'name' => 'Consulta sobre Planes/Disponibilidad',
+                'description' => 'Qué planes tienen? Hay cobertura en mi zona? Cuál es el mejor plan?',
             ],
         ],
 
         'food_and_beverage' => [
             [
-                'name' => 'Problema de Producción',
-                'description' => 'Incidentes en líneas de producción, paro de planta o control de procesos',
+                'name' => 'Incidente de Producción',
+                'description' => 'Línea de producción parada, equipo dañado, mantenimiento urgente',
             ],
             [
-                'name' => 'Control de Calidad',
-                'description' => 'Problemas de calidad del producto, devoluciones o inspecciones',
+                'name' => 'Problema de Calidad del Producto',
+                'description' => 'Lote defectuoso, producto fuera de especificación, falla de sellado',
             ],
             [
-                'name' => 'Logística y Distribución',
-                'description' => 'Gestión de inventarios, cadena de frío y distribución de productos',
+                'name' => 'Problema de Cadena de Frío/Logística',
+                'description' => 'Producto dañado por temperatura, retraso en entrega, pérdida',
             ],
             [
-                'name' => 'Seguridad Alimentaria',
-                'description' => 'Incidentes relacionados con inocuidad, contaminaciones o retiros de producto',
+                'name' => 'Incidente de Seguridad Alimentaria',
+                'description' => 'Contaminación detectada, alérgeno no declarado, retiro de producto',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte a sistemas productivos y maquinarias de planta',
+                'name' => 'Solicitud/Consulta sobre Proceso',
+                'description' => 'Información sobre proceso, solicitud de cambio de parámetros, ¿cómo funciona X?',
             ],
         ],
 
         'pharmacy' => [
             [
-                'name' => 'Atención Farmacéutica',
-                'description' => 'Consultas sobre dispensación, disponibilidad de medicamentos y recomendaciones',
+                'name' => 'Consulta Farmacéutica',
+                'description' => 'Puedo tomar esto con ese medicamento? Cuál es la dosis? Efectos secundarios?',
             ],
             [
-                'name' => 'Gestión de Sucursales',
-                'description' => 'Operaciones de puntos de venta, horarios y stock',
+                'name' => 'Problema de Disponibilidad/Stock',
+                'description' => 'No tengo el medicamento, stock agotado, proveedor retrasado',
             ],
             [
-                'name' => 'Cumplimiento y Regulación',
-                'description' => 'Consultas sobre normativas sanitarias y farmacovigilancia',
+                'name' => 'Solicitud de Reposición/Orden',
+                'description' => 'Necesito reabastecer medicamentos, hacer pedido de productos',
             ],
             [
-                'name' => 'Cadena de Suministro',
-                'description' => 'Problemas con proveedores, logística y entrega de medicamentos',
+                'name' => 'Problema de Facturación/Cobro',
+                'description' => 'Discrepancia en inventario, cobro incorrecto, margen incorrecto',
             ],
             [
-                'name' => 'Facturación y Pagos',
-                'description' => 'Consultas sobre facturación, reembolsos y cobros',
+                'name' => 'Reporte de Cumplimiento/Regulación',
+                'description' => 'Auditoría fallida, documentación incompleta, medicamento vencido',
             ],
         ],
 
         'electronics' => [
             [
                 'name' => 'Problema de Hardware',
-                'description' => 'Fallas en equipos, garantías y devoluciones',
+                'description' => 'Dispositivo no funciona, falla física',
             ],
             [
-                'name' => 'Configuración e Instalación',
-                'description' => 'Asistencia para montaje, drivers y puesta en marcha',
+                'name' => 'Solicitud de Configuración/Instalación',
+                'description' => 'Cómo configuro? Instalar drivers, inicializar disco',
             ],
             [
-                'name' => 'Garantía y Reparación',
-                'description' => 'Solicitudes de reparación, RMA y cobertura de garantía',
+                'name' => 'Solicitud/Problema de Garantía',
+                'description' => 'Necesito reparación, garantía vencida, duda sobre cobertura',
             ],
             [
-                'name' => 'Pedido y Envío',
-                'description' => 'Consultas sobre pedidos, tracking y devoluciones',
+                'name' => 'Problema de Pedido/Envío',
+                'description' => 'Pedido no llegó, llegó dañado, unidad defectuosa en caja',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte general para productos electrónicos y periféricos',
+                'name' => 'Consulta sobre Producto/Especificaciones',
+                'description' => 'Cuáles son las especificaciones? Compatible con mi sistema?',
             ],
         ],
 
         'banking' => [
             [
-                'name' => 'Operaciones Bancarias',
-                'description' => 'Transacciones, procesamiento y servicios de cuentas',
+                'name' => 'Problema de Transacción',
+                'description' => 'Transacción falló, dinero no llegó, demora, reversal no aplicó',
             ],
             [
-                'name' => 'Problemas de Transacción',
-                'description' => 'Errores en transferencias, cargos incorrectos o fallos de pago',
+                'name' => 'Problema de Cuenta',
+                'description' => 'Saldo incorrecto, acceso denegado, cuenta bloqueada, error de crédito',
             ],
             [
-                'name' => 'Seguridad y Fraude',
-                'description' => 'Reportes de actividad sospechosa, fraudes y accesos no autorizados',
+                'name' => 'Reporte de Seguridad/Fraude',
+                'description' => 'Veo movimientos sospechosos, creo que me robaron, acceso no autorizado',
             ],
             [
-                'name' => 'Cumplimiento y Regulación',
-                'description' => 'Consultas sobre KYC, cumplimiento normativo y auditorías',
+                'name' => 'Solicitud de Servicio Bancario',
+                'description' => 'Activar tarjeta nueva, cambiar PIN, solicitar cheques, cambiar límite',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte para plataformas bancarias y servicios digitales',
+                'name' => 'Consulta sobre Política/Producto',
+                'description' => 'Cuál es la comisión de transferencia? Tasa de interés? Cómo funciona X?',
             ],
         ],
 
         'supermarket' => [
             [
-                'name' => 'Operaciones de Tienda',
-                'description' => 'Gestión de sucursales, inventarios y atención en tienda',
+                'name' => 'Problema de Producto/Compra',
+                'description' => 'Producto dañado, precio diferente al mostrador, falta cantidad prometida',
             ],
             [
-                'name' => 'Cadena de Frío y Perecibles',
-                'description' => 'Incidentes relacionados con perecibles y almacenamiento en frío',
+                'name' => 'Problema de Cadena de Frío',
+                'description' => 'Producto perecedero dañado, congelador/refrigerador falla',
             ],
             [
-                'name' => 'Pedido y Logística',
-                'description' => 'Reposición, distribución y logística de almacén',
+                'name' => 'Solicitud de Información/Disponibilidad',
+                'description' => '¿Tienen X producto? Dónde está? ¿En qué piso?',
             ],
             [
-                'name' => 'Promociones y Precios',
-                'description' => 'Consultas sobre ofertas, precios y promociones',
+                'name' => 'Problema de Facturación/Cobro',
+                'description' => 'Cobro incorrecto, doble cobro, descuento no aplicó',
             ],
             [
-                'name' => 'Atención al Cliente',
-                'description' => 'Consultas de clientes, devoluciones y quejas',
+                'name' => 'Queja sobre Servicio/Tienda',
+                'description' => 'Tienda sucia, atención mala, demora en caja, falta de stock',
             ],
         ],
 
         'veterinary' => [
             [
-                'name' => 'Citas y Atención',
-                'description' => 'Agendamiento y consultas de atención veterinaria',
+                'name' => 'Solicitud de Cita/Consulta',
+                'description' => 'Quiero agendar cita',
             ],
             [
-                'name' => 'Suministros y Medicamentos',
-                'description' => 'Disponibilidad y dispensación de productos veterinarios',
+                'name' => 'Problema con Cita',
+                'description' => 'No puedo agendar, cancelaron sin aviso',
             ],
             [
-                'name' => 'Urgencias',
-                'description' => 'Consultas por emergencias y atención prioritaria',
+                'name' => 'Urgencia/Emergencia Veterinaria',
+                'description' => 'Mascota está enferma, lesión, requiere atención urgente',
             ],
             [
-                'name' => 'Historial Médico Animal',
-                'description' => 'Acceso y actualización de historiales médicos de mascotas',
+                'name' => 'Consulta sobre Historial/Medicamento',
+                'description' => 'Qué vacunas tiene? Qué medicamento darle? Cuándo vuelvo?',
             ],
             [
-                'name' => 'Facturación y Pagos',
-                'description' => 'Consultas sobre facturas, pagos y seguros veterinarios',
+                'name' => 'Solicitud de Suministros/Medicamentos',
+                'description' => 'Necesito alimento especial, medicamento de prescripción',
             ],
         ],
 
-        'beverage' => [
+        'insurance' => [
             [
-                'name' => 'Control de Calidad',
-                'description' => 'Pruebas de calidad, lotes y cumplimiento de estándares',
+                'name' => 'Consulta sobre Cobertura/Póliza',
+                'description' => '¿Qué está cubierto? ¿Cuál es mi beneficio? ¿Límite de cobertura?',
             ],
             [
-                'name' => 'Producción y Planta',
-                'description' => 'Incidentes de planta, procesos y mantenimiento',
+                'name' => 'Solicitud/Cambio de Póliza',
+                'description' => 'Cambiar beneficiario, aumentar cobertura, cambiar de plan',
             ],
             [
-                'name' => 'Distribución y Logística',
-                'description' => 'Envíos, almacenamiento y logística de bebidas',
+                'name' => 'Problema de Reclamación',
+                'description' => 'Reclamación rechazada, demora en pago, documentación falta, disputa',
             ],
             [
-                'name' => 'Marketing y Marca',
-                'description' => 'Promociones, eventos y gestión de marca',
+                'name' => 'Problema de Facturación/Pago Premium',
+                'description' => 'Cobro incorrecto, prima no procesó, cargas duplicadas',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte a maquinaria y sistemas de producción',
+                'name' => 'Reporte de Cumplimiento',
+                'description' => 'Auditoría, actualizar información KYC, falta documentación',
             ],
         ],
 
         'agriculture' => [
             [
-                'name' => 'Problema de Equipo',
-                'description' => 'Problemas con maquinaria agrícola y equipos',
+                'name' => 'Problema de Equipo/Maquinaria',
+                'description' => 'Tractor dañado, cosechadora falla, bomba no funciona',
             ],
             [
-                'name' => 'Pedido de Suministros',
-                'description' => 'Solicitudes de semillas, fertilizantes y suministros',
+                'name' => 'Solicitud de Suministros/Insumos',
+                'description' => 'Semillas, fertilizantes, medicinas animales, alimento',
             ],
             [
-                'name' => 'Problema de Cultivos y Ganado',
-                'description' => 'Problemas de plagas, enfermedades y salud animal',
+                'name' => 'Problema de Cultivo/Cosecha',
+                'description' => 'Plaga, enfermedad, sequía, inundación, baja producción',
             ],
             [
-                'name' => 'Disputa de Precios',
-                'description' => 'Consultas sobre precios, contratos y términos comerciales',
+                'name' => 'Problema de Ganado/Salud Animal',
+                'description' => 'Animal enfermo, epizootia, mortalidad alta, problema reproductivo',
             ],
             [
-                'name' => 'Soporte Técnico',
-                'description' => 'Soporte para sistemas de riego, drones y tecnología agrícola',
+                'name' => 'Consulta sobre Técnica/Proceso',
+                'description' => 'Cuándo sembrar? Qué variedad es mejor? Cómo combatir plaga?',
             ],
         ],
 
         'government' => [
             [
-                'name' => 'Solicitud de Servicio',
-                'description' => 'Solicitudes de servicios públicos y trámites administrativos',
+                'name' => 'Solicitud de Trámite/Servicio',
+                'description' => 'Sacar cédula, licencia, permiso',
             ],
             [
-                'name' => 'Solicitud de Documento',
-                'description' => 'Solicitudes de documentación, certificados y permisos',
+                'name' => 'Solicitud de Documento/Certificado',
+                'description' => 'Certificado de no antecedentes, acta, constancia',
             ],
             [
-                'name' => 'Queja',
-                'description' => 'Quejas sobre servicios, infraestructura o funcionarios',
+                'name' => 'Consulta sobre Requisitos/Proceso',
+                'description' => 'Qué documentos necesito? Cómo hago el trámite? Cuánto cuesta?',
             ],
             [
-                'name' => 'Acceso a la Cuenta',
-                'description' => 'Problemas de acceso a portales y sistemas en línea',
+                'name' => 'Queja/Reclamo',
+                'description' => 'Funcionario fue grosero, negaron injustamente, servicio fue pobre',
             ],
             [
-                'name' => 'Administrativo',
-                'description' => 'Consultas administrativas y procedimientos oficiales',
+                'name' => 'Problema de Acceso a Sistema/Portal',
+                'description' => 'No puedo entrar al portal, error al subir documento, sistema lento',
             ],
         ],
 
         'non_profit' => [
             [
-                'name' => 'Donación y Contribución',
-                'description' => 'Consultas sobre donaciones, contribuciones y patrocinios',
+                'name' => 'Consulta sobre Programa/Servicios',
+                'description' => '¿Qué hacen ustedes? ¿Cómo puedo acceder?',
             ],
             [
-                'name' => 'Consulta de Voluntariado',
-                'description' => 'Consultas sobre voluntariado y participación en programas',
+                'name' => 'Solicitud de Voluntariado',
+                'description' => 'Quiero ser voluntario, cómo me uno?',
             ],
             [
-                'name' => 'Soporte de Programa',
-                'description' => 'Soporte para programas, beneficiarios y actividades',
+                'name' => 'Solicitud de Donación',
+                'description' => 'Quiero donar, cómo hago?',
             ],
             [
-                'name' => 'Soporte de Evento',
-                'description' => 'Apoyo para organización y realización de eventos',
+                'name' => 'Consulta sobre Beneficiario',
+                'description' => '¿Mi hijo sigue en programa? ¿Qué necesito llevar?',
             ],
             [
-                'name' => 'Acceso a la Cuenta',
-                'description' => 'Problemas de acceso a plataformas y sistemas',
+                'name' => 'Queja/Feedback',
+                'description' => 'Servicio fue malo, no me ayudaron, retroalimentación',
+            ],
+        ],
+
+        'construction' => [
+            [
+                'name' => 'Problema de Proyecto/Cronograma',
+                'description' => 'Retraso, cambio de diseño, alcance no claro, conflicto',
+            ],
+            [
+                'name' => 'Problema de Contratista/Proveedor',
+                'description' => 'Contratista incumple trabajo, proveedor retrasado, material defectuoso',
+            ],
+            [
+                'name' => 'Solicitud de Cambio/Variación',
+                'description' => 'Cambio de diseño, agregar elemento, cambiar material',
+            ],
+            [
+                'name' => 'Incidente de Seguridad Laboral',
+                'description' => 'Accidente en obra, peligro identificado, falta de cumplimiento de normas',
+            ],
+            [
+                'name' => 'Problema de Calidad/Inspección',
+                'description' => 'Trabajo no cumple estándar, falla de construcción, acabado pobre',
+            ],
+        ],
+
+        'environment' => [
+            [
+                'name' => 'Solicitud de Proyecto/Iniciativa',
+                'description' => 'Quiero iniciar proyecto de reforestación, sostenibilidad',
+            ],
+            [
+                'name' => 'Consulta sobre Cumplimiento Ambiental',
+                'description' => '¿Qué regulaciones aplican? ¿Cómo certificarme?',
+            ],
+            [
+                'name' => 'Solicitud de Servicio de Reciclaje',
+                'description' => 'Recolección de residuos, clasificación',
+            ],
+            [
+                'name' => 'Problema de Gestión de Residuos',
+                'description' => 'Residuos no fueron recolectados, contaminación',
+            ],
+            [
+                'name' => 'Reporte/Incidente Ambiental',
+                'description' => 'Contaminación detectada, derrame, violación ambiental',
             ],
         ],
 
         'other' => [
             [
-                'name' => 'Soporte General',
-                'description' => 'Soporte general sobre productos y servicios',
+                'name' => 'Problema General',
+                'description' => 'Algo no funciona',
             ],
             [
-                'name' => 'Pregunta',
-                'description' => 'Preguntas generales sobre operaciones y procesos',
+                'name' => 'Solicitud General',
+                'description' => 'Necesito que hagan algo',
             ],
             [
-                'name' => 'Queja',
-                'description' => 'Quejas y retroalimentación general',
+                'name' => 'Consulta General',
+                'description' => 'Necesito información',
             ],
             [
-                'name' => 'Solicitud',
-                'description' => 'Solicitudes diversas no clasificadas en otras categorías',
+                'name' => 'Queja/Feedback',
+                'description' => 'No estoy satisfecho',
             ],
             [
-                'name' => 'Problema Técnico',
-                'description' => 'Problemas técnicos varios',
+                'name' => 'Reporte General',
+                'description' => 'Quiero reportar algo',
             ],
         ],
     ];
