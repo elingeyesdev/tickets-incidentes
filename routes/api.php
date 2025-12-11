@@ -709,3 +709,33 @@ Route::middleware(['jwt.require'])->prefix('files')->group(function () {
         ->name('files.destroy');
 });
 
+// ================================================================================
+// REST API ENDPOINTS - External Integration (Widget)
+// ================================================================================
+// Endpoints para el widget embebible de Helpdesk.
+// Todos requieren API Key válida en el header X-Service-Key.
+
+use App\Features\ExternalIntegration\Http\Controllers\ExternalAuthController;
+
+Route::prefix('external')->middleware(['service.api-key', 'throttle:60,1'])->group(function () {
+    // Validar que la API Key sea válida
+    Route::post('/validate-key', [ExternalAuthController::class, 'validateKey'])
+        ->name('external.validate-key');
+    
+    // Verificar si un email existe en Helpdesk
+    Route::post('/check-user', [ExternalAuthController::class, 'checkUser'])
+        ->name('external.check-user');
+    
+    // Login automático (trusted, sin contraseña)
+    Route::post('/login', [ExternalAuthController::class, 'login'])
+        ->name('external.login');
+    
+    // Login manual (con contraseña, fallback)
+    Route::post('/login-manual', [ExternalAuthController::class, 'loginManual'])
+        ->name('external.login-manual');
+    
+    // Registro de nuevo usuario (con contraseña)
+    Route::post('/register', [ExternalAuthController::class, 'register'])
+        ->name('external.register');
+});
+

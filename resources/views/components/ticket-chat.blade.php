@@ -5,6 +5,9 @@
 
         <div class="card-tools">
             <span title="0 New Messages" class="badge bg-primary" id="chat-msg-count">0</span>
+            <button type="button" class="btn btn-tool" id="btn-export-chat" data-toggle="tooltip" title="Exportar Conversación (TXT)">
+                <i class="fas fa-download"></i>
+            </button>
             <button type="button" class="btn btn-tool" data-card-widget="collapse">
                 <i class="fas fa-minus"></i>
             </button>
@@ -247,7 +250,24 @@
 
 
 
-        // 2. Attach File Click
+        // 2. Export Chat Button
+        $('#btn-export-chat').on('click', function() {
+            if (!currentTicketCode) {
+                $(document).Toasts('create', {
+                    class: 'bg-warning',
+                    title: 'Advertencia',
+                    body: 'No hay ticket seleccionado para exportar.',
+                    autohide: true,
+                    delay: 2000
+                });
+                return;
+            }
+            
+            // Abrir descarga en nueva pestaña/ventana
+            window.location.href = `/app/tickets/${currentTicketCode}/export-chat`;
+        });
+
+        // 3. Attach File Click
         $btnAttach.on('click', function() {
             $fileInput.click();
         });

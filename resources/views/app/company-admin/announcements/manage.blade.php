@@ -165,21 +165,24 @@
                 <form id="form-create">
                     <div class="form-group">
                         <label for="create-type">Tipo de Anuncio <span class="text-danger">*</span></label>
-                        <select class="form-control" id="create-type" required>
+                        <select class="form-control" id="create-type" name="type" required>
                             <option value="">Seleccionar tipo...</option>
                             <option value="NEWS">Noticia</option>
                             <option value="MAINTENANCE">Mantenimiento</option>
                             <option value="INCIDENT">Incidente</option>
                             <option value="ALERT">Alerta</option>
                         </select>
+                        <small class="form-text text-muted">El tipo determina los campos adicionales requeridos</small>
                     </div>
                     <div class="form-group">
                         <label for="create-title">Título <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="create-title" required minlength="5" maxlength="255">
+                        <input type="text" class="form-control" id="create-title" name="title" required minlength="5" maxlength="255" placeholder="Título del anuncio...">
+                        <small class="form-text text-muted">Entre 5 y 255 caracteres</small>
                     </div>
                     <div class="form-group">
                         <label for="create-content">Contenido <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="create-content" rows="4" required minlength="10"></textarea>
+                        <textarea class="form-control" id="create-content" name="content" rows="4" required minlength="10" placeholder="Describe el anuncio..."></textarea>
+                        <small class="form-text text-muted">Mínimo 10 caracteres</small>
                     </div>
 
                     {{-- Dynamic metadata fields will be inserted here --}}
@@ -377,9 +380,275 @@
 @section('js')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const companyId = '{{ $companyId }}';
+    'use strict';
+    
+    // =========================================================================
+    // CONFIGURACIÓN
+    // =========================================================================
+    const CONFIG = {
+        companyId: '{{ $companyId }}',
+        apiBase: '/api/announcements'
+    };
+    
     const token = window.tokenManager?.getAccessToken();
-
+    
+    // =========================================================================
+    // UTILIDADES - Traducción de Errores de API
+    // =========================================================================
+    const Utils = {
+        /**
+         * Traduce nombres de campo de API a español amigable
+         */
+        translateFieldName: function(field) {
+            const fieldMap = {
+                // Campos principales
+                'title': 'Título',
+                'content': 'Contenido',
+                'body': 'Contenido',
+                'type': 'Tipo de anuncio',
+                
+                // Metadata general
+                'metadata': 'Metadatos',
+                'metadata.urgency': 'Urgencia',
+                'metadata.message': 'Mensaje',
+                'metadata.summary': 'Resumen',
+                'metadata.news_type': 'Tipo de noticia',
+                'metadata.target_audience': 'Audiencia objetivo',
+                'metadata.affected_services': 'Servicios afectados',
+                
+                // Maintenance
+                'urgency': 'Urgencia',
+                'scheduled_start': 'Inicio programado',
+                'scheduled_end': 'Fin programado',
+                'is_emergency': 'Es emergencia',
+                'actual_start': 'Inicio real',
+                'actual_end': 'Fin real',
+                
+                // Incident
+                'is_resolved': 'Está resuelto',
+                'started_at': 'Fecha de inicio',
+                'ended_at': 'Fecha de fin',
+                'resolution_content': 'Contenido de resolución',
+                
+                // Alert
+                'alert_type': 'Tipo de alerta',
+                'action_required': 'Acción requerida',
+                'action_description': 'Descripción de acción',
+                
+                // News
+                'news_type': 'Tipo de noticia',
+                'target_audience': 'Audiencia objetivo',
+                'summary': 'Resumen',
+                'call_to_action': 'Llamada a la acción',
+                
+                // Scheduling
+                'scheduled_for': 'Programado para',
+                'action': 'Acción'
+            };
+            return fieldMap[field] || field;
+        },
+        
+        /**
+         * Traduce mensajes de error de Laravel a español
+         */
+        translateErrorMessage: function(message, field) {
+            // Patrones comunes de Laravel
+            const patterns = [
+                { regex: /is required/i, replacement: 'es obligatorio' },
+                { regex: /must be at least (\d+) characters/i, replacement: 'debe tener al menos $1 caracteres' },
+                { regex: /may not be greater than (\d+) characters/i, replacement: 'no puede exceder los $1 caracteres' },
+                { regex: /must be a valid email/i, replacement: 'debe ser un correo válido' },
+                { regex: /must be (HIGH|MEDIUM|LOW|CRITICAL)/i, replacement: 'debe ser ALTA, MEDIA, BAJA o CRÍTICA' },
+                { regex: /must be a valid date/i, replacement: 'debe ser una fecha válida' },
+                { regex: /must be after/i, replacement: 'debe ser posterior a' },
+                { regex: /must be before/i, replacement: 'debe ser anterior a' },
+                { regex: /field is required/i, replacement: 'es obligatorio' },
+                { regex: /The (.+) field is required/i, replacement: '$1 es obligatorio' },
+                { regex: /The given data was invalid/i, replacement: 'Los datos proporcionados no son válidos' },
+                { regex: /already exists/i, replacement: 'ya existe' },
+                { regex: /must be one of/i, replacement: 'debe ser uno de' },
+                { regex: /invalid format/i, replacement: 'tiene un formato inválido' },
+                { regex: /cannot be empty/i, replacement: 'no puede estar vacío' },
+                { regex: /Unauthenticated/i, replacement: 'No autenticado. Por favor inicie sesión nuevamente.' },
+                { regex: /Insufficient permissions/i, replacement: 'Permisos insuficientes' },
+                { regex: /not found/i, replacement: 'no encontrado' },
+                { regex: /validation failed/i, replacement: 'la validación falló' }
+            ];
+            
+            let translated = message;
+            patterns.forEach(p => {
+                translated = translated.replace(p.regex, p.replacement);
+            });
+            
+            return translated;
+        },
+        
+        /**
+         * Procesa errores de API y muestra Toast con detalles
+         */
+        handleApiError: function(response, defaultMessage = 'Error al procesar la solicitud') {
+            console.error('[API Error]', response);
+            
+            // Error 401 - No autenticado
+            if (response.status === 401) {
+                Toast.error('Sesión expirada. Por favor inicie sesión nuevamente.');
+                return;
+            }
+            
+            // Error 403 - Sin permisos
+            if (response.status === 403) {
+                Toast.error('No tiene permisos para realizar esta acción.');
+                return;
+            }
+            
+            // Error 404 - No encontrado
+            if (response.status === 404) {
+                Toast.error('El recurso solicitado no fue encontrado.');
+                return;
+            }
+            
+            // Error 422 - Validación
+            if (response.status === 422 && response.data?.errors) {
+                const errors = response.data.errors;
+                let errorHtml = '<ul class="mb-0 pl-3">';
+                
+                Object.entries(errors).forEach(([field, messages]) => {
+                    const fieldName = this.translateFieldName(field);
+                    messages.forEach(msg => {
+                        const translatedMsg = this.translateErrorMessage(msg, field);
+                        errorHtml += `<li><strong>${fieldName}:</strong> ${translatedMsg}</li>`;
+                    });
+                });
+                
+                errorHtml += '</ul>';
+                Toast.errorHtml('Error de Validación', errorHtml);
+                return;
+            }
+            
+            // Error genérico con mensaje
+            if (response.data?.message) {
+                Toast.error(this.translateErrorMessage(response.data.message));
+                return;
+            }
+            
+            // Error de red/servidor
+            Toast.error(defaultMessage);
+        },
+        
+        /**
+         * Escape HTML para prevenir XSS
+         */
+        escapeHtml: function(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text || '').replace(/[&<>"']/g, m => map[m]);
+        }
+    };
+    
+    // =========================================================================
+    // TOASTS - AdminLTE Oficial
+    // =========================================================================
+    const Toast = {
+        success: function(message) {
+            $(document).Toasts('create', {
+                class: 'bg-success',
+                title: '<i class="fas fa-check-circle mr-2"></i>Éxito',
+                body: message,
+                autohide: true,
+                delay: 4000
+            });
+        },
+        error: function(message) {
+            $(document).Toasts('create', {
+                class: 'bg-danger',
+                title: '<i class="fas fa-exclamation-circle mr-2"></i>Error',
+                body: message,
+                autohide: true,
+                delay: 6000
+            });
+        },
+        errorHtml: function(title, htmlContent) {
+            $(document).Toasts('create', {
+                class: 'bg-danger',
+                title: '<i class="fas fa-exclamation-triangle mr-2"></i>' + title,
+                body: htmlContent,
+                autohide: true,
+                delay: 8000
+            });
+        },
+        warning: function(message) {
+            $(document).Toasts('create', {
+                class: 'bg-warning',
+                title: '<i class="fas fa-exclamation-triangle mr-2"></i>Advertencia',
+                body: message,
+                autohide: true,
+                delay: 5000
+            });
+        },
+        info: function(message) {
+            $(document).Toasts('create', {
+                class: 'bg-info',
+                title: '<i class="fas fa-info-circle mr-2"></i>Información',
+                body: message,
+                autohide: true,
+                delay: 4000
+            });
+        }
+    };
+    
+    // =========================================================================
+    // VALIDACIÓN - jQuery Validation con patrón AdminLTE oficial
+    // =========================================================================
+    const $formCreate = $('#form-create');
+    
+    if (typeof $.fn.validate !== 'undefined') {
+        console.log('[Announcements] ✓ jQuery Validation Plugin cargado');
+        
+        $formCreate.validate({
+            rules: {
+                type: { required: true },
+                title: { required: true, minlength: 5, maxlength: 255 },
+                content: { required: true, minlength: 10 }
+            },
+            messages: {
+                type: { required: 'Debes seleccionar un tipo de anuncio' },
+                title: {
+                    required: 'El título es obligatorio',
+                    minlength: 'El título debe tener al menos 5 caracteres',
+                    maxlength: 'El título no puede exceder los 255 caracteres'
+                },
+                content: {
+                    required: 'El contenido es obligatorio',
+                    minlength: 'El contenido debe tener al menos 10 caracteres'
+                }
+            },
+            errorElement: 'span',
+            errorClass: 'invalid-feedback',
+            errorPlacement: function(error, element) {
+                error.addClass('invalid-feedback');
+                element.closest('.form-group').append(error);
+            },
+            highlight: function(element, errorClass, validClass) {
+                $(element).addClass('is-invalid');
+                $(element).closest('.form-group').find('.form-text').hide();
+            },
+            unhighlight: function(element, errorClass, validClass) {
+                $(element).removeClass('is-invalid');
+                $(element).closest('.form-group').find('.form-text').show();
+            }
+        });
+        
+        // Re-validar select cuando cambia
+        $('#create-type').on('change', function() {
+            $formCreate.validate().element('#create-type');
+        });
+    } else {
+        console.warn('[Announcements] ⚠ jQuery Validation Plugin NO cargado');
+    }
+    
+    // =========================================================================
+    // INICIALIZACIÓN
+    // =========================================================================
+    
     // Load initial data
     loadDrafts();
     loadScheduled();
@@ -1029,12 +1298,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function createDraft() {
+        // Validar formulario con jQuery Validation antes de enviar
+        const $form = $('#form-create');
+        
+        if (typeof $.fn.validate !== 'undefined') {
+            if (!$form.valid()) {
+                console.log('[Announcement] Formulario inválido - validación frontend fallida');
+                return;
+            }
+        }
+        
         const type = document.getElementById('create-type').value;
-        const title = document.getElementById('create-title').value;
-        const content = document.getElementById('create-content').value;
+        const title = document.getElementById('create-title').value.trim();
+        const content = document.getElementById('create-content').value.trim();
 
+        // Validación de respaldo (fallback)
         if (!type || !title || !content) {
-            showToast('error', 'Complete todos los campos requeridos');
+            Toast.error('Por favor complete todos los campos requeridos');
             return;
         }
 
@@ -1091,11 +1371,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-        console.log('Creating announcement:', {
-            endpoint,
-            type,
-            body
-        });
+        console.log('[Announcement] Creating:', { endpoint, type, body });
 
         fetch(endpoint, {
             method: 'POST',
@@ -1107,45 +1383,38 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify(body)
         })
         .then(response => {
-            console.log('Response status:', response.status);
+            console.log('[Announcement] Response status:', response.status);
             return response.json().then(data => ({
                 status: response.status,
                 data: data
             }));
         })
         .then(({status, data}) => {
-            console.log('Response data:', data);
+            console.log('[Announcement] Response data:', data);
 
             if (data.success) {
+                // Cerrar modal y limpiar formulario
                 $('#modal-create').modal('hide');
-                document.getElementById('form-create').reset();
+                
+                // Reset completo del formulario
+                const $form = $('#form-create');
+                $form[0].reset();
+                $form.find('.is-invalid').removeClass('is-invalid');
+                $form.find('.invalid-feedback').remove();
+                $form.find('.form-text').show();
                 document.getElementById('metadata-fields').innerHTML = '';
-                showToast('success', 'Borrador creado exitosamente');
+                
+                Toast.success('Borrador creado exitosamente');
                 loadDrafts();
                 loadStatistics();
             } else {
-                console.error('Error creating announcement:', {
-                    status,
-                    message: data.message,
-                    errors: data.errors,
-                    fullResponse: data
-                });
-
-                // Show validation errors if available
-                if (data.errors) {
-                    console.error('Validation errors:', data.errors);
-                    const errorMessages = Object.entries(data.errors)
-                        .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-                        .join('\n');
-                    console.error('Formatted errors:\n', errorMessages);
-                }
-
-                showToast('error', data.message || 'Error al crear el anuncio');
+                // Usar manejo robusto de errores
+                Utils.handleApiError({ status, data }, 'Error al crear el anuncio');
             }
         })
         .catch(error => {
-            console.error('Fetch error:', error);
-            showToast('error', 'Error al crear el anuncio');
+            console.error('[Announcement] Fetch error:', error);
+            Toast.error('Error de conexión. Por favor verifique su red.');
         });
     }
 
@@ -1162,16 +1431,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (type === 'NEWS') {
             html = `
                 <div class="form-group">
-                    <label>Tipo de Noticia</label>
-                    <select class="form-control" id="meta-news-type">
+                    <label>Tipo de Noticia <span class="text-danger">*</span></label>
+                    <select class="form-control" id="meta-news-type" name="news_type">
                         <option value="general_update">Actualización General</option>
                         <option value="feature_release">Nuevo Lanzamiento</option>
                         <option value="policy_update">Actualización de Políticas</option>
                     </select>
+                    <small class="form-text text-muted">Categoría de la noticia</small>
                 </div>
                 <div class="form-group">
-                    <label>Resumen</label>
-                    <input type="text" class="form-control" id="meta-summary" maxlength="200">
+                    <label>Resumen <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="meta-summary" name="summary" maxlength="200" placeholder="Resumen breve de la noticia...">
+                    <small class="form-text text-muted">Máximo 200 caracteres</small>
                 </div>
             `;
         } else if (type === 'MAINTENANCE') {
@@ -1180,74 +1451,84 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Inicio Programado <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control" id="meta-scheduled-start" required>
+                            <input type="datetime-local" class="form-control" id="meta-scheduled-start" name="scheduled_start" required>
+                            <small class="form-text text-muted">Fecha/hora de inicio del mantenimiento</small>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Fin Programado <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control" id="meta-scheduled-end" required>
+                            <input type="datetime-local" class="form-control" id="meta-scheduled-end" name="scheduled_end" required>
+                            <small class="form-text text-muted">Fecha/hora de fin del mantenimiento</small>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Urgencia</label>
-                    <select class="form-control" id="meta-urgency">
+                    <select class="form-control" id="meta-urgency" name="urgency">
                         <option value="LOW">Baja</option>
                         <option value="MEDIUM" selected>Media</option>
                         <option value="HIGH">Alta</option>
                     </select>
+                    <small class="form-text text-muted">Nivel de urgencia del mantenimiento</small>
                 </div>
                 <div class="form-group">
                     <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="meta-services" placeholder="Separados por coma">
+                    <input type="text" class="form-control" id="meta-services" name="affected_services" placeholder="API, Dashboard, Email (separados por coma)">
+                    <small class="form-text text-muted">Lista de servicios que serán afectados</small>
                 </div>
             `;
         } else if (type === 'INCIDENT') {
             html = `
                 <div class="form-group">
-                    <label>Urgencia</label>
-                    <select class="form-control" id="meta-urgency">
+                    <label>Urgencia <span class="text-danger">*</span></label>
+                    <select class="form-control" id="meta-urgency" name="urgency">
                         <option value="LOW">Baja</option>
                         <option value="MEDIUM">Media</option>
                         <option value="HIGH" selected>Alta</option>
                         <option value="CRITICAL">Crítica</option>
                     </select>
+                    <small class="form-text text-muted">Nivel de impacto del incidente</small>
                 </div>
                 <div class="form-group">
                     <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="meta-services" placeholder="Separados por coma">
+                    <input type="text" class="form-control" id="meta-services" name="affected_services" placeholder="API, Dashboard, Email (separados por coma)">
+                    <small class="form-text text-muted">Lista de servicios afectados por el incidente</small>
                 </div>
             `;
         } else if (type === 'ALERT') {
             html = `
                 <div class="form-group">
-                    <label>Urgencia</label>
-                    <select class="form-control" id="meta-urgency">
+                    <label>Urgencia <span class="text-danger">*</span></label>
+                    <select class="form-control" id="meta-urgency" name="urgency">
                         <option value="HIGH" selected>Alta</option>
                         <option value="CRITICAL">Crítica</option>
                     </select>
+                    <small class="form-text text-muted">Las alertas solo admiten urgencia Alta o Crítica</small>
                 </div>
                 <div class="form-group">
-                    <label>Tipo de Alerta</label>
-                    <select class="form-control" id="meta-alert-type">
+                    <label>Tipo de Alerta <span class="text-danger">*</span></label>
+                    <select class="form-control" id="meta-alert-type" name="alert_type">
                         <option value="security">Seguridad</option>
                         <option value="system">Sistema</option>
                         <option value="service">Servicio</option>
                         <option value="compliance">Cumplimiento</option>
                     </select>
+                    <small class="form-text text-muted">Categoría de la alerta</small>
                 </div>
                 <div class="form-group">
-                    <label>Mensaje Corto</label>
-                    <input type="text" class="form-control" id="meta-message" maxlength="200">
+                    <label>Mensaje Corto <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="meta-message" name="message" maxlength="200" placeholder="Mensaje de alerta conciso...">
+                    <small class="form-text text-muted">Mensaje principal de la alerta (máx. 200 caracteres)</small>
                 </div>
                 <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" id="meta-action-required">
+                    <input type="checkbox" class="form-check-input" id="meta-action-required" name="action_required">
                     <label class="form-check-label" for="meta-action-required">Acción requerida por el usuario</label>
                 </div>
                 <div class="form-group" id="action-description-container" style="display: none;">
                     <label>Descripción de la Acción <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="meta-action-description" rows="2" placeholder="Describa qué debe hacer el usuario"></textarea>
+                    <textarea class="form-control" id="meta-action-description" name="action_description" rows="2" placeholder="Describa qué debe hacer el usuario..."></textarea>
+                    <small class="form-text text-muted">Instrucciones claras para el usuario</small>
                 </div>
             `;
 
@@ -1356,11 +1637,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showToast(type, message) {
-        // Simple toast using AdminLTE toastr if available
-        if (typeof toastr !== 'undefined') {
-            toastr[type](message);
+        // Usar Toasts oficiales de AdminLTE
+        if (type === 'success') {
+            Toast.success(message);
+        } else if (type === 'error') {
+            Toast.error(message);
+        } else if (type === 'warning') {
+            Toast.warning(message);
         } else {
-            alert(message);
+            Toast.info(message);
         }
     }
 

@@ -149,6 +149,10 @@ Route::middleware('jwt.require')->group(function () {
     Route::get('/app/profile', function () {
         return view('app.profile.index');
     })->name('app.profile');
+
+    // Ticket Chat Export (TXT)
+    Route::get('/app/tickets/{ticketCode}/export-chat', [\App\Features\Reports\Http\Controllers\TicketChatExportController::class, 'exportTxt'])
+        ->name('tickets.export-chat');
 });
 
 // ========== AUTH-FLOW ROUTES (Role Selection, Onboarding) ==========
@@ -450,6 +454,25 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
                 'role' => 'AGENT'
             ]);
         })->where('any', '.*')->name('agent.tickets.wildcard');
+
+        // Agent Reports - Views
+        Route::get('/reports/tickets', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.agent.reports.tickets', ['user' => $user]);
+        })->name('agent.reports.tickets');
+
+        Route::get('/reports/performance', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            return view('app.agent.reports.performance', ['user' => $user]);
+        })->name('agent.reports.performance');
+
+        // Agent Reports - Downloads
+        Route::get('/reports/tickets/excel', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'ticketsExcel'])
+            ->name('agent.reports.tickets.excel');
+        Route::get('/reports/tickets/pdf', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'ticketsPdf'])
+            ->name('agent.reports.tickets.pdf');
+        Route::get('/reports/performance/pdf', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'performancePdf'])
+            ->name('agent.reports.performance.pdf');
     });
 
     // User Dashboard (USER role)
@@ -574,5 +597,18 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
 
         return redirect()->route('dashboard');
     })->name('tickets.manage');
+});
+
+// ========== WIDGET EMBEBIBLE (Acceso desde proyectos externos) ==========
+// Estas rutas son públicas pero requieren un token JWT válido en la URL
+
+use App\Features\ExternalIntegration\Http\Controllers\WidgetController;
+
+Route::prefix('widget')->group(function () {
+    // Vista principal del widget (flujo de autenticación)
+    Route::get('/', [WidgetController::class, 'index'])->name('widget.index');
+    
+    // Vista de tickets (requiere token en URL)
+    Route::get('/tickets', [WidgetController::class, 'tickets'])->name('widget.tickets');
 });
 

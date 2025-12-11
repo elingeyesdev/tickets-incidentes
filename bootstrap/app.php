@@ -85,6 +85,9 @@ return Application::configure(basePath: dirname(__DIR__))
             
             // Middleware híbrido: Spatie + JWT active_role (RECOMENDADO para web.php)
             'spatie.active_role' => \App\Http\Middleware\SpatieRoleWithActiveRole::class,
+            
+            // External Integration: API Key validation for widget
+            'service.api-key' => \App\Features\ExternalIntegration\Http\Middleware\ValidateServiceApiKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
