@@ -90,13 +90,21 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
 
     private function loadAgents(): void
     {
-        $this->agents = [
+        $agents = [
             'maria' => User::where('email', 'maria.condori@pilandina.com.bo')->first(),
             'roberto' => User::where('email', 'roberto.flores@pilandina.com.bo')->first(),
             'ana' => User::where('email', 'ana.mamani@pilandina.com.bo')->first(),
             'carlos' => User::where('email', 'carlos.gutierrez@pilandina.com.bo')->first(),
             'lucia' => User::where('email', 'lucia.quispe@pilandina.com.bo')->first(),
         ];
+
+        // Filtrar solo los usuarios que existan
+        $this->agents = array_filter($agents, fn($user) => $user !== null);
+
+        // Si no hay agentes específicos, obtener cualquier usuario del sistema
+        if (empty($this->agents)) {
+            $this->agents['default'] = User::where('active', true)->first();
+        }
     }
 
     private function loadUsers(): void
@@ -125,9 +133,15 @@ class PilAndinaAugOctTicketsSeeder extends Seeder
 
     private function getRandomAgent(): User
     {
+        if (empty($this->agents)) {
+            return User::where('active', true)->first() ?? User::first();
+        }
+
         $agentKeys = array_keys($this->agents);
         $randomKey = $agentKeys[array_rand($agentKeys)];
-        return $this->agents[$randomKey];
+        $agent = $this->agents[$randomKey];
+
+        return $agent ?? User::where('active', true)->first() ?? User::first();
     }
 
     // ==================== AGOSTO 2025 ====================

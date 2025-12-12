@@ -104,7 +104,7 @@ return [
         'testing' => [
             'driver' => 'pgsql',
             'host' => 'postgres',
-            'port' => 5432,
+            'port' => env('DB_TEST_PORT', 5432),
             'database' => 'helpdesk_test',
             'username' => 'helpdesk',
             'password' => 'helpdesk_password',

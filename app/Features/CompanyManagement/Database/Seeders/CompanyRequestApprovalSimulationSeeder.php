@@ -151,7 +151,7 @@ class CompanyRequestApprovalSimulationSeeder extends Seeder
                 'company_name' => $company->name,
                 'legal_name' => $company->legal_name,
                 'admin_email' => $company->support_email,
-                'company_description' => $company->description,
+                'company_description' => $company->description ?? "Empresa: {$company->name}",
                 'request_message' => "Solicitud de incorporación de empresa: {$company->name}",
                 'website' => $company->website,
                 'industry_id' => $company->industry_id,
