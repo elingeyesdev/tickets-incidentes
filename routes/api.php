@@ -739,3 +739,40 @@ Route::prefix('external')->middleware(['service.api-key', 'throttle:60,1'])->gro
         ->name('external.register');
 });
 
+// ================================================================================
+// REST API ENDPOINTS - API Keys Management (Platform Admin)
+// ================================================================================
+// Endpoints para gestionar las API Keys de integración externa.
+// Requieren autenticación JWT y rol PLATFORM_ADMIN.
+
+use App\Features\ExternalIntegration\Http\Controllers\ApiKeyAdminController;
+
+Route::prefix('admin/api-keys')->middleware(['jwt.require', 'spatie.active_role:PLATFORM_ADMIN'])->group(function () {
+    // Listar todas las API Keys con filtros y paginación
+    Route::get('/', [ApiKeyAdminController::class, 'list'])
+        ->name('admin.api-keys.list');
+    
+    // Obtener estadísticas de API Keys
+    Route::get('/statistics', [ApiKeyAdminController::class, 'statistics'])
+        ->name('admin.api-keys.statistics');
+    
+    // Crear nueva API Key
+    Route::post('/', [ApiKeyAdminController::class, 'store'])
+        ->name('admin.api-keys.store');
+    
+    // Revocar una API Key
+    Route::post('/{id}/revoke', [ApiKeyAdminController::class, 'revoke'])
+        ->name('admin.api-keys.revoke');
+    
+    // Activar una API Key revocada
+    Route::post('/{id}/activate', [ApiKeyAdminController::class, 'activate'])
+        ->name('admin.api-keys.activate');
+    
+    // Eliminar una API Key permanentemente
+    Route::delete('/{id}', [ApiKeyAdminController::class, 'destroy'])
+        ->name('admin.api-keys.destroy');
+    
+    // Obtener API Keys de una empresa específica (para modal de empresa)
+    Route::get('/by-company/{companyId}', [ApiKeyAdminController::class, 'byCompany'])
+        ->name('admin.api-keys.by-company');
+});

@@ -68,6 +68,13 @@
                                 <p>Reportes</p>
                             </a>
                         </li>
+                        <li class="nav-header">INTEGRACIONES</li>
+                        <li class="nav-item">
+                            <a href="/app/admin/api-keys" class="nav-link">
+                                <i class="nav-icon fas fa-key"></i>
+                                <p>API Keys</p>
+                            </a>
+                        </li>
                         <li class="nav-header">CUENTA</li>
                         <li class="nav-item">
                             <a href="{{ route('app.profile') }}" class="nav-link">

@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $key
  * @property string $name
  * @property string|null $description
- * @property string $type (live|test)
+ * @property string $type (production|development|testing)
  * @property \Carbon\Carbon|null $last_used_at
  * @property int $usage_count
  * @property \Carbon\Carbon|null $expires_at
@@ -149,15 +149,20 @@ class ServiceApiKey extends Model
     /**
      * Genera una nueva API Key con formato seguro.
      * 
-     * Formato: sk_{type}_{48_caracteres_hex}
+     * Formato: sk_{prefix}_{48_caracteres_hex}
      * Ejemplo: sk_live_a1b2c3d4e5f6...
      * 
-     * @param string $type 'live' o 'test'
+     * @param string $type 'production', 'development' o 'testing'
      * @return string
      */
-    public static function generateKey(string $type = 'live'): string
+    public static function generateKey(string $type = 'production'): string
     {
-        $prefix = $type === 'test' ? 'sk_test_' : 'sk_live_';
+        $prefixes = [
+            'production' => 'sk_live_',
+            'development' => 'sk_dev_',
+            'testing' => 'sk_test_',
+        ];
+        $prefix = $prefixes[$type] ?? 'sk_live_';
         $randomPart = bin2hex(random_bytes(24)); // 48 caracteres hex
         
         return $prefix . $randomPart;
@@ -200,17 +205,25 @@ class ServiceApiKey extends Model
     /**
      * Scope para obtener solo keys de producción.
      */
-    public function scopeLive($query)
+    public function scopeProduction($query)
     {
-        return $query->where('type', 'live');
+        return $query->where('type', 'production');
     }
 
     /**
-     * Scope para obtener solo keys de prueba.
+     * Scope para obtener solo keys de desarrollo.
      */
-    public function scopeTest($query)
+    public function scopeDevelopment($query)
     {
-        return $query->where('type', 'test');
+        return $query->where('type', 'development');
+    }
+
+    /**
+     * Scope para obtener solo keys de testing.
+     */
+    public function scopeTesting($query)
+    {
+        return $query->where('type', 'testing');
     }
 
     /**

@@ -290,34 +290,40 @@
     }
 
     function showView(viewName) {
-        // Ocultar todas las vistas
-        DOM.loader.style.display = 'none';
-        DOM.companyNotFound.style.display = 'none';
-        DOM.registerForm.style.display = 'none';
-        DOM.loginForm.style.display = 'none';
-        DOM.ticketsContainer.style.display = 'none';
+        // Ocultar todas las vistas (con verificación null-safe)
+        if (DOM.loader) DOM.loader.style.display = 'none';
+        if (DOM.companyNotFound) DOM.companyNotFound.style.display = 'none';
+        if (DOM.registerForm) DOM.registerForm.style.display = 'none';
+        if (DOM.loginForm) DOM.loginForm.style.display = 'none';
+        if (DOM.ticketsContainer) DOM.ticketsContainer.style.display = 'none';
         
         // Mostrar la vista solicitada
         switch(viewName) {
             case 'loader':
-                DOM.loader.style.display = 'flex';
+                if (DOM.loader) DOM.loader.style.display = 'flex';
                 break;
             case 'company-not-found':
-                DOM.companyNotFound.style.display = 'block';
+                if (DOM.companyNotFound) DOM.companyNotFound.style.display = 'block';
                 break;
             case 'register':
-                DOM.registerForm.style.display = 'block';
-                // Pre-llenar datos
-                document.getElementById('register-email').textContent = CONFIG.userData.email;
-                document.getElementById('register-name').textContent = 
-                    CONFIG.userData.firstName + ' ' + CONFIG.userData.lastName;
+                if (DOM.registerForm) {
+                    DOM.registerForm.style.display = 'block';
+                    // Pre-llenar datos
+                    const emailEl = document.getElementById('register-email');
+                    const nameEl = document.getElementById('register-name');
+                    if (emailEl) emailEl.textContent = CONFIG.userData.email;
+                    if (nameEl) nameEl.textContent = CONFIG.userData.firstName + ' ' + CONFIG.userData.lastName;
+                }
                 break;
             case 'login':
-                DOM.loginForm.style.display = 'block';
-                document.getElementById('login-email').value = CONFIG.userData.email;
+                if (DOM.loginForm) {
+                    DOM.loginForm.style.display = 'block';
+                    const loginEmailEl = document.getElementById('login-email');
+                    if (loginEmailEl) loginEmailEl.value = CONFIG.userData.email;
+                }
                 break;
             case 'tickets':
-                DOM.ticketsContainer.style.display = 'block';
+                if (DOM.ticketsContainer) DOM.ticketsContainer.style.display = 'block';
                 break;
         }
     }

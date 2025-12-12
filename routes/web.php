@@ -251,6 +251,10 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             return view('app.platform-admin.users.index');
         })->name('admin.users.index');
 
+        // API Keys Management
+        Route::get('/api-keys', [\App\Features\ExternalIntegration\Http\Controllers\ApiKeyAdminController::class, 'index'])
+            ->name('admin.api-keys.index');
+
         // Reports Center
         Route::get('/reports', [PlatformReportController::class, 'index'])
             ->name('admin.reports.index');

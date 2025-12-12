@@ -228,6 +228,11 @@
                             <i class="fas fa-layer-group mr-1"></i> Áreas <span id="areasCount" class="badge badge-light ml-1">0</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-apikeys" data-toggle="pill" href="#viewCompanyApiKeys">
+                            <i class="fas fa-key mr-1"></i> API Keys <span id="apiKeysCount" class="badge badge-light ml-1">0</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
             
@@ -533,6 +538,29 @@
                         </div>
                     </div>
                     
+                    {{-- Tab: API Keys --}}
+                    <div class="tab-pane fade" id="viewCompanyApiKeys" role="tabpanel">
+                        <div id="apiKeysLoading" class="tab-loading">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 mb-0">Cargando API Keys...</p>
+                        </div>
+                        <div id="apiKeysContent" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0 text-muted"><i class="fas fa-key"></i> API Keys de esta empresa</h6>
+                                <button type="button" class="btn btn-sm btn-primary" id="btnGenerateApiKeyFromModal">
+                                    <i class="fas fa-plus"></i> Generar Nueva
+                                </button>
+                            </div>
+                            <div class="alert alert-info py-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Las API Keys permiten que aplicaciones externas se integren con Helpdesk.
+                            </div>
+                            <div id="apiKeysListContainer">
+                                <p class="text-muted text-center py-4">No hay API Keys configuradas.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
             
@@ -563,6 +591,7 @@
     let teamLoaded = false;
     let categoriesLoaded = false;
     let areasLoaded = false;
+    let apiKeysLoaded = false;
     
     function initViewCompanyModal() {
         console.log('[ViewCompanyModal] Initializing...');
@@ -603,6 +632,28 @@
             }
         });
         
+        $('#tab-apikeys').on('shown.bs.tab', function() {
+            if (currentCompanyId && !apiKeysLoaded) {
+                loadApiKeys(currentCompanyId);
+            }
+        });
+        
+        // Generate API Key button from modal
+        $('#btnGenerateApiKeyFromModal').on('click', function() {
+            if (typeof CreateApiKeyModal !== 'undefined') {
+                // Pre-select the company in the create modal
+                CreateApiKeyModal.open();
+                // Wait for modal to open then set company
+                setTimeout(() => {
+                    if (currentCompanyId) {
+                        $('#apiKeyCompany').val(currentCompanyId).trigger('change');
+                    }
+                }, 500);
+            } else if (window.showToast) {
+                window.showToast('warning', 'Abre la vista de API Keys para generar una nueva.');
+            }
+        });
+        
         // Reset on modal close
         $modal.on('hidden.bs.modal', function() {
             resetModal();
@@ -619,6 +670,7 @@
         teamLoaded = false;
         categoriesLoaded = false;
         areasLoaded = false;
+        apiKeysLoaded = false;
         
         // Reset tabs to stats (first tab)
         $('#viewCompanyTabs .nav-link').removeClass('active');
@@ -630,8 +682,8 @@
         $('#tabAreasNav').hide();
         
         // Reset loading states
-        $('#statsContent, #teamContent, #categoriesContent, #areasContent').hide();
-        $('#statsLoading, #teamLoading, #categoriesLoading, #areasLoading').show();
+        $('#statsContent, #teamContent, #categoriesContent, #areasContent, #apiKeysContent').hide();
+        $('#statsLoading, #teamLoading, #categoriesLoading, #areasLoading, #apiKeysLoading').show();
     }
     
     function formatDate(dateString) {
@@ -914,6 +966,90 @@
         areasLoaded = true;
         $('#areasLoading').hide();
         $('#areasContent').show();
+    }
+    
+    // Load API Keys
+    async function loadApiKeys(companyId) {
+        try {
+            const response = await fetch(`/api/admin/api-keys/by-company/${companyId}`, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) throw new Error('Error loading API Keys');
+            
+            const result = await response.json();
+            const apiKeys = result.data || [];
+            
+            $('#apiKeysCount').text(apiKeys.length);
+            
+            if (apiKeys.length === 0) {
+                $('#apiKeysListContainer').html('<p class="text-muted text-center py-4">No hay API Keys configuradas para esta empresa.</p>');
+            } else {
+                $('#apiKeysListContainer').html(apiKeys.map(key => {
+                    const statusBadge = key.is_active 
+                        ? '<span class="badge badge-success">Activa</span>'
+                        : '<span class="badge badge-danger">Revocada</span>';
+                    const typeBadge = {
+                        production: '<span class="badge badge-primary">Producción</span>',
+                        development: '<span class="badge badge-warning">Desarrollo</span>',
+                        testing: '<span class="badge badge-info">Testing</span>'
+                    }[key.type] || '<span class="badge badge-secondary">-</span>';
+                    
+                    const lastUsed = key.last_used_at 
+                        ? new Date(key.last_used_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Nunca';
+                    
+                    return `
+                        <div class="list-item-card ${key.is_active ? '' : 'inactive'}">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <strong class="mr-2">${escapeHtml(key.name)}</strong>
+                                    ${statusBadge}
+                                    ${typeBadge}
+                                </div>
+                                <code class="text-primary" style="font-size: 0.8rem">${escapeHtml(key.key)}</code>
+                                <button class="btn btn-xs btn-outline-secondary ml-1 btn-copy-key" data-key="${escapeHtml(key.key_full)}" title="Copiar API Key">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock mr-1"></i>Último uso: ${lastUsed}
+                                    ${key.usage_count ? ` · ${key.usage_count} usos` : ''}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                }).join(''));
+                
+                // Attach copy handlers
+                $('#apiKeysListContainer').find('.btn-copy-key').on('click', function() {
+                    const keyToCopy = $(this).data('key');
+                    navigator.clipboard.writeText(keyToCopy).then(() => {
+                        if (window.showToast) window.showToast('success', 'API Key copiada');
+                    }).catch(() => {
+                        // Fallback
+                        const ta = document.createElement('textarea');
+                        ta.value = keyToCopy;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        if (window.showToast) window.showToast('success', 'API Key copiada');
+                    });
+                });
+            }
+            
+        } catch (error) {
+            console.error('[ViewCompanyModal] API Keys error:', error);
+            $('#apiKeysListContainer').html('<p class="text-danger text-center mb-0"><i class="fas fa-exclamation-circle"></i> Error al cargar API Keys</p>');
+        }
+        
+        apiKeysLoaded = true;
+        $('#apiKeysLoading').hide();
+        $('#apiKeysContent').show();
     }
     
     // Populate modal
