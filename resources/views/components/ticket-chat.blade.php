@@ -250,8 +250,8 @@
 
 
 
-        // 2. Export Chat Button
-        $('#btn-export-chat').on('click', function() {
+        // 2. Export Chat Button (AJAX blob download - no navigation)
+        $('#btn-export-chat').on('click', async function() {
             if (!currentTicketCode) {
                 $(document).Toasts('create', {
                     class: 'bg-warning',
@@ -262,9 +262,58 @@
                 });
                 return;
             }
-            
-            // Abrir descarga en nueva pestaña/ventana
-            window.location.href = `/app/tickets/${currentTicketCode}/export-chat`;
+
+            try {
+                const $btn = $(this);
+                const token = window.tokenManager?.getAccessToken?.();
+
+                // Disable button during download
+                $btn.prop('disabled', true);
+                $btn.find('i').addClass('fa-spin');
+
+                // Fetch chat export as blob
+                const response = await fetch(`/app/tickets/${currentTicketCode}/export-chat`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                // Download via blob (no navigation)
+                const blob = await response.blob();
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `chat-${currentTicketCode}.txt`;
+                a.click();
+                URL.revokeObjectURL(downloadUrl);
+
+                console.log('[Chat] Chat exported:', currentTicketCode);
+
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Éxito',
+                    body: 'Conversación descargada correctamente.',
+                    autohide: true,
+                    delay: 2000
+                });
+
+            } catch (error) {
+                console.error('[Chat] Export failed:', error);
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error',
+                    body: 'Error descargando la conversación. Intente nuevamente.',
+                    autohide: true,
+                    delay: 3000
+                });
+            } finally {
+                // Re-enable button using ID selector (more reliable)
+                const $btnExport = $('#btn-export-chat');
+                $btnExport.prop('disabled', false);
+                $btnExport.find('i').removeClass('fa-spin');
+            }
         });
 
         // 3. Attach File Click
@@ -894,14 +943,15 @@
 
                     // Determine if it's an image for lightbox
                     const isImage = att.file_type && att.file_type.includes('image');
-                    const lightboxAttrs = isImage
+                    const linkHref = isImage ? `href="${att.file_url}"` : `href="#"`;
+                    const linkAttrs = isImage
                         ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
-                        : `target="_blank"`;
+                        : `class="btn-download-attachment" data-file-url="${att.file_url}" data-file-name="${att.file_name}"`;
 
                     attachmentsHtml += `
                         <div class="attachment-card" data-att-id="${att.id}" style="${marginStyle}; padding: 8px; background-color: ${bgColor}; border-radius: 4px; border-left: 3px solid ${borderColor}; position: relative;">
                             <div style="margin-bottom: 10px;">
-                                <a href="${att.file_url}" ${lightboxAttrs} style="text-decoration: none; font-size: 0.9rem;" ${linkColor}>
+                                <a ${linkHref} ${linkAttrs} style="text-decoration: none; font-size: 0.9rem; cursor: pointer;" ${linkColor}>
                                     <i class="fas ${iconClass} mr-2"></i>
                                     <strong>${att.file_name}</strong>
                                 </a>
@@ -912,7 +962,7 @@
                                 <span>Tipo: ${att.file_type || 'application/octet-stream'}</span>
                             </div>
                             ${deleteButtonHtml}
-                            <button type="button" onclick="window.open('${att.file_url}', '_blank')" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid ${buttonBorderColor}; background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: ${buttonColor}; padding: 0; transition: all 0.2s ease;" onmouseover="this.style.borderColor='${buttonHoverBorder}'; this.style.color='${buttonHoverColor}';" onmouseout="this.style.borderColor='${buttonBorderColor}'; this.style.color='${buttonColor}';">
+                            <button type="button" class="btn-download-attachment" data-file-url="${att.file_url}" data-file-name="${att.file_name}" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); width: 35px; height: 35px; border: 2px solid ${buttonBorderColor}; background: transparent; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; color: ${buttonColor}; padding: 0; transition: all 0.2s ease;" onmouseover="this.style.borderColor='${buttonHoverBorder}'; this.style.color='${buttonHoverColor}';" onmouseout="this.style.borderColor='${buttonBorderColor}'; this.style.color='${buttonColor}';">
                                 <i class="fas fa-download" style="font-size: 0.9rem;"></i>
                             </button>
                         </div>

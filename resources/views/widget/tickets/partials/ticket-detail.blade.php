@@ -103,22 +103,23 @@
 
                         // Determine if it's an image for lightbox
                         const isImage = att.file_type && att.file_type.includes('image');
-                        const lightboxAttrs = isImage
+                        const linkHref = isImage ? `href="${att.file_url}"` : `href="#"`;
+                        const linkAttrs = isImage
                             ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
-                            : `target="_blank"`;
+                            : `class="btn-download-attachment" data-file-url="${att.file_url}" data-file-name="${att.file_name}"`;
 
                         const html = `
                         <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
-                                    <a href="${att.file_url}" ${lightboxAttrs} class="text-dark" title="${att.file_name}">
+                                    <a ${linkHref} ${linkAttrs} class="text-dark" title="${att.file_name}">
                                         <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                         ${att.file_name}
                                     </a>
                                 </div>
                                 <div style="flex-shrink: 0;">
                                     <span class="text-muted small mr-2">${formatBytes(att.file_size_bytes)}</span>
-                                    <a href="${att.file_url}" download class="text-muted"><i class="fas fa-cloud-download-alt"></i></a>
+                                    <a href="#" class="btn-download-attachment text-muted" data-file-url="${att.file_url}" data-file-name="${att.file_name}" title="Descargar"><i class="fas fa-cloud-download-alt"></i></a>
                                 </div>
                             </div>
                         </li>
@@ -162,6 +163,62 @@
                 let current = parseInt($count.text()) || 0;
                 if (current > 0) {
                     $count.text(current - 1);
+                }
+            });
+
+            // 7. Download Attachment (No navigation - AJAX blob download)
+            $(document).on('click', '.btn-download-attachment', async function (e) {
+                e.preventDefault();
+
+                const $btn = $(this);
+                const fileUrl = $btn.data('file-url');
+                const fileName = $btn.data('file-name');
+
+                if (!fileUrl || !fileName) {
+                    console.error('[Ticket Detail] Missing file URL or name');
+                    return;
+                }
+
+                try {
+                    const token = window.tokenManager.getAccessToken();
+
+                    // Disable button during download
+                    $btn.prop('disabled', true).css('opacity', '0.5');
+
+                    // Fetch file as blob
+                    const response = await fetch(fileUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+
+                    // Download via blob (no navigation)
+                    const blob = await response.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = fileName;
+                    a.click();
+                    URL.revokeObjectURL(downloadUrl);
+
+                    console.log('[Ticket Detail] File downloaded:', fileName);
+
+                } catch (error) {
+                    console.error('[Ticket Detail] Download failed:', error);
+                    $(document).Toasts('create', {
+                        class: 'bg-danger',
+                        title: 'Error',
+                        body: 'Error descargando el archivo. Intente nuevamente.',
+                        autohide: true,
+                        delay: 3000
+                    });
+                } finally {
+                    // Re-enable button
+                    $btn.prop('disabled', false).css('opacity', '1');
                 }
             });
 
@@ -358,22 +415,23 @@
 
                     // Determine if it's an image for lightbox
                     const isImage = att.file_type && att.file_type.includes('image');
-                    const lightboxAttrs = isImage
+                    const linkHref = isImage ? `href="${att.file_url}"` : `href="#"`;
+                    const linkAttrs = isImage
                         ? `data-toggle="lightbox" data-gallery="ticket-all-attachments" data-title="${att.file_name}"`
-                        : `target="_blank"`;
+                        : `class="btn-download-attachment" data-file-url="${att.file_url}" data-file-name="${att.file_name}"`;
 
                     const html = `
                     <li class="mb-2 pb-2 border-bottom" data-att-id="${att.id}">
                         <div class="d-flex justify-content-between align-items-center">
                             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
-                                <a href="${att.file_url}" ${lightboxAttrs} class="text-dark" title="${att.file_name}">
+                                <a ${linkHref} ${linkAttrs} class="text-dark" title="${att.file_name}">
                                     <i class="${iconClass} ${iconColorClass} mr-1"></i>
                                     ${att.file_name}
                                 </a>
                             </div>
                             <div style="flex-shrink: 0;">
                                 <span class="text-muted small mr-2">${formatBytes(att.file_size_bytes)}</span>
-                                <a href="${att.file_url}" download class="text-muted"><i class="fas fa-cloud-download-alt"></i></a>
+                                <a href="#" class="btn-download-attachment text-muted" data-file-url="${att.file_url}" data-file-name="${att.file_name}" title="Descargar"><i class="fas fa-cloud-download-alt"></i></a>
                             </div>
                         </div>
                     </li>

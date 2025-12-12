@@ -59,7 +59,7 @@
         /* Widget container */
         .widget-container {
             padding: 1rem;
-            min-height: 100vh;
+            min-height: auto;
         }
 
         /* Loading screen */
@@ -177,6 +177,18 @@
         .content-wrapper {
             margin-left: 0 !important;
             margin-top: 0 !important;
+            min-height: auto !important;
+            height: auto !important;
+        }
+
+        /* Override AdminLTE wrapper to allow flexible height */
+        .wrapper {
+            min-height: auto !important;
+        }
+
+        /* Force body to auto height */
+        body {
+            min-height: auto !important;
         }
     </style>
 
@@ -210,37 +222,198 @@
         // Token obtenido de la URL o parámetro
         (function() {
             'use strict';
-            
+
             // Leer token de URL
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
-            
+
             // Widget Token Manager (simplificado, solo para el widget)
             window.widgetTokenManager = {
                 _token: urlToken || null,
-                
+
                 setToken: function(token) {
                     this._token = token;
                     console.log('[WidgetTokenManager] Token set');
                 },
-                
+
                 getAccessToken: function() {
                     return this._token;
                 },
-                
+
                 isAuthenticated: function() {
                     return !!this._token;
                 },
-                
+
                 clearTokens: function() {
                     this._token = null;
                 }
             };
-            
+
             // Alias para compatibilidad con código existente
             window.tokenManager = window.widgetTokenManager;
-            
+
             console.log('[Widget] Token manager initialized, authenticated:', window.widgetTokenManager.isAuthenticated());
+        })();
+
+        // WIDGET HEIGHT FIX: Remove inline min-height added by AdminLTE
+        // This ensures the widget can grow/shrink based on content
+        (function() {
+            'use strict';
+
+            function fixWidgetHeight() {
+                const contentWrapper = document.querySelector('.content-wrapper');
+                const wrapper = document.querySelector('.wrapper');
+                const body = document.body;
+
+                if (contentWrapper) {
+                    contentWrapper.style.minHeight = 'auto';
+                    contentWrapper.style.height = 'auto';
+                    console.log('[Widget Height] Fixed .content-wrapper to auto height');
+                }
+
+                if (wrapper) {
+                    wrapper.style.minHeight = 'auto';
+                    console.log('[Widget Height] Fixed .wrapper to auto height');
+                }
+
+                if (body) {
+                    body.style.minHeight = 'auto';
+                    console.log('[Widget Height] Fixed body to auto height');
+                }
+            }
+
+            // Run on DOMContentLoaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fixWidgetHeight);
+            } else {
+                fixWidgetHeight();
+            }
+
+            // Watch for changes and reapply if needed (every 1s for 10s)
+            let attempts = 0;
+            const interval = setInterval(() => {
+                fixWidgetHeight();
+                attempts++;
+                if (attempts > 10) {
+                    clearInterval(interval);
+                    console.log('[Widget Height] Fix applied and stabilized');
+                }
+            }, 1000);
+        })();
+
+        // WIDGET HEIGHT COMMUNICATION: Send height to parent frame via postMessage
+        (function() {
+            'use strict';
+
+            console.log('[Widget Height] Iniciando comunicación de altura con parent frame');
+
+            let lastHeight = 0;
+            let resizeTimeout;
+            let rafId;
+
+            function notifyParentHeight() {
+                const contentWrapper = document.querySelector('.content-wrapper');
+                const widget = document.querySelector('.widget-container');
+
+                // Obtener la altura actual del contenido
+                const height = (contentWrapper?.scrollHeight || widget?.scrollHeight || document.body.scrollHeight) + 20;
+
+                console.log('[Widget Height] Altura calculada:', height);
+
+                // Enviar mensaje al parent frame
+                window.parent.postMessage({
+                    type: 'widget-resize',
+                    height: height
+                }, '*');
+            }
+
+            function checkAndNotifyHeight() {
+                const contentWrapper = document.querySelector('.content-wrapper');
+                const widget = document.querySelector('.widget-container');
+                const currentHeight = (contentWrapper?.scrollHeight || widget?.scrollHeight || document.body.scrollHeight) + 20;
+
+                // Solo notificar si cambió la altura
+                if (currentHeight !== lastHeight) {
+                    console.log('[Widget Height] Altura cambió de', lastHeight, 'a', currentHeight);
+                    lastHeight = currentHeight;
+                    notifyParentHeight();
+                }
+            }
+
+            // RESIZE OBSERVER: Detecta cambios en el tamaño de elementos
+            function setupResizeObserver() {
+                const contentWrapper = document.querySelector('.content-wrapper');
+                if (!contentWrapper) return;
+
+                const resizeObserver = new ResizeObserver(() => {
+                    console.log('[Widget Height] ResizeObserver detectó cambio');
+                    checkAndNotifyHeight();
+                });
+
+                resizeObserver.observe(contentWrapper);
+                console.log('[Widget Height] ResizeObserver activado en .content-wrapper');
+            }
+
+            // Ejecutar cuando el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    notifyParentHeight();
+                    setupResizeObserver();
+                });
+            } else {
+                notifyParentHeight();
+                setupResizeObserver();
+            }
+
+            // Notificar altura cada 100ms durante los primeros 2 segundos (para capturar todo)
+            let initialCheckCount = 0;
+            const initialInterval = setInterval(() => {
+                checkAndNotifyHeight();
+                initialCheckCount++;
+                if (initialCheckCount >= 20) {
+                    clearInterval(initialInterval);
+                    console.log('[Widget Height] Verificación inicial completada');
+                }
+            }, 100);
+
+            // MUTATION OBSERVER: Detecta cambios en el DOM de forma inmediata
+            const observer = new MutationObserver(() => {
+                // Usar debounce para evitar múltiples llamadas
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    console.log('[Widget Height] DOM cambió, verificando altura...');
+                    checkAndNotifyHeight();
+                }, 30); // 30ms de debounce (más rápido que antes)
+            });
+
+            // Configurar el observer
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'style'],
+                characterData: false
+            });
+
+            console.log('[Widget Height] MutationObserver activado');
+
+            // Verificar cada 500ms como fallback
+            setInterval(() => {
+                checkAndNotifyHeight();
+            }, 500);
+
+            // RequestAnimationFrame para capturar cambios muy rápido
+            function animationFrameCheck() {
+                checkAndNotifyHeight();
+                rafId = requestAnimationFrame(animationFrameCheck);
+            }
+
+            // Solo usar rAF durante 3 segundos para no sobrecargar
+            animationFrameCheck();
+            setTimeout(() => {
+                cancelAnimationFrame(rafId);
+                console.log('[Widget Height] RequestAnimationFrame desactivado');
+            }, 3000);
         })();
     </script>
 
