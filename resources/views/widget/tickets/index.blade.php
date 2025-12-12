@@ -1,11 +1,11 @@
-{{-- 
-    WIDGET VERSION - Vista de Tickets Embebible
-    Copia de: app/shared/tickets/index.blade.php
-    
-    Modificaciones:
-    - Usa layouts.widget en lugar de layouts.authenticated
-    - Sin breadcrumbs (no hay navbar en widget)
-    - Usa partials de widget/tickets/
+{{--
+WIDGET VERSION - Vista de Tickets Embebible
+Copia de: app/shared/tickets/index.blade.php
+
+Modificaciones:
+- Usa layouts.widget en lugar de layouts.authenticated
+- Sin breadcrumbs (no hay navbar en widget)
+- Usa partials de widget/tickets/
 --}}
 @extends('layouts.widget')
 
@@ -182,12 +182,12 @@
             </div>
 
             {{-- ============================================================== --}}
-            {{-- USER PROFILE CARD --}}
+            {{-- HELPDESK PROFILE CARD (cargado via API) --}}
             {{-- ============================================================== --}}
             <div class="card card-outline card-secondary">
                 <div class="card-header">
                     <h3 class="card-title">
-                        <i class="fas fa-user-circle mr-1"></i>Mi Perfil
+                        <i class="fas fa-user-circle mr-1"></i>Perfil de Helpdesk
                     </h3>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -198,38 +198,31 @@
                 <div class="card-body text-center">
                     {{-- Avatar con overlay de edición --}}
                     <div class="profile-avatar-container mb-3" id="avatar-container">
-                        <img src="{{ $user->avatar_url ?? asset('img/default-avatar.png') }}" 
-                             alt="Avatar" 
-                             class="profile-avatar img-circle elevation-2"
-                             id="profile-avatar">
+                        <img src="{{ asset('img/default-avatar.png') }}" alt="Avatar"
+                            class="profile-avatar img-circle elevation-2" id="profile-avatar">
                         <div class="avatar-overlay" id="avatar-overlay">
                             <i class="fas fa-camera"></i>
                             <span>Cambiar</span>
                         </div>
                         <input type="file" id="avatar-input" accept="image/*" style="display: none;">
                     </div>
-                    
-                    {{-- Nombre y email --}}
+
+                    {{-- Nombre y email (cargados via JavaScript) --}}
                     <h6 class="font-weight-bold mb-1" id="profile-name">
-                        {{ $user->display_name ?? 'Usuario' }}
+                        <span class="text-muted"><i class="fas fa-spinner fa-spin"></i></span>
                     </h6>
                     <small class="text-muted" id="profile-email">
-                        {{ $user->email }}
+                        Cargando...
                     </small>
                 </div>
                 <div class="card-footer p-2">
                     {{-- Botón Salir --}}
-                    <button type="button" 
-                            class="btn btn-outline-secondary btn-sm btn-block mb-2" 
-                            id="btn-widget-logout">
+                    <button type="button" class="btn btn-outline-secondary btn-sm btn-block mb-2" id="btn-widget-logout">
                         <i class="fas fa-sign-out-alt mr-1"></i>Salir del Centro de Soporte
                     </button>
-                    
+
                     {{-- Botón Visitar Sitio (solo si SSO está habilitado) --}}
-                    <a href="#" 
-                       class="btn btn-outline-primary btn-sm btn-block"
-                       id="btn-visit-official"
-                       target="_blank">
+                    <a href="#" class="btn btn-outline-primary btn-sm btn-block" id="btn-visit-official" target="_blank">
                         <i class="fas fa-external-link-alt mr-1"></i>Visitar Sitio Oficial
                     </a>
                 </div>
@@ -294,8 +287,8 @@
                  */
                 function navigateTo(view, ticketId = null) {
                     console.log('[Widget Routing] Navigating to:', view, ticketId);
-                    
-                    switch(view) {
+
+                    switch (view) {
                         case 'list':
                         case '/tickets':
                         case '/tickets/':
@@ -634,7 +627,7 @@
             }
         }
     </script>
-    
+
     {{-- ================================================================== --}}
     {{-- PROFILE CARD STYLES --}}
     {{-- ================================================================== --}}
@@ -688,14 +681,74 @@
             opacity: 0.5;
         }
     </style>
-    
+
     {{-- ================================================================== --}}
     {{-- PROFILE CARD SCRIPTS --}}
     {{-- ================================================================== --}}
     <script>
         // Profile Card functionality
-        (function() {
+        (function () {
             'use strict';
+
+            // ================================================================
+            // CARGAR PERFIL DESDE API DE HELPDESK
+            // ================================================================
+            async function loadUserProfile() {
+                const profileName = document.getElementById('profile-name');
+                const profileEmail = document.getElementById('profile-email');
+                const profileAvatar = document.getElementById('profile-avatar');
+
+                try {
+                    const token = window.widgetTokenManager?.getAccessToken();
+                    if (!token) {
+                        console.warn('[Profile] No token available');
+                        return;
+                    }
+
+                    const response = await fetch('/api/users/me', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Error al cargar perfil');
+                    }
+
+                    const result = await response.json();
+                    const user = result.data;
+
+                    // Actualizar nombre
+                    if (profileName) {
+                        const displayName = user.profile 
+                            ? `${user.profile.firstName || ''} ${user.profile.lastName || ''}`.trim() 
+                            : user.email;
+                        profileName.textContent = displayName || 'Usuario';
+                    }
+
+                    // Actualizar email
+                    if (profileEmail) {
+                        profileEmail.textContent = user.email;
+                    }
+
+                    // Actualizar avatar
+                    if (profileAvatar && user.profile?.avatarUrl) {
+                        profileAvatar.src = user.profile.avatarUrl;
+                    }
+
+                    console.log('[Profile] Perfil cargado correctamente');
+
+                } catch (error) {
+                    console.error('[Profile] Error cargando perfil:', error);
+                    if (profileName) profileName.textContent = 'Usuario';
+                    if (profileEmail) profileEmail.textContent = 'Error al cargar';
+                }
+            }
+
+            // Cargar perfil al iniciar
+            loadUserProfile();
 
             // ================================================================
             // AVATAR UPLOAD
@@ -703,17 +756,27 @@
             const avatarContainer = document.getElementById('avatar-container');
             const avatarInput = document.getElementById('avatar-input');
             const avatarImg = document.getElementById('profile-avatar');
+            let isUploading = false; // Flag para prevenir múltiples uploads
 
             if (avatarContainer && avatarInput) {
                 // Click en el avatar abre el selector de archivo
-                avatarContainer.addEventListener('click', function() {
+                avatarContainer.addEventListener('click', function (e) {
+                    // Prevenir que el click en el input propague de vuelta
+                    if (e.target === avatarInput) return;
+                    if (isUploading) return; // No abrir si ya está subiendo
                     avatarInput.click();
                 });
 
                 // Cuando se selecciona un archivo
-                avatarInput.addEventListener('change', async function() {
+                avatarInput.addEventListener('change', async function () {
                     const file = this.files[0];
                     if (!file) return;
+                    
+                    // Prevenir múltiples uploads
+                    if (isUploading) {
+                        console.log('[Profile] Upload already in progress, skipping');
+                        return;
+                    }
 
                     // Validar tamaño (max 2MB)
                     if (file.size > 2 * 1024 * 1024) {
@@ -727,8 +790,10 @@
                         return;
                     }
 
-                    // Mostrar loading
+                    // Marcar como subiendo
+                    isUploading = true;
                     avatarImg.classList.add('uploading');
+                    console.log('[Profile] Starting avatar upload...');
 
                     try {
                         const formData = new FormData();
@@ -743,10 +808,29 @@
                             body: formData,
                         });
 
+                        // Manejar error 429 (Too Many Requests) de forma especial
+                        if (response.status === 429) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Límite de cambios alcanzado',
+                                html: `
+                                    <div class="text-center">
+                                        <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                                        <p><strong>Helpdesk Guard</strong> ha detectado demasiados intentos.</p>
+                                        <p class="text-muted">Solo puedes cambiar tu foto de perfil <strong>3 veces por hora</strong>.</p>
+                                        <p>Por favor, intenta de nuevo más tarde.</p>
+                                    </div>
+                                `,
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#6c757d',
+                            });
+                            return;
+                        }
+
                         const data = await response.json();
 
-                        if (response.ok && data.avatar_url) {
-                            avatarImg.src = data.avatar_url;
+                        if (response.ok && data.data?.avatarUrl) {
+                            avatarImg.src = data.data.avatarUrl;
                             Swal.fire({
                                 icon: 'success',
                                 title: '¡Avatar actualizado!',
@@ -758,9 +842,16 @@
                         }
                     } catch (error) {
                         console.error('[Profile] Avatar upload error:', error);
-                        Swal.fire('Error', 'No se pudo actualizar el avatar', 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'No se pudo actualizar el avatar',
+                        });
                     } finally {
+                        isUploading = false;
                         avatarImg.classList.remove('uploading');
+                        // Limpiar el input para permitir seleccionar el mismo archivo
+                        this.value = '';
                     }
                 });
             }
@@ -769,9 +860,9 @@
             // LOGOUT BUTTON
             // ================================================================
             const btnLogout = document.getElementById('btn-widget-logout');
-            
+
             if (btnLogout) {
-                btnLogout.addEventListener('click', function() {
+                btnLogout.addEventListener('click', function () {
                     Swal.fire({
                         title: '¿Salir del Centro de Soporte?',
                         text: 'Tendrás que volver a conectarte para acceder.',
@@ -793,11 +884,11 @@
             // VISIT OFFICIAL SITE (SSO)
             // ================================================================
             const btnVisit = document.getElementById('btn-visit-official');
-            
+
             if (btnVisit) {
-                btnVisit.addEventListener('click', async function(e) {
+                btnVisit.addEventListener('click', async function (e) {
                     e.preventDefault();
-                    
+
                     // Mostrar loading
                     const originalText = this.innerHTML;
                     this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Conectando...';

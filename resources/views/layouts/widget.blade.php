@@ -12,7 +12,7 @@
     <title>@yield('title', 'Helpdesk Widget')</title>
 
     {{-- Favicon --}}
-    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('img/helpdesklogo.png') }}">
 
     {{-- Base AdminLTE Stylesheets --}}
     <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
@@ -34,7 +34,8 @@
     {{-- Widget Specific Styles --}}
     <style>
         /* Reset body for iframe embedding */
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             background: transparent !important;
@@ -45,13 +46,16 @@
         body::-webkit-scrollbar {
             width: 6px;
         }
+
         body::-webkit-scrollbar-track {
             background: transparent;
         }
+
         body::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 3px;
         }
+
         body::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
@@ -83,8 +87,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .widget-loader .status-text {
@@ -154,8 +163,13 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         /* Ticket content - full height usage */
@@ -220,44 +234,84 @@
     {{-- Widget Token Manager (con auto-refresh) --}}
     <script>
         // Token Manager mejorado con auto-refresh
-        (function() {
+        (function () {
             'use strict';
 
             // Leer token de URL
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
-            
-            // Obtener API Key de la URL (para refresh endpoint)
-            const apiKey = urlParams.get('api_key') || '';
+
+            // Obtener parámetros de la URL (para almacenarlos)
+            const urlApiKey = urlParams.get('api_key') || '';
+            const urlEmail = urlParams.get('email') || '';
+            const urlFirstName = urlParams.get('first_name') || '';
+            const urlLastName = urlParams.get('last_name') || '';
+
+            // Storage keys
+            const STORAGE_KEYS = {
+                API_KEY: 'helpdesk_widget_api_key',
+                EMAIL: 'helpdesk_widget_email',
+                FIRST_NAME: 'helpdesk_widget_first_name',
+                LAST_NAME: 'helpdesk_widget_last_name',
+            };
+
+            // Helper para almacenar datos de conexión
+            function storeConnectionData(apiKey, email, firstName, lastName) {
+                if (apiKey) localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey);
+                if (email) localStorage.setItem(STORAGE_KEYS.EMAIL, email);
+                if (firstName) localStorage.setItem(STORAGE_KEYS.FIRST_NAME, firstName);
+                if (lastName) localStorage.setItem(STORAGE_KEYS.LAST_NAME, lastName);
+                console.log('[WidgetTokenManager] Connection data stored');
+            }
+
+            // Helper para obtener datos de conexión
+            function getStoredConnectionData() {
+                return {
+                    apiKey: localStorage.getItem(STORAGE_KEYS.API_KEY) || '',
+                    email: localStorage.getItem(STORAGE_KEYS.EMAIL) || '',
+                    firstName: localStorage.getItem(STORAGE_KEYS.FIRST_NAME) || '',
+                    lastName: localStorage.getItem(STORAGE_KEYS.LAST_NAME) || '',
+                };
+            }
+
+            // Si venimos con api_key, almacenar datos de conexión
+            if (urlApiKey) {
+                storeConnectionData(urlApiKey, urlEmail, urlFirstName, urlLastName);
+            }
 
             // Widget Token Manager mejorado
             window.widgetTokenManager = {
                 _token: urlToken || null,
                 _payload: null,
                 _refreshTimer: null,
-                _apiKey: apiKey,
+                _apiKey: urlApiKey || localStorage.getItem(STORAGE_KEYS.API_KEY) || '',
 
                 /**
                  * Establece un nuevo token y programa auto-refresh
                  */
-                setToken: function(token) {
+                setToken: function (token) {
                     this._token = token;
                     this._payload = this._decodePayload(token);
                     console.log('[WidgetTokenManager] Token set');
-                    
+
+                    // Si el token tiene email, actualizar el almacenado
+                    if (this._payload?.email) {
+                        localStorage.setItem(STORAGE_KEYS.EMAIL, this._payload.email);
+                    }
+
                     // Programar auto-refresh
                     this._scheduleRefresh();
                 },
 
-                getAccessToken: function() {
+                getAccessToken: function () {
                     return this._token;
                 },
 
-                isAuthenticated: function() {
+                isAuthenticated: function () {
                     return !!this._token;
                 },
 
-                clearTokens: function() {
+                clearTokens: function () {
                     this._token = null;
                     this._payload = null;
                     if (this._refreshTimer) {
@@ -270,7 +324,7 @@
                 /**
                  * Obtiene el tiempo restante antes de expiración (en segundos)
                  */
-                getTimeToExpiry: function() {
+                getTimeToExpiry: function () {
                     if (!this._payload || !this._payload.exp) {
                         return 0;
                     }
@@ -280,7 +334,7 @@
                 /**
                  * Verifica si el token está por expirar (menos del 20% restante)
                  */
-                isExpiringSoon: function() {
+                isExpiringSoon: function () {
                     if (!this._payload || !this._payload.exp || !this._payload.iat) {
                         return true;
                     }
@@ -293,7 +347,7 @@
                 /**
                  * Intenta refrescar el token
                  */
-                refreshToken: async function() {
+                refreshToken: async function () {
                     if (!this._token) {
                         console.warn('[WidgetTokenManager] No token to refresh');
                         return false;
@@ -318,7 +372,7 @@
                         }
 
                         const data = await response.json();
-                        
+
                         if (data.success && data.accessToken) {
                             this.setToken(data.accessToken);
                             console.log('[WidgetTokenManager] Token refreshed successfully');
@@ -335,7 +389,7 @@
                 /**
                  * Programa el auto-refresh al 80% del TTL
                  */
-                _scheduleRefresh: function() {
+                _scheduleRefresh: function () {
                     if (this._refreshTimer) {
                         clearTimeout(this._refreshTimer);
                     }
@@ -358,7 +412,7 @@
                     }
 
                     console.log('[WidgetTokenManager] Scheduling refresh in', Math.round(msUntilRefresh / 1000), 'seconds');
-                    
+
                     this._refreshTimer = setTimeout(() => {
                         this.refreshToken();
                     }, msUntilRefresh);
@@ -367,11 +421,11 @@
                 /**
                  * Decodifica el payload del JWT (sin validar firma)
                  */
-                _decodePayload: function(token) {
+                _decodePayload: function (token) {
                     try {
                         const parts = token.split('.');
                         if (parts.length !== 3) return null;
-                        
+
                         const payload = JSON.parse(atob(parts[1]));
                         return payload;
                     } catch (e) {
@@ -383,22 +437,33 @@
                 /**
                  * Cierra sesión del widget y redirige a la pantalla de conexión
                  */
-                logout: function() {
+                logout: function () {
+                    // Obtener datos antes de limpiar
+                    const email = this._payload?.email || localStorage.getItem(STORAGE_KEYS.EMAIL) || '';
+                    const storedData = getStoredConnectionData();
+
+                    // Limpiar token pero NO los datos de conexión (api_key, etc.)
                     this.clearTokens();
-                    
-                    // Obtener datos del usuario de la URL actual o del payload
-                    const currentParams = new URLSearchParams(window.location.search);
-                    const email = this._payload?.email || currentParams.get('email') || '';
-                    
-                    // Construir URL de desconexión
+
+                    // Usar el api_key almacenado (que se guardó cuando llegamos por primera vez)
+                    const apiKey = storedData.apiKey;
+
+                    if (!apiKey) {
+                        console.error('[WidgetTokenManager] No API key available for logout redirect');
+                        // Fallback: redirigir al home del widget sin params
+                        window.location.href = '/widget';
+                        return;
+                    }
+
+                    // Construir URL de desconexión con los datos almacenados
                     const logoutUrl = '/widget?' + new URLSearchParams({
-                        api_key: this._apiKey,
+                        api_key: apiKey,
                         email: email,
-                        first_name: currentParams.get('first_name') || '',
-                        last_name: currentParams.get('last_name') || '',
+                        first_name: storedData.firstName,
+                        last_name: storedData.lastName,
                     }).toString();
-                    
-                    console.log('[WidgetTokenManager] Logging out, redirecting to connect screen');
+
+                    console.log('[WidgetTokenManager] Logging out, redirecting to:', logoutUrl);
                     window.location.href = logoutUrl;
                 }
             };
@@ -420,7 +485,7 @@
 
         // WIDGET HEIGHT FIX: Remove inline min-height added by AdminLTE
         // This ensures the widget can grow/shrink based on content
-        (function() {
+        (function () {
             'use strict';
 
             function fixWidgetHeight() {
@@ -465,7 +530,7 @@
         })();
 
         // WIDGET HEIGHT COMMUNICATION: Send height to parent frame via postMessage
-        (function() {
+        (function () {
             'use strict';
 
             console.log('[Widget Height] Iniciando comunicación de altura con parent frame');

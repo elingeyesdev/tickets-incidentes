@@ -121,7 +121,7 @@ Route::middleware('jwt.require')->group(function () {
         ->name('users.preferences.update');
 
     Route::post('/users/me/avatar', [ProfileController::class, 'uploadAvatar'])
-        ->middleware('throttle:3,60')  // 3 requests per hour (180 second limit)
+        ->middleware('throttle:3,60')  // 3 requests per hour
         ->name('users.avatar.upload');
 
     // ========== User Viewing (Any Authenticated User can view themselves, admins can view others) ==========

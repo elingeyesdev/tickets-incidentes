@@ -40,9 +40,9 @@
     }
 
     .oauth-logo {
-        width: 80px;
-        height: 80px;
-        border-radius: 16px;
+        width: 90px;
+        height: 90px;
+        border-radius: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -59,8 +59,8 @@
     }
 
     .oauth-logo img {
-        max-width: 60px;
-        max-height: 60px;
+        max-width: 70px;
+        max-height: 70px;
         object-fit: contain;
     }
 
@@ -181,17 +181,17 @@
 
     /* OAuth Text */
     .oauth-title {
-        font-size: 1.25rem;
+        font-size: 1.4rem;
         font-weight: 600;
         color: #343a40;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
     }
 
     .oauth-subtitle {
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: #6c757d;
-        margin-bottom: 1.5rem;
-        max-width: 350px;
+        margin-bottom: 2rem;
+        max-width: 380px;
     }
 
     /* Connect Button */
@@ -284,7 +284,7 @@
     }
 
     /* ================================================================
-       AUTH FORMS (Register/Login)
+       AUTH FORMS (Register/Login) - Estilo AdminLTE Oficial
        ================================================================ */
     
     .widget-auth-form {
@@ -301,6 +301,91 @@
         border: none;
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
         border-radius: 12px;
+    }
+
+    /* Estilo login-box-msg como en AdminLTE oficial */
+    .widget-auth-form .login-box-msg {
+        margin: 0;
+        padding: 0 20px 20px;
+        text-align: center;
+        color: #666;
+    }
+
+    /* Input groups estilo AdminLTE */
+    .widget-auth-form .input-group {
+        margin-bottom: 1rem;
+    }
+
+    .widget-auth-form .input-group .form-control {
+        border-right: 0;
+        height: calc(2.25rem + 2px);
+    }
+
+    .widget-auth-form .input-group .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: none;
+    }
+
+    .widget-auth-form .input-group .form-control:focus + .input-group-append .input-group-text {
+        border-color: #80bdff;
+    }
+
+    .widget-auth-form .input-group-append .input-group-text {
+        background-color: transparent;
+        border-left: 0;
+        transition: border-color 0.15s ease-in-out;
+    }
+
+    /* Validación de campos */
+    .widget-auth-form .form-control.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .widget-auth-form .form-control.is-invalid + .input-group-append .input-group-text {
+        border-color: #dc3545;
+    }
+
+    .widget-auth-form .invalid-feedback {
+        display: none;
+        font-size: 80%;
+        color: #dc3545;
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+
+    .widget-auth-form .invalid-feedback:not(:empty) {
+        display: block;
+    }
+
+    /* Callout estilo AdminLTE */
+    .widget-auth-form .callout {
+        border-radius: 0.25rem;
+        box-shadow: none;
+        border-left: 5px solid #17a2b8;
+        background-color: #f4f6f9;
+        padding: 0.75rem 1rem;
+    }
+
+    .widget-auth-form .callout-info {
+        border-left-color: #17a2b8;
+    }
+
+    /* Botones con loading */
+    .widget-auth-form .btn .btn-loading {
+        display: none;
+    }
+
+    .widget-auth-form .btn:disabled .btn-text {
+        display: none;
+    }
+
+    .widget-auth-form .btn:disabled .btn-loading {
+        display: inline;
+    }
+
+    /* Alert dismissible */
+    .widget-auth-form .alert-dismissible .close {
+        padding: 0.5rem 1rem;
     }
 
     /* ================================================================
@@ -333,9 +418,9 @@
             
             {{-- Logos Side-by-Side --}}
             <div class="oauth-logos">
-                {{-- Logo Helpdesk --}}
+                {{-- Logo Helpdesk (actualizado) --}}
                 <div class="oauth-logo" id="logo-helpdesk">
-                    <img src="{{ asset('logo.png') }}" alt="Helpdesk" onerror="this.parentElement.innerHTML='<i class=\'fas fa-headset logo-placeholder\'></i>'">
+                    <img src="{{ asset('img/helpdesklogo.png') }}" alt="Helpdesk" onerror="this.parentElement.innerHTML='<i class=\'fas fa-headset logo-placeholder\'></i>'">
                 </div>
                 
                 {{-- Línea de Conexión --}}
@@ -359,7 +444,7 @@
             
             {{-- Botón de Conexión --}}
             <button type="button" class="btn btn-primary btn-oauth-connect" id="btn-connect">
-                <i class="fas fa-link mr-2"></i>Conectar con Helpdesk
+                Conectar con Helpdesk
             </button>
             
             {{-- Status Steps (se muestran durante conexión) --}}
@@ -391,7 +476,7 @@
             {{-- Logos con Error --}}
             <div class="oauth-logos">
                 <div class="oauth-logo" id="logo-helpdesk-error">
-                    <img src="{{ asset('logo.png') }}" alt="Helpdesk" onerror="this.parentElement.innerHTML='<i class=\'fas fa-headset logo-placeholder\'></i>'">
+                    <img src="{{ asset('img/helpdesklogo.png') }}" alt="Helpdesk" onerror="this.parentElement.innerHTML='<i class=\'fas fa-headset logo-placeholder\'></i>'">
                 </div>
                 
                 <div class="oauth-connection-line">
@@ -458,7 +543,7 @@
             {{-- Logos con conexión exitosa --}}
             <div class="oauth-logos">
                 <div class="oauth-logo">
-                    <img src="{{ asset('logo.png') }}" alt="Helpdesk">
+                    <img src="{{ asset('img/helpdesklogo.png') }}" alt="Helpdesk">
                 </div>
                 <div class="oauth-connection-line">
                     <div class="connection-line-content">
@@ -472,58 +557,77 @@
             
             <div class="card card-outline card-primary">
                 <div class="card-header text-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-user-plus mr-2"></i>Crear cuenta en Helpdesk
-                    </h5>
+                    <h5 class="mb-0">Crear cuenta en Helpdesk</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted text-center mb-3">
-                        Para acceder al Centro de Soporte, crea tu contraseña.
-                    </p>
+                    <p class="login-box-msg">Para acceder al Centro de Soporte, crea tu contraseña.</p>
+                    
+                    {{-- Error Alert (estilo oficial) --}}
+                    <div id="register-alert-error" class="alert alert-danger alert-dismissible fade show" style="display: none;" role="alert">
+                        <button type="button" class="close" onclick="this.parentElement.style.display='none'" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="register-error-message"></span>
+                    </div>
                     
                     {{-- Info del usuario (auto-detectada) --}}
-                    <div class="alert alert-light border mb-3">
-                        <div class="mb-2">
-                            <i class="fas fa-envelope mr-2 text-muted"></i>
+                    <div class="callout callout-info py-2 mb-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas fa-envelope mr-2 text-info"></i>
                             <strong id="register-email"></strong>
                         </div>
-                        <div>
-                            <i class="fas fa-user mr-2 text-muted"></i>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user mr-2 text-info"></i>
                             <span id="register-name"></span>
                         </div>
                     </div>
                     
-                    <form id="form-register">
-                        <div class="form-group">
-                            <label for="register-password">
-                                <i class="fas fa-lock mr-1"></i>Crea tu contraseña
-                            </label>
+                    <form id="form-register" novalidate>
+                        {{-- Password field (estilo oficial) --}}
+                        <div class="input-group mb-3">
                             <input type="password" 
                                    class="form-control" 
                                    id="register-password" 
                                    name="password"
-                                   placeholder="Mínimo 8 caracteres"
+                                   placeholder="Contraseña (mínimo 8 caracteres)"
                                    required
                                    minlength="8">
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                            <span class="invalid-feedback d-block" id="register-password-error"></span>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="register-password-confirm">
-                                <i class="fas fa-lock mr-1"></i>Confirmar contraseña
-                            </label>
+                        {{-- Password Confirmation field (estilo oficial) --}}
+                        <div class="input-group mb-3">
                             <input type="password" 
                                    class="form-control" 
                                    id="register-password-confirm" 
                                    name="password_confirmation"
-                                   placeholder="Repite la contraseña"
+                                   placeholder="Repetir contraseña"
                                    required>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                            <span class="invalid-feedback d-block" id="register-password-confirm-error"></span>
                         </div>
                         
-                        <div id="register-error" class="alert alert-danger" style="display: none;"></div>
-                        
-                        <button type="submit" class="btn btn-primary btn-block" id="btn-register">
-                            <i class="fas fa-check mr-2"></i>Crear cuenta y continuar
-                        </button>
+                        {{-- Submit button (estilo oficial) --}}
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-block" id="btn-register">
+                                    <span class="btn-text">Crear cuenta y continuar</span>
+                                    <span class="btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm mr-2"></span>Procesando...
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -537,7 +641,7 @@
             {{-- Logos con conexión exitosa --}}
             <div class="oauth-logos">
                 <div class="oauth-logo">
-                    <img src="{{ asset('logo.png') }}" alt="Helpdesk">
+                    <img src="{{ asset('img/helpdesklogo.png') }}" alt="Helpdesk">
                 </div>
                 <div class="oauth-connection-line">
                     <div class="connection-line-content">
@@ -549,43 +653,64 @@
                 </div>
             </div>
             
-            <div class="card card-outline card-info">
+            <div class="card card-outline card-primary">
                 <div class="card-header text-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Iniciar sesión
-                    </h5>
+                    <h5 class="mb-0">Iniciar sesión</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted text-center mb-3">
-                        Ingresa tu contraseña para acceder.
-                    </p>
+                    <p class="login-box-msg">Ingresa tu contraseña para acceder al Centro de Soporte.</p>
                     
-                    {{-- Email (auto-detectado) --}}
-                    <div class="form-group">
-                        <label><i class="fas fa-envelope mr-1"></i>Email</label>
-                        <input type="email" 
-                               class="form-control" 
-                               id="login-email" 
-                               readonly>
+                    {{-- Error Alert (estilo oficial) --}}
+                    <div id="login-alert-error" class="alert alert-danger alert-dismissible fade show" style="display: none;" role="alert">
+                        <button type="button" class="close" onclick="this.parentElement.style.display='none'" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="login-error-message"></span>
                     </div>
                     
-                    <form id="form-login">
-                        <div class="form-group">
-                            <label for="login-password">
-                                <i class="fas fa-lock mr-1"></i>Contraseña
-                            </label>
+                    <form id="form-login" novalidate>
+                        {{-- Email field (readonly, estilo oficial) --}}
+                        <div class="input-group mb-3">
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="login-email" 
+                                   placeholder="Correo Electrónico"
+                                   readonly>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-envelope"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Password field (estilo oficial) --}}
+                        <div class="input-group mb-3">
                             <input type="password" 
                                    class="form-control" 
                                    id="login-password" 
                                    name="password"
+                                   placeholder="Contraseña"
                                    required>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <span class="fas fa-lock"></span>
+                                </div>
+                            </div>
+                            <span class="invalid-feedback d-block" id="login-password-error"></span>
                         </div>
                         
-                        <div id="login-error" class="alert alert-danger" style="display: none;"></div>
-                        
-                        <button type="submit" class="btn btn-info btn-block" id="btn-login">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Iniciar sesión
-                        </button>
+                        {{-- Submit button (estilo oficial) --}}
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-block" id="btn-login">
+                                    <span class="btn-text">Ingresar</span>
+                                    <span class="btn-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm mr-2"></span>Ingresando...
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -766,6 +891,9 @@
                 if (DOM.loginForm) DOM.loginForm.style.display = 'block';
                 break;
         }
+        
+        // Detener la animación de puntos cuando se cambia de vista
+        stopDotsAnimation();
     }
 
     // ========================================================================
@@ -802,15 +930,46 @@
     }
 
     // ========================================================================
+    // ANIMACIÓN DE PUNTOS SUSPENSIVOS
+    // ========================================================================
+    
+    let dotsInterval = null;
+    
+    function startDotsAnimation() {
+        const dots = ['.', '..', '...'];
+        let index = 0;
+        
+        // Cambiar título y subtítulo
+        DOM.oauthTitle.textContent = 'Conectando con Centro de Soporte';
+        DOM.oauthSubtitle.innerHTML = '<span id="connecting-dots">.</span>';
+        
+        const dotsSpan = document.getElementById('connecting-dots');
+        
+        dotsInterval = setInterval(() => {
+            index = (index + 1) % dots.length;
+            if (dotsSpan) {
+                dotsSpan.textContent = dots[index];
+            }
+        }, 750);
+    }
+    
+    function stopDotsAnimation() {
+        if (dotsInterval) {
+            clearInterval(dotsInterval);
+            dotsInterval = null;
+        }
+    }
+
+    // ========================================================================
     // FLUJO DE CONEXIÓN
     // ========================================================================
 
     async function startConnection() {
         console.log('[Widget] Iniciando conexión...');
         
-        // Cambiar UI a estado "conectando"
-        DOM.btnConnect.disabled = true;
-        DOM.btnConnect.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Conectando...';
+        // Cambiar UI a estado "conectando" - OCULTAR el botón y animar texto
+        DOM.btnConnect.style.display = 'none';
+        startDotsAnimation();
         DOM.statusSteps.style.display = 'flex';
         updateConnectionLine('connecting');
         
@@ -950,19 +1109,43 @@
         e.preventDefault();
         
         const btn = document.getElementById('btn-register');
-        const errorDiv = document.getElementById('register-error');
-        const password = document.getElementById('register-password').value;
-        const passwordConfirm = document.getElementById('register-password-confirm').value;
+        const btnText = btn.querySelector('.btn-text');
+        const btnLoading = btn.querySelector('.btn-loading');
+        const alertError = document.getElementById('register-alert-error');
+        const errorMessage = document.getElementById('register-error-message');
+        const passwordInput = document.getElementById('register-password');
+        const passwordConfirmInput = document.getElementById('register-password-confirm');
+        const passwordError = document.getElementById('register-password-error');
+        const passwordConfirmError = document.getElementById('register-password-confirm-error');
         
-        if (password !== passwordConfirm) {
-            errorDiv.textContent = 'Las contraseñas no coinciden.';
-            errorDiv.style.display = 'block';
+        const password = passwordInput.value;
+        const passwordConfirm = passwordConfirmInput.value;
+        
+        // Reset errors
+        passwordInput.classList.remove('is-invalid');
+        passwordConfirmInput.classList.remove('is-invalid');
+        passwordError.textContent = '';
+        passwordConfirmError.textContent = '';
+        alertError.style.display = 'none';
+        
+        // Validar contraseña
+        if (password.length < 8) {
+            passwordInput.classList.add('is-invalid');
+            passwordError.textContent = 'La contraseña debe tener al menos 8 caracteres';
             return;
         }
         
-        errorDiv.style.display = 'none';
+        // Validar confirmación
+        if (password !== passwordConfirm) {
+            passwordConfirmInput.classList.add('is-invalid');
+            passwordConfirmError.textContent = 'Las contraseñas no coinciden';
+            return;
+        }
+        
+        // Mostrar loading
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creando cuenta...';
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline';
         
         try {
             const result = await apiCall('/external/register', {
@@ -987,12 +1170,15 @@
             if (error.data && error.data.errors) {
                 const errors = error.data.errors;
                 message = Object.values(errors).flat().join(' ');
+            } else if (error.data && error.data.message) {
+                message = error.data.message;
             }
             
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
+            errorMessage.textContent = message;
+            alertError.style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Crear cuenta y continuar';
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
         }
     });
 
@@ -1001,12 +1187,31 @@
         e.preventDefault();
         
         const btn = document.getElementById('btn-login');
-        const errorDiv = document.getElementById('login-error');
-        const password = document.getElementById('login-password').value;
+        const btnText = btn.querySelector('.btn-text');
+        const btnLoading = btn.querySelector('.btn-loading');
+        const alertError = document.getElementById('login-alert-error');
+        const errorMessage = document.getElementById('login-error-message');
+        const passwordInput = document.getElementById('login-password');
+        const passwordError = document.getElementById('login-password-error');
         
-        errorDiv.style.display = 'none';
+        const password = passwordInput.value;
+        
+        // Reset errors
+        passwordInput.classList.remove('is-invalid');
+        passwordError.textContent = '';
+        alertError.style.display = 'none';
+        
+        // Validar contraseña
+        if (!password) {
+            passwordInput.classList.add('is-invalid');
+            passwordError.textContent = 'La contraseña es requerida';
+            return;
+        }
+        
+        // Mostrar loading
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Iniciando sesión...';
+        btnText.style.display = 'none';
+        btnLoading.style.display = 'inline';
         
         try {
             const result = await apiCall('/external/login-manual', {
@@ -1029,10 +1234,11 @@
                 message = error.data.message;
             }
             
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
+            errorMessage.textContent = message;
+            alertError.style.display = 'block';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Iniciar sesión';
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
         }
     });
 

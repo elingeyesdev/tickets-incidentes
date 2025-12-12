@@ -6,11 +6,11 @@ namespace App\Features\ExternalIntegration\Services;
 
 use App\Features\Authentication\Services\TokenService;
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\UserManagement\Models\Role;
 use App\Features\UserManagement\Models\User;
+use App\Shared\Enums\UserStatus;
+use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * Service para autenticación externa (Widget).
@@ -86,7 +86,7 @@ class ExternalAuthService
         }
 
         // Verificar que el usuario está activo
-        if ($user->status !== 'ACTIVE') {
+        if ($user->status !== UserStatus::ACTIVE) {
             return [
                 'success' => false,
                 'error' => 'USER_INACTIVE',
@@ -131,12 +131,21 @@ class ExternalAuthService
 
         try {
             $user = DB::transaction(function () use ($data, $email, $company) {
-                // Crear usuario
+                // Generar user_code
+                $userCode = CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code');
+
+                // Crear usuario (siguiendo el patrón del UserService oficial)
                 $user = User::create([
+                    'user_code' => $userCode,
                     'email' => $email,
-                    'password' => Hash::make($data['password']),
-                    'status' => 'ACTIVE',
-                    'email_verified_at' => now(), // Auto-verificado para widget
+                    'password_hash' => Hash::make($data['password']),
+                    'status' => UserStatus::ACTIVE,
+                    'email_verified' => false, // Requiere verificación
+                    'email_verified_at' => null,
+                    'auth_provider' => 'external', // Indica que viene del widget
+                    'terms_accepted' => true,
+                    'terms_accepted_at' => now(),
+                    'terms_version' => '1.0',
                 ]);
 
                 // Crear perfil
@@ -148,7 +157,8 @@ class ExternalAuthService
                 // Asignar rol USER en la empresa
                 $this->ensureUserRoleInCompany($user, $company);
 
-                return $user;
+                // Cargar relación profile para el token (como en UserService oficial)
+                return $user->load('profile');
             });
 
             // Generar JWT
@@ -179,34 +189,26 @@ class ExternalAuthService
 
     /**
      * Asegura que el usuario tenga rol USER en la empresa especificada.
+     * Usa el método assignRole() del modelo User que maneja toda la lógica.
      */
     private function ensureUserRoleInCompany(User $user, Company $company): void
     {
-        $userRole = Role::findByCode('USER');
-
-        if (!$userRole) {
-            \Log::error('[ExternalAuthService] Rol USER no encontrado');
-            return;
-        }
-
-        // Verificar si ya tiene el rol en esta empresa
-        $exists = $user->roles()
-            ->wherePivot('role_id', $userRole->id)
-            ->wherePivot('company_id', $company->id)
-            ->exists();
-
-        if (!$exists) {
-            // Asignar rol USER en la empresa
-            $user->roles()->attach($userRole->id, [
-                'id' => Str::uuid(),
-                'company_id' => $company->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            \Log::info('[ExternalAuthService] Rol USER asignado', [
+        try {
+            // El método assignRole del modelo User maneja:
+            // - Verificar si ya tiene el rol
+            // - Crear el UserRole si no existe
+            // - Sincronizar con Spatie
+            $user->assignRole('USER', $company->id);
+            
+            \Log::info('[ExternalAuthService] Rol USER asignado/verificado', [
                 'user_id' => $user->id,
                 'company_id' => $company->id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('[ExternalAuthService] Error asignando rol USER', [
+                'user_id' => $user->id,
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -216,22 +218,17 @@ class ExternalAuthService
      */
     private function generateWidgetToken(User $user, Company $company): string
     {
-        // Obtener el user_role específico de USER en esta empresa
-        $userRole = Role::findByCode('USER');
-        
-        $userRoleRecord = $user->roles()
-            ->wherePivot('role_id', $userRole->id)
-            ->wherePivot('company_id', $company->id)
-            ->first();
+        // Definir el active_role para el widget (siempre USER en la empresa)
+        $activeRole = [
+            'code' => 'USER',
+            'company_id' => $company->id,
+        ];
 
-        if (!$userRoleRecord) {
-            throw new \Exception('No se encontró el rol USER para generar token');
-        }
-
-        // Generar token con active_role
+        // Generar token con active_role definido
         return $this->tokenService->generateAccessToken(
             user: $user,
-            activeRoleId: $userRoleRecord->pivot->id,
+            sessionId: null,
+            activeRole: $activeRole,
         );
     }
 
