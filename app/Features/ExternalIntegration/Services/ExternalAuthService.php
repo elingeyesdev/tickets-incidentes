@@ -246,4 +246,49 @@ class ExternalAuthService
         // Capitalizar primera letra de cada palabra
         return mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
     }
+
+    // ========================================================================
+    // TOKEN REFRESH
+    // ========================================================================
+
+    /**
+     * Valida un token para refresh.
+     * Permite tokens expirados hasta 5 minutos.
+     * 
+     * @param string $token
+     * @return array|null Payload del token o null si inválido
+     */
+    public function validateTokenForRefresh(string $token): ?array
+    {
+        try {
+            // Intentar decodificar sin validar expiración
+            $payload = $this->tokenService->decodeTokenWithoutValidation($token);
+            
+            if (!$payload || !isset($payload['sub'])) {
+                return null;
+            }
+
+            // Verificar que no esté expirado por más de 5 minutos (grace period)
+            $exp = $payload['exp'] ?? 0;
+            $gracePeriod = 5 * 60; // 5 minutos
+            
+            if (time() > ($exp + $gracePeriod)) {
+                // Token expirado hace más de 5 minutos
+                \Log::info('[ExternalAuthService] Token expirado hace más de 5 min', [
+                    'exp' => $exp,
+                    'now' => time(),
+                    'diff' => time() - $exp,
+                ]);
+                return null;
+            }
+
+            return $payload;
+
+        } catch (\Exception $e) {
+            \Log::warning('[ExternalAuthService] Error validando token para refresh', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
 }

@@ -239,4 +239,83 @@ class ExternalAuthController extends Controller
             'tokenType' => 'Bearer',
         ]);
     }
+
+    // ========================================================================
+    // REFRESH TOKEN (Widget)
+    // ========================================================================
+
+    /**
+     * Refresca el access token del widget.
+     * 
+     * A diferencia del refresh normal que usa cookies,
+     * este acepta el token actual en el header y devuelve uno nuevo.
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function refreshToken(Request $request): JsonResponse
+    {
+        // Obtener token del header Authorization
+        $authHeader = $request->header('Authorization');
+        
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json([
+                'success' => false,
+                'code' => 'TOKEN_REQUIRED',
+                'message' => 'Token requerido.',
+            ], 401);
+        }
+
+        $currentToken = substr($authHeader, 7);
+        $company = $request->get('_service_company');
+
+        try {
+            // Validar el token actual (puede estar expirado hasta 5 minutos)
+            $payload = $this->authService->validateTokenForRefresh($currentToken);
+            
+            if (!$payload) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'TOKEN_INVALID',
+                    'message' => 'Token inválido o expirado.',
+                ], 401);
+            }
+
+            // Obtener usuario del payload
+            $user = \App\Features\UserManagement\Models\User::find($payload['sub']);
+            
+            if (!$user || !$user->isActive()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'USER_INACTIVE',
+                    'message' => 'Usuario inactivo.',
+                ], 403);
+            }
+
+            // Generar nuevo token
+            $result = $this->authService->loginTrusted($user->email, $company);
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'REFRESH_FAILED',
+                    'message' => 'Error al refrescar token.',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'accessToken' => $result['accessToken'],
+                'expiresIn' => $result['expiresIn'],
+                'tokenType' => 'Bearer',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'code' => 'REFRESH_FAILED',
+                'message' => 'Error al refrescar token.',
+            ], 401);
+        }
+    }
 }

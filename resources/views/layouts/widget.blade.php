@@ -217,23 +217,36 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
 
-    {{-- Widget Token Manager --}}
+    {{-- Widget Token Manager (con auto-refresh) --}}
     <script>
-        // Token obtenido de la URL o parámetro
+        // Token Manager mejorado con auto-refresh
         (function() {
             'use strict';
 
             // Leer token de URL
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
+            
+            // Obtener API Key de la URL (para refresh endpoint)
+            const apiKey = urlParams.get('api_key') || '';
 
-            // Widget Token Manager (simplificado, solo para el widget)
+            // Widget Token Manager mejorado
             window.widgetTokenManager = {
                 _token: urlToken || null,
+                _payload: null,
+                _refreshTimer: null,
+                _apiKey: apiKey,
 
+                /**
+                 * Establece un nuevo token y programa auto-refresh
+                 */
                 setToken: function(token) {
                     this._token = token;
+                    this._payload = this._decodePayload(token);
                     console.log('[WidgetTokenManager] Token set');
+                    
+                    // Programar auto-refresh
+                    this._scheduleRefresh();
                 },
 
                 getAccessToken: function() {
@@ -246,13 +259,163 @@
 
                 clearTokens: function() {
                     this._token = null;
+                    this._payload = null;
+                    if (this._refreshTimer) {
+                        clearTimeout(this._refreshTimer);
+                        this._refreshTimer = null;
+                    }
+                    console.log('[WidgetTokenManager] Tokens cleared');
+                },
+
+                /**
+                 * Obtiene el tiempo restante antes de expiración (en segundos)
+                 */
+                getTimeToExpiry: function() {
+                    if (!this._payload || !this._payload.exp) {
+                        return 0;
+                    }
+                    return Math.max(0, this._payload.exp - Math.floor(Date.now() / 1000));
+                },
+
+                /**
+                 * Verifica si el token está por expirar (menos del 20% restante)
+                 */
+                isExpiringSoon: function() {
+                    if (!this._payload || !this._payload.exp || !this._payload.iat) {
+                        return true;
+                    }
+                    const ttlTotal = this._payload.exp - this._payload.iat;
+                    const threshold = this._payload.iat + (ttlTotal * 0.8);
+                    const now = Math.floor(Date.now() / 1000);
+                    return now >= threshold;
+                },
+
+                /**
+                 * Intenta refrescar el token
+                 */
+                refreshToken: async function() {
+                    if (!this._token) {
+                        console.warn('[WidgetTokenManager] No token to refresh');
+                        return false;
+                    }
+
+                    console.log('[WidgetTokenManager] Refreshing token...');
+
+                    try {
+                        const response = await fetch('/api/external/refresh', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': 'Bearer ' + this._token,
+                                'X-Service-Key': this._apiKey,
+                            },
+                        });
+
+                        if (!response.ok) {
+                            console.error('[WidgetTokenManager] Refresh failed:', response.status);
+                            return false;
+                        }
+
+                        const data = await response.json();
+                        
+                        if (data.success && data.accessToken) {
+                            this.setToken(data.accessToken);
+                            console.log('[WidgetTokenManager] Token refreshed successfully');
+                            return true;
+                        }
+
+                        return false;
+                    } catch (error) {
+                        console.error('[WidgetTokenManager] Refresh error:', error);
+                        return false;
+                    }
+                },
+
+                /**
+                 * Programa el auto-refresh al 80% del TTL
+                 */
+                _scheduleRefresh: function() {
+                    if (this._refreshTimer) {
+                        clearTimeout(this._refreshTimer);
+                    }
+
+                    if (!this._payload || !this._payload.exp || !this._payload.iat) {
+                        return;
+                    }
+
+                    const ttlTotal = this._payload.exp - this._payload.iat;
+                    const refreshAt = ttlTotal * 0.8; // 80% del tiempo
+                    const now = Math.floor(Date.now() / 1000);
+                    const createdAt = this._payload.iat;
+                    const msUntilRefresh = ((createdAt + refreshAt) - now) * 1000;
+
+                    if (msUntilRefresh <= 0) {
+                        // Ya pasó el threshold, refrescar ahora
+                        console.log('[WidgetTokenManager] Token past 80% threshold, refreshing now');
+                        this.refreshToken();
+                        return;
+                    }
+
+                    console.log('[WidgetTokenManager] Scheduling refresh in', Math.round(msUntilRefresh / 1000), 'seconds');
+                    
+                    this._refreshTimer = setTimeout(() => {
+                        this.refreshToken();
+                    }, msUntilRefresh);
+                },
+
+                /**
+                 * Decodifica el payload del JWT (sin validar firma)
+                 */
+                _decodePayload: function(token) {
+                    try {
+                        const parts = token.split('.');
+                        if (parts.length !== 3) return null;
+                        
+                        const payload = JSON.parse(atob(parts[1]));
+                        return payload;
+                    } catch (e) {
+                        console.error('[WidgetTokenManager] Error decoding token:', e);
+                        return null;
+                    }
+                },
+
+                /**
+                 * Cierra sesión del widget y redirige a la pantalla de conexión
+                 */
+                logout: function() {
+                    this.clearTokens();
+                    
+                    // Obtener datos del usuario de la URL actual o del payload
+                    const currentParams = new URLSearchParams(window.location.search);
+                    const email = this._payload?.email || currentParams.get('email') || '';
+                    
+                    // Construir URL de desconexión
+                    const logoutUrl = '/widget?' + new URLSearchParams({
+                        api_key: this._apiKey,
+                        email: email,
+                        first_name: currentParams.get('first_name') || '',
+                        last_name: currentParams.get('last_name') || '',
+                    }).toString();
+                    
+                    console.log('[WidgetTokenManager] Logging out, redirecting to connect screen');
+                    window.location.href = logoutUrl;
                 }
             };
+
+            // Inicializar con el token de URL
+            if (urlToken) {
+                window.widgetTokenManager._payload = window.widgetTokenManager._decodePayload(urlToken);
+                window.widgetTokenManager._scheduleRefresh();
+            }
 
             // Alias para compatibilidad con código existente
             window.tokenManager = window.widgetTokenManager;
 
             console.log('[Widget] Token manager initialized, authenticated:', window.widgetTokenManager.isAuthenticated());
+            if (window.widgetTokenManager._payload) {
+                console.log('[Widget] Token expires in:', window.widgetTokenManager.getTimeToExpiry(), 'seconds');
+            }
         })();
 
         // WIDGET HEIGHT FIX: Remove inline min-height added by AdminLTE

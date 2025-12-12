@@ -737,6 +737,10 @@ Route::prefix('external')->middleware(['service.api-key', 'throttle:60,1'])->gro
     // Registro de nuevo usuario (con contraseña)
     Route::post('/register', [ExternalAuthController::class, 'register'])
         ->name('external.register');
+    
+    // Refresh token (sin cookies, usa Authorization header)
+    Route::post('/refresh', [ExternalAuthController::class, 'refreshToken'])
+        ->name('external.refresh');
 });
 
 // ================================================================================

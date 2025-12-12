@@ -180,6 +180,60 @@
                     </ul>
                 </div>
             </div>
+
+            {{-- ============================================================== --}}
+            {{-- USER PROFILE CARD --}}
+            {{-- ============================================================== --}}
+            <div class="card card-outline card-secondary">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-circle mr-1"></i>Mi Perfil
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body text-center">
+                    {{-- Avatar con overlay de edición --}}
+                    <div class="profile-avatar-container mb-3" id="avatar-container">
+                        <img src="{{ $user->avatar_url ?? asset('img/default-avatar.png') }}" 
+                             alt="Avatar" 
+                             class="profile-avatar img-circle elevation-2"
+                             id="profile-avatar">
+                        <div class="avatar-overlay" id="avatar-overlay">
+                            <i class="fas fa-camera"></i>
+                            <span>Cambiar</span>
+                        </div>
+                        <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    {{-- Nombre y email --}}
+                    <h6 class="font-weight-bold mb-1" id="profile-name">
+                        {{ $user->display_name ?? 'Usuario' }}
+                    </h6>
+                    <small class="text-muted" id="profile-email">
+                        {{ $user->email }}
+                    </small>
+                </div>
+                <div class="card-footer p-2">
+                    {{-- Botón Salir --}}
+                    <button type="button" 
+                            class="btn btn-outline-secondary btn-sm btn-block mb-2" 
+                            id="btn-widget-logout">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Salir del Centro de Soporte
+                    </button>
+                    
+                    {{-- Botón Visitar Sitio (solo si SSO está habilitado) --}}
+                    <a href="#" 
+                       class="btn btn-outline-primary btn-sm btn-block"
+                       id="btn-visit-official"
+                       target="_blank">
+                        <i class="fas fa-external-link-alt mr-1"></i>Visitar Sitio Oficial
+                    </a>
+                </div>
+            </div>
         </div>
 
         {{-- ============================================================== --}}
@@ -580,5 +634,188 @@
             }
         }
     </script>
-    {{-- Scripts will be added here --}}
+    
+    {{-- ================================================================== --}}
+    {{-- PROFILE CARD STYLES --}}
+    {{-- ================================================================== --}}
+    <style>
+        .profile-avatar-container {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 3px solid #dee2e6;
+            transition: border-color 0.3s ease;
+        }
+
+        .profile-avatar-container:hover .profile-avatar {
+            border-color: #007bff;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            color: white;
+            font-size: 0.75rem;
+        }
+
+        .avatar-overlay i {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-avatar-container:hover .avatar-overlay {
+            opacity: 1;
+        }
+
+        .profile-avatar.uploading {
+            opacity: 0.5;
+        }
+    </style>
+    
+    {{-- ================================================================== --}}
+    {{-- PROFILE CARD SCRIPTS --}}
+    {{-- ================================================================== --}}
+    <script>
+        // Profile Card functionality
+        (function() {
+            'use strict';
+
+            // ================================================================
+            // AVATAR UPLOAD
+            // ================================================================
+            const avatarContainer = document.getElementById('avatar-container');
+            const avatarInput = document.getElementById('avatar-input');
+            const avatarImg = document.getElementById('profile-avatar');
+
+            if (avatarContainer && avatarInput) {
+                // Click en el avatar abre el selector de archivo
+                avatarContainer.addEventListener('click', function() {
+                    avatarInput.click();
+                });
+
+                // Cuando se selecciona un archivo
+                avatarInput.addEventListener('change', async function() {
+                    const file = this.files[0];
+                    if (!file) return;
+
+                    // Validar tamaño (max 2MB)
+                    if (file.size > 2 * 1024 * 1024) {
+                        Swal.fire('Error', 'La imagen no puede superar 2MB', 'error');
+                        return;
+                    }
+
+                    // Validar tipo
+                    if (!file.type.startsWith('image/')) {
+                        Swal.fire('Error', 'Solo se permiten imágenes', 'error');
+                        return;
+                    }
+
+                    // Mostrar loading
+                    avatarImg.classList.add('uploading');
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('avatar', file);
+
+                        const response = await fetch('/api/users/me/avatar', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + window.widgetTokenManager.getAccessToken(),
+                                'Accept': 'application/json',
+                            },
+                            body: formData,
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.avatar_url) {
+                            avatarImg.src = data.avatar_url;
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Avatar actualizado!',
+                                timer: 1500,
+                                showConfirmButton: false,
+                            });
+                        } else {
+                            throw new Error(data.message || 'Error al subir avatar');
+                        }
+                    } catch (error) {
+                        console.error('[Profile] Avatar upload error:', error);
+                        Swal.fire('Error', 'No se pudo actualizar el avatar', 'error');
+                    } finally {
+                        avatarImg.classList.remove('uploading');
+                    }
+                });
+            }
+
+            // ================================================================
+            // LOGOUT BUTTON
+            // ================================================================
+            const btnLogout = document.getElementById('btn-widget-logout');
+            
+            if (btnLogout) {
+                btnLogout.addEventListener('click', function() {
+                    Swal.fire({
+                        title: '¿Salir del Centro de Soporte?',
+                        text: 'Tendrás que volver a conectarte para acceder.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#6c757d',
+                        cancelButtonColor: '#007bff',
+                        confirmButtonText: 'Sí, salir',
+                        cancelButtonText: 'Cancelar',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.widgetTokenManager.logout();
+                        }
+                    });
+                });
+            }
+
+            // ================================================================
+            // VISIT OFFICIAL SITE (SSO)
+            // ================================================================
+            const btnVisit = document.getElementById('btn-visit-official');
+            
+            if (btnVisit) {
+                btnVisit.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    // Mostrar loading
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Conectando...';
+                    this.classList.add('disabled');
+
+                    try {
+                        // Por ahora redirigir directamente (SSO se implementará después)
+                        // TODO: Implementar endpoint /api/external/create-sso-token
+                        window.open('{{ config("app.url") }}', '_blank');
+                    } catch (error) {
+                        console.error('[Profile] SSO error:', error);
+                        Swal.fire('Error', 'No se pudo iniciar sesión en el sitio oficial', 'error');
+                    } finally {
+                        this.innerHTML = originalText;
+                        this.classList.remove('disabled');
+                    }
+                });
+            }
+        })();
+    </script>
 @endpush

@@ -440,6 +440,35 @@ class TokenService
     }
 
     /**
+     * Decodifica un token sin validar expiración.
+     * Útil para refresh de tokens expirados recientemente.
+     * 
+     * NOTA: Esto SÍ valida la firma, pero permite tokens expirados.
+     *
+     * @param string $token
+     * @return array|null Payload como array o null si inválido
+     */
+    public function decodeTokenWithoutValidation(string $token): ?array
+    {
+        try {
+            // Usar leeway muy grande para permitir tokens expirados
+            $originalLeeway = JWT::$leeway;
+            JWT::$leeway = 365 * 24 * 60 * 60; // 1 año
+            
+            $decoded = JWT::decode(
+                $token,
+                new Key(config('jwt.secret'), config('jwt.algo'))
+            );
+            
+            JWT::$leeway = $originalLeeway;
+            
+            return (array) $decoded;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * Limpiar refresh tokens expirados (garbage collection)
      * Ejecutar periódicamente con scheduler
      *
