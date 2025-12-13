@@ -97,7 +97,7 @@ class SyncSpatieRolesCommand extends Command
     {
         // Limpiar roles existentes de Spatie
         DB::table('model_has_roles')
-            ->where('model_uuid', $user->id)
+            ->where('model_id', $user->id)
             ->where('model_type', User::class)
             ->delete();
 
@@ -108,7 +108,7 @@ class SyncSpatieRolesCommand extends Command
                 DB::table('model_has_roles')->insert([
                     'role_id' => $spatieRole->id,
                     'model_type' => User::class,
-                    'model_uuid' => $user->id,
+                    'model_id' => $user->id,
                 ]);
             }
         }

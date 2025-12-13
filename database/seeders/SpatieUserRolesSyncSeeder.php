@@ -65,7 +65,7 @@ class SpatieUserRolesSyncSeeder extends Seeder
                 // Evitamos syncRoles() porque hay conflicto con assignRole() personalizado
                 // Primero limpiamos roles de Spatie existentes
                 DB::table('model_has_roles')
-                    ->where('model_uuid', $userId)
+                    ->where('model_id', $userId)
                     ->where('model_type', User::class)
                     ->delete();
 
@@ -76,7 +76,7 @@ class SpatieUserRolesSyncSeeder extends Seeder
                         DB::table('model_has_roles')->insert([
                             'role_id' => $spatieRole->id,
                             'model_type' => User::class,
-                            'model_uuid' => $userId,
+                            'model_id' => $userId,
                         ]);
                     }
                 }
