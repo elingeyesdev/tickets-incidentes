@@ -16,7 +16,7 @@ use App\Features\CompanyManagement\Http\Controllers\CompanyRequestController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyIndustryController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementController;
-use App\Features\ServiceIntegration\Http\Controllers\ServiceFileController;
+use App\Features\ExternalIntegration\Http\Controllers\ServiceFileController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementSchemaController;
 use App\Features\ContentManagement\Http\Controllers\AnnouncementActionController;
 use App\Features\ContentManagement\Http\Controllers\MaintenanceAnnouncementController;
@@ -657,7 +657,7 @@ Route::middleware(['jwt.require'])->prefix('analytics')->group(function () {
         // Get full traffic history (last 60 seconds) + statistics
         Route::get('/realtime-traffic', [\App\Features\Analytics\Http\Controllers\RealtimeTrafficController::class, 'index'])
             ->name('analytics.realtime-traffic');
-        
+
         // Get only the latest data point (for efficient polling after initial load)
         Route::get('/realtime-traffic/latest', [\App\Features\Analytics\Http\Controllers\RealtimeTrafficController::class, 'latest'])
             ->name('analytics.realtime-traffic.latest');
@@ -696,14 +696,14 @@ Route::middleware(['jwt.require'])->prefix('activity-logs')->group(function () {
 Route::middleware(['jwt.require'])->prefix('files')->group(function () {
     Route::get('/', [ServiceFileController::class, 'index'])
         ->name('files.index');
-    
+
     Route::post('/upload', [ServiceFileController::class, 'upload'])
         ->name('files.upload');
-    
+
     Route::get('/{key}', [ServiceFileController::class, 'show'])
         ->where('key', '.*')
         ->name('files.show');
-    
+
     Route::delete('/{key}', [ServiceFileController::class, 'destroy'])
         ->where('key', '.*')
         ->name('files.destroy');
@@ -721,23 +721,23 @@ Route::prefix('external')->middleware(['service.api-key', 'throttle:60,1'])->gro
     // Validar que la API Key sea válida
     Route::post('/validate-key', [ExternalAuthController::class, 'validateKey'])
         ->name('external.validate-key');
-    
+
     // Verificar si un email existe en Helpdesk
     Route::post('/check-user', [ExternalAuthController::class, 'checkUser'])
         ->name('external.check-user');
-    
+
     // Login automático (trusted, sin contraseña)
     Route::post('/login', [ExternalAuthController::class, 'login'])
         ->name('external.login');
-    
+
     // Login manual (con contraseña, fallback)
     Route::post('/login-manual', [ExternalAuthController::class, 'loginManual'])
         ->name('external.login-manual');
-    
+
     // Registro de nuevo usuario (con contraseña)
     Route::post('/register', [ExternalAuthController::class, 'register'])
         ->name('external.register');
-    
+
     // Refresh token (sin cookies, usa Authorization header)
     Route::post('/refresh', [ExternalAuthController::class, 'refreshToken'])
         ->name('external.refresh');
@@ -755,27 +755,27 @@ Route::prefix('admin/api-keys')->middleware(['jwt.require', 'spatie.active_role:
     // Listar todas las API Keys con filtros y paginación
     Route::get('/', [ApiKeyAdminController::class, 'list'])
         ->name('admin.api-keys.list');
-    
+
     // Obtener estadísticas de API Keys
     Route::get('/statistics', [ApiKeyAdminController::class, 'statistics'])
         ->name('admin.api-keys.statistics');
-    
+
     // Crear nueva API Key
     Route::post('/', [ApiKeyAdminController::class, 'store'])
         ->name('admin.api-keys.store');
-    
+
     // Revocar una API Key
     Route::post('/{id}/revoke', [ApiKeyAdminController::class, 'revoke'])
         ->name('admin.api-keys.revoke');
-    
+
     // Activar una API Key revocada
     Route::post('/{id}/activate', [ApiKeyAdminController::class, 'activate'])
         ->name('admin.api-keys.activate');
-    
+
     // Eliminar una API Key permanentemente
     Route::delete('/{id}', [ApiKeyAdminController::class, 'destroy'])
         ->name('admin.api-keys.destroy');
-    
+
     // Obtener API Keys de una empresa específica (para modal de empresa)
     Route::get('/by-company/{companyId}', [ApiKeyAdminController::class, 'byCompany'])
         ->name('admin.api-keys.by-company');

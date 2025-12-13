@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Features\ServiceIntegration\Http\Controllers;
+namespace App\Features\ExternalIntegration\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
@@ -32,11 +32,11 @@ class ServiceFileController extends Controller
      * Upload a file
      */
     #[OA\Post(
-        path: '/api/service/files/upload',
+        path: '/api/files/upload',
         summary: 'Upload a file',
         description: 'Uploads a file and returns its key and URL. Used by microservices for attachments.',
-        security: [['serviceAuth' => []]],
-        tags: ['Service - Files'],
+        security: [['bearerAuth' => []]],
+        tags: ['External - Files'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\MediaType(
@@ -80,7 +80,7 @@ class ServiceFileController extends Controller
         }
 
         $file = $request->file('file');
-        
+
         // Validar archivo
         $maxSize = 10 * 1024; // 10MB en KB
         if ($file->getSize() > $maxSize * 1024) {
@@ -94,10 +94,10 @@ class ServiceFileController extends Controller
         $folder = $request->input('folder', 'general');
         $safeFolderName = preg_replace('/[^a-zA-Z0-9_-]/', '', $folder);
         $directory = "{$this->baseDir}/{$safeFolderName}";
-        
+
         $extension = $file->getClientOriginalExtension();
         $filename = Str::uuid() . '.' . $extension;
-        
+
         // Guardar archivo
         $path = $file->storeAs($directory, $filename, $this->disk);
 
@@ -118,11 +118,11 @@ class ServiceFileController extends Controller
      * Download/Get file info
      */
     #[OA\Get(
-        path: '/api/service/files/{key}',
+        path: '/api/files/{key}',
         summary: 'Get file info or download',
         description: 'Returns file information or redirects to download URL.',
-        security: [['serviceAuth' => []]],
-        tags: ['Service - Files'],
+        security: [['bearerAuth' => []]],
+        tags: ['External - Files'],
         parameters: [
             new OA\Parameter(name: 'key', in: 'path', required: true, description: 'File key/path', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'download', in: 'query', description: 'If true, returns download response', schema: new OA\Schema(type: 'boolean')),
@@ -175,11 +175,11 @@ class ServiceFileController extends Controller
      * Delete a file
      */
     #[OA\Delete(
-        path: '/api/service/files/{key}',
+        path: '/api/files/{key}',
         summary: 'Delete a file',
         description: 'Deletes a file from storage.',
-        security: [['serviceAuth' => []]],
-        tags: ['Service - Files'],
+        security: [['bearerAuth' => []]],
+        tags: ['External - Files'],
         parameters: [
             new OA\Parameter(name: 'key', in: 'path', required: true, description: 'File key/path', schema: new OA\Schema(type: 'string')),
         ],
@@ -220,11 +220,11 @@ class ServiceFileController extends Controller
      * List files in a folder
      */
     #[OA\Get(
-        path: '/api/service/files',
+        path: '/api/files',
         summary: 'List files in a folder',
         description: 'Lists all files in a specific microservice folder.',
-        security: [['serviceAuth' => []]],
-        tags: ['Service - Files'],
+        security: [['bearerAuth' => []]],
+        tags: ['External - Files'],
         parameters: [
             new OA\Parameter(name: 'folder', in: 'query', description: 'Subfolder to list', schema: new OA\Schema(type: 'string', example: 'chat')),
         ],
