@@ -108,6 +108,12 @@
                                 <p>Áreas</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="/app/company/agents" class="nav-link">
+                                <i class="nav-icon fas fa-user-tie"></i>
+                                <p>Agentes</p>
+                            </a>
+                        </li>
                         <li class="nav-header">CONTENIDO</li>
                         <li class="nav-item">
                             <a href="/app/company/announcements" class="nav-link">
