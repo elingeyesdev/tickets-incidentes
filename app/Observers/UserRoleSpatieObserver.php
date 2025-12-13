@@ -61,7 +61,7 @@ class UserRoleSpatieObserver
 
             // Limpiar roles Spatie existentes
             DB::table('model_has_roles')
-                ->where('model_uuid', $userId)
+                ->where('model_id', $userId)
                 ->where('model_type', User::class)
                 ->delete();
 
@@ -70,12 +70,12 @@ class UserRoleSpatieObserver
                 $spatieRole = SpatieRole::where('name', $roleCode)
                     ->where('guard_name', 'web')
                     ->first();
-                    
+
                 if ($spatieRole) {
                     DB::table('model_has_roles')->insert([
                         'role_id' => $spatieRole->id,
                         'model_type' => User::class,
-                        'model_uuid' => $userId,
+                        'model_id' => $userId,
                     ]);
                 }
             }
