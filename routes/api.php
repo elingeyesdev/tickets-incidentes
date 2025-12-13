@@ -27,6 +27,8 @@ use App\Features\ContentManagement\Http\Controllers\HelpCenterCategoryController
 use App\Features\ContentManagement\Http\Controllers\ArticleController;
 use App\Features\TicketManagement\Http\Controllers\CategoryController;
 use App\Features\CompanyManagement\Http\Controllers\AreaController;
+use App\Features\CompanyManagement\Http\Controllers\CompanyInvitationController;
+use App\Features\CompanyManagement\Http\Controllers\UserInvitationController;
 use App\Features\TicketManagement\Http\Controllers\TicketPredictionController;
 
 /*
@@ -123,6 +125,16 @@ Route::middleware('jwt.require')->group(function () {
     Route::post('/users/me/avatar', [ProfileController::class, 'uploadAvatar'])
         ->middleware('throttle:3,60')  // 3 requests per hour
         ->name('users.avatar.upload');
+
+    // ========== User Invitations (For navbar notifications - any authenticated user) ==========
+    Route::get('/me/invitations', [UserInvitationController::class, 'index'])
+        ->name('me.invitations.index');
+    Route::get('/me/invitations/pending-count', [UserInvitationController::class, 'pendingCount'])
+        ->name('me.invitations.pending-count');
+    Route::post('/me/invitations/{id}/accept', [UserInvitationController::class, 'accept'])
+        ->name('me.invitations.accept');
+    Route::post('/me/invitations/{id}/reject', [UserInvitationController::class, 'reject'])
+        ->name('me.invitations.reject');
 
     // ========== User Viewing (Any Authenticated User can view themselves, admins can view others) ==========
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
@@ -253,6 +265,33 @@ Route::middleware('jwt.require')->group(function () {
         // Delete an area
         Route::delete('/areas/{id}', [AreaController::class, 'destroy'])
             ->name('areas.destroy');
+    });
+
+    // ========== COMPANY INVITATIONS & AGENTS - Management Endpoints (COMPANY_ADMIN Only) ==========
+    Route::middleware(['role:COMPANY_ADMIN'])->prefix('company')->group(function () {
+        // List agents for the company
+        Route::get('/agents', [CompanyInvitationController::class, 'agents'])
+            ->name('api.company.agents');
+
+        // Remove an agent from the company
+        Route::delete('/agents/{userRoleId}', [CompanyInvitationController::class, 'removeAgent'])
+            ->name('company.agents.remove');
+
+        // List all invitations for the company
+        Route::get('/invitations', [CompanyInvitationController::class, 'index'])
+            ->name('company.invitations.index');
+
+        // Search users to invite
+        Route::get('/invitations/search-users', [CompanyInvitationController::class, 'searchUsers'])
+            ->name('company.invitations.search-users');
+
+        // Create a new invitation
+        Route::post('/invitations', [CompanyInvitationController::class, 'store'])
+            ->name('company.invitations.store');
+
+        // Cancel a pending invitation
+        Route::delete('/invitations/{id}', [CompanyInvitationController::class, 'destroy'])
+            ->name('company.invitations.destroy');
     });
 
     // ========== COMPANY REQUESTS - Admin Endpoints ==========

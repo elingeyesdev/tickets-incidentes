@@ -420,6 +420,16 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             ->name('company.reports.summary.pdf');
         Route::get('/reports/company/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'companyPdf'])
             ->name('company.reports.company.pdf');
+
+        // Agents Management
+        Route::get('/agents', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            return view('app.company-admin.agents.index', [
+                'user' => $user,
+                'companyId' => $companyId
+            ]);
+        })->name('company.agents.index');
     });
 
     // Agent Dashboard (AGENT role)
