@@ -939,9 +939,9 @@
         const dots = ['.', '..', '...'];
         let index = 0;
         
-        // Cambiar título y subtítulo
-        DOM.oauthTitle.textContent = 'Conectando con Centro de Soporte';
-        DOM.oauthSubtitle.innerHTML = '<span id="connecting-dots">.</span>';
+        // Cambiar título con puntos animados y ocultar subtítulo
+        DOM.oauthTitle.innerHTML = 'Conectando con Centro de Soporte<span id="connecting-dots">.</span>';
+        DOM.oauthSubtitle.style.display = 'none';
         
         const dotsSpan = document.getElementById('connecting-dots');
         
