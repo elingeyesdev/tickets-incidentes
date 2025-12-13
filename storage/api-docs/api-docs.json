@@ -1426,6 +1426,186 @@
                 ]
             }
         },
+        "/api/auth/select-role": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Select or change active role",
+                "description": "Allows the user to select or change their active role. Generates a new JWT access token with the selected role as active_role. The user must have the specified role in their roles array.",
+                "operationId": "select_active_role",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "role_code"
+                                ],
+                                "properties": {
+                                    "role_code": {
+                                        "description": "Role code to set as active",
+                                        "type": "string",
+                                        "enum": [
+                                            "PLATFORM_ADMIN",
+                                            "COMPANY_ADMIN",
+                                            "AGENT",
+                                            "USER"
+                                        ],
+                                        "example": "COMPANY_ADMIN"
+                                    },
+                                    "company_id": {
+                                        "description": "Company UUID (required for COMPANY_ADMIN and AGENT)",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role selected successfully, new JWT generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "accessToken": {
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                        },
+                                        "tokenType": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "type": "integer",
+                                            "example": 2592000
+                                        },
+                                        "activeRole": {
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "example": "COMPANY_ADMIN"
+                                                },
+                                                "company_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid role selection (user does not have this role)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You do not have this role assigned"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/available-roles": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get available roles for switching",
+                "description": "Returns all roles available to the authenticated user, along with the currently active role.",
+                "operationId": "get_available_roles",
+                "responses": {
+                    "200": {
+                        "description": "Available roles retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "roles": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "code": {
+                                                        "type": "string",
+                                                        "example": "COMPANY_ADMIN"
+                                                    },
+                                                    "company_id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                        "nullable": true
+                                                    },
+                                                    "company_name": {
+                                                        "type": "string",
+                                                        "example": "Acme Corp",
+                                                        "nullable": true
+                                                    },
+                                                    "dashboard_path": {
+                                                        "type": "string",
+                                                        "example": "/app/company/dashboard"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "activeRole": {
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "example": "USER"
+                                                },
+                                                "company_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/email/verify": {
             "post": {
                 "tags": [
@@ -10865,14 +11045,512 @@
                 ]
             }
         },
-        "/api/service/files/upload": {
+        "/api/external/validate-key": {
             "post": {
                 "tags": [
-                    "Service - Files"
+                    "External Auth"
+                ],
+                "summary": "Validate Service API Key",
+                "description": "Validates if the provided Service API Key is active and valid. Returns basic company information.",
+                "operationId": "external_validate_key",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key provided by the admin for external integration",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "sk_prod_..."
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API Key is valid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "API Key válida"
+                                        },
+                                        "company": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "logoUrl": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or missing API Key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/external/check-user": {
+            "post": {
+                "tags": [
+                    "External Auth"
+                ],
+                "summary": "Check if user exists",
+                "description": "Checks if a user with the given email exists in the system.",
+                "operationId": "external_check_user",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Check result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "exists": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "firstName": {
+                                                    "type": "string"
+                                                },
+                                                "lastName": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/external/login": {
+            "post": {
+                "tags": [
+                    "External Auth"
+                ],
+                "summary": "Trusted Login",
+                "description": "Authenticates a user via \"Trusted Login\" using the Service API Key. No password required if the request comes from a trusted source (validated by API Key).",
+                "operationId": "external_login_trusted",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "accessToken": {
+                                            "type": "string",
+                                            "example": "eyJ0..."
+                                        },
+                                        "expiresIn": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        },
+                                        "tokenType": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Login failed (User not found or inactive)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "example": "USER_NOT_FOUND"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/external/register": {
+            "post": {
+                "tags": [
+                    "External Auth"
+                ],
+                "summary": "External Register",
+                "description": "Registers a new user through the widget.",
+                "operationId": "external_register",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "firstName",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "firstName": {
+                                        "type": "string"
+                                    },
+                                    "lastName": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Registration successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "accessToken": {
+                                            "type": "string"
+                                        },
+                                        "expiresIn": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/external/login-manual": {
+            "post": {
+                "tags": [
+                    "External Auth"
+                ],
+                "summary": "Manual Login",
+                "description": "Standard login with email and password for the widget (fallback).",
+                "operationId": "external_login_manual",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "accessToken": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid Credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/external/refresh-token": {
+            "post": {
+                "tags": [
+                    "External Auth"
+                ],
+                "summary": "Refresh Token",
+                "description": "Refreshes the widget access token using the current token.",
+                "operationId": "external_refresh_token",
+                "parameters": [
+                    {
+                        "name": "X-Service-Key",
+                        "in": "header",
+                        "description": "Service API Key",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "accessToken": {
+                                            "type": "string"
+                                        },
+                                        "expiresIn": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/files/upload": {
+            "post": {
+                "tags": [
+                    "External - Files"
                 ],
                 "summary": "Upload a file",
                 "description": "Uploads a file and returns its key and URL. Used by microservices for attachments.",
-                "operationId": "cf202aec8c7e0b2d1cf8ed52c6a56730",
+                "operationId": "17b8aec6e2d91c991804a96ce4d1d9ca",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -10947,19 +11625,19 @@
                 },
                 "security": [
                     {
-                        "serviceAuth": []
+                        "bearerAuth": []
                     }
                 ]
             }
         },
-        "/api/service/files/{key}": {
+        "/api/files/{key}": {
             "get": {
                 "tags": [
-                    "Service - Files"
+                    "External - Files"
                 ],
                 "summary": "Get file info or download",
                 "description": "Returns file information or redirects to download URL.",
-                "operationId": "3f5d71a547df70dfa4ee05bd2729bf90",
+                "operationId": "92ce40874f0845edb0980d633f6c6c53",
                 "parameters": [
                     {
                         "name": "key",
@@ -11013,17 +11691,17 @@
                 },
                 "security": [
                     {
-                        "serviceAuth": []
+                        "bearerAuth": []
                     }
                 ]
             },
             "delete": {
                 "tags": [
-                    "Service - Files"
+                    "External - Files"
                 ],
                 "summary": "Delete a file",
                 "description": "Deletes a file from storage.",
-                "operationId": "56fd8a30aaa66c310a087c0eed6e8a93",
+                "operationId": "fe5ffd477debe03fb5343748d844185c",
                 "parameters": [
                     {
                         "name": "key",
@@ -11062,19 +11740,19 @@
                 },
                 "security": [
                     {
-                        "serviceAuth": []
+                        "bearerAuth": []
                     }
                 ]
             }
         },
-        "/api/service/files": {
+        "/api/files": {
             "get": {
                 "tags": [
-                    "Service - Files"
+                    "External - Files"
                 ],
                 "summary": "List files in a folder",
                 "description": "Lists all files in a specific microservice folder.",
-                "operationId": "64e631b8a0fc6b48162026876f6cc7b5",
+                "operationId": "524c9911d36b18a211013216d9473446",
                 "parameters": [
                     {
                         "name": "folder",
@@ -11114,7 +11792,7 @@
                 },
                 "security": [
                     {
-                        "serviceAuth": []
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -17617,6 +18295,10 @@
     },
     "tags": [
         {
+            "name": "External Auth",
+            "description": "Authentication for external widgets"
+        },
+        {
             "name": "Analytics",
             "description": "Analytics"
         },
@@ -17709,8 +18391,8 @@
             "description": "News Announcements"
         },
         {
-            "name": "Service - Files",
-            "description": "Service - Files"
+            "name": "External - Files",
+            "description": "External - Files"
         },
         {
             "name": "Ticket Categories",

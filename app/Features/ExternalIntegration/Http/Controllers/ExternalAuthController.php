@@ -12,29 +12,74 @@ use App\Features\ExternalIntegration\Services\ExternalAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use OpenApi\Attributes as OA;
 
 /**
  * Controller para autenticación externa (Widget).
  * 
  * Todos los endpoints requieren el middleware 'service.api-key'
  * que valida la API Key y adjunta la empresa al request.
- * 
- * Endpoints:
- * - POST /api/external/validate-key  → Verifica que la API Key sea válida
- * - POST /api/external/check-user    → Verifica si un email existe
- * - POST /api/external/login         → Login automático (trusted)
- * - POST /api/external/register      → Registro con contraseña
  */
+#[OA\Tag(name: 'External Auth', description: 'Authentication for external widgets')]
 class ExternalAuthController extends Controller
 {
     public function __construct(
         private readonly ExternalAuthService $authService,
-    ) {}
+    ) {
+    }
 
     // ========================================================================
     // VALIDATE KEY
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/validate-key',
+        operationId: 'external_validate_key',
+        description: 'Validates if the provided Service API Key is active and valid. Returns basic company information.',
+        summary: 'Validate Service API Key',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key provided by the admin for external integration',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string', example: 'sk_prod_...')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'API Key is valid',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'API Key válida'),
+                        new OA\Property(
+                            property: 'company',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'logoUrl', type: 'string', nullable: true),
+                            ],
+                            type: 'object'
+                        ),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Invalid or missing API Key',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Unauthenticated.'),
+                    ],
+                    type: 'object'
+                )
+            )
+        ]
+    )]
     /**
      * Valida que la API Key sea válida y retorna info de la empresa.
      * 
@@ -63,6 +108,55 @@ class ExternalAuthController extends Controller
     // CHECK USER
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/check-user',
+        operationId: 'external_check_user',
+        description: 'Checks if a user with the given email exists in the system.',
+        summary: 'Check if user exists',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Check result',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'exists', type: 'boolean', example: true),
+                        new OA\Property(
+                            property: 'user',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'firstName', type: 'string'),
+                                new OA\Property(property: 'lastName', type: 'string'),
+                                new OA\Property(property: 'email', type: 'string'),
+                            ],
+                            type: 'object',
+                            nullable: true
+                        ),
+                    ],
+                    type: 'object'
+                )
+            )
+        ]
+    )]
     /**
      * Verifica si un email existe en Helpdesk.
      * 
@@ -86,6 +180,58 @@ class ExternalAuthController extends Controller
     // LOGIN (TRUSTED)
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/login',
+        operationId: 'external_login_trusted',
+        description: 'Authenticates a user via "Trusted Login" using the Service API Key. No password required if the request comes from a trusted source (validated by API Key).',
+        summary: 'Trusted Login',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Login successful',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'accessToken', type: 'string', example: 'eyJ0...'),
+                        new OA\Property(property: 'expiresIn', type: 'integer', example: 3600),
+                        new OA\Property(property: 'tokenType', type: 'string', example: 'Bearer'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Login failed (User not found or inactive)',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'code', type: 'string', example: 'USER_NOT_FOUND'),
+                        new OA\Property(property: 'message', type: 'string'),
+                    ],
+                    type: 'object'
+                )
+            )
+        ]
+    )]
     /**
      * Login automático para usuarios existentes.
      * 
@@ -101,7 +247,7 @@ class ExternalAuthController extends Controller
     public function login(ExternalLoginRequest $request): JsonResponse
     {
         $company = $request->get('_service_company');
-        
+
         $result = $this->authService->loginTrusted(
             email: $request->email,
             company: $company,
@@ -133,6 +279,62 @@ class ExternalAuthController extends Controller
     // REGISTER
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/register',
+        operationId: 'external_register',
+        description: 'Registers a new user through the widget.',
+        summary: 'External Register',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'firstName', 'password', 'password_confirmation'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    new OA\Property(property: 'firstName', type: 'string'),
+                    new OA\Property(property: 'lastName', type: 'string', nullable: true),
+                    new OA\Property(property: 'password', type: 'string', format: 'password', minLength: 8),
+                    new OA\Property(property: 'password_confirmation', type: 'string', format: 'password'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Registration successful',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'accessToken', type: 'string'),
+                        new OA\Property(property: 'expiresIn', type: 'integer'),
+                        new OA\Property(property: 'message', type: 'string'),
+                    ],
+                    type: 'object'
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'errors', type: 'object'),
+                    ],
+                    type: 'object'
+                )
+            )
+        ]
+    )]
     /**
      * Registra un nuevo usuario desde el widget.
      * 
@@ -173,6 +375,54 @@ class ExternalAuthController extends Controller
     // LOGIN MANUAL (con contraseña)
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/login-manual',
+        operationId: 'external_login_manual',
+        description: 'Standard login with email and password for the widget (fallback).',
+        summary: 'Manual Login',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Login successful',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'accessToken', type: 'string'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Invalid Credentials',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: false),
+                        new OA\Property(property: 'message', type: 'string'),
+                    ]
+                )
+            )
+        ]
+    )]
     /**
      * Login manual con contraseña.
      * 
@@ -244,6 +494,40 @@ class ExternalAuthController extends Controller
     // REFRESH TOKEN (Widget)
     // ========================================================================
 
+    #[OA\Post(
+        path: '/api/external/refresh-token',
+        operationId: 'external_refresh_token',
+        description: 'Refreshes the widget access token using the current token.',
+        summary: 'Refresh Token',
+        tags: ['External Auth'],
+        parameters: [
+            new OA\Parameter(
+                name: 'X-Service-Key',
+                description: 'Service API Key',
+                in: 'header',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        security: [['bearerAuth' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Token refreshed',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'accessToken', type: 'string'),
+                        new OA\Property(property: 'expiresIn', type: 'integer'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Invalid or expired token',
+            )
+        ]
+    )]
     /**
      * Refresca el access token del widget.
      * 
@@ -257,7 +541,7 @@ class ExternalAuthController extends Controller
     {
         // Obtener token del header Authorization
         $authHeader = $request->header('Authorization');
-        
+
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
             return response()->json([
                 'success' => false,
@@ -272,7 +556,7 @@ class ExternalAuthController extends Controller
         try {
             // Validar el token actual (puede estar expirado hasta 5 minutos)
             $payload = $this->authService->validateTokenForRefresh($currentToken);
-            
+
             if (!$payload) {
                 return response()->json([
                     'success' => false,
@@ -283,7 +567,7 @@ class ExternalAuthController extends Controller
 
             // Obtener usuario del payload
             $user = \App\Features\UserManagement\Models\User::find($payload['sub']);
-            
+
             if (!$user || !$user->isActive()) {
                 return response()->json([
                     'success' => false,

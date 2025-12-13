@@ -164,7 +164,13 @@ return [
              * @note This option overwrites `paths.excludes`
              * @see \OpenApi\scan
              */
-            'exclude' => [],
+            'exclude' => [
+                base_path('app/Features/TicketManagement/Database/Seeders'),
+                base_path('app/Features/CompanyManagement/Database/Seeders'),
+                base_path('app/Features/UserManagement/Database/Seeders'),
+                base_path('app/Features/Authentication/Database/Seeders'),
+                base_path('app/Features/ContentManagement/Database/Seeders'),
+            ],
 
             /*
              * Allows to generate specs either for OpenAPI 3.0.0 or OpenAPI 3.1.0.
