@@ -1,0 +1,129 @@
+---
+alwaysApply: true
+---
+# PDF Reports Generation - Best Practices & Standards
+
+## Problem Context
+Generating PDF reports with DomPDF in Laravel can be challenging due to CSS limitations (no Flexbox/Grid support) and the need for pixel-perfect print layouts. Inconsistent styling across reports leads to unprofessional outputs (misaligned headers, varying font sizes, "ugly" tables).
+
+Common issues to avoid:
+1.  **Duplicated CSS**: Copying `<style>` blocks into every report file.
+2.  **Broken Headers/Footers**: Fixed elements overlapping content or disappearing.
+3.  **Visual Noise**: Overusing gray backgrounds in tables, making printouts look "muddy".
+4.  **Data Clutter**: Displaying meaningless "0" values with the same visual weight as important data.
+
+## ✅ CORRECT Pattern: Global Layout Inheritance
+
+All PDF reports **MUST** extend the global layout template. Never write `<html>`, `<head>`, or `<style>` tags directly in a report template.
+
+### 1. Global Layout Location
+The master template is located at:
+`resources/views/layouts/pdf-report.blade.php`
+
+### 2. Report Template Structure
+Every new report file (e.g., `companies-pdf.blade.php`) must follow this structure:
+
+```blade
+{{-- resources/views/app/platform-admin/reports/templates/my-report-pdf.blade.php --}}
+@extends('layouts.pdf-report')
+
+{{-- 1. Browser Window Title --}}
+@section('title', 'Reporte de Ventas')
+
+{{-- 2. Header Title (Displayed on Top Right) --}}
+@section('report-title', 'Reporte de Ventas')
+
+{{-- 3. Header Metadata (Date, Filters, Counts) --}}
+@section('report-meta')
+    Generado el: {{ now()->timezone('America/La_Paz')->format('d/m/Y H:i') }}<br>
+    Filtros: Activos &bull; Total: 150
+@endsection
+
+{{-- 4. Main Content --}}
+@section('content')
+    <!-- Statistics Cards (Optional) -->
+    <table class="statistics-table">
+        <tr>
+            <td class="stat-card-cell">
+                <span class="stat-number">150</span>
+                <span class="stat-label">TOTAL</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Data Table -->
+    <div class="content-wrapper">
+        <div class="section-header">
+            <h3 class="section-title">Detalle de Registros</h3>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {{-- HEADERS MUST BE UPPERCASE --}}
+                    <th>PRODUCTO</th>
+                    <th style="text-align: center;">CANTIDAD</th>
+                    <th style="text-align: right;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($items as $item)
+                <tr>
+                    <td>{{ $item->name }}</td>
+                    {{-- Use Conditional Logic for Numbers --}}
+                    <td class="number-cell">
+                        @if($item->quantity == 0)
+                            <span style="color: #d1d5db; font-weight: normal;">0</span>
+                        @else
+                            <span style="color: #111827;">{{ $item->quantity }}</span>
+                        @endif
+                    </td>
+                    <td class="date-cell">{{ $item->total }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endsection
+```
+
+## 🎨 Design Rules (Strict Enforcement)
+
+### 1. Table Headers (Clean Minimalist)
+- **Background**: `transparent` (Never use gray backgrounds).
+- **Border**: `2px solid #111827` (Strong bottom border).
+- **Text**: Uppercase, Bold, Black (`#111827`).
+- **Padding**: Sufficient bottom padding (`15px`) to separate from the line.
+
+### 2. Data Hierarchy (Visual Logic)
+Use conditional styling to reduce noise and highlight important data in columns like "Agents", "Tickets", or monetary values.
+
+| Value | Style | CSS/HTML |
+| :--- | :--- | :--- |
+| **0 (Zero)** | Light Gray, Normal Weight | `color: #d1d5db; font-weight: normal;` |
+| **> 0** | Black, Bold | `color: #111827;` (bold inherited from `.number-cell`) |
+| **High (>10)** | Black, Extra Bold | Optional, for critical KPIs. |
+
+### 3. State Labels
+Use the predefined CSS classes in the layout for consistent coloring. These classes automatically apply `text-transform: uppercase`.
+
+- `<span class="status-active">Active</span>` → **ACTIVE** (Green)
+- `<span class="status-suspended">Suspended</span>` → **SUSPENDED** (Red)
+- `<span class="status-default">Pending</span>` → **PENDING** (Gray)
+
+### 4. Spacing
+- **KPIs**: The `.statistics-table` has a reduced top margin (`10px`) to sit closer to the header line.
+- **Footer**: The footer has a top padding of `20px` to visually center the text "Confidential Document" in the gray bar.
+
+## 📂 File Locations
+
+- **Controller**: `app/Http/Controllers/App/PlatformAdmin/ReportController.php`
+- **Templates**: `resources/views/app/platform-admin/reports/templates/`
+- **Global Layout**: `resources/views/layouts/pdf-report.blade.php`
+
+## 🛠 Troubleshooting DomPDF
+
+- **Tables cutting off**: Use `page-break-inside: avoid;` cautiously. The layout handles basic pagination.
+- **Images not loading**: Always use `{{ public_path('img/...') }}` instead of `asset()`.
+- **Flexbox**: DO NOT USE. DomPDF only supports basic CSS 2.1 (Tables, Floats, Absolute Positioning).
+- **Debug**: Return the view directly in the controller (`return view('...');`) to inspect HTML/CSS in the browser before generating the PDF.

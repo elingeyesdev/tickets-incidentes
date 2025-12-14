@@ -95,7 +95,8 @@ class TicketPolicy
      */
     public function resolve(User $user, Ticket $ticket): bool
     {
-        return $user->hasRoleInCompany('AGENT', $ticket->company_id);
+        return $user->hasRoleInCompany('AGENT', $ticket->company_id)
+            || $user->hasRoleInCompany('COMPANY_ADMIN', $ticket->company_id);
     }
 
     /**

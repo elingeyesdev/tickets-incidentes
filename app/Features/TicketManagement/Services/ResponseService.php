@@ -93,7 +93,8 @@ class ResponseService
         // MIGRADO: Usar el rol ACTIVO del usuario
         $activeRole = JWTHelper::getActiveRoleCode();
         
-        if ($activeRole === 'AGENT') {
+        // Tratar tanto a AGENT como a COMPANY_ADMIN como agentes
+        if (in_array($activeRole, ['AGENT', 'COMPANY_ADMIN'])) {
             return AuthorType::AGENT;
         }
 

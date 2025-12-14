@@ -255,23 +255,45 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         Route::get('/api-keys', [\App\Features\ExternalIntegration\Http\Controllers\ApiKeyAdminController::class, 'index'])
             ->name('admin.api-keys.index');
 
-        // Reports Center
+        // =================================================================
+        // REPORTS CENTER - 4 Separate Views
+        // =================================================================
+
+        // Legacy index redirect
         Route::get('/reports', [PlatformReportController::class, 'index'])
             ->name('admin.reports.index');
-        
-        // Reports Downloads
+
+        // Companies Report
+        Route::get('/reports/companies', [PlatformReportController::class, 'companies'])
+            ->name('admin.reports.companies');
         Route::get('/reports/companies/excel', [PlatformReportController::class, 'companiesExcel'])
             ->name('admin.reports.companies.excel');
         Route::get('/reports/companies/pdf', [PlatformReportController::class, 'companiesPdf'])
             ->name('admin.reports.companies.pdf');
+
+        // Growth Report
+        Route::get('/reports/growth', [PlatformReportController::class, 'growth'])
+            ->name('admin.reports.growth');
         Route::get('/reports/growth/excel', [PlatformReportController::class, 'growthExcel'])
             ->name('admin.reports.growth.excel');
         Route::get('/reports/growth/pdf', [PlatformReportController::class, 'growthPdf'])
             ->name('admin.reports.growth.pdf');
+
+        // Requests Report
+        Route::get('/reports/requests', [PlatformReportController::class, 'requests'])
+            ->name('admin.reports.requests');
         Route::get('/reports/requests/excel', [PlatformReportController::class, 'requestsExcel'])
             ->name('admin.reports.requests.excel');
         Route::get('/reports/requests/pdf', [PlatformReportController::class, 'requestsPdf'])
             ->name('admin.reports.requests.pdf');
+
+        // API Keys Report (NEW)
+        Route::get('/reports/apikeys', [PlatformReportController::class, 'apikeys'])
+            ->name('admin.reports.apikeys');
+        Route::get('/reports/apikeys/excel', [PlatformReportController::class, 'apikeysExcel'])
+            ->name('admin.reports.apikeys.excel');
+        Route::get('/reports/apikeys/pdf', [PlatformReportController::class, 'apikeysPdf'])
+            ->name('admin.reports.apikeys.pdf');
     });
 
     // Company Admin Dashboard (COMPANY_ADMIN role)
@@ -621,7 +643,7 @@ use App\Features\ExternalIntegration\Http\Controllers\WidgetController;
 Route::prefix('widget')->group(function () {
     // Vista principal del widget (flujo de autenticación)
     Route::get('/', [WidgetController::class, 'index'])->name('widget.index');
-    
+
     // Vista de tickets (requiere token en URL)
     Route::get('/tickets', [WidgetController::class, 'tickets'])->name('widget.tickets');
 });
