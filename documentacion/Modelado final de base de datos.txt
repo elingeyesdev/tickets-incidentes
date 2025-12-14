@@ -1,7 +1,7 @@
 ================================================================================
--- SISTEMA HELPDESK - MODELADO PERFECCIONADO V10.0
+-- SISTEMA HELPDESK - MODELADO PERFECCIONADO V11.0
 -- ================================================================================
--- Fecha: 10 de Noviembre de 2025
+-- Fecha: 14 de Diciembre de 2025
 -- Motor: PostgreSQL 17+
 -- Descripción: Versión perfeccionada incorporando todas las mejoras sugeridas
 -- MEJORAS APLICADAS EN V7.0:
@@ -32,6 +32,14 @@
 -- 22. Nueva función return_pending_to_open_on_user_response() con trigger
 -- 23. Lógica completa de transiciones de estado: open<->pending según respuestas
 -- 24. Documentación actualizada con reglas de negocio de estados de tickets
+-- MEJORAS APLICADAS EN V11.0 (Normalización de Company Tables):
+-- 25. ELIMINADA tabla company_requests - datos unificados en companies
+-- 26. Nueva tabla company_onboarding_details para metadatos del proceso de registro
+-- 27. Campo status en companies ahora soporta: 'pending', 'active', 'rejected', 'suspended'
+-- 28. Eliminado campo created_from_request_id en companies (ya no es necesario)
+-- 29. Campo admin_user_id en companies ahora es nullable (empresas pendientes no tienen admin)
+-- 30. La aprobación/rechazo ahora modifica status de company directamente
+-- 31. Migración automática de datos existentes preservando integridad referencial
 -- ================================================================================
 
 -- Extensiones necesarias
@@ -245,41 +253,51 @@ INSERT INTO business.company_industries (code, name, description) VALUES
 ('non_profit', 'ONGs', 'Organizaciones sin fines de lucro'),
 ('other', 'Otros', 'Industrias no clasificadas');
 
--- TABLA 7: COMPANY_REQUESTS (PROCESO DE ONBOARDING)
-CREATE TABLE business.company_requests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- TABLA 7: COMPANY_REQUESTS (OBSOLETA - Ver V11.0)
+-- =============================================================================
+-- NOTA V11.0: Esta tabla ha sido ELIMINADA y reemplazada por:
+-- 1. business.companies con campo status = 'pending' | 'active' | 'rejected' | 'suspended'
+-- 2. business.company_onboarding_details para metadatos del proceso de registro
+-- 
+-- Los datos fueron migrados automáticamente preservando la integridad referencial.
+-- Ver migración: 2025_12_14_000001_normalize_company_tables.php
+-- =============================================================================
+-- CREATE TABLE business.company_requests ( ... ) -- ELIMINADA
+
+-- TABLA 7-B: COMPANY_ONBOARDING_DETAILS (Nueva en V11.0)
+-- Metadatos del proceso de onboarding/registro de empresas
+-- Relación 1:1 con companies - solo existe para empresas que pasaron por el proceso de solicitud
+CREATE TABLE business.company_onboarding_details (
+    -- PK es el mismo que company_id (relación 1:1)
+    company_id UUID PRIMARY KEY REFERENCES business.companies(id) ON DELETE CASCADE,
+    
+    -- Código único de solicitud (migrado desde company_requests)
     request_code VARCHAR(20) UNIQUE NOT NULL, -- REQ-2025-00001
-
-    -- Datos del formulario público
-    company_name VARCHAR(200) NOT NULL,
-    legal_name VARCHAR(250),
-    admin_email CITEXT NOT NULL,
-    company_description TEXT NOT NULL,        -- Descripción pública de la empresa
-    request_message TEXT NOT NULL,            -- Justificación privada de la solicitud
-    website VARCHAR(200),
-    industry_type VARCHAR(100) NOT NULL,
-    estimated_users INT,
-    contact_address TEXT,
-    contact_city VARCHAR(100),
-    contact_country VARCHAR(100),
-    contact_postal_code VARCHAR(20),
-    tax_id VARCHAR(50), -- RUT, NIT, Tax ID (considerar encriptación en aplicación)
-
-    status business.request_status DEFAULT 'pending' NOT NULL,
-
+    
+    -- Datos del solicitante original
+    submitter_email CITEXT NOT NULL,
+    submitter_name VARCHAR(200),
+    
+    -- Descripción/justificación de la solicitud (privada, para revisión)
+    business_description TEXT,
+    
     -- Proceso de revisión
-    reviewed_by UUID REFERENCES auth.users(id), -- Admin plataforma que revisó
+    submitted_at TIMESTAMPTZ,
     reviewed_at TIMESTAMPTZ,
+    reviewer_id UUID REFERENCES auth.users(id),
     rejection_reason TEXT,
-
-    -- Link to created company (if approved)
-    created_company_id UUID,
-
+    notes TEXT, -- Notas internas del revisor
+    
+    -- Metadatos de la solicitud
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    
+    -- Auditoría
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA 8: COMPANIES (ENTIDADES OPERATIVAS)
+-- TABLA 8: COMPANIES (ENTIDADES OPERATIVAS) - Actualizada en V11.0
 CREATE TABLE business.companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_code VARCHAR(20) UNIQUE NOT NULL, -- CMP-2025-00001
@@ -319,12 +337,16 @@ CREATE TABLE business.companies (
     -- Configuración adicional flexible
     settings JSONB DEFAULT '{}'::JSONB,
 
-    -- Estado
-    status VARCHAR(20) DEFAULT 'active' NOT NULL, -- active, suspended
+    -- Estado (V11.0: Expandido para incluir proceso de onboarding)
+    -- 'pending': Solicitud en proceso de revisión
+    -- 'active': Empresa aprobada y operativa
+    -- 'rejected': Solicitud rechazada
+    -- 'suspended': Empresa suspendida temporalmente
+    status VARCHAR(20) DEFAULT 'active' NOT NULL 
+        CHECK (status IN ('pending', 'active', 'rejected', 'suspended')),
 
-    -- Trazabilidad
-    created_from_request_id UUID REFERENCES business.company_requests(id),
-    admin_user_id UUID NOT NULL REFERENCES auth.users(id),
+    -- Administrador de la empresa (V11.0: Ahora nullable para empresas pendientes)
+    admin_user_id UUID REFERENCES auth.users(id), -- NULL cuando status='pending'
 
     -- Auditoría
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -827,9 +849,22 @@ COMMENT ON COLUMN ticketing.tickets.last_response_author_type IS 'Campo para UI:
 COMMENT ON COLUMN business.companies.business_hours IS 'JSON con horarios por día: {"monday": {"open": "09:00", "close": "18:00"}, ...}';
 COMMENT ON COLUMN ticketing.ticket_ratings.rated_agent_id IS 'Guardamos el agente histórico, independiente de cambios futuros en el ticket';
 
+-- Comentarios para Normalización de Company Tables (V11.0)
+COMMENT ON TABLE business.company_onboarding_details IS 'Metadatos del proceso de onboarding. Relación 1:1 con companies. Solo existe para empresas que pasaron por solicitud.';
+COMMENT ON COLUMN business.company_onboarding_details.request_code IS 'Código único de solicitud (ej: REQ-2025-00001). Migrado desde company_requests.';
+COMMENT ON COLUMN business.company_onboarding_details.submitter_email IS 'Email del usuario que envió la solicitud original.';
+COMMENT ON COLUMN business.company_onboarding_details.reviewer_id IS 'Platform Admin que aprobó/rechazó la solicitud.';
+COMMENT ON COLUMN business.companies.status IS 'V11.0: Estados del ciclo de vida: pending (solicitud), active (operativa), rejected (rechazada), suspended (suspendida).';
+COMMENT ON COLUMN business.companies.admin_user_id IS 'V11.0: Ahora nullable. NULL cuando status=pending (empresa aún no tiene admin asignado).';
+
 -- ================================================================================
--- FIN DEL MODELADO PERFECCIONADO V10.0
+-- FIN DEL MODELADO PERFECCIONADO V11.0
 -- Completamente actualizado con:
 -- - Content Management Feature (TDD - CAPA 1)
 -- - Ticket Management Feature - Estados y Transiciones (TDD - CAPA 1)
+-- - Normalización de Company Tables (V11.0):
+--   * Eliminada tabla company_requests
+--   * Nueva tabla company_onboarding_details
+--   * Campo status en companies expandido para ciclo de vida completo
+--   * Migración automática preservando datos existentes
 -- ================================================================================
