@@ -6,7 +6,7 @@ use App\Features\CompanyManagement\Events\CompanyRequestApproved;
 use App\Features\CompanyManagement\Events\CompanyRequestRejected;
 use App\Features\CompanyManagement\Events\CompanyRequestSubmitted;
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\CompanyOnboardingDetails;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Services\RoleService;
 use App\Features\UserManagement\Services\UserService;
@@ -14,77 +14,108 @@ use App\Shared\Errors\ErrorWithExtensions;
 use App\Shared\Helpers\CodeGenerator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * CompanyRequestService
+ * 
+ * Servicio para gestionar solicitudes de empresas.
+ * 
+ * ARQUITECTURA NORMALIZADA:
+ * - Las solicitudes ahora se crean directamente como Company con status='pending'
+ * - Los datos del proceso de onboarding se guardan en CompanyOnboardingDetails
+ * - Al aprobar, solo se cambia el status a 'active' (no se duplican datos)
+ * - Al rechazar, se cambia el status a 'rejected' y se guarda la razón
+ */
 class CompanyRequestService
 {
     public function __construct(
         private CompanyService $companyService,
         private UserService $userService,
         private RoleService $roleService
-    ) {}
+    ) {
+    }
 
     /**
      * Enviar una nueva solicitud de empresa.
+     * 
+     * ANTES: Creaba un CompanyRequest separado
+     * AHORA: Crea directamente un Company con status='pending' + CompanyOnboardingDetails
+     * 
+     * @return Company La empresa creada con status 'pending'
      */
-    public function submit(array $data): CompanyRequest
+    public function submit(array $data): Company
     {
         return DB::transaction(function () use ($data) {
-            // Generar código único de solicitud
-            $requestCode = CodeGenerator::generate('business.company_requests', 'REQ', 'request_code');
+            // Generar códigos únicos
+            $requestCode = CodeGenerator::generate('business.company_onboarding_details', 'REQ', 'request_code');
+            $companyCode = CodeGenerator::generate('business.companies', 'CMP', 'company_code');
 
-            // Crear solicitud
-            $request = CompanyRequest::create([
-                'request_code' => $requestCode,
-                'company_name' => $data['company_name'],
+            // 1. Crear empresa con status 'pending'
+            $company = Company::withoutGlobalScope('activeOnly')->create([
+                'company_code' => $companyCode,
+                'name' => $data['company_name'],
                 'legal_name' => $data['legal_name'] ?? null,
-                'admin_email' => $data['admin_email'],
-                'company_description' => $data['company_description'],
-                'request_message' => $data['request_message'],
+                'description' => $data['company_description'],
+                'support_email' => $data['admin_email'],
                 'website' => $data['website'] ?? null,
                 'industry_id' => $data['industry_id'],
-                'estimated_users' => $data['estimated_users'] ?? null,
                 'contact_address' => $data['contact_address'] ?? null,
                 'contact_city' => $data['contact_city'] ?? null,
                 'contact_country' => $data['contact_country'] ?? null,
                 'contact_postal_code' => $data['contact_postal_code'] ?? null,
                 'tax_id' => $data['tax_id'] ?? null,
                 'status' => 'pending',
+                'admin_user_id' => null, // Se asigna al aprobar
             ]);
 
-            // Refrescar para obtener timestamps de la BD
-            $request->refresh();
+            // 2. Crear detalles de onboarding
+            CompanyOnboardingDetails::create([
+                'company_id' => $company->id,
+                'request_code' => $requestCode,
+                'request_message' => $data['request_message'],
+                'estimated_users' => $data['estimated_users'] ?? null,
+                'submitter_email' => $data['admin_email'],
+            ]);
+
+            // Refrescar para obtener timestamps de la BD y relaciones
+            $company->refresh();
+            $company->load('onboardingDetails');
 
             // Disparar evento
-            event(new CompanyRequestSubmitted($request));
+            event(new CompanyRequestSubmitted($company));
 
-            return $request;
+            return $company;
         });
     }
 
     /**
      * Aprobar una solicitud de empresa.
      *
-     * Este es un proceso complejo:
+     * Este es un proceso simplificado gracias a la normalización:
      * 1. Buscar o crear usuario admin
-     * 2. Crear empresa
+     * 2. Cambiar status de la empresa a 'active'
      * 3. Asignar rol COMPANY_ADMIN al usuario admin
-     * 4. Marcar solicitud como aprobada
-     * 5. Disparar evento (envía email)
+     * 4. Disparar evento (envía email)
+     * 
+     * NOTA: Ya no hay "copia" de datos porque la empresa ya existe
      */
-    public function approve(CompanyRequest $request, User $reviewer): Company
+    public function approve(Company $company, User $reviewer): Company
     {
-        // Validar que la solicitud esté pendiente
-        if (!$request->isPending()) {
+        // Validar que la empresa esté pendiente
+        if (!$company->isPending()) {
             throw ErrorWithExtensions::validation(
-                'Only pending requests can be approved',
-                'REQUEST_NOT_PENDING',
-                ['requestId' => $request->id, 'currentStatus' => $request->status]
+                'Only pending companies can be approved',
+                'COMPANY_NOT_PENDING',
+                ['companyId' => $company->id, 'currentStatus' => $company->status]
             );
         }
 
+        // Obtener email del solicitante desde onboarding details
+        $submitterEmail = $company->onboardingDetails?->submitter_email ?? $company->support_email;
+
         // Ejecutar dentro de transacción
-        $data = DB::transaction(function () use ($request, $reviewer) {
+        $data = DB::transaction(function () use ($company, $reviewer, $submitterEmail) {
             // 1. Buscar o crear usuario admin
-            $adminUser = User::where('email', $request->admin_email)->first();
+            $adminUser = User::where('email', $submitterEmail)->first();
 
             // Determinar si se está creando un nuevo usuario
             $temporaryPassword = null;
@@ -92,29 +123,16 @@ class CompanyRequestService
             if (!$adminUser) {
                 // Crear nuevo usuario desde datos de solicitud
                 $result = $this->userService->createFromCompanyRequest(
-                    $request->admin_email,
-                    $request->company_name
+                    $submitterEmail,
+                    $company->name
                 );
 
                 $adminUser = $result['user'];
                 $temporaryPassword = $result['temporary_password'];
             }
 
-            // 2. Crear empresa
-            $company = $this->companyService->create([
-                'name' => $request->company_name,
-                'legal_name' => $request->legal_name,
-                'description' => $request->company_description,
-                'industry_id' => $request->industry_id,
-                'support_email' => $request->admin_email,
-                'website' => $request->website,
-                'contact_address' => $request->contact_address,
-                'contact_city' => $request->contact_city,
-                'contact_country' => $request->contact_country,
-                'contact_postal_code' => $request->contact_postal_code,
-                'tax_id' => $request->tax_id,
-                'created_from_request_id' => $request->id,
-            ], $adminUser);
+            // 2. Aprobar la empresa (cambia status + asigna admin)
+            $company->approve($adminUser, $reviewer);
 
             // 3. Asignar rol COMPANY_ADMIN al usuario admin
             $this->roleService->assignRoleToUser(
@@ -124,9 +142,6 @@ class CompanyRequestService
                 assignedBy: $reviewer->id
             );
 
-            // 4. Marcar solicitud como aprobada
-            $request->markAsApproved($reviewer, $company);
-
             return [
                 'company' => $company,
                 'adminUser' => $adminUser,
@@ -134,11 +149,9 @@ class CompanyRequestService
             ];
         });
 
-        // 5. Disparar evento DESPUÉS de que la transacción se complete
-        // Se hace fuera de la transacción para garantizar que los listeners
-        // se ejecuten correctamente incluso en tests con RefreshDatabase
+        // 4. Disparar evento DESPUÉS de que la transacción se complete
         event(new CompanyRequestApproved(
-            $request->fresh(),
+            $data['company']->fresh(),
             $data['company'],
             $data['adminUser'],
             $data['temporaryPassword']
@@ -150,46 +163,46 @@ class CompanyRequestService
     /**
      * Rechazar una solicitud de empresa.
      */
-    public function reject(CompanyRequest $request, User $reviewer, string $reason): CompanyRequest
+    public function reject(Company $company, User $reviewer, string $reason): Company
     {
-        // Validar que la solicitud esté pendiente
-        if (!$request->isPending()) {
+        // Validar que la empresa esté pendiente
+        if (!$company->isPending()) {
             throw ErrorWithExtensions::validation(
-                'Only pending requests can be rejected',
-                'REQUEST_NOT_PENDING',
-                ['requestId' => $request->id, 'currentStatus' => $request->status]
+                'Only pending companies can be rejected',
+                'COMPANY_NOT_PENDING',
+                ['companyId' => $company->id, 'currentStatus' => $company->status]
             );
         }
 
-        DB::transaction(function () use ($request, $reviewer, $reason) {
+        DB::transaction(function () use ($company, $reviewer, $reason) {
             // Marcar como rechazada
-            $request->markAsRejected($reviewer, $reason);
+            $company->reject($reviewer, $reason);
         });
 
         // Disparar evento DESPUÉS de que la transacción se complete
-        // Esto garantiza que los listeners se ejecuten fuera de la transacción
-        event(new CompanyRequestRejected($request, $reason));
+        event(new CompanyRequestRejected($company, $reason));
 
-        return $request->fresh();
+        return $company->fresh();
     }
 
     /**
-     * Obtener solicitudes pendientes.
+     * Obtener empresas pendientes de aprobación.
      */
     public function getPending(int $limit = 15): \Illuminate\Database\Eloquent\Collection
     {
-        return CompanyRequest::pending()
+        return Company::pending()
+            ->with('onboardingDetails', 'industry')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
     }
 
     /**
-     * Obtener todas las solicitudes (para admin).
+     * Obtener todas las empresas por status (para admin).
      */
     public function getAll(?string $status = null, int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
-        $query = CompanyRequest::query();
+        $query = Company::withAllStatuses()->with('onboardingDetails', 'industry');
 
         if ($status) {
             $query->where('status', $status);
@@ -205,8 +218,18 @@ class CompanyRequestService
      */
     public function hasPendingRequest(string $email): bool
     {
-        return CompanyRequest::where('admin_email', $email)
-            ->where('status', 'pending')
+        return Company::pending()
+            ->where('support_email', $email)
             ->exists();
+    }
+
+    /**
+     * Obtener una empresa pendiente por ID (sin filtro de GlobalScope).
+     */
+    public function findPendingById(string $id): ?Company
+    {
+        return Company::pending()
+            ->with('onboardingDetails')
+            ->find($id);
     }
 }

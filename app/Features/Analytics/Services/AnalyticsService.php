@@ -13,7 +13,6 @@ use App\Features\ContentManagement\Enums\AnnouncementType;
 use App\Features\ContentManagement\Enums\PublicationStatus;
 use App\Features\TicketManagement\Models\Category;
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Models\Area;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,31 +29,31 @@ class AnalyticsService
     {
         try {
             Log::info('Getting company dashboard stats for company: ' . $companyId);
-            
+
             $kpi = $this->getKpiStats($companyId);
             Log::info('KPI stats retrieved');
-            
+
             $ticketStatus = $this->getTicketStatusStats($companyId);
             Log::info('Ticket status stats retrieved');
-            
+
             $ticketPriority = $this->getTicketPriorityStats($companyId);
             Log::info('Ticket priority stats retrieved');
-            
+
             $ticketsOverTime = $this->getTicketsOverTime($companyId);
             Log::info('Tickets over time retrieved');
-            
+
             $topAgents = $this->getTopAgentsByPerformance($companyId);
             Log::info('Top agents retrieved: ' . count($topAgents));
-            
+
             $teamMembers = $this->getTeamStats($companyId);
             Log::info('Team members retrieved');
-            
+
             $categories = $this->getCategoryStats($companyId);
             Log::info('Categories retrieved');
-            
+
             $performance = $this->getPerformanceStats($companyId);
             Log::info('Performance stats retrieved');
-            
+
             return [
                 'kpi' => $kpi,
                 'ticket_status' => $ticketStatus,
@@ -144,7 +143,7 @@ class AnalyticsService
             'total_agents' => User::active()
                 ->whereHas('userRoles', function ($q) use ($companyId) {
                     $q->where('company_id', $companyId)
-                      ->where('role_code', 'AGENT');
+                        ->where('role_code', 'AGENT');
                 })
                 ->count(),
             'total_articles' => HelpCenterArticle::where('company_id', $companyId)->count(),
@@ -160,9 +159,9 @@ class AnalyticsService
     {
         return [
             'total_users' => User::count(),
-            'total_companies' => Company::count(),
+            'total_companies' => Company::count(), // Solo activas (GlobalScope)
             'total_tickets' => Ticket::count(),
-            'pending_requests' => CompanyRequest::where('status', 'pending')->count(),
+            'pending_requests' => Company::pending()->count(),
         ];
     }
 
@@ -171,16 +170,18 @@ class AnalyticsService
      */
     private function getCompanyRequestsStats(): array
     {
-        $stats = CompanyRequest::select('status', DB::raw('count(*) as total'))
+        // Ahora usa Company con diferentes status en lugar de CompanyRequest
+        $stats = Company::withAllStatuses()
+            ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
         return [
-            'labels' => ['Pendientes', 'Aprobadas', 'Rechazadas'],
+            'labels' => ['Pendientes', 'Activas', 'Rechazadas'],
             'data' => [
                 $stats['pending'] ?? 0,
-                $stats['approved'] ?? 0,
+                $stats['active'] ?? 0,
                 $stats['rejected'] ?? 0,
             ],
             'backgroundColor' => ['#FFC107', '#28A745', '#DC3545'],
@@ -193,9 +194,9 @@ class AnalyticsService
     private function getCompaniesGrowth(): array
     {
         $result = Company::select(
-                DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
-                DB::raw('count(*) as total')
-            )
+            DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
+            DB::raw('count(*) as total')
+        )
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
             ->orderBy('month')
@@ -214,9 +215,9 @@ class AnalyticsService
     private function getGlobalTicketVolume(): array
     {
         $result = Ticket::select(
-                DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
-                DB::raw('count(*) as total')
-            )
+            DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
+            DB::raw('count(*) as total')
+        )
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
             ->orderBy('month')
@@ -234,16 +235,19 @@ class AnalyticsService
      */
     private function getPendingCompanyRequests(int $limit = 5): array
     {
-        return CompanyRequest::where('status', 'pending')
+        // Ahora usa Company::pending() en lugar de CompanyRequest
+        return Company::pending()
+            ->with('onboardingDetails')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get()
-            ->map(function ($request) {
+            ->map(function ($company) {
+                $onboarding = $company->onboardingDetails;
                 return [
-                    'id' => $request->id,
-                    'company_name' => $request->company_name,
-                    'admin_email' => $request->admin_email,
-                    'created_at' => $request->created_at->diffForHumans(),
+                    'id' => $company->id,
+                    'company_name' => $company->name,
+                    'admin_email' => $onboarding?->submitter_email ?? $company->support_email,
+                    'created_at' => $company->created_at->diffForHumans(),
                 ];
             })
             ->toArray();
@@ -479,7 +483,7 @@ class AnalyticsService
         $agents = User::with('profile')
             ->whereHas('userRoles', function ($q) use ($companyId) {
                 $q->where('company_id', $companyId)
-                  ->where('role_code', 'AGENT');
+                    ->where('role_code', 'AGENT');
             })
             ->get();
 
@@ -494,11 +498,11 @@ class AnalyticsService
                 ->whereIn('status', ['resolved', 'closed'])
                 ->count();
 
-            $resolutionRate = $assignedCount > 0 
-                ? round(($resolvedCount / $assignedCount) * 100) 
+            $resolutionRate = $assignedCount > 0
+                ? round(($resolvedCount / $assignedCount) * 100)
                 : 0;
 
-            $fullName = $agent->profile 
+            $fullName = $agent->profile
                 ? trim($agent->profile->first_name . ' ' . $agent->profile->last_name)
                 : $agent->email;
 
@@ -511,11 +515,11 @@ class AnalyticsService
                 'resolution_rate' => $resolutionRate,
             ];
         })
-        ->filter(fn($stats) => $stats['assigned'] > 0)
-        ->sortByDesc('resolved')
-        ->sortByDesc('assigned')
-        ->take($limit)
-        ->values();
+            ->filter(fn($stats) => $stats['assigned'] > 0)
+            ->sortByDesc('resolved')
+            ->sortByDesc('assigned')
+            ->take($limit)
+            ->values();
 
         return $agentStats->map(function ($stats, $index) {
             return [
@@ -588,7 +592,7 @@ class AnalyticsService
         return User::active()
             ->whereHas('userRoles', function ($q) use ($companyId) {
                 $q->where('company_id', $companyId)
-                  ->where('role_code', 'AGENT');
+                    ->where('role_code', 'AGENT');
             })
             ->with('profile')
             ->limit($limit)
@@ -596,7 +600,7 @@ class AnalyticsService
             ->map(function ($user) {
                 // Determine online status (active in last 5 minutes)
                 $isOnline = $user->last_activity_at && $user->last_activity_at->diffInMinutes(now()) < 5;
-                
+
                 return [
                     'name' => $user->displayName,
                     'email' => $user->email,
@@ -617,15 +621,17 @@ class AnalyticsService
             ->count();
 
         return Category::where('company_id', $companyId)
-            ->withCount(['tickets as active_tickets_count' => function ($query) {
-                $query->whereIn('status', [TicketStatus::OPEN, TicketStatus::PENDING]);
-            }])
+            ->withCount([
+                'tickets as active_tickets_count' => function ($query) {
+                    $query->whereIn('status', [TicketStatus::OPEN, TicketStatus::PENDING]);
+                }
+            ])
             ->get()
             ->map(function ($category) use ($totalActiveTickets) {
-                $percentage = $totalActiveTickets > 0 
-                    ? round(($category->active_tickets_count / $totalActiveTickets) * 100) 
+                $percentage = $totalActiveTickets > 0
+                    ? round(($category->active_tickets_count / $totalActiveTickets) * 100)
                     : 0;
-                
+
                 return [
                     'name' => $category->name,
                     'active_tickets_count' => $category->active_tickets_count,
@@ -943,7 +949,7 @@ class AnalyticsService
 
         // Active tickets = open + pending
         $activeTickets = $open + $pending;
-        
+
         // Resolved today
         $resolvedToday = Ticket::where('owner_agent_id', $agentId)
             ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
@@ -956,7 +962,7 @@ class AnalyticsService
 
         // Open rate: percentage of active tickets that are open
         $openRate = $activeTickets > 0 ? round(($open / $activeTickets) * 100) : 0;
-        
+
         // Pending rate: percentage of active tickets that are pending
         $pendingRate = $activeTickets > 0 ? round(($pending / $activeTickets) * 100) : 0;
 
@@ -979,7 +985,7 @@ class AnalyticsService
     private function getAgentProfile(string $agentId): array
     {
         $user = User::with('profile')->find($agentId);
-        
+
         if (!$user) {
             return [
                 'name' => 'Unknown',
@@ -1028,7 +1034,7 @@ class AnalyticsService
 
         foreach ($recentTickets as $ticket) {
             $isResolved = in_array($ticket->status, [TicketStatus::RESOLVED, TicketStatus::CLOSED]);
-            
+
             // Determine the activity type based on status
             if ($isResolved) {
                 $type = 'resolved';
@@ -1082,7 +1088,7 @@ class AnalyticsService
     private function getUserProfile(string $userId): array
     {
         $user = User::with('profile')->find($userId);
-        
+
         if (!$user) {
             return [
                 'name' => 'Usuario',

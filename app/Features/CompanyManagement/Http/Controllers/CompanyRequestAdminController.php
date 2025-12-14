@@ -6,7 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
 use App\Shared\Helpers\JWTHelper;
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Services\CompanyRequestService;
 use App\Features\CompanyManagement\Http\Requests\ApproveCompanyRequestRequest;
 use App\Features\CompanyManagement\Http\Requests\RejectCompanyRequestRequest;
@@ -32,7 +32,8 @@ class CompanyRequestAdminController extends Controller
 {
     public function __construct(
         protected ActivityLogService $activityLogService
-    ) {}
+    ) {
+    }
 
     /**
      * Display the company requests management view
@@ -144,37 +145,41 @@ class CompanyRequestAdminController extends Controller
         ]
     )]
     public function approve(
-        CompanyRequest $companyRequest,
+        string $companyRequest, // Recibe UUID como string para usar scope manual
         ApproveCompanyRequestRequest $request,
         CompanyRequestService $requestService
     ): JsonResponse {
         $currentUser = JWTHelper::getAuthenticatedUser();
 
+        // Usar empresa ya validada por el Form Request (evita doble búsqueda)
+        $company = $request->pendingCompany ?? Company::pending()->with('onboardingDetails')->findOrFail($companyRequest);
+        $company->loadMissing('onboardingDetails');
+
         // Aprobar la solicitud usando el Service
-        $company = $requestService->approve($companyRequest, $currentUser);
+        $approvedCompany = $requestService->approve($company, $currentUser);
 
         // Registrar actividad
         $this->activityLogService->logCompanyRequestApproved(
             adminId: $currentUser->id,
-            requestId: $companyRequest->id,
-            companyName: $company->name,
-            createdCompanyId: $company->id,
-            adminEmail: $company->admin->email
+            requestId: $company->id, // Ahora la empresa ES la solicitud
+            companyName: $approvedCompany->name,
+            createdCompanyId: $approvedCompany->id,
+            adminEmail: $approvedCompany->admin->email
         );
 
         // Determinar si se creó nuevo usuario (verificar propiedad wasRecentlyCreated)
-        $adminUser = $company->admin;
+        $adminUser = $approvedCompany->admin;
         $newUserCreated = property_exists($adminUser, 'wasRecentlyCreated') && $adminUser->wasRecentlyCreated;
 
         // Construir mensaje según si es usuario nuevo o existente
         $message = $newUserCreated
-            ? "Solicitud aprobada exitosamente. Se ha creado la empresa '{$company->name}' y se envió un email con las credenciales de acceso a {$adminUser->email}."
-            : "Solicitud aprobada exitosamente. Se ha creado la empresa '{$company->name}' y se asignó el rol de administrador al usuario existente.";
+            ? "Solicitud aprobada exitosamente. Se ha creado la empresa '{$approvedCompany->name}' y se envió un email con las credenciales de acceso a {$adminUser->email}."
+            : "Solicitud aprobada exitosamente. Se ha creado la empresa '{$approvedCompany->name}' y se asignó el rol de administrador al usuario existente.";
 
         // Preparar datos para el Resource
         $data = [
             'message' => $message,
-            'company' => $company,
+            'company' => $approvedCompany,
             'admin_email' => $adminUser->email,
             'admin_name' => $adminUser->profile->display_name ?? $adminUser->email,
             'new_user_created' => $newUserCreated,
@@ -254,21 +259,26 @@ class CompanyRequestAdminController extends Controller
         ]
     )]
     public function reject(
-        CompanyRequest $companyRequest,
+        string $companyRequest, // Recibe UUID como string para usar scope manual
         RejectCompanyRequestRequest $request,
         CompanyRequestService $requestService
     ): JsonResponse {
         $currentUser = JWTHelper::getAuthenticatedUser();
 
+        // Usar empresa ya validada por el Form Request (evita doble búsqueda)
+        $company = $request->pendingCompany ?? Company::pending()->with('onboardingDetails')->findOrFail($companyRequest);
+        $company->loadMissing('onboardingDetails');
+
         // Guardar datos antes del rechazo (el Service puede modificar el objeto)
-        $companyName = $companyRequest->company_name;
-        $requestCode = $companyRequest->request_code;
-        $notificationEmail = $companyRequest->admin_email;
-        $requestId = $companyRequest->id;
+        $companyName = $company->name;
+        $onboardingDetails = $company->onboardingDetails;
+        $requestCode = $onboardingDetails?->request_code ?? $company->company_code;
+        $notificationEmail = $onboardingDetails?->submitter_email ?? $company->support_email;
+        $companyId = $company->id;
 
         // Rechazar la solicitud usando el Service
         $rejected = $requestService->reject(
-            $companyRequest,
+            $company,
             $currentUser,
             $request->reason
         );
@@ -276,7 +286,7 @@ class CompanyRequestAdminController extends Controller
         // Registrar actividad
         $this->activityLogService->logCompanyRequestRejected(
             adminId: $currentUser->id,
-            requestId: $requestId,
+            requestId: $companyId,
             companyName: $companyName,
             reason: $request->reason
         );

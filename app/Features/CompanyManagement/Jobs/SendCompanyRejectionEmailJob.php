@@ -3,7 +3,7 @@
 namespace App\Features\CompanyManagement\Jobs;
 
 use App\Features\CompanyManagement\Mail\CompanyRejectionMail;
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -34,9 +34,11 @@ class SendCompanyRejectionEmailJob implements ShouldQueue
 
     /**
      * Create a new job instance.
+     * 
+     * NOTA: Ahora recibe Company (con status='rejected') en lugar de CompanyRequest.
      */
     public function __construct(
-        public CompanyRequest $request,
+        public Company $company,
         public string $reason
     ) {
         // Asignar a cola específica
@@ -48,10 +50,14 @@ class SendCompanyRejectionEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
+        // Obtener email del solicitante desde onboarding details o support_email
+        $recipientEmail = $this->company->onboardingDetails?->submitter_email
+            ?? $this->company->support_email;
+
         // Enviar email de rechazo
-        Mail::to($this->request->admin_email)->send(
+        Mail::to($recipientEmail)->send(
             new CompanyRejectionMail(
-                $this->request,
+                $this->company,
                 $this->reason
             )
         );
@@ -62,11 +68,13 @@ class SendCompanyRejectionEmailJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        $onboardingDetails = $this->company->onboardingDetails;
+
         // Log del error
         Log::error('Failed to send company rejection email', [
-            'request_code' => $this->request->request_code,
-            'company_name' => $this->request->company_name,
-            'admin_email' => $this->request->admin_email,
+            'request_code' => $onboardingDetails?->request_code ?? 'N/A',
+            'company_name' => $this->company->name,
+            'submitter_email' => $onboardingDetails?->submitter_email ?? $this->company->support_email,
             'reason' => $this->reason,
             'error' => $exception->getMessage(),
         ]);

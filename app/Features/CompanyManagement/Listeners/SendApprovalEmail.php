@@ -15,9 +15,10 @@ class SendApprovalEmail
         \Illuminate\Support\Facades\Log::debug('SendApprovalEmail listener: Handling CompanyRequestApproved event');
 
         // Despachar job para enviar email de aprobación
+        // Ahora company es tanto la solicitud como la empresa (son lo mismo)
         SendCompanyApprovalEmailJob::dispatch(
-            $event->request,
             $event->company,
+            $event->company, // Antes era $event->company separada del request
             $event->adminUser,
             $event->temporaryPassword
         );

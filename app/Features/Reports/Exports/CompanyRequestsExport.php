@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Features\Reports\Exports;
 
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -17,6 +17,10 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  * Company Requests Export for Excel
  * 
  * Exports all company registration requests to Excel format.
+ * 
+ * ARQUITECTURA NORMALIZADA:
+ * - Ahora usa Company con diferentes status en lugar de CompanyRequest
+ * - Los datos de solicitud vienen de Company->onboardingDetails
  */
 class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
 {
@@ -32,12 +36,18 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
      */
     public function collection()
     {
-        $query = CompanyRequest::with(['reviewer', 'createdCompany']);
-        
+        $query = Company::withAllStatuses()
+            ->with(['onboardingDetails.reviewer', 'industry']);
+
         if ($this->status) {
-            $query->where('status', $this->status);
+            // Mapear status del request al status de Company
+            $mappedStatus = match ($this->status) {
+                'approved' => 'active',
+                default => $this->status,
+            };
+            $query->where('status', $mappedStatus);
         }
-        
+
         return $query->orderBy('created_at', 'desc')->get();
     }
 
@@ -50,8 +60,7 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
             'ID',
             'Nombre Empresa',
             'Razón Social',
-            'Email Admin',
-            'Nombre Admin',
+            'Email Solicitante',
             'Industria',
             'Estado',
             'Fecha Solicitud',
@@ -64,20 +73,21 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
     /**
      * Map each request row to Excel columns
      */
-    public function map($request): array
+    public function map($company): array
     {
+        $onboardingDetails = $company->onboardingDetails;
+
         return [
-            substr($request->id, 0, 8) . '...',
-            $request->company_name,
-            $request->company_legal_name ?? 'N/A',
-            $request->admin_email,
-            $request->admin_name ?? 'N/A',
-            $request->industry_name ?? 'N/A',
-            $this->translateStatus($request->status),
-            $request->created_at?->format('d/m/Y H:i') ?? 'N/A',
-            $request->reviewed_at?->format('d/m/Y H:i') ?? 'Pendiente',
-            $request->reviewer?->email ?? 'N/A',
-            $request->rejection_reason ?? '-',
+            substr($company->id, 0, 8) . '...',
+            $company->name,
+            $company->legal_name ?? 'N/A',
+            $onboardingDetails?->submitter_email ?? $company->support_email,
+            $company->industry?->name ?? 'N/A',
+            $this->translateStatus($company->status),
+            $company->created_at?->format('d/m/Y H:i') ?? 'N/A',
+            $onboardingDetails?->reviewed_at?->format('d/m/Y H:i') ?? 'Pendiente',
+            $onboardingDetails?->reviewer?->email ?? 'N/A',
+            $onboardingDetails?->rejection_reason ?? '-',
         ];
     }
 
@@ -116,8 +126,9 @@ class CompanyRequestsExport implements FromCollection, WithHeadings, WithMapping
     {
         return match ($status) {
             'pending' => 'Pendiente',
-            'approved' => 'Aprobada',
+            'active' => 'Aprobada',
             'rejected' => 'Rechazada',
+            'suspended' => 'Suspendida',
             default => $status ?? 'Desconocido',
         };
     }

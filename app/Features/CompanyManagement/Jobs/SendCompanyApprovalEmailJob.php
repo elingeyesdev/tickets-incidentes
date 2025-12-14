@@ -5,7 +5,6 @@ namespace App\Features\CompanyManagement\Jobs;
 use App\Features\CompanyManagement\Mail\CompanyApprovalMailForExistingUser;
 use App\Features\CompanyManagement\Mail\CompanyApprovalMailForNewUser;
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -38,10 +37,13 @@ class SendCompanyApprovalEmailJob implements ShouldQueue
 
     /**
      * Create a new job instance.
+     * 
+     * NOTA: Ahora recibe Company dos veces por compatibilidad con la arquitectura normalizada.
+     * El primer parámetro antes era CompanyRequest.
      */
     public function __construct(
-        public CompanyRequest $request,
-        public Company $company,
+        public Company $company,           // Antes era CompanyRequest $request
+        public Company $approvedCompany,   // La misma empresa (para compatibilidad)
         public User $adminUser,
         public ?string $temporaryPassword = null
     ) {
@@ -80,9 +82,12 @@ class SendCompanyApprovalEmailJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        // Obtener request_code desde onboarding details
+        $requestCode = $this->company->onboardingDetails?->request_code ?? 'N/A';
+
         // Log del error
         Log::error('Failed to send company approval email', [
-            'request_code' => $this->request->request_code,
+            'request_code' => $requestCode,
             'company_code' => $this->company->company_code,
             'admin_email' => $this->adminUser->email,
             'has_temp_password' => !is_null($this->temporaryPassword),

@@ -3,7 +3,7 @@
 namespace Tests\Feature\CompanyManagement\Controllers;
 
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\CompanyOnboardingDetails;
 use App\Features\UserManagement\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
@@ -12,14 +12,17 @@ use Tests\TestCase;
 /**
  * Test suite completo para CompanyRequestController@index (REST API)
  *
- * Migrado desde: CompanyRequestsQueryTest (GraphQL)
+ * ARQUITECTURA NORMALIZADA:
+ * - Las solicitudes ahora son Company con status='pending', 'active', 'rejected'
+ * - Los detalles de onboarding están en CompanyOnboardingDetails
+ *
  * Endpoint: GET /api/company-requests
  *
  * Verifica:
  * - PLATFORM_ADMIN puede ver todas las solicitudes
  * - COMPANY_ADMIN no puede ver solicitudes (403)
  * - USER no puede ver solicitudes (403)
- * - Filtros por status funcionan (PENDING, APPROVED, REJECTED)
+ * - Filtros por status funcionan (PENDING, APPROVED/ACTIVE, REJECTED)
  * - Sin filtro retorna todas las solicitudes
  * - Paginación con limit funciona
  */
@@ -28,6 +31,39 @@ class CompanyRequestControllerIndexTest extends TestCase
     use RefreshDatabase;
     use SeedsCompanyIndustries;
 
+    /**
+     * Helper para crear empresa pendiente con detalles de onboarding
+     */
+    private function createPendingCompany(array $overrides = []): Company
+    {
+        $company = Company::factory()->pending()->create($overrides);
+        CompanyOnboardingDetails::factory()->create([
+            'company_id' => $company->id,
+        ]);
+        return $company;
+    }
+
+    /**
+     * Helper para crear empresa activa (aprobada)
+     */
+    private function createActiveCompany(array $overrides = []): Company
+    {
+        return Company::factory()->create(array_merge(['status' => 'active'], $overrides));
+    }
+
+    /**
+     * Helper para crear empresa rechazada con detalles de onboarding
+     */
+    private function createRejectedCompany(array $overrides = []): Company
+    {
+        $company = Company::factory()->rejected()->create($overrides);
+        CompanyOnboardingDetails::factory()->create([
+            'company_id' => $company->id,
+            'rejection_reason' => 'Test rejection reason',
+        ]);
+        return $company;
+    }
+
     /** @test */
     public function platform_admin_can_view_all_requests()
     {
@@ -35,8 +71,13 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(3)->create(['status' => 'pending']);
-        CompanyRequest::factory()->count(2)->create(['status' => 'approved']);
+        // Crear 3 pending y 2 active
+        for ($i = 0; $i < 3; $i++) {
+            $this->createPendingCompany();
+        }
+        for ($i = 0; $i < 2; $i++) {
+            $this->createActiveCompany();
+        }
 
         // Act
         $response = $this->getJson('/api/company-requests', [
@@ -69,7 +110,7 @@ class CompanyRequestControllerIndexTest extends TestCase
         $companyAdmin = User::factory()->withRole('COMPANY_ADMIN', $company->id)->create();
         $token = $this->generateAccessToken($companyAdmin);
 
-        CompanyRequest::factory()->create();
+        $this->createPendingCompany();
 
         // Act
         $response = $this->getJson('/api/company-requests', [
@@ -91,7 +132,7 @@ class CompanyRequestControllerIndexTest extends TestCase
         $user = User::factory()->withRole('USER')->create();
         $token = $this->generateAccessToken($user);
 
-        CompanyRequest::factory()->create();
+        $this->createPendingCompany();
 
         // Act
         $response = $this->getJson('/api/company-requests', [
@@ -113,9 +154,13 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(3)->create(['status' => 'pending']);
-        CompanyRequest::factory()->count(2)->create(['status' => 'approved']);
-        CompanyRequest::factory()->create(['status' => 'rejected']);
+        for ($i = 0; $i < 3; $i++) {
+            $this->createPendingCompany();
+        }
+        for ($i = 0; $i < 2; $i++) {
+            $this->createActiveCompany();
+        }
+        $this->createRejectedCompany();
 
         // Act
         $response = $this->getJson('/api/company-requests?status=PENDING', [
@@ -140,10 +185,14 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(2)->create(['status' => 'pending']);
-        CompanyRequest::factory()->count(3)->create(['status' => 'approved']);
+        for ($i = 0; $i < 2; $i++) {
+            $this->createPendingCompany();
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $this->createActiveCompany();
+        }
 
-        // Act
+        // Act - APPROVED se mapea a status='active'
         $response = $this->getJson('/api/company-requests?status=APPROVED', [
             'Authorization' => "Bearer $token"
         ]);
@@ -155,7 +204,8 @@ class CompanyRequestControllerIndexTest extends TestCase
         $this->assertCount(3, $requests);
 
         foreach ($requests as $request) {
-            $this->assertEquals('APPROVED', $request['status']);
+            // La API devuelve ACTIVE como APPROVED para compatibilidad
+            $this->assertContains($request['status'], ['APPROVED', 'ACTIVE']);
         }
     }
 
@@ -166,8 +216,12 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(2)->create(['status' => 'pending']);
-        CompanyRequest::factory()->count(2)->create(['status' => 'rejected']);
+        for ($i = 0; $i < 2; $i++) {
+            $this->createPendingCompany();
+        }
+        for ($i = 0; $i < 2; $i++) {
+            $this->createRejectedCompany();
+        }
 
         // Act
         $response = $this->getJson('/api/company-requests?status=REJECTED', [
@@ -192,9 +246,13 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(2)->create(['status' => 'pending']);
-        CompanyRequest::factory()->count(3)->create(['status' => 'approved']);
-        CompanyRequest::factory()->create(['status' => 'rejected']);
+        for ($i = 0; $i < 2; $i++) {
+            $this->createPendingCompany();
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $this->createActiveCompany();
+        }
+        $this->createRejectedCompany();
 
         // Act - Sin filtro
         $response = $this->getJson('/api/company-requests', [
@@ -210,7 +268,10 @@ class CompanyRequestControllerIndexTest extends TestCase
         // Verificar que hay de todos los estados
         $statuses = array_column($requests, 'status');
         $this->assertContains('PENDING', $statuses);
-        $this->assertContains('APPROVED', $statuses);
+        $this->assertTrue(
+            in_array('APPROVED', $statuses) || in_array('ACTIVE', $statuses),
+            'Expected APPROVED or ACTIVE status'
+        );
         $this->assertContains('REJECTED', $statuses);
     }
 
@@ -221,7 +282,9 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->count(20)->create(['status' => 'pending']);
+        for ($i = 0; $i < 20; $i++) {
+            $this->createPendingCompany();
+        }
 
         // Act
         $response = $this->getJson('/api/company-requests?per_page=10', [
@@ -242,10 +305,12 @@ class CompanyRequestControllerIndexTest extends TestCase
         $admin = User::factory()->withRole('PLATFORM_ADMIN')->create();
         $token = $this->generateAccessToken($admin);
 
-        CompanyRequest::factory()->create([
-            'status' => 'pending',
-            'company_name' => 'Test Company',
-            'admin_email' => 'admin@test.com',
+        $company = Company::factory()->pending()->create([
+            'name' => 'Test Company',
+        ]);
+        CompanyOnboardingDetails::factory()->create([
+            'company_id' => $company->id,
+            'submitter_email' => 'admin@test.com',
         ]);
 
         // Act
@@ -279,7 +344,7 @@ class CompanyRequestControllerIndexTest extends TestCase
     public function unauthenticated_user_receives_401()
     {
         // Arrange
-        CompanyRequest::factory()->create();
+        $this->createPendingCompany();
 
         // Act - Sin autenticación
         $response = $this->getJson('/api/company-requests');

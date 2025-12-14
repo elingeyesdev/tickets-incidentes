@@ -77,4 +77,26 @@ class CompanyFactory extends Factory
                 ?? CompanyIndustry::factory()->create(['code' => $industryCode])->id,
         ]);
     }
+
+    /**
+     * Indicar que la empresa está pendiente de aprobación.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'pending',
+            'admin_user_id' => null, // Sin admin aún
+        ]);
+    }
+
+    /**
+     * Indicar que la empresa fue rechazada.
+     */
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'rejected',
+            'admin_user_id' => null,
+        ]);
+    }
 }

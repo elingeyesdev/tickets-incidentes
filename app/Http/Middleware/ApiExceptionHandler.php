@@ -380,9 +380,6 @@ class ApiExceptionHandler
         } elseif ($model === 'App\\Features\\UserManagement\\Models\\User') {
             $errorCode = ErrorCodeRegistry::USER_NOT_FOUND;
             $message = 'User not found';
-        } elseif ($model === 'App\\Features\\CompanyManagement\\Models\\CompanyRequest') {
-            $errorCode = ErrorCodeRegistry::NOT_FOUND;
-            $message = 'Request not found';
         } elseif ($model === 'App\\Features\\ContentManagement\\Models\\Announcement') {
             $errorCode = ErrorCodeRegistry::NOT_FOUND;
             $message = 'Announcement not found';

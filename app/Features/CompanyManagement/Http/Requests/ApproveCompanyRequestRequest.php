@@ -2,17 +2,25 @@
 
 namespace App\Features\CompanyManagement\Http\Requests;
 
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Approve Company Request Request
  *
  * Validación para aprobar una solicitud de empresa.
- * Equivalente a GraphQL Mutation: approveCompanyRequest
+ * 
+ * ARQUITECTURA NORMALIZADA:
+ * - El route parameter es un string (UUID), no el modelo
+ * - Buscamos la Company con scope pending() manualmente
  */
 class ApproveCompanyRequestRequest extends FormRequest
 {
+    /**
+     * La empresa pendiente encontrada (para reutilizar en el controlador)
+     */
+    public ?Company $pendingCompany = null;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -36,18 +44,29 @@ class ApproveCompanyRequestRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $companyRequest = $this->route('companyRequest');
+            $companyId = $this->route('companyRequest'); // Es un string UUID
 
-            if (!$companyRequest) {
+            if (!$companyId) {
                 $validator->errors()->add('company_request', 'La solicitud de empresa no existe.');
                 return;
             }
 
+            // Buscar empresa con cualquier status (incluyendo pending)
+            $company = Company::withAllStatuses()->find($companyId);
+
+            if (!$company) {
+                $validator->errors()->add('company_request', 'La solicitud de empresa no existe.');
+                return;
+            }
+
+            // Guardar referencia para uso en el controlador
+            $this->pendingCompany = $company;
+
             // Verificar que la solicitud esté en estado PENDING
-            if (!$companyRequest->isPending()) {
+            if ($company->status !== 'pending') {
                 $validator->errors()->add(
                     'company_request',
-                    'Only pending requests can be approved. Current status: ' . $companyRequest->status
+                    'Only pending requests can be approved. Current status: ' . $company->status
                 );
             }
         });

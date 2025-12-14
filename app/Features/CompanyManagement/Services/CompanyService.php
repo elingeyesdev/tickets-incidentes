@@ -36,7 +36,7 @@ class CompanyService
             // ========================================================================
             // VALIDACIÓN CRÍTICA: Tax ID duplicado (última línea de defensa)
             // ========================================================================
-            if (! empty($data['tax_id'])) {
+            if (!empty($data['tax_id'])) {
                 $existingCompany = Company::where('tax_id', $data['tax_id'])->first();
 
                 if ($existingCompany) {
@@ -98,7 +98,6 @@ class CompanyService
                 'secondary_color' => $data['secondary_color'] ?? '#6c757d',
                 'settings' => $data['settings'] ?? [],
                 'status' => 'active',
-                'created_from_request_id' => $data['created_from_request_id'] ?? null,
             ]);
 
             // Disparar evento
@@ -124,7 +123,7 @@ class CompanyService
             }
 
             // Actualizar empresa
-            if (! empty($updateData)) {
+            if (!empty($updateData)) {
                 $company->update($updateData);
             }
 
@@ -294,7 +293,7 @@ class CompanyService
         );
 
         // Generar URL completa
-        $logoUrl = asset('storage/'.$path);
+        $logoUrl = asset('storage/' . $path);
 
         // Actualizar empresa con URL del logo
         $company->update(['logo_url' => $logoUrl]);
@@ -323,7 +322,7 @@ class CompanyService
         );
 
         // Generar URL completa
-        $faviconUrl = asset('storage/'.$path);
+        $faviconUrl = asset('storage/' . $path);
 
         // Actualizar empresa con URL del favicon
         $company->update(['favicon_url' => $faviconUrl]);

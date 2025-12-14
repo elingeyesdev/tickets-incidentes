@@ -94,8 +94,9 @@ class CompanyResource extends JsonResource
             // Campo contextual (solo si usuario autenticado)
             'isFollowedByMe' => $this->is_followed_by_me ?? false,
 
-            // Relaciones opcionales (usar whenLoaded)
-            'createdFromRequestId' => $this->created_from_request_id ?? null,
+            // Relaciones opcionales
+            // NOTA: created_from_request_id ya no existe en la tabla normalizada
+            // Los datos de solicitud ahora están en onboardingDetails
 
             // Timestamps
             'createdAt' => $this->created_at?->toIso8601String(),

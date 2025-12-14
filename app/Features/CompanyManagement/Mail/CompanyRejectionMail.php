@@ -2,7 +2,7 @@
 
 namespace App\Features\CompanyManagement\Mail;
 
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -14,22 +14,36 @@ use Illuminate\Queue\SerializesModels;
  *
  * Email enviado cuando una solicitud de empresa es rechazada.
  * INCLUYE la razón del rechazo para transparencia.
+ * 
+ * NOTA: Ahora recibe Company (con status='rejected') en lugar de CompanyRequest.
  */
 class CompanyRejectionMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public string $displayName;
+    public string $companyName;
+    public string $adminEmail;
+    public string $requestCode;
 
     /**
      * Create a new message instance.
      */
     public function __construct(
-        public CompanyRequest $request,
+        public Company $company,
         public string $reason
     ) {
-        // Nombre para mostrar (usamos email ya que no tenemos first_name/last_name en CompanyRequest)
-        $this->displayName = $request->admin_email;
+        $onboardingDetails = $company->onboardingDetails;
+
+        // Nombre para mostrar: usar email del solicitante desde onboarding details
+        $this->displayName = $onboardingDetails?->submitter_email
+            ?? $company->support_email
+            ?? 'Usuario';
+
+        // Extraer valores para compatibilidad con vistas
+        $this->companyName = $company->name;
+        $this->adminEmail = $onboardingDetails?->submitter_email ?? $company->support_email ?? '';
+        $this->requestCode = $onboardingDetails?->request_code ?? $company->company_code ?? '';
     }
 
     /**
@@ -47,14 +61,24 @@ class CompanyRejectionMail extends Mailable
      */
     public function content(): Content
     {
+        // Crear objeto con propiedades compatibles para la vista
+        $requestAlias = (object) [
+            'company_name' => $this->companyName,
+            'admin_email' => $this->adminEmail,
+            'request_code' => $this->requestCode,
+            'name' => $this->companyName,
+        ];
+
         return new Content(
             view: 'emails.company.rejection',
             text: 'emails.company.rejection-text',
             with: [
-                'request' => $this->request,
+                'company' => $this->company,
                 'displayName' => $this->displayName,
                 'reason' => $this->reason,
                 'supportEmail' => config('mail.from.address'),
+                // 'request' como objeto para compatibilidad con vistas existentes
+                'request' => $requestAlias,
             ],
         );
     }

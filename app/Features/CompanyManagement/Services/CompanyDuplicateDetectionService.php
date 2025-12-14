@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Features\CompanyManagement\Services;
 
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
 
 /**
  * Servicio para detectar empresas duplicadas usando múltiples heurísticas.
  *
+ * ARQUITECTURA NORMALIZADA:
+ * - Ahora solo busca en la tabla `companies` (unificada)
+ * - Las solicitudes pendientes son empresas con status='pending'
+ * - Las empresas rechazadas son empresas con status='rejected'
+ * - Las empresas activas son empresas con status='active'
+ * 
  * ESTRATEGIA DE DETECCIÓN:
  * 1. Tax ID (NIT/RUC) - Si está presente, debe ser único (garantizado por BD)
  * 2. Admin Email + Nombre Similar - Previene misma persona creando empresa duplicada
@@ -25,8 +30,7 @@ final class CompanyDuplicateDetectionService
      *     is_duplicate: bool,
      *     blocking_errors: array<string, string>,
      *     warnings: array<string, string>,
-     *     matched_companies: array<Company>,
-     *     matched_requests: array<CompanyRequest>
+     *     matched_companies: array<Company>
      * }
      */
     public function detectDuplicates(
@@ -35,38 +39,33 @@ final class CompanyDuplicateDetectionService
         ?string $taxId = null,
         ?string $website = null,
         ?string $industryId = null,
-        ?string $excludeRequestId = null
+        ?string $excludeCompanyId = null
     ): array {
         $blockingErrors = [];
         $warnings = [];
         $matchedCompanies = [];
-        $matchedRequests = [];
 
         // ========================================================================
         // 1. VALIDACIÓN: Tax ID duplicado (BLOQUEO ABSOLUTO)
         // ========================================================================
         if ($taxId !== null && trim($taxId) !== '') {
-            // Buscar en solicitudes pendientes
-            $duplicateRequest = CompanyRequest::where('tax_id', $taxId)
-                ->where('status', 'pending')
-                ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
+            // Buscar en todas las empresas (activas, pendientes, rechazadas)
+            $duplicateCompany = Company::withAllStatuses()
+                ->where('tax_id', $taxId)
+                ->when($excludeCompanyId, fn($q) => $q->where('id', '!=', $excludeCompanyId))
                 ->first();
 
-            if ($duplicateRequest) {
-                $blockingErrors['tax_id'] = sprintf(
-                    'Ya existe una solicitud pendiente con el NIT/Tax ID "%s" para la empresa "%s".',
-                    $taxId,
-                    $duplicateRequest->company_name
-                );
-                $matchedRequests[] = $duplicateRequest;
-            }
-
-            // Buscar en empresas ya creadas
-            $duplicateCompany = Company::where('tax_id', $taxId)->first();
-
             if ($duplicateCompany) {
+                $statusLabel = match ($duplicateCompany->status) {
+                    'pending' => 'solicitud pendiente',
+                    'rejected' => 'solicitud rechazada',
+                    'suspended' => 'empresa suspendida',
+                    default => 'empresa registrada',
+                };
+
                 $blockingErrors['tax_id'] = sprintf(
-                    'Ya existe una empresa registrada con el NIT/Tax ID "%s": "%s". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma.',
+                    'Ya existe una %s con el NIT/Tax ID "%s": "%s". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma.',
+                    $statusLabel,
                     $taxId,
                     $duplicateCompany->name
                 );
@@ -79,49 +78,44 @@ final class CompanyDuplicateDetectionService
         // ========================================================================
         $normalizedName = $this->normalizeCompanyName($companyName);
 
-        // Buscar empresas donde el admin_email es el support_email
-        $companiesWithSameEmail = Company::where('support_email', $adminEmail)
+        // Buscar empresas donde el email coincide (activas y pendientes)
+        $companiesWithSameEmail = Company::withAllStatuses()
+            ->where('support_email', $adminEmail)
+            ->whereIn('status', ['active', 'pending']) // No incluir rechazadas
+            ->when($excludeCompanyId, fn($q) => $q->where('id', '!=', $excludeCompanyId))
             ->get();
 
         foreach ($companiesWithSameEmail as $company) {
             $existingNormalized = $this->normalizeCompanyName($company->name);
             $similarity = $this->calculateSimilarity($normalizedName, $existingNormalized);
 
+            $isPending = $company->status === 'pending';
+            $requestCode = $company->onboardingDetails?->request_code ?? $company->company_code;
+
             if ($similarity > 0.70) { // 70% de similitud con mismo email = muy sospechoso
-                $blockingErrors['admin_email'] = sprintf(
-                    'El email "%s" ya es el email de soporte de la empresa "%s" (código: %s). Si deseas administrar esta empresa, contacta con el administrador de plataforma.',
-                    $adminEmail,
-                    $company->name,
-                    $company->company_code
-                );
+                if ($isPending) {
+                    $blockingErrors['admin_email'] = sprintf(
+                        'Ya existe una solicitud pendiente con el email "%s" para una empresa de nombre similar: "%s" (código: %s).',
+                        $adminEmail,
+                        $company->name,
+                        $requestCode
+                    );
+                } else {
+                    $blockingErrors['admin_email'] = sprintf(
+                        'El email "%s" ya es el email de soporte de la empresa "%s" (código: %s). Si deseas administrar esta empresa, contacta con el administrador de plataforma.',
+                        $adminEmail,
+                        $company->name,
+                        $company->company_code
+                    );
+                }
                 $matchedCompanies[] = $company;
             } elseif ($similarity > 0.30) { // Similar pero no tanto - advertir
                 $warnings['admin_email'] = sprintf(
-                    'ADVERTENCIA: El email "%s" ya está asociado a la empresa "%s" que tiene un nombre similar. Verifica que no sean la misma empresa.',
+                    'ADVERTENCIA: El email "%s" ya está asociado a una %s "%s" que tiene un nombre similar. Verifica que no sean la misma empresa.',
                     $adminEmail,
+                    $isPending ? 'solicitud' : 'empresa',
                     $company->name
                 );
-            }
-        }
-
-        // Buscar solicitudes pendientes con mismo email
-        $requestsWithSameEmail = CompanyRequest::where('admin_email', $adminEmail)
-            ->where('status', 'pending')
-            ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
-            ->get();
-
-        foreach ($requestsWithSameEmail as $request) {
-            $existingNormalized = $this->normalizeCompanyName($request->company_name);
-            $similarity = $this->calculateSimilarity($normalizedName, $existingNormalized);
-
-            if ($similarity > 0.70) { // Mismo email + nombre muy similar
-                $blockingErrors['admin_email'] = sprintf(
-                    'Ya existe una solicitud pendiente con el email "%s" para una empresa de nombre similar: "%s" (código: %s).',
-                    $adminEmail,
-                    $request->company_name,
-                    $request->request_code
-                );
-                $matchedRequests[] = $request;
             }
         }
 
@@ -133,7 +127,10 @@ final class CompanyDuplicateDetectionService
 
             if ($domain !== null) {
                 // Buscar empresas con mismo dominio
-                $companiesWithSameDomain = Company::whereNotNull('website')
+                $companiesWithSameDomain = Company::withAllStatuses()
+                    ->whereNotNull('website')
+                    ->whereIn('status', ['active', 'pending'])
+                    ->when($excludeCompanyId, fn($q) => $q->where('id', '!=', $excludeCompanyId))
                     ->get()
                     ->filter(function ($company) use ($domain) {
                         $companyDomain = $this->extractDomain($company->website ?? '');
@@ -147,7 +144,8 @@ final class CompanyDuplicateDetectionService
 
                     if ($similarity > 0.50) { // Mismo dominio + nombre similar
                         $blockingErrors['website'] = sprintf(
-                            'Ya existe una empresa con el mismo sitio web (dominio: %s): "%s". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma.',
+                            'Ya existe una %s con el mismo sitio web (dominio: %s): "%s". Si deseas formar parte de esta empresa, contacta con el administrador de plataforma.',
+                            $company->status === 'pending' ? 'solicitud' : 'empresa',
                             $domain,
                             $company->name
                         );
@@ -162,52 +160,40 @@ final class CompanyDuplicateDetectionService
         // ========================================================================
         // Solo si no hay errores de bloqueo previos
         if (empty($blockingErrors)) {
-            // Buscar empresas con nombres muy similares
-            $similarCompanies = Company::all()->filter(function ($company) use ($normalizedName) {
-                $existingNormalized = $this->normalizeCompanyName($company->name);
-                $similarity = $this->calculateSimilarity($normalizedName, $existingNormalized);
+            // Buscar empresas con nombres muy similares (activas y pendientes)
+            $similarCompanies = Company::withAllStatuses()
+                ->whereIn('status', ['active', 'pending'])
+                ->when($excludeCompanyId, fn($q) => $q->where('id', '!=', $excludeCompanyId))
+                ->get()
+                ->filter(function ($company) use ($normalizedName) {
+                    $existingNormalized = $this->normalizeCompanyName($company->name);
+                    $similarity = $this->calculateSimilarity($normalizedName, $existingNormalized);
 
-                return $similarity > 0.85; // 85% de similitud
-            });
+                    return $similarity > 0.85; // 85% de similitud
+                });
 
             if ($similarCompanies->isNotEmpty()) {
                 $company = $similarCompanies->first();
+                $isPending = $company->status === 'pending';
+                $code = $isPending
+                    ? ($company->onboardingDetails?->request_code ?? $company->company_code)
+                    : $company->company_code;
+
                 $warnings['company_name'] = sprintf(
-                    'ADVERTENCIA: Ya existe una empresa con nombre muy similar: "%s" (código: %s). Si es la misma empresa, contacta con el administrador de plataforma.',
+                    'ADVERTENCIA: Ya existe una %s con nombre muy similar: "%s" (código: %s). Si es la misma empresa, contacta con el administrador de plataforma.',
+                    $isPending ? 'solicitud pendiente' : 'empresa',
                     $company->name,
-                    $company->company_code
+                    $code
                 );
                 $matchedCompanies = array_merge($matchedCompanies, $similarCompanies->all());
-            }
-
-            // Buscar solicitudes pendientes con nombres muy similares
-            $similarRequests = CompanyRequest::where('status', 'pending')
-                ->when($excludeRequestId, fn ($q) => $q->where('id', '!=', $excludeRequestId))
-                ->get()
-                ->filter(function ($request) use ($normalizedName) {
-                    $existingNormalized = $this->normalizeCompanyName($request->company_name);
-                    $similarity = $this->calculateSimilarity($normalizedName, $existingNormalized);
-
-                    return $similarity > 0.85;
-                });
-
-            if ($similarRequests->isNotEmpty() && empty($warnings['company_name'])) {
-                $request = $similarRequests->first();
-                $warnings['company_name'] = sprintf(
-                    'ADVERTENCIA: Ya existe una solicitud pendiente con nombre muy similar: "%s" (código: %s).',
-                    $request->company_name,
-                    $request->request_code
-                );
-                $matchedRequests = array_merge($matchedRequests, $similarRequests->all());
             }
         }
 
         return [
-            'is_duplicate' => ! empty($blockingErrors),
+            'is_duplicate' => !empty($blockingErrors),
             'blocking_errors' => $blockingErrors,
             'warnings' => $warnings,
             'matched_companies' => array_unique($matchedCompanies),
-            'matched_requests' => array_unique($matchedRequests),
         ];
     }
 
@@ -244,12 +230,30 @@ final class CompanyDuplicateDetectionService
     private function removeAccents(string $string): string
     {
         $unwanted_array = [
-            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a', 'ã' => 'a',
-            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
-            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
-            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o', 'õ' => 'o',
-            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
-            'ñ' => 'n', 'ç' => 'c',
+            'á' => 'a',
+            'à' => 'a',
+            'ä' => 'a',
+            'â' => 'a',
+            'ã' => 'a',
+            'é' => 'e',
+            'è' => 'e',
+            'ë' => 'e',
+            'ê' => 'e',
+            'í' => 'i',
+            'ì' => 'i',
+            'ï' => 'i',
+            'î' => 'i',
+            'ó' => 'o',
+            'ò' => 'o',
+            'ö' => 'o',
+            'ô' => 'o',
+            'õ' => 'o',
+            'ú' => 'u',
+            'ù' => 'u',
+            'ü' => 'u',
+            'û' => 'u',
+            'ñ' => 'n',
+            'ç' => 'c',
         ];
 
         return strtr($string, $unwanted_array);
@@ -290,13 +294,13 @@ final class CompanyDuplicateDetectionService
         }
 
         // Agregar http:// si no tiene protocolo
-        if (! preg_match('/^https?:\/\//', $url)) {
-            $url = 'http://'.$url;
+        if (!preg_match('/^https?:\/\//', $url)) {
+            $url = 'http://' . $url;
         }
 
         $parsedUrl = parse_url($url);
 
-        if (! isset($parsedUrl['host'])) {
+        if (!isset($parsedUrl['host'])) {
             return null;
         }
 

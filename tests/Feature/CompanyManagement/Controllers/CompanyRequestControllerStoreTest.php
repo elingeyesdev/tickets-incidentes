@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\CompanyManagement\Controllers;
 
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
+use App\Features\CompanyManagement\Models\CompanyOnboardingDetails;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\CompanyManagement\SeedsCompanyIndustries;
 use Tests\TestCase;
@@ -10,14 +12,16 @@ use Tests\TestCase;
 /**
  * Test suite completo para CompanyRequestController@store (REST API)
  *
- * Migrado desde: tests/Feature/CompanyManagement/Mutations/RequestCompanyMutationTest.php
- * GraphQL Mutation: requestCompany
+ * ARQUITECTURA NORMALIZADA:
+ * - Las solicitudes ahora crean Company con status='pending'
+ * - Los detalles de la solicitud van en CompanyOnboardingDetails
+ *
  * REST Endpoint: POST /api/company-requests
  *
  * Verifica:
  * - Solicitud pública se crea correctamente (sin autenticación)
- * - Retorna CompanyRequest con requestCode, status PENDING
- * - No puede crear solicitud con email duplicado (REQUEST_ALREADY_EXISTS)
+ * - Retorna Company con requestCode, status PENDING
+ * - No puede crear solicitud con email duplicado
  * - Validación de campos requeridos
  * - businessDescription debe tener min 50 caracteres
  * - adminEmail debe ser email válido
@@ -40,7 +44,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'admin@innovaciondigital.bo',
             'company_description' => 'Empresa dedicada al desarrollo de software personalizado y consultoría tecnológica para PyMEs en Bolivia. Contamos con más de 5 años de experiencia en el mercado local.',
             'request_message' => 'Necesitamos urgentemente un sistema de helpdesk profesional para atender a nuestros clientes de manera eficiente',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
             'website' => 'https://innovaciondigital.bo',
             'estimated_users' => 50,
             'contact_address' => 'Calle Comercio 456',
@@ -72,11 +76,15 @@ class CompanyRequestControllerStoreTest extends TestCase
         $this->assertEquals('PENDING', $request['status']);
         $this->assertNotEmpty($request['requestCode']);
 
-        // Verificar en BD
-        $this->assertDatabaseHas('business.company_requests', [
-            'company_name' => 'Innovación Digital SRL',
-            'admin_email' => 'admin@innovaciondigital.bo',
+        // Verificar en BD - Ahora en companies table
+        $this->assertDatabaseHas('business.companies', [
+            'name' => 'Innovación Digital SRL',
             'status' => 'pending',
+        ]);
+
+        // Verificar detalles de onboarding
+        $this->assertDatabaseHas('business.company_onboarding_details', [
+            'submitter_email' => 'admin@innovaciondigital.bo',
         ]);
     }
 
@@ -91,7 +99,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'test@company.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'We need a professional helpdesk system to improve our customer support operations',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -114,9 +122,11 @@ class CompanyRequestControllerStoreTest extends TestCase
         // Arrange - Seed industries first
         $this->artisan('db:seed', ['--class' => 'App\\Features\\CompanyManagement\\Database\\Seeders\\CompanyIndustrySeeder']);
 
-        CompanyRequest::factory()->create([
-            'admin_email' => 'duplicate@example.com',
-            'status' => 'pending',
+        // Crear empresa pendiente con el email
+        $company = Company::factory()->pending()->create();
+        CompanyOnboardingDetails::factory()->create([
+            'company_id' => $company->id,
+            'submitter_email' => 'duplicate@example.com',
         ]);
 
         $input = [
@@ -124,7 +134,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'duplicate@example.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'Requesting access to the helpdesk platform',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -146,7 +156,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'test@example.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.',
             'request_message' => 'We need helpdesk services',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -168,7 +178,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'test@company.com',
             'company_description' => 'Descripción muy corta', // 22 caracteres < 50
             'request_message' => 'We need a helpdesk system for customer support',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -190,7 +200,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'invalid-email-format', // Email inválido
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'We need a helpdesk system for our company operations',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -212,7 +222,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'admin1@company.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'First company requesting helpdesk system',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         $input2 = [
@@ -220,7 +230,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'admin2@company.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'Second company requesting helpdesk system',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act
@@ -248,7 +258,7 @@ class CompanyRequestControllerStoreTest extends TestCase
             'admin_email' => 'minimal@company.com',
             'company_description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'request_message' => 'Minimal request message for helpdesk access',
-            'industry_id' => \App\Features\CompanyManagement\Models\CompanyIndustry::where('code', 'technology')->first()->id,
+            'industry_id' => CompanyIndustry::where('code', 'technology')->first()->id,
         ];
 
         // Act

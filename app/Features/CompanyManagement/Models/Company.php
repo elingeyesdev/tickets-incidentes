@@ -3,18 +3,41 @@
 namespace App\Features\CompanyManagement\Models;
 
 use App\Features\CompanyManagement\Models\CompanyIndustry;
+use App\Features\CompanyManagement\Models\CompanyOnboardingDetails;
 use App\Features\UserManagement\Models\User;
 use App\Features\UserManagement\Models\UserRole;
 use App\Shared\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Company Model
+ * 
+ * IMPORTANTE: Este modelo tiene un Global Scope que filtra automáticamente
+ * las empresas con status 'active'. Para ver empresas pendientes o rechazadas,
+ * usa: Company::withoutGlobalScope('activeOnly')->where('status', 'pending')
+ * o los scopes shorthand: Company::pending(), Company::rejected()
+ */
 class Company extends Model
 {
     use HasFactory, HasUuid;
+
+    /**
+     * Boot del modelo - Agrega Global Scope para filtrar solo activas por defecto
+     */
+    protected static function booted(): void
+    {
+        // Global Scope: Por defecto solo muestra empresas activas
+        // Esto protege contra mostrar accidentalmente empresas pendientes/rechazadas
+        static::addGlobalScope('activeOnly', function (Builder $builder) {
+            $builder->where('status', 'active');
+        });
+    }
 
     /**
      * Factory para el modelo
@@ -57,7 +80,6 @@ class Company extends Model
         'settings',
         'status',
         'industry_id',
-        'created_from_request_id',
         'admin_user_id',
     ];
 
@@ -90,11 +112,12 @@ class Company extends Model
     }
 
     /**
-     * Obtener la solicitud de empresa que creó esta empresa.
+     * Obtener los detalles de onboarding de esta empresa.
+     * Contiene metadata del proceso de solicitud original.
      */
-    public function createdFromRequest(): BelongsTo
+    public function onboardingDetails(): HasOne
     {
-        return $this->belongsTo(CompanyRequest::class, 'created_from_request_id');
+        return $this->hasOne(CompanyOnboardingDetails::class, 'company_id');
     }
 
     /**
@@ -173,7 +196,32 @@ class Company extends Model
      */
     public function scopeSuspended($query)
     {
-        return $query->where('status', 'suspended');
+        return $query->withoutGlobalScope('activeOnly')->where('status', 'suspended');
+    }
+
+    /**
+     * Scope: Solo empresas pendientes de aprobación.
+     */
+    public function scopePending($query)
+    {
+        return $query->withoutGlobalScope('activeOnly')->where('status', 'pending');
+    }
+
+    /**
+     * Scope: Solo empresas rechazadas.
+     */
+    public function scopeRejected($query)
+    {
+        return $query->withoutGlobalScope('activeOnly')->where('status', 'rejected');
+    }
+
+    /**
+     * Scope: Todas las empresas sin importar status.
+     * Útil para admins que necesitan ver todo.
+     */
+    public function scopeWithAllStatuses($query)
+    {
+        return $query->withoutGlobalScope('activeOnly');
     }
 
     /**
@@ -190,6 +238,50 @@ class Company extends Model
     public function isSuspended(): bool
     {
         return $this->status === 'suspended';
+    }
+
+    /**
+     * Verificar si la empresa está pendiente de aprobación.
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    /**
+     * Verificar si la empresa fue rechazada.
+     */
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
+
+    /**
+     * Aprobar la empresa pendiente.
+     * Cambia estado a 'active' y asigna el admin.
+     */
+    public function approve(User $admin, User $reviewer): void
+    {
+        $this->update([
+            'status' => 'active',
+            'admin_user_id' => $admin->id,
+        ]);
+
+        // Actualizar detalles de onboarding con info del reviewer
+        $this->onboardingDetails?->markAsReviewed($reviewer);
+    }
+
+    /**
+     * Rechazar la empresa pendiente.
+     */
+    public function reject(User $reviewer, string $reason): void
+    {
+        $this->update([
+            'status' => 'rejected',
+        ]);
+
+        // Guardar razón de rechazo en detalles de onboarding
+        $this->onboardingDetails?->markAsRejectedByReviewer($reviewer, $reason);
     }
 
     /**

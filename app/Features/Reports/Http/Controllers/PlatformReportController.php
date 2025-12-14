@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Features\Reports\Http\Controllers;
 
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\CompanyManagement\Models\CompanyIndustry;
 use App\Features\ExternalIntegration\Models\ServiceApiKey;
 use App\Features\UserManagement\Models\User;
@@ -283,8 +282,8 @@ class PlatformReportController
             'total_companies' => Company::count(),
             'total_users' => User::count(),
             'total_tickets' => Ticket::count(),
-            'active_companies' => Company::where('status', 'active')->count(),
-            'pending_requests' => CompanyRequest::where('status', 'pending')->count(),
+            'active_companies' => Company::count(), // Solo activas gracias al GlobalScope
+            'pending_requests' => Company::pending()->count(),
             'new_companies_period' => array_sum($companiesPerMonth),
             'new_users_period' => array_sum($usersPerMonth),
             'new_tickets_period' => array_sum($ticketsPerMonth),
@@ -308,19 +307,22 @@ class PlatformReportController
         // Get industries for filter
         $industries = CompanyIndustry::orderBy('name')->get();
 
-        // Get stats
+        // Get stats - Ahora usa Company con scopes
         $stats = [
-            'total' => CompanyRequest::count(),
-            'pending' => CompanyRequest::where('status', 'pending')->count(),
-            'approved' => CompanyRequest::where('status', 'approved')->count(),
-            'rejected' => CompanyRequest::where('status', 'rejected')->count(),
-            'this_month' => CompanyRequest::whereMonth('created_at', now()->month)
+            'total' => Company::withAllStatuses()->count(),
+            'pending' => Company::pending()->count(),
+            'approved' => Company::count(), // Solo activas (GlobalScope)
+            'rejected' => Company::rejected()->count(),
+            'this_month' => Company::withAllStatuses()
+                ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count(),
         ];
 
-        // Recent requests
-        $recentRequests = CompanyRequest::with(['reviewer', 'industry'])
+        // Recent requests - Ahora son empresas pendientes/rechazadas
+        $recentRequests = Company::withAllStatuses()
+            ->with(['onboardingDetails.reviewer', 'industry'])
+            ->whereIn('status', ['pending', 'rejected', 'active'])
             ->orderBy('created_at', 'desc')
             ->limit(15)
             ->get();
@@ -357,13 +359,15 @@ class PlatformReportController
             $date = now()->subMonths($i);
             $labels[] = $date->locale('es')->isoFormat('MMM YY');
 
-            $monthRequests = CompanyRequest::whereMonth('created_at', $date->month)
+            // Obtener empresas creadas ese mes con filtro por status
+            $monthCompanies = Company::withAllStatuses()
+                ->whereMonth('created_at', $date->month)
                 ->whereYear('created_at', $date->year)
                 ->get();
 
-            $approved[] = $monthRequests->where('status', 'approved')->count();
-            $pending[] = $monthRequests->where('status', 'pending')->count();
-            $rejected[] = $monthRequests->where('status', 'rejected')->count();
+            $approved[] = $monthCompanies->where('status', 'active')->count();
+            $pending[] = $monthCompanies->where('status', 'pending')->count();
+            $rejected[] = $monthCompanies->where('status', 'rejected')->count();
         }
 
         return [
@@ -396,10 +400,17 @@ class PlatformReportController
     {
         $status = $request->get('status');
 
-        $query = CompanyRequest::with(['reviewer', 'createdCompany', 'industry']);
+        // Ahora usamos Company con scope withAllStatuses
+        $query = Company::withAllStatuses()
+            ->with(['onboardingDetails.reviewer', 'industry']);
 
         if ($status) {
-            $query->where('status', $status);
+            // Mapear status del request al status de Company
+            $mappedStatus = match ($status) {
+                'approved' => 'active',
+                default => $status,
+            };
+            $query->where('status', $mappedStatus);
         }
 
         $requests = $query->orderBy('created_at', 'desc')->get();

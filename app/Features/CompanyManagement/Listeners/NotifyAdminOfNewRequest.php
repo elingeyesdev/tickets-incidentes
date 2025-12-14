@@ -12,16 +12,20 @@ class NotifyAdminOfNewRequest
      */
     public function handle(CompanyRequestSubmitted $event): void
     {
+        // Obtener datos de la empresa pendiente y sus detalles de onboarding
+        $company = $event->company;
+        $onboardingDetails = $company->onboardingDetails;
+
         // TODO: Send notification to PLATFORM_ADMIN users
         // Por ahora, solo registrarlo
         Log::info('New company request submitted', [
-            'request_id' => $event->request->id,
-            'request_code' => $event->request->request_code,
-            'company_name' => $event->request->company_name,
-            'admin_email' => $event->request->admin_email,
+            'company_id' => $company->id,
+            'request_code' => $onboardingDetails?->request_code,
+            'company_name' => $company->name,
+            'submitter_email' => $onboardingDetails?->submitter_email ?? $company->support_email,
         ]);
 
         // Futuro: Despachar job de notificación
-        // NotifyPlatformAdminsJob::dispatch($event->request);
+        // NotifyPlatformAdminsJob::dispatch($company);
     }
 }

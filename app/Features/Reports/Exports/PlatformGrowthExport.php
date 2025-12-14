@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Features\Reports\Exports;
 
 use App\Features\CompanyManagement\Models\Company;
-use App\Features\CompanyManagement\Models\CompanyRequest;
 use App\Features\UserManagement\Models\User;
 use App\Features\TicketManagement\Models\Ticket;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +58,7 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
     public function array(): array
     {
         $startDate = now()->subMonths($this->months)->startOfMonth();
-        
+
         // Gather monthly data
         $companiesPerMonth = Company::where('created_at', '>=', $startDate)
             ->select(
@@ -69,7 +68,7 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
             ->groupBy('month')
             ->pluck('total', 'month')
             ->toArray();
-        
+
         $usersPerMonth = User::where('created_at', '>=', $startDate)
             ->select(
                 DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
@@ -78,7 +77,7 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
             ->groupBy('month')
             ->pluck('total', 'month')
             ->toArray();
-        
+
         $ticketsPerMonth = Ticket::where('created_at', '>=', $startDate)
             ->select(
                 DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
@@ -87,13 +86,13 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
             ->groupBy('month')
             ->pluck('total', 'month')
             ->toArray();
-        
+
         // Build rows
         $rows = [];
         for ($i = $this->months - 1; $i >= 0; $i--) {
             $monthKey = now()->subMonths($i)->format('Y-m');
             $monthName = now()->subMonths($i)->locale('es')->isoFormat('MMMM YYYY');
-            
+
             $rows[] = [
                 ucfirst($monthName),
                 $companiesPerMonth[$monthKey] ?? 0,
@@ -101,7 +100,7 @@ class GrowthMonthlySheet implements FromArray, WithHeadings, WithStyles, ShouldA
                 $ticketsPerMonth[$monthKey] ?? 0,
             ];
         }
-        
+
         return $rows;
     }
 
@@ -144,17 +143,17 @@ class GrowthSummarySheet implements FromArray, WithHeadings, WithStyles, ShouldA
         $activeCompanies = Company::where('status', 'active')->get();
         $suspendedCompanies = Company::where('status', 'suspended')->get();
         $inactiveCompanies = Company::where('status', 'inactive')->get();
-        
+
         $rows = [
             // General Summary
             ['RESUMEN GENERAL'],
             [''],
-            ['Total Empresas en Sistema', Company::count()],
+            ['Total Empresas en Sistema', Company::withAllStatuses()->count()],
             ['Total Usuarios Registrados', User::count()],
             ['Total Tickets Generados', Ticket::count()],
-            ['Solicitudes Pendientes', CompanyRequest::where('status', 'pending')->count()],
+            ['Solicitudes Pendientes', Company::pending()->count()],
             [''],
-            
+
             // Companies by Status - Active
             ['EMPRESAS ACTIVAS (' . $activeCompanies->count() . ')'],
             [''],

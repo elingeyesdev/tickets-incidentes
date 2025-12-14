@@ -5,7 +5,7 @@ namespace App\Features\CompanyManagement\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Features\CompanyManagement\Models\CompanyRequest;
+use App\Features\CompanyManagement\Models\Company;
 use App\Features\CompanyManagement\Services\CompanyRequestService;
 use App\Features\CompanyManagement\Http\Requests\StoreCompanyRequestRequest;
 use App\Features\CompanyManagement\Http\Resources\CompanyRequestResource;
@@ -179,30 +179,31 @@ class CompanyRequestController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $query = CompanyRequest::query()
-            ->with(['reviewer.profile', 'createdCompany.industry', 'industry']);
+        // Usar el scope withAllStatuses para ver empresas en todos los estados
+        $query = Company::withAllStatuses()
+            ->with(['onboardingDetails.reviewer.profile', 'industry']);
 
         // Filtro por status (convertir a lowercase para compatibilidad con DB)
         if ($request->filled('status')) {
             $query->where('status', strtolower($request->status));
         }
 
-        $requests = $query->orderBy('created_at', 'desc')
+        $companies = $query->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
 
         return response()->json([
-            'data' => CompanyRequestResource::collection($requests->items()),
+            'data' => CompanyRequestResource::collection($companies->items()),
             'meta' => [
-                'total' => $requests->total(),
-                'current_page' => $requests->currentPage(),
-                'last_page' => $requests->lastPage(),
-                'per_page' => $requests->perPage(),
+                'total' => $companies->total(),
+                'current_page' => $companies->currentPage(),
+                'last_page' => $companies->lastPage(),
+                'per_page' => $companies->perPage(),
             ],
             'links' => [
-                'first' => $requests->url(1),
-                'last' => $requests->url($requests->lastPage()),
-                'prev' => $requests->previousPageUrl(),
-                'next' => $requests->nextPageUrl(),
+                'first' => $companies->url(1),
+                'last' => $companies->url($companies->lastPage()),
+                'prev' => $companies->previousPageUrl(),
+                'next' => $companies->nextPageUrl(),
             ],
         ]);
     }
@@ -495,9 +496,10 @@ class CompanyRequestController extends Controller
     )]
     public function store(StoreCompanyRequestRequest $request, CompanyRequestService $requestService): JsonResponse
     {
-        $companyRequest = $requestService->submit($request->validated());
+        // submit() ahora retorna Company con status='pending'
+        $company = $requestService->submit($request->validated());
 
-        return (new CompanyRequestResource($companyRequest))
+        return (new CompanyRequestResource($company))
             ->response()
             ->setStatusCode(201);
     }
