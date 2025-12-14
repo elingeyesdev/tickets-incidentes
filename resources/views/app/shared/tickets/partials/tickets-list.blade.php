@@ -10,6 +10,7 @@
 
         <div class="card-tools d-flex align-items-center">
             {{-- FILTERS (Category, Area, Priority) --}}
+            @if($role !== 'USER')
             <div class="mr-1" style="width: 180px;">
                 <select class="form-control form-control-sm" id="filter-category">
                     <option value="">Filtrar por Categoría</option>
@@ -22,6 +23,7 @@
                     {{-- Loaded via JS --}}
                 </select>
             </div>
+            @endif
             <div class="mr-1" style="width: 160px;">
                 <select class="form-control form-control-sm" id="filter-priority">
                     <option value="">Filtrar por Prioridad</option>
@@ -217,6 +219,13 @@
                         ...currentState.filters
                     };
 
+                    // Convert arrays to comma-separated strings for API
+                    Object.keys(params).forEach(key => {
+                        if (Array.isArray(params[key])) {
+                            params[key] = params[key].join(',');
+                        }
+                    });
+
                     // 3. Fetch Data
                     const response = await $.ajax({
                         url: TicketConfig.endpoints.list,
@@ -268,7 +277,7 @@
                     const $clone = $($template.html());
                     const $mainRow = $clone.filter('.ticket-row');
                     const $infoRow = $clone.filter('.ticket-info-row');
-                    
+
                     // Apply striping - both rows use the SAME background color
                     const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
                     $mainRow.css('background-color', bgColor);
@@ -313,7 +322,7 @@
                     // 5. Prepare Info Details
                     const infoPriorityText = ticket.priority === 'high' ? 'Alta' : (ticket.priority === 'medium' ? 'Media' : 'Baja');
                     const priorityClass = ticket.priority === 'high' ? 'text-danger' : (ticket.priority === 'medium' ? 'text-warning' : 'text-success');
-                    
+
                     let infoHtml = `
                         <div class="row ml-5">
                             <div class="col-md-3">
@@ -322,14 +331,14 @@
                             <div class="col-md-2">
                                 <strong>Prioridad:</strong> <span class="${priorityClass} font-weight-bold">${infoPriorityText}</span>
                             </div>`;
-                    
+
                     if (ticket.area && ticket.area.name) {
                         infoHtml += `
                             <div class="col-md-3">
                                 <strong>Área:</strong> <span class="text-muted">${ticket.area.name}</span>
                             </div>`;
                     }
-                    
+
                     // Fix agent name - use owner_agent_name first, fallback to owner_agent.name, then 'Sin asignar'
                     let agentName = 'Sin asignar';
                     if (ticket.owner_agent_name) {
@@ -337,13 +346,13 @@
                     } else if (ticket.owner_agent && ticket.owner_agent.name) {
                         agentName = ticket.owner_agent.name;
                     }
-                    
+
                     infoHtml += `
                             <div class="col-md-3">
                                 <strong>Agente:</strong> <span class="text-muted">${agentName}</span>
                             </div>
                         </div>`;
-                    
+
                     $infoRow.find('.ticket-info-details').html(infoHtml);
 
                     // Click Event -> View Details (excluding info button)
@@ -360,7 +369,7 @@
                         e.stopPropagation();
                         const $icon = $(this).find('i');
                         const $nextRow = $(this).closest('tr').next('.ticket-info-row');
-                        
+
                         if ($nextRow.is(':visible')) {
                             $nextRow.slideUp(200);
                             $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
@@ -562,45 +571,25 @@
                     } else if (data.value === 'assigned') {
                         currentState.filters.owner_agent_id = 'me';
                         // Active only (Open/Pending) - Exclude Closed/Resolved
-                        // Since API doesn't support "status != closed", we might need to filter by status array if API supported it.
-                        // But our API supports single status. 
-                        // Workaround: We can't easily say "not closed" in one query if API doesn't support it.
-                        // However, usually "My Assigned" implies active work.
-                        // Let's try to filter by 'open' OR 'pending'. 
-                        // Limitation: If API only accepts one status, we might show all assigned.
-                        // Wait, the user specifically asked to remove closed/resolved.
-                        // If the API doesn't support multiple statuses (e.g. ?status=open,pending), we have a backend limitation.
-                        // Assuming standard Laravel implementation often supports arrays if coded right, but our Service code:
-                        // if (!empty($filters['status'])) { $query->where('status', $filters['status']); }
-                        // It seems strict equality.
-                        // FIX: We will rely on the user manually filtering status if they want, OR we accept that "My Assigned" shows all.
-                        // BUT, for "Requires Attention" we need Open/Pending.
-                        // Let's assume for now we show all assigned, but maybe sort by status?
-                        // Actually, let's look at the Service again. It uses `where('status', $filters['status'])`.
-                        // If we pass an array, Eloquent handles `whereIn`. Let's try passing array in JS? 
-                        // jQuery $.ajax data handles arrays like status[]=open&status[]=pending.
-                        // Let's try that for folders that need it.
-
-                        // For "My Assigned" (Active):
-                        // currentState.filters.status = ['open', 'pending']; 
+                        currentState.filters.status = ['open', 'pending'];
 
                     } else if (data.value === 'awaiting_response') {
                         currentState.filters.owner_agent_id = 'me';
                         currentState.filters.last_response_author_type = 'user';
                         // Also Active only
-                        // currentState.filters.status = ['open', 'pending'];
+                        currentState.filters.status = ['open', 'pending'];
                     } else if (data.value === 'awaiting_support') {
                         currentState.filters.last_response_author_type = 'user';
                         // Active only
-                        // currentState.filters.status = ['open', 'pending'];
+                        currentState.filters.status = ['open', 'pending'];
                     } else if (data.value === 'pending_my_reply') {
                         currentState.filters.last_response_author_type = 'agent';
                         // Active only
-                        // currentState.filters.status = ['open', 'pending'];
+                        currentState.filters.status = ['open', 'pending'];
                     } else if (data.value === 'requires_attention') {
                         currentState.filters.priority = 'high';
                         // Active only
-                        // currentState.filters.status = ['open', 'pending'];
+                        currentState.filters.status = ['open', 'pending'];
                     } else if (data.value === 'resolved') {
                         currentState.filters.status = 'resolved';
                     }

@@ -1,130 +1,190 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Mi Rendimiento - {{ $agentName }}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
-        .header { background: linear-gradient(135deg, #28a745, #1e7e34); color: white; padding: 25px; margin-bottom: 25px; }
-        .header h1 { font-size: 22px; margin-bottom: 5px; }
-        .header p { font-size: 11px; opacity: 0.9; }
-        .section { margin-bottom: 25px; }
-        .section-title { background: #f8f9fa; padding: 10px 15px; margin-bottom: 15px; border-left: 4px solid #28a745; font-size: 13px; font-weight: bold; }
-        .kpi-grid { display: table; width: 100%; }
-        .kpi-box { display: table-cell; width: 25%; text-align: center; padding: 15px; background: #fff; border: 1px solid #dee2e6; }
-        .kpi-icon { font-size: 24px; margin-bottom: 8px; }
-        .kpi-value { font-size: 28px; font-weight: bold; color: #28a745; }
-        .kpi-label { font-size: 10px; color: #666; text-transform: uppercase; margin-top: 5px; }
-        .card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .card-title { font-size: 12px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #eee; }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-label { color: #666; }
-        .stat-value { font-weight: bold; font-size: 14px; }
-        .progress-item { margin-bottom: 12px; }
-        .progress-label { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .progress-bar { height: 12px; background: #e9ecef; border-radius: 6px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 6px; }
-        .fill-high { background: #dc3545; }
-        .fill-medium { background: #ffc107; }
-        .fill-low { background: #28a745; }
-        .rate-box { text-align: center; padding: 20px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border-radius: 10px; }
-        .rate-value { font-size: 48px; font-weight: bold; }
-        .rate-label { font-size: 12px; opacity: 0.9; }
-        .footer { margin-top: 30px; padding-top: 15px; border-top: 2px solid #28a745; font-size: 9px; color: #666; text-align: center; }
-        .two-col { display: table; width: 100%; }
-        .col { display: table-cell; width: 50%; vertical-align: top; padding: 0 10px; }
-        .col:first-child { padding-left: 0; }
-        .col:last-child { padding-right: 0; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Mi Rendimiento</h1>
-        <p>{{ $agentName }} | Generado: {{ now()->format('d/m/Y H:i') }}</p>
+{{-- resources/views/app/agent/reports/templates/performance-pdf.blade.php --}}
+@extends('layouts.pdf-report')
+
+@section('title', 'Mi Rendimiento - ' . $agentName)
+
+@section('report-title', 'Reporte de Rendimiento')
+
+@section('report-meta')
+    Agente: {{ $agentName }}<br>
+    Generado: {{ now()->timezone('America/La_Paz')->format('d/m/Y H:i') }}
+@endsection
+
+@section('styles')
+    .metric-table {
+    width: calc(100% - 120px);
+    margin: 0 60px 30px 60px;
+    border-collapse: collapse;
+    }
+    .metric-row {
+    border-bottom: 1px solid #e5e7eb;
+    }
+    .metric-row td {
+    padding: 15px 10px;
+    vertical-align: middle;
+    }
+    .metric-label {
+    font-size: 12px;
+    color: #374151;
+    }
+    .metric-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #111827;
+    text-align: right;
+    }
+    .metric-bar-container {
+    width: 200px;
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 5px;
+    overflow: hidden;
+    }
+    .metric-bar {
+    height: 100%;
+    border-radius: 5px;
+    }
+    .bar-high { background: #dc2626; }
+    .bar-medium { background: #d97706; }
+    .bar-low { background: #059669; }
+    .bar-success { background: #059669; }
+    .highlight-box {
+    background: #f0fdf4;
+    border: 2px solid #059669;
+    padding: 20px;
+    text-align: center;
+    margin: 0 60px 30px 60px;
+    }
+    .highlight-number {
+    font-size: 48px;
+    font-weight: bold;
+    color: #059669;
+    }
+    .highlight-label {
+    font-size: 14px;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    }
+@endsection
+
+@section('content')
+    {{-- Statistics Cards --}}
+    <table class="statistics-table">
+        <tr>
+            <td class="stat-card-cell" style="border-bottom-color: #2563eb;">
+                <span class="stat-number">{{ $stats['total'] ?? 0 }}</span>
+                <span class="stat-label">TOTAL ASIGNADOS</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #dc2626;">
+                <span class="stat-number">
+                    @if(($stats['open'] ?? 0) == 0)
+                        <span style="color: #d1d5db; font-weight: normal;">0</span>
+                    @else
+                        {{ $stats['open'] }}
+                    @endif
+                </span>
+                <span class="stat-label">ABIERTOS</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #d97706;">
+                <span class="stat-number">
+                    @if(($stats['pending'] ?? 0) == 0)
+                        <span style="color: #d1d5db; font-weight: normal;">0</span>
+                    @else
+                        {{ $stats['pending'] }}
+                    @endif
+                </span>
+                <span class="stat-label">PENDIENTES</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #059669;">
+                <span class="stat-number">{{ ($stats['resolved'] ?? 0) + ($stats['closed'] ?? 0) }}</span>
+                <span class="stat-label">RESUELTOS</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #7c3aed;">
+                <span class="stat-number">{{ $stats['resolved_today'] ?? 0 }}</span>
+                <span class="stat-label">HOY</span>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Resolution Rate Highlight --}}
+    <div class="highlight-box">
+        <div class="highlight-number">{{ $stats['resolution_rate'] ?? 0 }}%</div>
+        <div class="highlight-label">Tasa de Resolución</div>
     </div>
-    
-    <div class="section">
-        <div class="section-title">Indicadores Clave</div>
-        <div class="kpi-grid">
-            <div class="kpi-box">
-                <div class="kpi-value">{{ $stats['total'] ?? 0 }}</div>
-                <div class="kpi-label">Total Asignados</div>
-            </div>
-            <div class="kpi-box">
-                <div class="kpi-value" style="color: #dc3545;">{{ $stats['open'] ?? 0 }}</div>
-                <div class="kpi-label">Abiertos</div>
-            </div>
-            <div class="kpi-box">
-                <div class="kpi-value" style="color: #ffc107;">{{ $stats['pending'] ?? 0 }}</div>
-                <div class="kpi-label">Pendientes</div>
-            </div>
-            <div class="kpi-box">
-                <div class="kpi-value" style="color: #28a745;">{{ ($stats['resolved'] ?? 0) + ($stats['closed'] ?? 0) }}</div>
-                <div class="kpi-label">Resueltos</div>
-            </div>
+
+    {{-- Priority Distribution --}}
+    <div class="content-wrapper">
+        <div class="section-header">
+            <h3 class="section-title">Distribución por Prioridad (Tickets Activos)</h3>
         </div>
+
+        @php
+            $high = $stats['priority']['high'] ?? 0;
+            $medium = $stats['priority']['medium'] ?? 0;
+            $low = $stats['priority']['low'] ?? 0;
+            $totalP = max($high + $medium + $low, 1);
+        @endphp
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">PRIORIDAD</th>
+                    <th style="width: 40%;">DISTRIBUCIÓN</th>
+                    <th style="width: 15%; text-align: center;">CANTIDAD</th>
+                    <th style="width: 15%; text-align: right;">PORCENTAJE</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong style="color: #dc2626;">Alta</strong></td>
+                    <td>
+                        <div class="metric-bar-container">
+                            <div class="metric-bar bar-high" style="width: {{ ($high / $totalP) * 100 }}%;"></div>
+                        </div>
+                    </td>
+                    <td class="number-cell">
+                        @if($high == 0)
+                            <span style="color: #d1d5db; font-weight: normal;">0</span>
+                        @else
+                            {{ $high }}
+                        @endif
+                    </td>
+                    <td class="date-cell">{{ round(($high / $totalP) * 100) }}%</td>
+                </tr>
+                <tr>
+                    <td><strong style="color: #d97706;">Media</strong></td>
+                    <td>
+                        <div class="metric-bar-container">
+                            <div class="metric-bar bar-medium" style="width: {{ ($medium / $totalP) * 100 }}%;"></div>
+                        </div>
+                    </td>
+                    <td class="number-cell">
+                        @if($medium == 0)
+                            <span style="color: #d1d5db; font-weight: normal;">0</span>
+                        @else
+                            {{ $medium }}
+                        @endif
+                    </td>
+                    <td class="date-cell">{{ round(($medium / $totalP) * 100) }}%</td>
+                </tr>
+                <tr>
+                    <td><strong style="color: #059669;">Baja</strong></td>
+                    <td>
+                        <div class="metric-bar-container">
+                            <div class="metric-bar bar-low" style="width: {{ ($low / $totalP) * 100 }}%;"></div>
+                        </div>
+                    </td>
+                    <td class="number-cell">
+                        @if($low == 0)
+                            <span style="color: #d1d5db; font-weight: normal;">0</span>
+                        @else
+                            {{ $low }}
+                        @endif
+                    </td>
+                    <td class="date-cell">{{ round(($low / $totalP) * 100) }}%</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
-    
-    <div class="two-col">
-        <div class="col">
-            <div class="section">
-                <div class="section-title">Tasa de Resolución</div>
-                <div class="rate-box">
-                    <div class="rate-value">{{ $stats['resolution_rate'] ?? 0 }}%</div>
-                    <div class="rate-label">Tickets Resueltos / Total</div>
-                </div>
-                <div class="card" style="margin-top: 15px;">
-                    <div class="stat-row">
-                        <span class="stat-label">Resueltos Hoy</span>
-                        <span class="stat-value" style="color: #28a745;">{{ $stats['resolved_today'] ?? 0 }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="section">
-                <div class="section-title">Distribución por Prioridad</div>
-                <div class="card">
-                    @php
-                        $totalP = max(($stats['priority']['high'] ?? 0) + ($stats['priority']['medium'] ?? 0) + ($stats['priority']['low'] ?? 0), 1);
-                    @endphp
-                    <div class="progress-item">
-                        <div class="progress-label">
-                            <span>Alta</span>
-                            <span>{{ $stats['priority']['high'] ?? 0 }} ({{ round((($stats['priority']['high'] ?? 0) / $totalP) * 100) }}%)</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill fill-high" style="width: {{ (($stats['priority']['high'] ?? 0) / $totalP) * 100 }}%;"></div>
-                        </div>
-                    </div>
-                    <div class="progress-item">
-                        <div class="progress-label">
-                            <span>Media</span>
-                            <span>{{ $stats['priority']['medium'] ?? 0 }} ({{ round((($stats['priority']['medium'] ?? 0) / $totalP) * 100) }}%)</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill fill-medium" style="width: {{ (($stats['priority']['medium'] ?? 0) / $totalP) * 100 }}%;"></div>
-                        </div>
-                    </div>
-                    <div class="progress-item">
-                        <div class="progress-label">
-                            <span>Baja</span>
-                            <span>{{ $stats['priority']['low'] ?? 0 }} ({{ round((($stats['priority']['low'] ?? 0) / $totalP) * 100) }}%)</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill fill-low" style="width: {{ (($stats['priority']['low'] ?? 0) / $totalP) * 100 }}%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="footer">
-        <p><strong>Reporte de Rendimiento Personal</strong> | {{ $agentName }}</p>
-        <p style="margin-top: 5px;">Generado automáticamente por el Sistema de Helpdesk | {{ now()->format('d/m/Y H:i') }}</p>
-    </div>
-</body>
-</html>
+@endsection

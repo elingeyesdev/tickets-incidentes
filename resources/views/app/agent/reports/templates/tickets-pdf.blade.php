@@ -1,108 +1,97 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Mis Tickets - {{ $agentName }}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
-        .header { background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 20px; margin-bottom: 20px; }
-        .header h1 { font-size: 20px; margin-bottom: 5px; }
-        .header p { font-size: 11px; opacity: 0.9; }
-        .summary-box { display: inline-block; width: 23%; text-align: center; padding: 10px; margin: 0 0.5%; background: #fff; border: 1px solid #dee2e6; border-radius: 5px; }
-        .summary-box .number { font-size: 18px; font-weight: bold; }
-        .summary-box .label { font-size: 9px; color: #666; }
-        .summary-open .number { color: #dc3545; }
-        .summary-pending .number { color: #ffc107; }
-        .summary-resolved .number { color: #28a745; }
-        .summary-total .number { color: #17a2b8; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9px; }
-        th { background: #343a40; color: white; padding: 8px 5px; text-align: left; font-weight: 600; }
-        td { padding: 6px 5px; border-bottom: 1px solid #dee2e6; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        .status-badge { padding: 2px 6px; border-radius: 3px; font-size: 8px; font-weight: bold; color: white; }
-        .status-open { background: #dc3545; }
-        .status-pending { background: #ffc107; color: #333; }
-        .status-resolved { background: #28a745; }
-        .status-closed { background: #6c757d; }
-        .priority-high { color: #dc3545; font-weight: bold; }
-        .priority-medium { color: #ffc107; }
-        .priority-low { color: #28a745; }
-        .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #dee2e6; font-size: 9px; color: #666; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Mis Tickets Asignados</h1>
-        <p>{{ $agentName }} | Generado: {{ now()->format('d/m/Y H:i') }}</p>
-    </div>
-    
-    <div style="text-align: center; margin-bottom: 15px;">
-        <div class="summary-box summary-total">
-            <div class="number">{{ $summary['total'] ?? 0 }}</div>
-            <div class="label">TOTAL</div>
-        </div>
-        <div class="summary-box summary-open">
-            <div class="number">{{ $summary['open'] ?? 0 }}</div>
-            <div class="label">ABIERTOS</div>
-        </div>
-        <div class="summary-box summary-pending">
-            <div class="number">{{ $summary['pending'] ?? 0 }}</div>
-            <div class="label">PENDIENTES</div>
-        </div>
-        <div class="summary-box summary-resolved">
-            <div class="number">{{ ($summary['resolved'] ?? 0) + ($summary['closed'] ?? 0) }}</div>
-            <div class="label">RESUELTOS</div>
-        </div>
-    </div>
-    
-    @if($filter)
-    <div style="background: #e7f3ff; padding: 8px; border-radius: 5px; margin-bottom: 15px; font-size: 9px;">
-        <strong>Filtro aplicado:</strong> Estado: {{ $filter }}
-    </div>
-    @endif
-    
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 10%;">Código</th>
-                <th style="width: 25%;">Título</th>
-                <th style="width: 15%;">Creado Por</th>
-                <th style="width: 12%;">Categoría</th>
-                <th style="width: 8%;">Prioridad</th>
-                <th style="width: 10%;">Estado</th>
-                <th style="width: 5%;">Resp.</th>
-                <th style="width: 15%;">Creado</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($tickets as $ticket)
-            <tr>
-                <td><strong>{{ $ticket->ticket_code ?? 'N/A' }}</strong></td>
-                <td>{{ Str::limit($ticket->title ?? '', 35) }}</td>
-                <td>{{ Str::limit($ticket->creator?->profile?->display_name ?? $ticket->creator?->email ?? 'N/A', 18) }}</td>
-                <td>{{ Str::limit($ticket->category?->name ?? 'N/A', 15) }}</td>
-                <td class="priority-{{ strtolower($ticket->priority?->value ?? 'low') }}">
-                    {{ ['HIGH' => 'Alta', 'MEDIUM' => 'Media', 'LOW' => 'Baja'][$ticket->priority?->value ?? ''] ?? $ticket->priority }}
-                </td>
-                <td>
-                    <span class="status-badge status-{{ strtolower($ticket->status?->value ?? 'open') }}">
-                        {{ ['OPEN' => 'Abierto', 'PENDING' => 'Pendiente', 'RESOLVED' => 'Resuelto', 'CLOSED' => 'Cerrado'][$ticket->status?->value ?? ''] ?? $ticket->status }}
-                    </span>
-                </td>
-                <td style="text-align: center;">{{ $ticket->responses_count ?? 0 }}</td>
-                <td>{{ $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 20px; color: #666;">No tienes tickets asignados.</td>
-            </tr>
-            @endforelse
-        </tbody>
+{{-- resources/views/app/agent/reports/templates/tickets-pdf.blade.php --}}
+@extends('layouts.pdf-report')
+
+@section('title', 'Mis Tickets Asignados - ' . $agentName)
+
+@section('report-title', 'Mis Tickets Asignados')
+
+@section('report-meta')
+    Agente: {{ $agentName }}<br>
+    Generado: {{ now()->timezone('America/La_Paz')->format('d/m/Y H:i') }}
+    @if($filter)<br>Filtro: Estado {{ $filter }}@endif
+@endsection
+
+@section('styles')
+    .status-open { color: #dc2626; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+    .status-pending { color: #d97706; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+    .status-resolved { color: #059669; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+    .status-closed { color: #4b5563; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+    .priority-high { color: #dc2626; }
+    .priority-medium { color: #d97706; }
+    .priority-low { color: #059669; }
+@endsection
+
+@section('content')
+    {{-- Statistics Cards --}}
+    <table class="statistics-table">
+        <tr>
+            <td class="stat-card-cell" style="border-bottom-color: #2563eb;">
+                <span class="stat-number">{{ $summary['total'] ?? 0 }}</span>
+                <span class="stat-label">TOTAL</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #dc2626;">
+                <span class="stat-number">{{ $summary['open'] ?? 0 }}</span>
+                <span class="stat-label">ABIERTOS</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #d97706;">
+                <span class="stat-number">{{ $summary['pending'] ?? 0 }}</span>
+                <span class="stat-label">PENDIENTES</span>
+            </td>
+            <td class="stat-card-cell" style="border-bottom-color: #059669;">
+                <span class="stat-number">{{ ($summary['resolved'] ?? 0) + ($summary['closed'] ?? 0) }}</span>
+                <span class="stat-label">RESUELTOS</span>
+            </td>
+        </tr>
     </table>
-    
-    <div class="footer">
-        <p>Reporte generado automáticamente | {{ $agentName }}</p>
+
+    {{-- Data Table --}}
+    <div class="content-wrapper">
+        <div class="section-header">
+            <h3 class="section-title">Detalle de Tickets</h3>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">CÓDIGO</th>
+                    <th style="width: 28%;">TÍTULO</th>
+                    <th style="width: 15%;">CREADO POR</th>
+                    <th style="width: 14%;">CATEGORÍA</th>
+                    <th style="width: 8%; text-align: center;">PRIORIDAD</th>
+                    <th style="width: 10%; text-align: center;">ESTADO</th>
+                    <th style="width: 15%; text-align: right;">FECHA</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($tickets as $ticket)
+                    <tr>
+                        <td><strong>{{ $ticket->ticket_code ?? 'N/A' }}</strong></td>
+                        <td>{{ Str::limit($ticket->title ?? '', 40) }}</td>
+                        <td>{{ Str::limit($ticket->creator?->profile?->display_name ?? $ticket->creator?->email ?? 'N/A', 20) }}
+                        </td>
+                        <td>{{ Str::limit($ticket->category?->name ?? 'N/A', 18) }}</td>
+                        <td class="number-cell">
+                            @php $priority = $ticket->priority?->value ?? 'LOW'; @endphp
+                            <span class="priority-{{ strtolower($priority) }}">
+                                {{ ['HIGH' => 'Alta', 'MEDIUM' => 'Media', 'LOW' => 'Baja'][$priority] ?? $priority }}
+                            </span>
+                        </td>
+                        <td class="number-cell">
+                            @php $status = $ticket->status?->value ?? 'OPEN'; @endphp
+                            <span class="status-{{ strtolower($status) }}">
+                                {{ ['OPEN' => 'Abierto', 'PENDING' => 'Pendiente', 'RESOLVED' => 'Resuelto', 'CLOSED' => 'Cerrado'][$status] ?? $status }}
+                            </span>
+                        </td>
+                        <td class="date-cell">{{ $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: #9ca3af;">
+                            No tienes tickets asignados.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-</body>
-</html>
+@endsection

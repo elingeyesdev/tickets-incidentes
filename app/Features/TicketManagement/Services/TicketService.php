@@ -237,9 +237,20 @@ class TicketService
      */
     private function applyFilters(Builder $query, array $filters, string $userId): void
     {
-        // Filtrar por estado
+        // Filtrar por estado (soporta valor único, array, o string separado por comas)
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $status = $filters['status'];
+            
+            // Si es string con comas, convertir a array
+            if (is_string($status) && str_contains($status, ',')) {
+                $status = array_map('trim', explode(',', $status));
+            }
+            
+            if (is_array($status)) {
+                $query->whereIn('status', $status);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         // Filtrar por categoría

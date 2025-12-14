@@ -143,15 +143,7 @@ Modificaciones:
                 </div>
                 <div class="card-body p-0">
                     <ul class="nav nav-pills flex-column" id="status-filters">
-                        {{-- USER no ve "New" en la lista de estados --}}
-                        @if($role !== 'USER')
-                            <li class="nav-item">
-                                <a href="#" class="nav-link" data-status="new">
-                                    <i class="far fa-circle text-info"></i> Nuevo
-                                    <span class="badge bg-info float-right count-status-new"></span>
-                                </a>
-                            </li>
-                        @endif
+                        {{-- Note: 'new' is not a valid backend status. Use the "Nuevos (Sin Asignar)" folder instead. --}}
 
                         <li class="nav-item">
                             <a href="#" class="nav-link" data-status="open">
@@ -529,9 +521,9 @@ Modificaciones:
                 };
 
                 // 1. Common Status Counts (Open, Pending, Resolved, Closed)
-                // Note: USER role doesn't see "New" status in the list, but others do.
+                // Note: 'new' is NOT a valid backend status. Valid statuses are: open, pending, resolved, closed.
+                // The concept of "new/unassigned tickets" is handled by owner_agent_id: null filter.
                 const statuses = ['open', 'pending', 'resolved', 'closed'];
-                if (TicketConfig.role !== 'USER') statuses.push('new');
 
                 for (const status of statuses) {
                     // Para USER, filtrar por sus propios tickets si es necesario,
@@ -722,8 +714,8 @@ Modificaciones:
 
                     // Actualizar nombre
                     if (profileName) {
-                        const displayName = user.profile 
-                            ? `${user.profile.firstName || ''} ${user.profile.lastName || ''}`.trim() 
+                        const displayName = user.profile
+                            ? `${user.profile.firstName || ''} ${user.profile.lastName || ''}`.trim()
                             : user.email;
                         profileName.textContent = displayName || 'Usuario';
                     }
@@ -771,7 +763,7 @@ Modificaciones:
                 avatarInput.addEventListener('change', async function () {
                     const file = this.files[0];
                     if (!file) return;
-                    
+
                     // Prevenir múltiples uploads
                     if (isUploading) {
                         console.log('[Profile] Upload already in progress, skipping');
@@ -814,13 +806,13 @@ Modificaciones:
                                 icon: 'warning',
                                 title: 'Límite de cambios alcanzado',
                                 html: `
-                                    <div class="text-center">
-                                        <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
-                                        <p><strong>Helpdesk Guard</strong> ha detectado demasiados intentos.</p>
-                                        <p class="text-muted">Solo puedes cambiar tu foto de perfil <strong>3 veces por hora</strong>.</p>
-                                        <p>Por favor, intenta de nuevo más tarde.</p>
-                                    </div>
-                                `,
+                                        <div class="text-center">
+                                            <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                                            <p><strong>Helpdesk Guard</strong> ha detectado demasiados intentos.</p>
+                                            <p class="text-muted">Solo puedes cambiar tu foto de perfil <strong>3 veces por hora</strong>.</p>
+                                            <p>Por favor, intenta de nuevo más tarde.</p>
+                                        </div>
+                                    `,
                                 confirmButtonText: 'Entendido',
                                 confirmButtonColor: '#6c757d',
                             });
