@@ -8,7 +8,7 @@
         <div>
             <a href="{{ route('company.announcements.index') }}" class="btn btn-outline-secondary mr-2">
                 <i class="fas fa-stream mr-1"></i>
-                Ver Feed
+                Ver Publicaciones
             </a>
             <button class="btn btn-primary" data-toggle="modal" data-target="#modal-create">
                 <i class="fas fa-plus mr-1"></i>
@@ -391,6 +391,58 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     const token = window.tokenManager?.getAccessToken();
+    
+    // =========================================================================
+    // SERVICIOS PREDEFINIDOS (evita manipulación por el usuario)
+    // =========================================================================
+    const PREDEFINED_SERVICES = [
+        { value: 'api', label: 'API', icon: 'fa-code' },
+        { value: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
+        { value: 'email', label: 'Correo Electrónico', icon: 'fa-envelope' },
+        { value: 'authentication', label: 'Autenticación', icon: 'fa-lock' },
+        { value: 'database', label: 'Base de Datos', icon: 'fa-database' },
+        { value: 'storage', label: 'Almacenamiento', icon: 'fa-hdd' },
+        { value: 'notifications', label: 'Notificaciones', icon: 'fa-bell' },
+        { value: 'reports', label: 'Reportes', icon: 'fa-chart-bar' },
+        { value: 'integrations', label: 'Integraciones', icon: 'fa-plug' },
+        { value: 'mobile_app', label: 'App Móvil', icon: 'fa-mobile-alt' }
+    ];
+    
+    /**
+     * Genera HTML de checkboxes para servicios afectados
+     */
+    function generateServicesCheckboxes(prefix = 'meta', selectedServices = []) {
+        return `
+            <div class="form-group">
+                <label>Servicios Afectados <small class="text-muted">(Opcional)</small></label>
+                <div class="row">
+                    ${PREDEFINED_SERVICES.map(service => `
+                        <div class="col-md-4 col-sm-6">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" 
+                                       id="${prefix}-service-${service.value}" 
+                                       name="affected_services[]" 
+                                       value="${service.value}"
+                                       ${selectedServices.includes(service.value) ? 'checked' : ''}>
+                                <label class="custom-control-label" for="${prefix}-service-${service.value}">
+                                    <i class="fas ${service.icon} mr-1 text-muted"></i> ${service.label}
+                                </label>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <small class="form-text text-muted">Selecciona los servicios que serán afectados</small>
+            </div>
+        `;
+    }
+    
+    /**
+     * Obtiene los servicios seleccionados de los checkboxes
+     */
+    function getSelectedServices(prefix = 'meta') {
+        const checkboxes = document.querySelectorAll(`[id^="${prefix}-service-"]:checked`);
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
     
     // =========================================================================
     // UTILIDADES - Traducción de Errores de API
@@ -803,9 +855,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleAction(action, id) {
         switch(action) {
             case 'publish':
-                if (confirm('¿Publicar este anuncio ahora?')) {
-                    publishAnnouncement(id);
-                }
+                Swal.fire({
+                    title: '¿Publicar Anuncio?',
+                    text: 'Este anuncio será visible inmediatamente para todos los usuarios.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#007bff',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-paper-plane"></i> Publicar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        publishAnnouncement(id);
+                    }
+                });
                 break;
             case 'schedule':
                 document.getElementById('schedule-id').value = id;
@@ -815,24 +878,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#modal-schedule').modal('show');
                 break;
             case 'unschedule':
-                if (confirm('¿Desprogramar este anuncio?')) {
-                    unscheduleAnnouncement(id);
-                }
+                Swal.fire({
+                    title: '¿Desprogramar Anuncio?',
+                    text: 'El anuncio volverá a estado borrador y no se publicará automáticamente.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ffc107',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-calendar-times"></i> Desprogramar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        unscheduleAnnouncement(id);
+                    }
+                });
                 break;
             case 'archive':
-                if (confirm('¿Archivar este anuncio?')) {
-                    archiveAnnouncement(id);
-                }
+                Swal.fire({
+                    title: '¿Archivar Anuncio?',
+                    text: 'El anuncio será movido al archivo y dejará de mostrarse a los usuarios.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#6c757d',
+                    cancelButtonColor: '#007bff',
+                    confirmButtonText: '<i class="fas fa-archive"></i> Archivar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        archiveAnnouncement(id);
+                    }
+                });
                 break;
             case 'restore':
-                if (confirm('¿Restaurar este anuncio a borrador?')) {
-                    restoreAnnouncement(id);
-                }
+                Swal.fire({
+                    title: '¿Restaurar Anuncio?',
+                    text: 'El anuncio será restaurado a estado borrador para que puedas editarlo y volver a publicarlo.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-undo"></i> Restaurar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        restoreAnnouncement(id);
+                    }
+                });
                 break;
             case 'delete':
-                if (confirm('¿Eliminar este anuncio permanentemente?')) {
-                    deleteAnnouncement(id);
-                }
+                Swal.fire({
+                    title: '¿Eliminar Anuncio?',
+                    html: '<p class="text-danger"><strong>Esta acción es permanente y no se puede deshacer.</strong></p><p>El anuncio será eliminado definitivamente del sistema.</p>',
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash"></i> Eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        deleteAnnouncement(id);
+                    }
+                });
                 break;
             case 'edit':
                 editAnnouncement(id);
@@ -1067,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (type === 'MAINTENANCE') {
             const scheduledStart = metadata.scheduled_start ? new Date(metadata.scheduled_start).toISOString().slice(0, 16) : '';
             const scheduledEnd = metadata.scheduled_end ? new Date(metadata.scheduled_end).toISOString().slice(0, 16) : '';
+            const selectedServices = metadata.affected_services || [];
 
             html = `
                 <div class="row">
@@ -1084,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Urgencia</label>
+                    <label>Urgencia <span class="text-danger">*</span></label>
                     <select class="form-control" id="edit-meta-urgency">
                         <option value="LOW" ${metadata.urgency === 'LOW' ? 'selected' : ''}>Baja</option>
                         <option value="MEDIUM" ${metadata.urgency === 'MEDIUM' ? 'selected' : ''}>Media</option>
@@ -1092,14 +1200,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="edit-meta-services" placeholder="Separados por coma" value="${metadata.affected_services ? metadata.affected_services.join(', ') : ''}">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="edit-meta-is-emergency" ${metadata.is_emergency ? 'checked' : ''}>
+                        <label class="custom-control-label" for="edit-meta-is-emergency">
+                            <i class="fas fa-exclamation-triangle text-danger"></i> Mantenimiento de Emergencia
+                        </label>
+                    </div>
                 </div>
+                ${generateServicesCheckboxes('edit-meta', selectedServices)}
             `;
         } else if (type === 'INCIDENT') {
+            const selectedServices = metadata.affected_services || [];
             html = `
                 <div class="form-group">
-                    <label>Urgencia</label>
+                    <label>Urgencia <span class="text-danger">*</span></label>
                     <select class="form-control" id="edit-meta-urgency">
                         <option value="LOW" ${metadata.urgency === 'LOW' ? 'selected' : ''}>Baja</option>
                         <option value="MEDIUM" ${metadata.urgency === 'MEDIUM' ? 'selected' : ''}>Media</option>
@@ -1107,10 +1221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="CRITICAL" ${metadata.urgency === 'CRITICAL' ? 'selected' : ''}>Crítica</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="edit-meta-services" placeholder="Separados por coma" value="${metadata.affected_services ? metadata.affected_services.join(', ') : ''}">
-                </div>
+                ${generateServicesCheckboxes('edit-meta', selectedServices)}
             `;
         } else if (type === 'ALERT') {
             html = `
@@ -1200,12 +1311,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 toISO8601(new Date(document.getElementById('edit-meta-scheduled-start').value)) : null;
             metadata.scheduled_end = document.getElementById('edit-meta-scheduled-end')?.value ?
                 toISO8601(new Date(document.getElementById('edit-meta-scheduled-end').value)) : null;
-            metadata.affected_services = (document.getElementById('edit-meta-services')?.value || '')
-                .split(',').map(s => s.trim()).filter(s => s);
+            metadata.is_emergency = document.getElementById('edit-meta-is-emergency')?.checked || false;
+            metadata.affected_services = getSelectedServices('edit-meta');
         } else if (type === 'INCIDENT') {
             metadata.urgency = document.getElementById('edit-meta-urgency')?.value || 'HIGH';
-            metadata.affected_services = (document.getElementById('edit-meta-services')?.value || '')
-                .split(',').map(s => s.trim()).filter(s => s);
+            metadata.affected_services = getSelectedServices('edit-meta');
         } else if (type === 'ALERT') {
             metadata.urgency = document.getElementById('edit-meta-urgency')?.value || 'HIGH';
             metadata.alert_type = document.getElementById('edit-meta-alert-type')?.value || 'system';
@@ -1318,6 +1428,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // =========================================================================
+        // BLOQUEAR BOTÓN para evitar múltiples envíos
+        // =========================================================================
+        const btnCreate = document.getElementById('btn-create-draft');
+        const originalBtnHtml = btnCreate.innerHTML;
+        btnCreate.disabled = true;
+        btnCreate.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+
         // Build metadata based on type
         const metadata = buildMetadata(type);
 
@@ -1415,6 +1533,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('[Announcement] Fetch error:', error);
             Toast.error('Error de conexión. Por favor verifique su red.');
+        })
+        .finally(() => {
+            // =========================================================================
+            // RESTAURAR BOTÓN siempre, sin importar resultado
+            // =========================================================================
+            btnCreate.disabled = false;
+            btnCreate.innerHTML = originalBtnHtml;
         });
     }
 
@@ -1464,7 +1589,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Urgencia</label>
+                    <label>Urgencia <span class="text-danger">*</span></label>
                     <select class="form-control" id="meta-urgency" name="urgency">
                         <option value="LOW">Baja</option>
                         <option value="MEDIUM" selected>Media</option>
@@ -1473,10 +1598,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     <small class="form-text text-muted">Nivel de urgencia del mantenimiento</small>
                 </div>
                 <div class="form-group">
-                    <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="meta-services" name="affected_services" placeholder="API, Dashboard, Email (separados por coma)">
-                    <small class="form-text text-muted">Lista de servicios que serán afectados</small>
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="meta-is-emergency" name="is_emergency">
+                        <label class="custom-control-label" for="meta-is-emergency">
+                            <i class="fas fa-exclamation-triangle text-danger"></i> Mantenimiento de Emergencia
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">Marcar si es un mantenimiento no programado por emergencia</small>
                 </div>
+                ${generateServicesCheckboxes('meta')}
             `;
         } else if (type === 'INCIDENT') {
             html = `
@@ -1490,11 +1620,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </select>
                     <small class="form-text text-muted">Nivel de impacto del incidente</small>
                 </div>
-                <div class="form-group">
-                    <label>Servicios Afectados</label>
-                    <input type="text" class="form-control" id="meta-services" name="affected_services" placeholder="API, Dashboard, Email (separados por coma)">
-                    <small class="form-text text-muted">Lista de servicios afectados por el incidente</small>
-                </div>
+                ${generateServicesCheckboxes('meta')}
             `;
         } else if (type === 'ALERT') {
             html = `
@@ -1563,13 +1689,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 toISO8601(new Date(document.getElementById('meta-scheduled-start').value)) : null;
             metadata.scheduled_end = document.getElementById('meta-scheduled-end')?.value ?
                 toISO8601(new Date(document.getElementById('meta-scheduled-end').value)) : null;
-            metadata.is_emergency = false;
-            metadata.affected_services = (document.getElementById('meta-services')?.value || '')
-                .split(',').map(s => s.trim()).filter(s => s);
+            metadata.is_emergency = document.getElementById('meta-is-emergency')?.checked || false;
+            metadata.affected_services = getSelectedServices('meta');
         } else if (type === 'INCIDENT') {
             metadata.urgency = document.getElementById('meta-urgency')?.value || 'HIGH';
-            metadata.affected_services = (document.getElementById('meta-services')?.value || '')
-                .split(',').map(s => s.trim()).filter(s => s);
+            metadata.affected_services = getSelectedServices('meta');
         } else if (type === 'ALERT') {
             metadata.urgency = document.getElementById('meta-urgency')?.value || 'HIGH';
             metadata.alert_type = document.getElementById('meta-alert-type')?.value || 'system';
