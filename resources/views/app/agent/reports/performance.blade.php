@@ -17,104 +17,150 @@
         <p class="mb-0">Analiza tus indicadores clave de rendimiento, identifica áreas de mejora y descarga tu reporte detallado.</p>
     </div>
 
+    {{-- KPI Cards (Server-side data) --}}
     <div class="row">
-        {{-- Main Metrics --}}
-        <div class="col-md-8">
-            {{-- Performance Knobs --}}
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-info">
+                <span class="info-box-icon"><i class="fas fa-inbox"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Asignados</span>
+                    <span class="info-box-number">{{ number_format($kpis['total']) }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-danger">
+                <span class="info-box-icon"><i class="fas fa-exclamation-circle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Abiertos</span>
+                    <span class="info-box-number">{{ number_format($kpis['open']) }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ $metrics['open_rate'] }}%"></div>
+                    </div>
+                    <span class="progress-description">{{ $metrics['open_rate'] }}% del total</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-warning">
+                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pendientes</span>
+                    <span class="info-box-number">{{ number_format($kpis['pending']) }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ $metrics['pending_rate'] }}%"></div>
+                    </div>
+                    <span class="progress-description">{{ $metrics['pending_rate'] }}% del total</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-success">
+                <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Resueltos</span>
+                    <span class="info-box-number">{{ number_format($kpis['resolved']) }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ $metrics['resolution_rate'] }}%"></div>
+                    </div>
+                    <span class="progress-description">{{ $metrics['resolution_rate'] }}% efectividad</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {{-- Weekly Activity Chart --}}
+        <div class="col-lg-8">
             <div class="card card-outline card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-tachometer-alt mr-2"></i> Indicadores Clave</h3>
+                    <h3 class="card-title"><i class="fas fa-chart-area mr-2"></i> Actividad Semanal (Tickets Resueltos)</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-6 col-md-3 text-center">
-                            <input type="text" class="knob" id="knob-workload" value="0" 
-                                   data-width="90" data-height="90" 
-                                   data-fgColor="#17a2b8" data-readonly="true">
-                            <div class="knob-label mt-2 text-muted font-weight-bold">Carga Trabajo</div>
-                            <small class="text-muted d-block">Tickets Asignados</small>
-                        </div>
-                        <div class="col-6 col-md-3 text-center">
-                            <input type="text" class="knob" id="knob-open" value="0" 
-                                   data-width="90" data-height="90" 
-                                   data-fgColor="#dc3545" data-readonly="true">
-                            <div class="knob-label mt-2 text-muted font-weight-bold">% Abiertos</div>
-                            <small class="text-muted d-block">Sin resolver</small>
-                        </div>
-                        <div class="col-6 col-md-3 text-center">
-                            <input type="text" class="knob" id="knob-pending" value="0" 
-                                   data-width="90" data-height="90" 
-                                   data-fgColor="#ffc107" data-readonly="true">
-                            <div class="knob-label mt-2 text-muted font-weight-bold">% Pendientes</div>
-                            <small class="text-muted d-block">En espera</small>
-                        </div>
-                        <div class="col-6 col-md-3 text-center">
-                            <input type="text" class="knob" id="knob-resolution" value="0" 
-                                   data-width="90" data-height="90" 
-                                   data-fgColor="#28a745" data-readonly="true">
-                            <div class="knob-label mt-2 text-muted font-weight-bold">Efe. Resolución</div>
-                            <small class="text-muted d-block">Resueltos / Total</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="overlay" id="loading-overlay">
-                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    <canvas id="weeklyChart" style="min-height: 300px;"></canvas>
                 </div>
             </div>
 
-            {{-- Weekly Activity Chart --}}
-            <div class="card card-outline card-info">
+            {{-- Priority Distribution --}}
+            <div class="card card-outline card-dark">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-chart-area mr-2"></i> Evolución Semanal</h3>
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
-                    </div>
+                    <h3 class="card-title"><i class="fas fa-fire mr-2"></i> Tickets Activos por Prioridad</h3>
                 </div>
                 <div class="card-body">
-                    <div class="chart">
-                        <canvas id="weeklyActivityChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    @php
+                        $totalPriority = max($priority['high'] + $priority['medium'] + $priority['low'], 1);
+                    @endphp
+                    {{-- High --}}
+                    <div class="progress-group">
+                        <span class="progress-text"><i class="fas fa-circle text-danger mr-1"></i> Alta Prioridad</span>
+                        <span class="float-right"><b>{{ $priority['high'] }}</b> ({{ round(($priority['high'] / $totalPriority) * 100) }}%)</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-danger" style="width: {{ ($priority['high'] / $totalPriority) * 100 }}%"></div>
+                        </div>
+                    </div>
+                    {{-- Medium --}}
+                    <div class="progress-group">
+                        <span class="progress-text"><i class="fas fa-circle text-warning mr-1"></i> Media Prioridad</span>
+                        <span class="float-right"><b>{{ $priority['medium'] }}</b> ({{ round(($priority['medium'] / $totalPriority) * 100) }}%)</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-warning" style="width: {{ ($priority['medium'] / $totalPriority) * 100 }}%"></div>
+                        </div>
+                    </div>
+                    {{-- Low --}}
+                    <div class="progress-group">
+                        <span class="progress-text"><i class="fas fa-circle text-success mr-1"></i> Baja Prioridad</span>
+                        <span class="float-right"><b>{{ $priority['low'] }}</b> ({{ round(($priority['low'] / $totalPriority) * 100) }}%)</span>
+                        <div class="progress progress-sm">
+                            <div class="progress-bar bg-success" style="width: {{ ($priority['low'] / $totalPriority) * 100 }}%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Export & Status --}}
-        <div class="col-md-4">
-            {{-- Export Card --}}
-            <div class="card card-outline card-secondary mb-3">
+        {{-- Sidebar --}}
+        <div class="col-lg-4">
+            {{-- Export Section --}}
+            <div class="card card-outline card-secondary">
                 <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-file-pdf mr-2"></i> Exportar</h3>
+                    <h3 class="card-title"><i class="fas fa-download mr-2"></i> Exportar Reporte</h3>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small">Genera un documento PDF con todos tus indicadores, gráficas de rendimiento y desglose de actividad reciente.</p>
+                    <p class="text-muted small">Genera un documento PDF con todos tus indicadores, gráficas de rendimiento y desglose de actividad.</p>
+                </div>
+                <div class="card-footer bg-light">
                     <a href="/app/agent/reports/performance/pdf" class="btn btn-danger btn-block btn-lg">
-                        <i class="fas fa-download mr-2"></i> Descargar Reporte
+                        <i class="fas fa-file-pdf mr-2"></i> Descargar PDF
                     </a>
                 </div>
             </div>
 
-            {{-- Today's Status --}}
-            <div class="card">
-                <div class="card-header border-0">
-                    <h3 class="card-title">Resumen de Hoy</h3>
+            {{-- Today's Stats --}}
+            <div class="card card-outline card-success">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-calendar-day mr-2"></i> Resumen de Hoy</h3>
                 </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-striped table-valign-middle">
-                        <tbody>
-                        <tr>
-                            <td>
-                                <i class="fas fa-check-circle text-success mr-2"></i> Resueltos
-                            </td>
-                            <td class="text-right font-weight-bold" id="td-resolved">0</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <i class="fas fa-inbox text-primary mr-2"></i> Nuevos Asignados
-                            </td>
-                            <td class="text-right font-weight-bold" id="td-assigned">0</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-check-circle text-success mr-2"></i> Resueltos Hoy</span>
+                            <span class="badge badge-success badge-pill">{{ $kpis['resolved_today'] }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-percentage text-info mr-2"></i> Tasa de Resolución</span>
+                            <span class="badge badge-info badge-pill">{{ $metrics['resolution_rate'] }}%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {{-- Status Distribution Chart --}}
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i> Distribución por Estado</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" style="min-height: 200px;"></canvas>
                 </div>
             </div>
         </div>
@@ -123,102 +169,61 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-Knob/1.2.13/jquery.knob.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function() {
     'use strict';
 
-    function getToken() {
-        return window.tokenManager?.getAccessToken() || localStorage.getItem('access_token');
-    }
+    // Chart data from controller (server-side)
+    const chartData = @json($chartData);
+    const statusData = @json($statusStats);
 
-    // Init Knobs
-    $('.knob').knob({
-        'draw': function() { $(this.i).val(this.cv + '%'); }
+    // Weekly Activity Chart
+    new Chart(document.getElementById('weeklyChart'), {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Tickets Resueltos',
+                data: chartData.data,
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                borderColor: '#28a745',
+                pointRadius: 5,
+                pointBackgroundColor: '#28a745',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
     });
 
-    function animateKnob(id, value) {
-        $({value: 0}).animate({value: value}, {
-            duration: 1000,
-            easing: 'swing',
-            step: function() { $('#' + id).val(Math.ceil(this.value)).trigger('change'); }
-        });
-    }
-
-    // Chart Instance
-    let weeklyChart = null;
-
-    function renderChart(labels, data) {
-        const ctx = document.getElementById('weeklyActivityChart');
-        if (weeklyChart) weeklyChart.destroy();
-
-        weeklyChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Tickets Resueltos',
-                    data: data,
-                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                    borderColor: '#28a745',
-                    pointRadius: 4,
-                    pointBackgroundColor: '#28a745',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-    }
-
-    async function loadData() {
-        try {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            
-            const response = await fetch('/api/analytics/agent-dashboard', {
-                headers: { 'Authorization': 'Bearer ' + getToken(), 'Accept': 'application/json' }
-            });
-            
-            if (!response.ok) throw new Error('Failed');
-            const data = await response.json();
-
-            // Render Metrics (Knobs)
-            const metrics = data.performance_metrics || {};
-            animateKnob('knob-workload', metrics.workload || 0); // Note: Workload is number, not % strictly but displayed as knob
-            animateKnob('knob-open', metrics.open_rate || 0);
-            animateKnob('knob-pending', metrics.pending_rate || 0);
-            animateKnob('knob-resolution', metrics.resolution_rate || 0);
-
-            // Render Chart
-            const weekly = data.weekly_activity || { labels: [], data: [] };
-            renderChart(weekly.labels, weekly.data);
-
-            // Render Today's Stats
-            const kpi = data.kpi || {};
-            document.getElementById('td-resolved').textContent = kpi.resolved_today || 0;
-            // Assuming assigned today is roughly total - resolved (just for quick approximation if not in API)
-            // Or better, leave static if API doesn't send "assigned_today" specifically
-            // We'll use assigned_total as placeholder or 0
-            
-        } catch (e) {
-            console.error('Performance load error:', e);
-        } finally {
-            document.getElementById('loading-overlay').style.display = 'none';
+    // Status Distribution Chart (Consistent colors with KPIs)
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Abiertos', 'Pendientes', 'Resueltos'],
+            datasets: [{
+                data: [
+                    statusData['OPEN'] || 0,
+                    statusData['PENDING'] || 0,
+                    (statusData['RESOLVED'] || 0) + (statusData['CLOSED'] || 0)
+                ],
+                backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                borderColor: ['#dc3545', '#ffc107', '#28a745'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
         }
-    }
-
-    // Init
-    if (window.tokenManager) {
-        loadData();
-    } else {
-        setTimeout(loadData, 500);
-    }
+    });
 
 })();
 </script>

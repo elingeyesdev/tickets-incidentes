@@ -20,11 +20,25 @@ class AgentTicketsExport implements FromCollection, WithHeadings, WithMapping, W
 {
     private string $agentId;
     private ?string $status;
+    private ?string $priority;
+    private ?string $categoryId;
+    private ?string $dateFrom;
+    private ?string $dateTo;
 
-    public function __construct(string $agentId, ?string $status = null)
-    {
+    public function __construct(
+        string $agentId,
+        ?string $status = null,
+        ?string $priority = null,
+        ?string $categoryId = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ) {
         $this->agentId = $agentId;
         $this->status = $status;
+        $this->priority = $priority;
+        $this->categoryId = $categoryId;
+        $this->dateFrom = $dateFrom;
+        $this->dateTo = $dateTo;
     }
 
     public function collection()
@@ -32,11 +46,23 @@ class AgentTicketsExport implements FromCollection, WithHeadings, WithMapping, W
         $query = Ticket::with(['creator.profile', 'category'])
             ->where('owner_agent_id', $this->agentId)
             ->withCount(['responses', 'attachments']);
-        
+
         if ($this->status) {
             $query->where('status', $this->status);
         }
-        
+        if ($this->priority) {
+            $query->where('priority', $this->priority);
+        }
+        if ($this->categoryId) {
+            $query->where('category_id', $this->categoryId);
+        }
+        if ($this->dateFrom) {
+            $query->whereDate('created_at', '>=', $this->dateFrom);
+        }
+        if ($this->dateTo) {
+            $query->whereDate('created_at', '<=', $this->dateTo);
+        }
+
         return $query->orderBy('created_at', 'desc')->get();
     }
 
