@@ -11,116 +11,151 @@
 
 @section('content')
 
-{{-- Page Description --}}
-<div class="callout callout-info">
-    <h5><i class="fas fa-chart-line"></i> Reporte de Actividad</h5>
-    <p class="mb-0">Genera un resumen de tu actividad en el sistema durante los últimos meses. Incluye estadísticas de tickets, tendencias y distribución por prioridad.</p>
-</div>
+    {{-- Page Description --}}
+    <div class="callout callout-info">
+        <h5><i class="fas fa-chart-line"></i> Reporte de Actividad del Usuario</h5>
+        <p class="mb-0">Visualiza tu rendimiento y estadísticas de uso en la plataforma.</p>
+    </div>
 
-<div class="row">
-    {{-- Report Config Card --}}
-    <div class="col-lg-6">
-        <div class="card card-outline card-success">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-user-clock mr-2"></i> Exportar Mi Actividad</h3>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    <i class="fas fa-info-circle"></i> 
-                    Este reporte resume tu actividad en la plataforma con estadísticas detalladas.
-                </p>
-                
-                {{-- Período --}}
-                <div class="form-group">
-                    <label><i class="fas fa-calendar-alt"></i> Período de Análisis</label>
-                    <select class="form-control" id="activityPeriod">
-                        <option value="6">Últimos 6 meses</option>
-                        <option value="3">Últimos 3 meses</option>
-                        <option value="12">Último año (12 meses)</option>
-                    </select>
+    {{-- KPI Cards --}}
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3 id="stat-total"><i class="fas fa-spinner fa-spin"></i></h3>
+                    <p>Total Tickets</p>
                 </div>
-                
-                <div class="text-muted small mb-3">
-                    <i class="fas fa-chart-bar"></i> <strong>Incluye:</strong> Tickets por mes, Distribución de prioridades, Tasa de resolución
+                <div class="icon">
+                    <i class="fas fa-ticket-alt"></i>
                 </div>
             </div>
-            <div class="card-footer bg-light">
-                <div class="btn-group w-100" role="group">
-                    <button type="button" class="btn btn-success btn-lg" id="btnActivityExcel">
-                        <i class="fas fa-file-excel"></i> Descargar Excel
-                    </button>
-                    <button type="button" class="btn btn-danger btn-lg" id="btnActivityPdf">
-                        <i class="fas fa-file-pdf"></i> Descargar PDF
-                    </button>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3 id="stat-rate"><i class="fas fa-spinner fa-spin"></i></h3>
+                    <p>Tasa de Resolución</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3 id="stat-pending"><i class="fas fa-spinner fa-spin"></i></h3>
+                    <p>Tickets Pendientes</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3 id="stat-priority"><i class="fas fa-spinner fa-spin"></i></h3>
+                    <p>Tickets Alta Prioridad</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-fire"></i>
                 </div>
             </div>
         </div>
     </div>
-    
-    {{-- My Stats Preview --}}
-    <div class="col-lg-6">
-        <div class="card card-outline card-secondary">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-user-check mr-2"></i> Mi Rendimiento</h3>
+
+    {{-- Charts Row --}}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-outline card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-history mr-2"></i> Actividad Reciente (Tickets por Mes)</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="monthlyChart"></canvas>
+                        <div id="chart-loader-monthly" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.8);">
+                            <i class="fas fa-2x fa-sync-alt fa-spin text-muted"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6 border-right">
-                        <h2 class="mb-0 text-primary" id="myTotal">
-                            <i class="fas fa-spinner fa-spin"></i>
-                        </h2>
-                        <small class="text-muted">Total Tickets</small>
-                    </div>
-                    <div class="col-6">
-                        <h2 class="mb-0 text-success" id="myRate">
-                            <i class="fas fa-spinner fa-spin"></i>
-                        </h2>
-                        <small class="text-muted">Tasa Resolución</small>
-                    </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i> Estado de Tickets</h3>
                 </div>
-                
-                <hr>
-                
-                {{-- Priority Distribution --}}
-                <h6 class="text-muted mb-3"><i class="fas fa-fire"></i> Por Prioridad</h6>
-                
-                <div class="progress-group">
-                    <span class="progress-text"><i class="fas fa-circle text-danger mr-1"></i> Alta</span>
-                    <span class="float-right" id="priorityHighCount"><b>0</b></span>
-                    <div class="progress progress-sm">
-                        <div class="progress-bar bg-danger" id="priorityHighBar" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="progress-group">
-                    <span class="progress-text"><i class="fas fa-circle text-warning mr-1"></i> Media</span>
-                    <span class="float-right" id="priorityMediumCount"><b>0</b></span>
-                    <div class="progress progress-sm">
-                        <div class="progress-bar bg-warning" id="priorityMediumBar" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="progress-group">
-                    <span class="progress-text"><i class="fas fa-circle text-success mr-1"></i> Baja</span>
-                    <span class="float-right" id="priorityLowCount"><b>0</b></span>
-                    <div class="progress progress-sm">
-                        <div class="progress-bar bg-success" id="priorityLowBar" style="width: 0%"></div>
+                <div class="card-body">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="statusChart"></canvas>
+                         <div id="chart-loader-status" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.8);">
+                            <i class="fas fa-2x fa-sync-alt fa-spin text-muted"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    {{-- Detailed Report Download --}}
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-outline card-secondary">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-download mr-2"></i> Exportar Reporte de Actividad</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <div class="form-group mb-0">
+                                <label><i class="fas fa-calendar-alt"></i> Periodo de Análisis</label>
+                                <select class="form-control" id="activityMonths">
+                                    <option value="3">Últimos 3 meses</option>
+                                    <option value="6" selected>Últimos 6 meses</option>
+                                    <option value="12">Último año</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                             <div class="btn-group">
+                                <button type="button" class="btn btn-success" id="btnExportExcel">
+                                    <i class="fas fa-file-excel mr-1"></i> Descargar Excel
+                                </button>
+                                <button type="button" class="btn btn-danger" id="btnExportPdf">
+                                    <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                                </button>
+                             </div>
+                             <small class="text-muted ml-3 align-middle d-inline-block mt-2 mt-md-0">
+                                <i class="fas fa-info-circle"></i> El reporte incluirá desglose mensual y estadísticas.
+                             </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (function() {
     'use strict';
     
     const CONFIG = {
+        API_BASE: '/api',
         REPORTS_BASE: '/app/user/reports'
     };
     
+    // Utilities
     function getToken() {
         return window.tokenManager?.getAccessToken() || localStorage.getItem('access_token');
     }
@@ -137,68 +172,125 @@
             });
         }
     }
-    
-    // =========================================================================
-    // DOWNLOAD HANDLERS
-    // =========================================================================
-    
-    document.getElementById('btnActivityExcel').onclick = function() {
-        const months = document.getElementById('activityPeriod').value || '6';
-        const url = `${CONFIG.REPORTS_BASE}/activity/excel?months=${months}`;
-        showDownloadToast('excel');
-        window.location.href = url;
-    };
-    
-    document.getElementById('btnActivityPdf').onclick = function() {
-        const months = document.getElementById('activityPeriod').value || '6';
-        const url = `${CONFIG.REPORTS_BASE}/activity/pdf?months=${months}`;
-        showDownloadToast('pdf');
-        window.location.href = url;
-    };
-    
-    // =========================================================================
-    // LOAD STATS
-    // =========================================================================
+
+    // Load Data
     async function loadStats() {
         try {
-            const response = await fetch('/api/analytics/user-dashboard', {
+            const response = await fetch(`${CONFIG.API_BASE}/analytics/user-dashboard`, {
                 headers: {
                     'Authorization': `Bearer ${getToken()}`,
                     'Accept': 'application/json'
                 }
             });
             
-            if (!response.ok) throw new Error('Failed to load stats');
-            
+            if (!response.ok) throw new Error('Failed to load dashboard data');
             const data = await response.json();
             
-            // Total and rate
-            const kpi = data.kpi || {};
-            const profile = data.profile || {};
-            
-            document.getElementById('myTotal').textContent = kpi.total_tickets || 0;
-            document.getElementById('myRate').textContent = (profile.resolution_rate || 0) + '%';
-            
-            // Priority distribution
-            const priority = data.priority_distribution || {};
-            
-            document.getElementById('priorityHighCount').innerHTML = '<b>' + (priority.high?.count || 0) + '</b>';
-            document.getElementById('priorityMediumCount').innerHTML = '<b>' + (priority.medium?.count || 0) + '</b>';
-            document.getElementById('priorityLowCount').innerHTML = '<b>' + (priority.low?.count || 0) + '</b>';
-            
-            document.getElementById('priorityHighBar').style.width = (priority.high?.percentage || 0) + '%';
-            document.getElementById('priorityMediumBar').style.width = (priority.medium?.percentage || 0) + '%';
-            document.getElementById('priorityLowBar').style.width = (priority.low?.percentage || 0) + '%';
+            updateKPIs(data);
+            renderMonthlyChart(data.tickets_trend);
+            renderStatusChart(data.ticket_status);
             
         } catch (error) {
-            console.error('[Reports] Stats load error:', error);
-            document.getElementById('myTotal').textContent = 'N/A';
-            document.getElementById('myRate').textContent = 'N/A';
+            console.error('[Activity] Error loading stats:', error);
         }
     }
-    
-    // Initialize
-    setTimeout(loadStats, 500);
+
+    function updateKPIs(data) {
+        const kpi = data.kpi || {};
+        const profile = data.profile || {};
+        const priority = data.priority_distribution || {};
+        
+        document.getElementById('stat-total').textContent = kpi.total_tickets || 0;
+        document.getElementById('stat-rate').textContent = (profile.resolution_rate || 0) + '%';
+        document.getElementById('stat-pending').textContent = kpi.open_tickets + kpi.pending_tickets || 0;
+        document.getElementById('stat-priority').textContent = priority.high?.count || 0;
+    }
+
+    function renderMonthlyChart(trendData) {
+        const ctx = document.getElementById('monthlyChart');
+        document.getElementById('chart-loader-monthly').style.display = 'none';
+        
+        if (!ctx || !trendData) return;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendData.labels || [],
+                datasets: [{
+                    label: 'Tickets Creados',
+                    data: trendData.data || [],
+                    borderColor: 'rgba(60,141,188,0.8)',
+                    backgroundColor: 'rgba(60,141,188,0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    function renderStatusChart(statusData) {
+        const ctx = document.getElementById('statusChart');
+        document.getElementById('chart-loader-status').style.display = 'none';
+        
+        if (!ctx || !statusData) return;
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Abiertos', 'Pendientes', 'Resueltos', 'Cerrados'],
+                datasets: [{
+                    data: [
+                        statusData.OPEN || 0,
+                        statusData.PENDING || 0,
+                        statusData.RESOLVED || 0,
+                        statusData.CLOSED || 0
+                    ],
+                    backgroundColor: [
+                        '#dc3545', // Open - Red
+                        '#ffc107', // Pending - Yellow
+                        '#28a745', // Resolved - Green
+                        '#6c757d'  // Closed - Gray
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
+                }
+            }
+        });
+    }
+
+    // Export Handlers
+    document.getElementById('btnExportExcel').onclick = function() {
+        const months = document.getElementById('activityMonths').value;
+        showDownloadToast('excel');
+        window.location.href = `${CONFIG.REPORTS_BASE}/activity/excel?months=${months}`;
+    };
+
+    document.getElementById('btnExportPdf').onclick = function() {
+        const months = document.getElementById('activityMonths').value;
+        showDownloadToast('pdf');
+        window.location.href = `${CONFIG.REPORTS_BASE}/activity/pdf?months=${months}`;
+    };
+
+    // Init
+    if (window.tokenManager) {
+        loadStats();
+    } else {
+        setTimeout(loadStats, 500);
+    }
 })();
 </script>
 @endpush

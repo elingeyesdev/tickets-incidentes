@@ -396,38 +396,304 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         Route::get('/reports/tickets', function () {
             $user = JWTHelper::getAuthenticatedUser();
             $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+            // Load tickets with relationships
+            $tickets = \App\Features\TicketManagement\Models\Ticket::with(['creator.profile', 'ownerAgent.profile', 'category'])
+                ->where('company_id', $companyId)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            // Calculate KPIs
+            $ticketStats = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->toArray();
+
+            $kpis = [
+                'total' => array_sum($ticketStats),
+                'open' => $ticketStats['open'] ?? 0,
+                'pending' => $ticketStats['pending'] ?? 0,
+                'resolved' => ($ticketStats['resolved'] ?? 0) + ($ticketStats['closed'] ?? 0),
+            ];
+
+            // Priority distribution
+            $priorityStats = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                ->select('priority', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('priority')
+                ->pluck('total', 'priority')
+                ->toArray();
+
+            // Load filter options
+            $categories = \App\Features\TicketManagement\Models\Category::where('company_id', $companyId)
+                ->orderBy('name')
+                ->get();
+
+            $agents = \App\Features\UserManagement\Models\User::with('profile')
+                ->whereHas('userRoles', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId)->where('role_code', 'AGENT');
+                })
+                ->get();
+
+            $areas = \App\Features\CompanyManagement\Models\Area::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+
+            // Monthly trend (last 6 months)
+            $monthlyData = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $monthKey = $date->format('Y-m');
+                $monthLabel = $date->locale('es')->isoFormat('MMM YY');
+
+                $count = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                    ->whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->count();
+
+                $monthlyData[] = ['label' => $monthLabel, 'count' => $count];
+            }
+
+            // Top categories
+            $topCategories = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                ->select('category_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->whereNotNull('category_id')
+                ->groupBy('category_id')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->with('category')
+                ->get()
+                ->map(fn($t) => ['name' => $t->category?->name ?? 'Sin categoría', 'count' => $t->total]);
+
             return view('app.company-admin.reports.tickets', [
                 'user' => $user,
-                'companyId' => $companyId
+                'companyId' => $companyId,
+                'tickets' => $tickets,
+                'kpis' => $kpis,
+                'priorityStats' => $priorityStats,
+                'categories' => $categories,
+                'agents' => $agents,
+                'areas' => $areas,
+                'monthlyData' => $monthlyData,
+                'topCategories' => $topCategories,
             ]);
         })->name('company.reports.tickets');
 
         Route::get('/reports/agents', function () {
             $user = JWTHelper::getAuthenticatedUser();
             $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+            // Load agents with ticket stats
+            $agents = \App\Features\UserManagement\Models\User::with('profile')
+                ->whereHas('userRoles', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId)->where('role_code', 'AGENT');
+                })
+                ->get()
+                ->map(function ($agent) use ($companyId) {
+                    $assigned = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                        ->where('owner_agent_id', $agent->id)->count();
+                    $resolved = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                        ->where('owner_agent_id', $agent->id)
+                        ->whereIn('status', ['resolved', 'closed'])->count();
+
+                    return [
+                        'id' => $agent->id,
+                        'name' => $agent->profile?->display_name ?? $agent->email,
+                        'email' => $agent->email,
+                        'assigned' => $assigned,
+                        'resolved' => $resolved,
+                        'active' => $assigned - $resolved,
+                        'rate' => $assigned > 0 ? round(($resolved / $assigned) * 100) : 0,
+                    ];
+                });
+
+            // KPIs
+            $totalAgents = $agents->count();
+            $totalAssigned = $agents->sum('assigned');
+            $avgTicketsPerAgent = $totalAgents > 0 ? round($totalAssigned / $totalAgents) : 0;
+            $avgResolutionRate = $totalAgents > 0 ? round($agents->avg('rate')) : 0;
+            $bestAgent = $agents->sortByDesc('resolved')->first();
+
             return view('app.company-admin.reports.agents', [
                 'user' => $user,
-                'companyId' => $companyId
+                'companyId' => $companyId,
+                'agents' => $agents,
+                'kpis' => [
+                    'total' => $totalAgents,
+                    'avgTickets' => $avgTicketsPerAgent,
+                    'avgRate' => $avgResolutionRate,
+                    'bestAgent' => $bestAgent['name'] ?? '-',
+                ],
             ]);
         })->name('company.reports.agents');
 
-        Route::get('/reports/summary', function () {
-            $user = JWTHelper::getAuthenticatedUser();
-            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
-            return view('app.company-admin.reports.summary', [
-                'user' => $user,
-                'companyId' => $companyId
-            ]);
-        })->name('company.reports.summary');
+
 
         Route::get('/reports/company', function () {
             $user = JWTHelper::getAuthenticatedUser();
             $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+            
+            // Load company info
+            $company = \App\Features\CompanyManagement\Models\Company::with('industry')->find($companyId);
+            
+            // Load team members
+            $admins = \App\Features\UserManagement\Models\User::with('profile')
+                ->whereHas('userRoles', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId)->where('role_code', 'COMPANY_ADMIN');
+                })
+                ->get()
+                ->map(fn($u) => [
+                    'name' => $u->profile?->display_name ?? $u->email,
+                    'email' => $u->email,
+                    'avatar' => $u->profile?->avatar_url,
+                ]);
+            
+            $agents = \App\Features\UserManagement\Models\User::with('profile')
+                ->whereHas('userRoles', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId)->where('role_code', 'AGENT');
+                })
+                ->get()
+                ->map(function ($u) use ($companyId) {
+                    $assigned = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                        ->where('owner_agent_id', $u->id)->count();
+                    $resolved = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)
+                        ->where('owner_agent_id', $u->id)
+                        ->whereIn('status', ['resolved', 'closed'])->count();
+                    
+                    return [
+                        'name' => $u->profile?->display_name ?? $u->email,
+                        'email' => $u->email,
+                        'avatar' => $u->profile?->avatar_url,
+                        'assigned' => $assigned,
+                        'resolved' => $resolved,
+                        'rate' => $assigned > 0 ? round(($resolved / $assigned) * 100) : 0,
+                    ];
+                });
+            
+            // Load areas and categories
+            $areas = \App\Features\CompanyManagement\Models\Area::where('company_id', $companyId)->get();
+            $categories = \App\Features\TicketManagement\Models\Category::where('company_id', $companyId)->get();
+            
+            // General stats
+            $totalTickets = \App\Features\TicketManagement\Models\Ticket::where('company_id', $companyId)->count();
+            $totalAnnouncements = \App\Features\ContentManagement\Models\Announcement::where('company_id', $companyId)->count();
+            $totalArticles = \App\Features\ContentManagement\Models\HelpCenterArticle::where('company_id', $companyId)->count();
+            
             return view('app.company-admin.reports.company', [
                 'user' => $user,
-                'companyId' => $companyId
+                'companyId' => $companyId,
+                'company' => $company,
+                'admins' => $admins,
+                'agents' => $agents,
+                'areas' => $areas,
+                'categories' => $categories,
+                'stats' => [
+                    'totalAdmins' => $admins->count(),
+                    'totalAgents' => $agents->count(),
+                    'totalAreas' => $areas->count(),
+                    'totalCategories' => $categories->count(),
+                    'totalTickets' => $totalTickets,
+                    'totalAnnouncements' => $totalAnnouncements,
+                    'totalArticles' => $totalArticles,
+                ],
             ]);
         })->name('company.reports.company');
+
+        // Announcements Report View
+        Route::get('/reports/announcements', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+            // Load announcements
+            $announcements = \App\Features\ContentManagement\Models\Announcement::with(['author.profile'])
+                ->where('company_id', $companyId)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            // Stats by status
+            $statusStats = \App\Features\ContentManagement\Models\Announcement::where('company_id', $companyId)
+                ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->toArray();
+
+            // Stats by type
+            $typeStats = \App\Features\ContentManagement\Models\Announcement::where('company_id', $companyId)
+                ->select('type', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('type')
+                ->pluck('total', 'type')
+                ->toArray();
+
+            $total = array_sum($statusStats);
+
+            return view('app.company-admin.reports.announcements', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'announcements' => $announcements,
+                'kpis' => [
+                    'total' => $total,
+                    'published' => $statusStats['published'] ?? 0,
+                    'draft' => $statusStats['draft'] ?? 0,
+                    'archived' => $statusStats['archived'] ?? 0,
+                ],
+                'typeStats' => $typeStats,
+                'statusStats' => $statusStats,
+            ]);
+        })->name('company.reports.announcements');
+
+        // Articles Report View
+        Route::get('/reports/articles', function () {
+            $user = JWTHelper::getAuthenticatedUser();
+            $companyId = JWTHelper::getCompanyIdFromJWT('COMPANY_ADMIN');
+
+            // Load articles
+            $articles = \App\Features\ContentManagement\Models\HelpCenterArticle::with(['author.profile', 'category'])
+                ->where('company_id', $companyId)
+                ->orderBy('views_count', 'desc')
+                ->limit(10)
+                ->get();
+
+            // Stats by status
+            $statusStats = \App\Features\ContentManagement\Models\HelpCenterArticle::where('company_id', $companyId)
+                ->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->toArray();
+
+            // Stats by category
+            $categoryStats = \App\Features\ContentManagement\Models\HelpCenterArticle::where('company_id', $companyId)
+                ->whereNotNull('category_id')
+                ->select('category_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('category_id')
+                ->with('category')
+                ->get()
+                ->map(fn($a) => ['name' => $a->category?->name ?? 'Sin categoría', 'count' => $a->total]);
+
+            // Load categories for filter (Global)
+            $categories = \App\Features\ContentManagement\Models\ArticleCategory::orderBy('name')
+                ->get();
+
+            $totalViews = \App\Features\ContentManagement\Models\HelpCenterArticle::where('company_id', $companyId)->sum('views_count');
+            $total = array_sum($statusStats);
+
+            return view('app.company-admin.reports.articles', [
+                'user' => $user,
+                'companyId' => $companyId,
+                'articles' => $articles,
+                'categories' => $categories,
+                'kpis' => [
+                    'total' => $total,
+                    'published' => $statusStats['published'] ?? 0,
+                    'draft' => $statusStats['draft'] ?? 0,
+                    'totalViews' => $totalViews,
+                ],
+                'categoryStats' => $categoryStats,
+                'statusStats' => $statusStats,
+            ]);
+        })->name('company.reports.articles');
 
         // Company Admin Reports - Downloads
         Route::get('/reports/tickets/excel', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'ticketsExcel'])
@@ -442,6 +708,10 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             ->name('company.reports.summary.pdf');
         Route::get('/reports/company/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'companyPdf'])
             ->name('company.reports.company.pdf');
+        Route::get('/reports/announcements/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'announcementsPdf'])
+            ->name('company.reports.announcements.pdf');
+        Route::get('/reports/articles/pdf', [\App\Features\Reports\Http\Controllers\CompanyReportController::class, 'articlesPdf'])
+            ->name('company.reports.articles.pdf');
 
         // Agents Management
         Route::get('/agents', function () {
@@ -582,8 +852,27 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
         // User Reports
         Route::get('/reports/tickets', function () {
             $user = JWTHelper::getAuthenticatedUser();
+
+            // Get companies user has interacted with (via tickets)
+            $companies = \App\Features\TicketManagement\Models\Ticket::where('created_by_user_id', $user->id)
+                ->join('business.companies', 'tickets.company_id', '=', 'business.companies.id')
+                ->select('business.companies.id', 'business.companies.name')
+                ->distinct()
+                ->orderBy('business.companies.name')
+                ->get();
+
+            // Get all categories used in user's tickets (categories are in ticketing schema)
+            $categories = \App\Features\TicketManagement\Models\Ticket::where('created_by_user_id', $user->id)
+                ->join('ticketing.categories', 'tickets.category_id', '=', 'ticketing.categories.id')
+                ->select('ticketing.categories.id', 'ticketing.categories.name', 'ticketing.categories.company_id')
+                ->distinct()
+                ->orderBy('ticketing.categories.name')
+                ->get();
+
             return view('app.user.reports.tickets', [
                 'user' => $user,
+                'companies' => $companies,
+                'categories' => $categories
             ]);
         })->name('user.reports.tickets');
 

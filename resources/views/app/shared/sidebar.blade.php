@@ -183,9 +183,15 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="/app/company/reports/summary" class="nav-link">
+                                    <a href="/app/company/reports/announcements" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>Resumen Operativo</p>
+                                        <p>Anuncios</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/app/company/reports/articles" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Centro de Ayuda</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">

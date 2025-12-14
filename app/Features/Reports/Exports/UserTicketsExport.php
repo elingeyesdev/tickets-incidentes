@@ -22,11 +22,28 @@ class UserTicketsExport implements FromCollection, WithHeadings, WithMapping, Wi
 {
     private string $userId;
     private ?string $status;
+    private ?string $priority;
+    private ?string $dateFrom;
+    private ?string $dateTo;
+    private ?string $companyId;
+    private ?string $categoryId;
 
-    public function __construct(string $userId, ?string $status = null)
-    {
+    public function __construct(
+        string $userId,
+        ?string $status = null,
+        ?string $priority = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null,
+        ?string $companyId = null,
+        ?string $categoryId = null
+    ) {
         $this->userId = $userId;
         $this->status = $status;
+        $this->priority = $priority;
+        $this->dateFrom = $dateFrom;
+        $this->dateTo = $dateTo;
+        $this->companyId = $companyId;
+        $this->categoryId = $categoryId;
     }
 
     /**
@@ -36,11 +53,31 @@ class UserTicketsExport implements FromCollection, WithHeadings, WithMapping, Wi
     {
         $query = Ticket::with(['company', 'category'])
             ->where('created_by_user_id', $this->userId);
-        
+
         if ($this->status) {
             $query->where('status', $this->status);
         }
-        
+
+        if ($this->priority) {
+            $query->where('priority', $this->priority);
+        }
+
+        if ($this->companyId) {
+            $query->where('company_id', $this->companyId);
+        }
+
+        if ($this->categoryId) {
+            $query->where('category_id', $this->categoryId);
+        }
+
+        if ($this->dateFrom) {
+            $query->whereDate('created_at', '>=', $this->dateFrom);
+        }
+
+        if ($this->dateTo) {
+            $query->whereDate('created_at', '<=', $this->dateTo);
+        }
+
         return $query->orderBy('created_at', 'desc')->get();
     }
 

@@ -35,10 +35,15 @@ class UserReportController
         $user = JWTHelper::getAuthenticatedUser();
         $userId = $user->id;
         $status = $request->get('status');
+        $priority = $request->get('priority');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $companyId = $request->get('company_id');
+        $categoryId = $request->get('category_id');
         
         $filename = 'mis_tickets_' . now()->format('Y-m-d_His') . '.xlsx';
         
-        return Excel::download(new UserTicketsExport($userId, $status), $filename);
+        return Excel::download(new UserTicketsExport($userId, $status, $priority, $dateFrom, $dateTo, $companyId, $categoryId), $filename);
     }
 
     /**
@@ -49,6 +54,11 @@ class UserReportController
         $user = JWTHelper::getAuthenticatedUser();
         $userId = $user->id;
         $status = $request->get('status');
+        $priority = $request->get('priority');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $companyId = $request->get('company_id');
+        $categoryId = $request->get('category_id');
         
         $query = Ticket::with(['company', 'category'])
             ->where('created_by_user_id', $userId);
@@ -56,23 +66,55 @@ class UserReportController
         if ($status) {
             $query->where('status', $status);
         }
+
+        if ($priority) {
+            $query->where('priority', $priority);
+        }
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
         
         $tickets = $query->orderBy('created_at', 'desc')->get();
         
-        // Get summary stats
         $summary = [
-            'total' => Ticket::where('created_by_user_id', $userId)->count(),
-            'open' => Ticket::where('created_by_user_id', $userId)->where('status', TicketStatus::OPEN)->count(),
-            'pending' => Ticket::where('created_by_user_id', $userId)->where('status', TicketStatus::PENDING)->count(),
-            'resolved' => Ticket::where('created_by_user_id', $userId)->where('status', TicketStatus::RESOLVED)->count(),
-            'closed' => Ticket::where('created_by_user_id', $userId)->where('status', TicketStatus::CLOSED)->count(),
+            'total' => $tickets->count(),
+            'open' => $tickets->where('status', TicketStatus::OPEN)->count(),
+            'pending' => $tickets->where('status', TicketStatus::PENDING)->count(),
+            'resolved' => $tickets->where('status', TicketStatus::RESOLVED)->count(),
+            'closed' => $tickets->where('status', TicketStatus::CLOSED)->count(),
         ];
         
+        // Fetch company name if filtered
+        $companyName = null;
+        if ($companyId) {
+            $companyName = \App\Features\CompanyManagement\Models\Company::where('id', $companyId)->value('name');
+        }
+
         $pdf = Pdf::loadView('app.user.reports.templates.tickets-pdf', [
             'tickets' => $tickets,
             'summary' => $summary,
             'userName' => $user->profile?->display_name ?? $user->email,
-            'status' => $status,
+            'filters' => [
+                'status' => $status,
+                'priority' => $priority,
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'company' => $companyName,
+                'category' => $categoryId // Name resolution omitted for brevity, ID will show or check if needed
+            ],
             'generatedAt' => now(),
         ]);
         
@@ -80,9 +122,7 @@ class UserReportController
         
         $filename = 'mis_tickets_' . now()->format('Y-m-d_His') . '.pdf';
         
-        return $pdf->download($filename, [
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        return $pdf->download($filename);
     }
 
     // =====================================================================
@@ -97,9 +137,9 @@ class UserReportController
         $user = JWTHelper::getAuthenticatedUser();
         $userId = $user->id;
         $months = (int) $request->get('months', 6);
-        
+
         $filename = 'mi_actividad_' . now()->format('Y-m-d_His') . '.xlsx';
-        
+
         // For now, we'll use a simple export - could be enhanced later
         return Excel::download(new UserTicketsExport($userId, null), $filename);
     }
@@ -112,24 +152,22 @@ class UserReportController
         $user = JWTHelper::getAuthenticatedUser();
         $userId = $user->id;
         $months = (int) $request->get('months', 6);
-        
+
         // Gather activity data
         $data = $this->gatherActivityData($userId, $months);
-        
+
         $pdf = Pdf::loadView('app.user.reports.templates.activity-pdf', [
             'data' => $data,
             'userName' => $user->profile?->display_name ?? $user->email,
             'months' => $months,
             'generatedAt' => now(),
         ]);
-        
+
         $pdf->setPaper('a4', 'portrait');
-        
+
         $filename = 'mi_actividad_' . now()->format('Y-m-d_His') . '.pdf';
-        
-        return $pdf->download($filename, [
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+
+        return $pdf->download($filename);
     }
 
     /**
@@ -138,7 +176,7 @@ class UserReportController
     private function gatherActivityData(string $userId, int $months): array
     {
         $startDate = now()->subMonths($months)->startOfMonth();
-        
+
         // Tickets created per month
         $ticketsPerMonth = Ticket::where('created_by_user_id', $userId)
             ->where('created_at', '>=', $startDate)
@@ -150,21 +188,21 @@ class UserReportController
             ->orderBy('month')
             ->pluck('total', 'month')
             ->toArray();
-        
+
         // Status distribution
         $statusDistribution = Ticket::where('created_by_user_id', $userId)
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
-        
+
         // Priority distribution
         $priorityDistribution = Ticket::where('created_by_user_id', $userId)
             ->select('priority', DB::raw('COUNT(*) as total'))
             ->groupBy('priority')
             ->pluck('total', 'priority')
             ->toArray();
-        
+
         // Fill all months
         $allMonths = [];
         for ($i = $months - 1; $i >= 0; $i--) {
@@ -175,13 +213,13 @@ class UserReportController
                 'tickets' => $ticketsPerMonth[$monthKey] ?? 0,
             ];
         }
-        
+
         // Summary totals
         $totalTickets = Ticket::where('created_by_user_id', $userId)->count();
         $resolvedTickets = Ticket::where('created_by_user_id', $userId)
             ->whereIn('status', [TicketStatus::RESOLVED, TicketStatus::CLOSED])
             ->count();
-        
+
         $summary = [
             'total_tickets' => $totalTickets,
             'open' => $statusDistribution[TicketStatus::OPEN->value] ?? 0,
@@ -194,7 +232,7 @@ class UserReportController
             'priority_medium' => $priorityDistribution['MEDIUM'] ?? 0,
             'priority_low' => $priorityDistribution['LOW'] ?? 0,
         ];
-        
+
         return [
             'monthly' => array_values($allMonths),
             'summary' => $summary,
