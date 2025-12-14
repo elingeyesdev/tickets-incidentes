@@ -11,6 +11,8 @@ use App\Http\Controllers\Dashboard\UserController;
 use App\Features\CompanyManagement\Http\Controllers\CompanyRequestAdminController;
 use App\Features\Reports\Http\Controllers\PlatformReportController;
 use App\Shared\Helpers\JWTHelper;
+use App\Features\TicketManagement\Enums\TicketStatus;
+use App\Features\TicketManagement\Enums\TicketPriority;
 
 // ========== TESTING ROUTES (Development Only) ==========
 // Remove these routes in production
@@ -761,16 +763,11 @@ Route::middleware('jwt.require')->prefix('app')->group(function () {
             ]);
         })->where('any', '.*')->name('agent.tickets.wildcard');
 
-        // Agent Reports - Views
-        Route::get('/reports/tickets', function () {
-            $user = JWTHelper::getAuthenticatedUser();
-            return view('app.agent.reports.tickets', ['user' => $user]);
-        })->name('agent.reports.tickets');
-
-        Route::get('/reports/performance', function () {
-            $user = JWTHelper::getAuthenticatedUser();
-            return view('app.agent.reports.performance', ['user' => $user]);
-        })->name('agent.reports.performance');
+        // Agent Reports - Views (Server-side via Controller)
+        Route::get('/reports/tickets', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'tickets'])
+            ->name('agent.reports.tickets');
+        Route::get('/reports/performance', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'performance'])
+            ->name('agent.reports.performance');
 
         // Agent Reports - Downloads
         Route::get('/reports/tickets/excel', [\App\Features\Reports\Http\Controllers\AgentReportController::class, 'ticketsExcel'])

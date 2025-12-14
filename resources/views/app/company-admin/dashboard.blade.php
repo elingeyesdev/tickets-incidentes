@@ -39,9 +39,9 @@
                 <p>Artículos</p>
             </div>
             <div class="icon">
-                <i class="fas fa-book"></i>
+                <i class="fas fa-file-alt"></i>
             </div>
-            <a href="/app/company/help-center" class="small-box-footer">
+            <a href="/app/company/articles" class="small-box-footer">
                 Ver más <i class="fas fa-arrow-circle-right"></i>
             </a>
             <div class="overlay dark" id="overlay-kpi-articles">

@@ -877,11 +877,12 @@
             if (result.success) {
                 $('#inviteAgentModal').modal('hide');
                 Toast.success(result.message || 'Invitación enviada exitosamente');
+                btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar Invitación');
                 loadData();
             } else {
                 $('#inviteErrorMessage').text(result.message);
                 $('#inviteErrorAlert').show();
-                btn.prop('disabled', false).html(originalHtml);
+                btn.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar Invitación');
             }
         });
 
