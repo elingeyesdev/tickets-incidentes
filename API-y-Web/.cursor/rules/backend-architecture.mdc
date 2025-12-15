@@ -1,0 +1,237 @@
+---
+alwaysApply: false
+---
+
+# Backend Architecture - Laravel + REST API + PostgreSQL
+
+## Complete Feature-First Structure
+
+```
+app/Features/[FeatureName]/
+├── Http/
+│   ├── Controllers/
+│   │   ├── [Feature]Controller.php      # Main CRUD controller
+│   │   ├── [Action]Controller.php       # Action-specific controllers
+│   │   └── .gitkeep
+│   ├── Requests/
+│   │   ├── Store[Model]Request.php      # Creation validation
+│   │   ├── Update[Model]Request.php     # Update validation
+│   │   └── .gitkeep
+│   ├── Resources/
+│   │   ├── [Model]Resource.php          # Single entity response
+│   │   ├── [Model]MinimalResource.php   # Minimal data for selectors
+│   │   └── .gitkeep
+│   └── Middleware/
+│       ├── [Custom]Middleware.php       # Feature-specific middleware
+│       └── .gitkeep
+├── Services/
+│   ├── [Feature]Service.php       # Main business logic
+│   ├── [Related]Service.php       # Additional services
+│   └── .gitkeep
+├── Models/
+│   ├── [Model].php                # Main model
+│   ├── [Related].php              # Related models
+│   └── .gitkeep
+├── Policies/
+│   ├── [Model]Policy.php
+│   └── .gitkeep
+├── Events/
+│   ├── [Model]Created.php
+│   ├── [Model]Updated.php
+│   └── .gitkeep
+├── Listeners/
+│   ├── [Action]Listener.php
+│   └── .gitkeep
+├── Jobs/
+│   ├── [Task]Job.php
+│   └── .gitkeep
+├── Mail/
+│   ├── [Email]Mail.php
+│   └── .gitkeep
+├── Exceptions/
+│   ├── [Feature]Exception.php
+│   └── .gitkeep
+├── Enums/
+│   ├── [Type]Enum.php                   # Enumerations (PHP 8.3)
+│   └── .gitkeep
+├── Database/
+│   ├── Migrations/
+│   │   └── YYYY_MM_DD_HHMMSS_[description].php
+│   ├── Seeders/
+│   │   └── [Feature]Seeder.php
+│   └── Factories/
+│       └── [Model]Factory.php
+└── [Feature]ServiceProvider.php
+
+app/Shared/
+├── Http/
+│   ├── Controllers/
+│   │   └── .gitkeep
+│   └── Middleware/
+│       ├── ApiExceptionHandler.php      # Global exception handler
+│       └── .gitkeep
+├── Services/
+│   └── .gitkeep
+├── Traits/
+│   ├── HasUuid.php
+│   ├── Auditable.php
+│   └── .gitkeep
+├── Enums/
+│   ├── UserStatus.php
+│   ├── CompanyStatus.php
+│   ├── Role.php
+│   └── .gitkeep
+├── Exceptions/
+│   ├── HelpdeskException.php      # Base exception
+│   ├── NotFoundException.php
+│   ├── ValidationException.php
+│   ├── AuthenticationException.php
+│   ├── AuthorizationException.php
+│   ├── ConflictException.php
+│   ├── ForbiddenException.php
+│   └── .gitkeep
+├── Constants/
+│   └── .gitkeep
+├── Helpers/
+│   ├── JWTHelper.php              # JWT utilities
+│   ├── CodeGenerator.php
+│   ├── DeviceInfoParser.php
+│   └── .gitkeep
+├── Models/
+│   └── .gitkeep
+└── Database/
+    └── Migrations/
+        ├── 0000_00_00_000000_create_postgresql_extensions_and_functions.php
+        ├── YYYY_MM_DD_000001_create_ticketing_schema.php
+        ├── YYYY_MM_DD_000002_create_audit_schema.php
+        └── YYYY_MM_DD_000003_create_audit_log_changes_function.php
+
+app/Http/
+├── Middleware/
+│   ├── JWT/
+│   │   ├── JWTAuthenticationMiddleware.php    # Optional JWT parsing
+│   │   ├── JWTRequiredMiddleware.php          # Enforce authentication
+│   │   └── JWTRoleMiddleware.php              # Role-based access
+│   └── ApiExceptionHandler.php
+└── Kernel.php
+
+routes/
+├── api.php                              # ALL API routes (centralized)
+├── web.php
+└── console.php
+
+config/
+├── jwt.php                              # JWT configuration
+├── cors.php                             # CORS settings
+└── ...
+
+tests/                              # ONLY exception to Feature-First
+├── Feature/
+│   ├── [FeatureName]/
+│   │   ├── [Name]Test.php
+│   │   └── .gitkeep
+│   └── Api/
+│       └── [Endpoint]Test.php
+├── Unit/
+│   └── [FeatureName]/
+│       └── [Name]Test.php
+└── TestCase.php
+```
+
+## Core Rules
+
+### Separation of Concerns (CRITICAL)
+- **Services** → ALL business logic
+- **Models** → ONLY data, relationships, scopes, casts
+- **Controllers** → ONLY validate input, delegate to services, return responses
+- **Resources** → ONLY transform data for API responses
+- **Policies** → ONLY authorization
+- **Events** → ONLY data, no logic
+- **Form Requests** → ONLY validation rules and authorization
+
+### File Placement
+- Feature code → `app/Features/[Feature]/`
+- Shared code (2+ features) → `app/Shared/`
+- Tests → `tests/Feature/[Feature]/` (exception)
+- All routes → `routes/api.php` (centralized)
+
+### Naming Conventions
+- Classes: PascalCase (UserService, LoginController)
+- Methods: camelCase (createUser, findById)
+- Variables: camelCase ($userId)
+- Constants: UPPER_SNAKE_CASE
+- DB tables: snake_case plural (users, tickets)
+- DB columns: snake_case (created_at, company_id)
+- Routes: kebab-case (/api/ticket-categories)
+- JSON keys: camelCase (userId, createdAt)
+
+### Database
+- Schemas: `ticketing` (business data), `audit` (logs)
+- Primary keys: UUID (use HasUuid trait)
+- Auditing: Use Auditable trait
+- Foreign keys: [table]_id (singular)
+- Soft deletes: Use SoftDeletes trait
+
+### Type Safety
+- `declare(strict_types=1);` in ALL PHP files
+- Type hint ALL parameters and returns
+- Use `final` classes by default
+- Use PHP 8.3 features (readonly, enums, typed properties)
+- Use strict comparison operators (===, !==)
+
+### REST API Standards
+- Use proper HTTP verbs (GET, POST, PUT/PATCH, DELETE)
+- Use proper status codes (200, 201, 204, 400, 401, 403, 404, 422, 500)
+- Resource-based URLs (/api/tickets, /api/companies)
+- Actions as sub-resources (/api/tickets/{id}/resolve)
+- Consistent JSON response format
+- Pagination for list endpoints
+- Filter and search via query parameters
+
+## Key Principles
+
+1. **Feature-First PURE**: ALL code in `Features/[Feature]/` (except tests)
+2. **NO business logic** in Models, Controllers, Resources, Policies
+3. **Centralized routes** in `routes/api.php` organized by feature
+4. **Form Requests** for ALL validation
+5. **Resources** for ALL response transformation
+6. **Policies** for ALL authorization
+7. **Type everything**: strict types, type hints
+8. **Event-Driven**: Fire events, handle in Listeners
+9. **Eloquent only**: No raw SQL (except complex queries)
+10. **Consistent JSON**: camelCase keys, ISO 8601 dates
+
+## Common Mistakes
+
+- ❌ Logic in Controllers/Models → ✅ Services only
+- ❌ Validation in Controllers → ✅ Form Requests
+- ❌ Direct model transformation → ✅ API Resources
+- ❌ Authorization in Controllers → ✅ Policies
+- ❌ Missing types → ✅ Type everything
+- ❌ Files outside Features → ✅ In Features/
+- ❌ Auto-increment IDs → ✅ UUIDs
+- ❌ snake_case in JSON → ✅ camelCase
+- ❌ Scattered routes → ✅ Centralized api.php
+
+## Quick Reference
+
+- Business logic → `Services/[Name]Service.php`
+- Model → `Models/[Name].php`
+- Controller → `Http/Controllers/[Name]Controller.php`
+- Validation → `Http/Requests/[Action][Model]Request.php`
+- Response → `Http/Resources/[Model]Resource.php`
+- Authorization → `Policies/[Model]Policy.php`
+- Middleware → `Http/Middleware/[Name]Middleware.php`
+- Event → `Events/[Name].php`
+- Listener → `Listeners/[Name].php`
+- Job → `Jobs/[Name]Job.php`
+- Exception → `Exceptions/[Name]Exception.php`
+- Migration → `Database/Migrations/YYYY_MM_DD_[name].php`
+- Test → `tests/Feature/[Feature]/[Test]Test.php`
+- Routes → `routes/api.php` (centralized)
+
+## Important Notes
+
+- **ALWAYS use Docker** (never PHP Herd)
+- **Clear route cache** after adding new routes: `docker compose exec app php artisan route:clear`
+- **Use `description` field** (not `initial_description`) - standardized across all features

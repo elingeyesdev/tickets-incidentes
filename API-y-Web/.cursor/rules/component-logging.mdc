@@ -1,0 +1,488 @@
+---
+alwaysApply: true
+---
+# Component Logging - Consistent Debugging System
+
+## Why Logging Matters
+
+**Without logs:**
+- ❌ "It doesn't work" - no clue why
+- ❌ Silent failures
+- ❌ Hard to debug in production
+- ❌ Can't track execution flow
+
+**With proper logs:**
+- ✅ Clear execution flow
+- ✅ Easy to identify failures
+- ✅ Plugin verification
+- ✅ Performance tracking
+- ✅ User action tracking
+
+---
+
+## Log Format Standard
+
+### Prefix Pattern
+
+**Format:** `[Component Name] Message`
+
+**Examples:**
+```javascript
+console.log('[Create Ticket] Script cargado');
+console.log('[User Management] Inicializando tabla');
+console.log('[File Upload] Procesando archivo');
+```
+
+**Why brackets?**
+- Easy to grep/filter in console
+- Visual distinction from library logs
+- Searchable in production logs
+
+---
+
+## Log Levels
+
+### 1. Informational (console.log)
+
+**Use for:**
+- Component initialization
+- Successful operations
+- State changes
+- Flow tracking
+
+```javascript
+console.log('[Component] Script cargado - esperando jQuery...');
+console.log('[Component] jQuery disponible - Inicializando');
+console.log('[Component] ✓ Configuración completada exitosamente');
+console.log('[Component] Archivo procesado: filename.pdf (245 KB)');
+```
+
+### 2. Warnings (console.warn)
+
+**Use for:**
+- Recoverable errors
+- Fallback scenarios
+- Plugin not available (with fallback)
+- Validation failures
+
+```javascript
+console.warn('[Component] ⚠ Plugin no disponible, usando fallback');
+console.warn('[Component] ❌ Validación fallida: archivo muy grande');
+console.warn('[Component] ⚠ Select2 no encontrado, usando select nativo');
+```
+
+### 3. Errors (console.error)
+
+**Use for:**
+- Critical failures
+- Missing dependencies (no fallback)
+- API errors
+- Unrecoverable states
+
+```javascript
+console.error('[Component] ERROR: jQuery no se cargó después de 10 segundos');
+console.error('[Component] ERROR: jQuery Validation Plugin NO está cargado!');
+console.error('[Component] ERROR API: ', error);
+```
+
+---
+
+## Standard Log Patterns
+
+### Component Initialization
+
+```javascript
+(function() {
+    console.log('[Component Name] Script cargado - esperando jQuery...');
+
+    function initComponent() {
+        console.log('[Component Name] jQuery disponible - Inicializando');
+
+        // Initialization code...
+
+        console.log('[Component Name] ✓ Componente inicializado correctamente');
+    }
+
+    // jQuery wait pattern...
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(initComponent);
+    } else {
+        var checkJQuery = setInterval(function() {
+            if (typeof jQuery !== 'undefined') {
+                console.log('[Component Name] jQuery detectado después de esperar');
+                clearInterval(checkJQuery);
+                $(document).ready(initComponent);
+            }
+        }, 100);
+
+        setTimeout(function() {
+            if (typeof jQuery === 'undefined') {
+                clearInterval(checkJQuery);
+                console.error('[Component Name] ERROR: jQuery no se cargó después de 10 segundos');
+            }
+        }, 10000);
+    }
+})();
+```
+
+### Plugin Verification
+
+```javascript
+// Pattern 1: With Fallback
+console.log('[Component] Verificando Plugin XYZ...');
+if (typeof PluginName !== 'undefined') {
+    PluginName.init();
+    console.log('[Component] ✓ Plugin XYZ inicializado');
+} else {
+    console.warn('[Component] ⚠ Plugin XYZ no disponible, usando fallback');
+    // Fallback implementation
+}
+
+// Pattern 2: Critical (No Fallback)
+console.log('[Component] Verificando jQuery Validation Plugin...');
+if (typeof $.fn.validate === 'undefined') {
+    console.error('[Component] ERROR: jQuery Validation Plugin NO está cargado!');
+    console.log('[Component] Validación inline NO funcionará');
+    // Show error to user or disable feature
+} else {
+    console.log('[Component] ✓ jQuery Validation Plugin cargado correctamente');
+    // Configure plugin
+}
+```
+
+### File Processing
+
+```javascript
+$('#fileInput').on('change', function(e) {
+    const files = Array.from(this.files);
+    console.log(`[Component] Archivos seleccionados: ${files.length}`);
+
+    files.forEach(file => {
+        console.log(`[Component] Procesando: ${file.name} (${formatBytes(file.size)})`);
+
+        // Validations with specific error logs
+        if (file.size > MAX_SIZE) {
+            console.warn(`[Component] ❌ Archivo muy grande: ${file.name} (${formatBytes(file.size)} > ${formatBytes(MAX_SIZE)})`);
+            return;
+        }
+
+        if (!isValidExtension(file.name)) {
+            console.warn(`[Component] ❌ Extensión no permitida: ${getExtension(file.name)}`);
+            return;
+        }
+
+        console.log(`[Component] ✓ Archivo validado y agregado. Total: ${selectedFiles.length}/${MAX_FILES}`);
+    });
+});
+```
+
+### AJAX/API Calls
+
+```javascript
+async function fetchData() {
+    console.log('[Component] Iniciando petición API...');
+
+    try {
+        const response = await fetch('/api/endpoint');
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${data.message}`);
+        }
+
+        console.log(`[Component] ✓ Datos recibidos: ${data.data.length} elementos`);
+        return data;
+
+    } catch (error) {
+        console.error('[Component] ERROR en petición API:', error);
+        console.error('[Component] Detalles:', error.message);
+        throw error;
+    }
+}
+```
+
+### Form Submission
+
+```javascript
+async function submitForm() {
+    console.log('[Component] Enviando formulario...');
+
+    // Disable button
+    $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+    console.log('[Component] Botón deshabilitado durante envío');
+
+    try {
+        const response = await fetch('/api/endpoint', {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error('[Component] ❌ Error del servidor:', result);
+            throw new Error(result.message);
+        }
+
+        console.log('[Component] ✓ Formulario enviado exitosamente');
+        console.log('[Component] ID creado:', result.data.id);
+
+        // Success actions
+        Swal.fire('Éxito', 'Guardado correctamente', 'success');
+
+    } catch (error) {
+        console.error('[Component] ERROR enviando formulario:', error);
+        Swal.fire('Error', error.message, 'error');
+    } finally {
+        $submitBtn.prop('disabled', false).html('Enviar');
+        console.log('[Component] Botón rehabilitado');
+    }
+}
+```
+
+### Form Reset
+
+```javascript
+$('#btn-reset').on('click', function() {
+    console.log('[Component] Descartando formulario...');
+
+    // Reset actions...
+    $form[0].reset();
+    $('.select2').val(null).trigger('change');
+    selectedFiles = [];
+
+    console.log('[Component] ✓ Formulario descartado y limpiado completamente');
+});
+```
+
+### State Changes
+
+```javascript
+$companySelect.on('change', function() {
+    const companyId = $(this).val();
+    console.log(`[Component] Compañía seleccionada: ${companyId || 'ninguna'}`);
+
+    if (companyId) {
+        console.log('[Component] Habilitando select de categoría...');
+        $categorySelect.prop('disabled', false);
+    } else {
+        console.log('[Component] Deshabilitando select de categoría...');
+        $categorySelect.prop('disabled', true);
+    }
+});
+```
+
+---
+
+## Success Indicators
+
+**Use checkmarks for successful operations:**
+
+```javascript
+console.log('[Component] ✓ Plugin cargado correctamente');
+console.log('[Component] ✓ Validación configurada exitosamente');
+console.log('[Component] ✓ Archivo agregado a la lista');
+```
+
+**Use X for failures:**
+
+```javascript
+console.warn('[Component] ❌ Validación fallida: campo requerido');
+console.warn('[Component] ❌ Archivo muy grande');
+console.error('[Component] ❌ Error crítico: plugin no disponible');
+```
+
+**Use warning symbol for cautions:**
+
+```javascript
+console.warn('[Component] ⚠ Plugin no disponible, usando fallback');
+console.warn('[Component] ⚠ Dato no encontrado, usando valor por defecto');
+```
+
+---
+
+## Log Groups for Complex Operations
+
+```javascript
+console.group('[Component] Inicializando Select2 dependientes');
+console.log('Compañía Select2 inicializado');
+console.log('Categoría Select2 configurado (deshabilitado)');
+console.log('Handler de cambio registrado');
+console.groupEnd();
+
+// Or with labels
+console.group('[Component] Validando 5 archivos');
+files.forEach(file => {
+    console.log(`- ${file.name}: ${isValid(file) ? '✓' : '❌'}`);
+});
+console.groupEnd();
+```
+
+---
+
+## Production Considerations
+
+### Conditional Logging
+
+```javascript
+// Define debug mode
+const DEBUG = true; // Set to false in production
+
+function debugLog(component, message, ...args) {
+    if (DEBUG) {
+        console.log(`[${component}] ${message}`, ...args);
+    }
+}
+
+// Usage
+debugLog('Component', 'Procesando archivo', file.name);
+```
+
+### Environment-Based Logging
+
+```javascript
+// In .env or config
+const APP_ENV = 'development'; // or 'production'
+
+function log(component, message, level = 'log') {
+    if (APP_ENV === 'development') {
+        console[level](`[${component}] ${message}`);
+    }
+}
+
+// Usage
+log('Component', 'Inicializando', 'log');
+log('Component', '⚠ Advertencia', 'warn');
+log('Component', '❌ Error crítico', 'error');
+```
+
+---
+
+## Common Mistakes
+
+### ❌ Mistake 1: No prefix
+```javascript
+// BAD - Can't identify source
+console.log('Script loaded');
+console.log('File processed');
+```
+
+**Fix:**
+```javascript
+// GOOD - Clear source
+console.log('[Create Ticket] Script loaded');
+console.log('[File Upload] File processed');
+```
+
+### ❌ Mistake 2: Using alert/echo for debugging
+```javascript
+// BAD - Blocks UI, annoying
+alert('Debug: value = ' + value);
+```
+
+**Fix:**
+```javascript
+// GOOD - Non-intrusive
+console.log('[Component] Debug: value =', value);
+```
+
+### ❌ Mistake 3: No context in error logs
+```javascript
+// BAD - What failed?
+console.error('Error');
+```
+
+**Fix:**
+```javascript
+// GOOD - Clear context
+console.error('[Component] ERROR en petición API:', error);
+console.error('[Component] Endpoint:', '/api/tickets');
+console.error('[Component] Detalles:', error.message);
+```
+
+### ❌ Mistake 4: Logging objects without labels
+```javascript
+// BAD - What is this object?
+console.log(data);
+```
+
+**Fix:**
+```javascript
+// GOOD - Clear label
+console.log('[Component] Datos recibidos:', data);
+console.log('[Component] Total elementos:', data.length);
+```
+
+### ❌ Mistake 5: Silent failures
+```javascript
+// BAD - Fails silently
+try {
+    riskyOperation();
+} catch (e) {
+    // Nothing
+}
+```
+
+**Fix:**
+```javascript
+// GOOD - Log the error
+try {
+    riskyOperation();
+} catch (error) {
+    console.error('[Component] ERROR en operación:', error);
+    console.error('[Component] Stack:', error.stack);
+}
+```
+
+---
+
+## Checklist for New Components
+
+- [ ] Component name prefix in all logs
+- [ ] Initialization log when script loads
+- [ ] jQuery detection log
+- [ ] Plugin verification logs
+- [ ] Success logs for major operations
+- [ ] Warning logs for validation failures
+- [ ] Error logs for critical failures
+- [ ] State change logs for user actions
+- [ ] API request/response logs
+- [ ] Form submission logs
+- [ ] Cleanup/reset logs
+- [ ] Success indicators (✓, ❌, ⚠)
+
+---
+
+## Log Analysis Tips
+
+### Finding Logs in Console
+
+```javascript
+// Filter by component
+// In browser console:
+// 1. Click filter icon
+// 2. Enter: [Create Ticket]
+// Shows only logs from that component
+
+// Or use grep in server logs:
+// grep "\[Create Ticket\]" app.log
+```
+
+### Tracking Execution Flow
+
+```javascript
+// Good practice: Log major steps
+console.log('[Component] 1. Iniciando');
+console.log('[Component] 2. Validando datos');
+console.log('[Component] 3. Enviando petición');
+console.log('[Component] 4. Procesando respuesta');
+console.log('[Component] 5. Actualizando UI');
+console.log('[Component] ✓ Proceso completado');
+```
+
+---
+
+## Related Files
+
+- See: `create-ticket.blade.php` for complete logging example
+- See: `.cursor/rules/blade-components-jquery.mdc` for jQuery loading patterns

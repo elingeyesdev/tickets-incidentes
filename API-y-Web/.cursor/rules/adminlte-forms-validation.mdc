@@ -1,0 +1,403 @@
+---
+alwaysApply: true
+---
+# AdminLTE v3 Forms with jQuery Validation - Official Patterns
+
+## Critical Rule: ALWAYS use `name` attribute, not just `id`
+
+**❌ WRONG (Common mistake):**
+```html
+<input type="text" id="title" class="form-control" required>
+```
+
+**✅ CORRECT:**
+```html
+<input type="text" id="title" name="title" class="form-control" required>
+```
+
+**Why:** jQuery Validation Plugin uses `name` attribute to identify fields, NOT `id`.
+
+---
+
+## Official AdminLTE v3 Validation Configuration
+
+**Source:** `https://adminlte.io/themes/v3/pages/forms/validation.html`
+
+### Base Configuration (Always use this)
+
+```javascript
+$form.validate({
+    errorElement: 'span',
+    errorClass: 'invalid-feedback',
+    errorPlacement: function(error, element) {
+        // OFFICIAL: Append to end of form-group
+        error.addClass('invalid-feedback');
+        element.closest('.form-group').append(error);
+    },
+    highlight: function(element, errorClass, validClass) {
+        $(element).addClass('is-invalid');
+    },
+    unhighlight: function(element, errorClass, validClass) {
+        $(element).removeClass('is-invalid');
+    }
+});
+```
+
+---
+
+## UX Enhancement: Hide Helper Text During Validation
+
+**Problem:** `<small class="form-text text-muted">` stacks with validation errors.
+
+**Solution:** Hide helper text when error appears, show when error clears.
+
+```javascript
+$form.validate({
+    errorElement: 'span',
+    errorClass: 'invalid-feedback',
+    errorPlacement: function(error, element) {
+        error.addClass('invalid-feedback');
+        element.closest('.form-group').append(error);
+    },
+    highlight: function(element, errorClass, validClass) {
+        $(element).addClass('is-invalid');
+        // Hide helper text when error appears
+        $(element).closest('.form-group').find('.form-text').hide();
+    },
+    unhighlight: function(element, errorClass, validClass) {
+        $(element).removeClass('is-invalid');
+        // Show helper text when error clears
+        $(element).closest('.form-group').find('.form-text').show();
+    }
+});
+```
+
+---
+
+## Form Structure Template
+
+### Basic Input Field
+
+```html
+<div class="form-group">
+    <label for="fieldId">Field Label <span class="text-danger">*</span></label>
+    <input type="text" id="fieldId" name="fieldName" class="form-control"
+           placeholder="Placeholder..." required minlength="5" maxlength="255">
+    <small class="form-text text-muted">Helper text explaining the field</small>
+</div>
+```
+
+### Select2 Field (Special handling)
+
+```html
+<div class="form-group">
+    <label for="selectId">Select Label <span class="text-danger">*</span></label>
+    <select id="selectId" name="selectName" class="form-control select2" required>
+        <option value="">Select an option...</option>
+    </select>
+    <small class="form-text text-muted">Helper text for select</small>
+</div>
+```
+
+**Important:** Select2 fields need `name` attribute for validation to work.
+
+### Textarea with Character Counter
+
+```html
+<div class="form-group">
+    <label for="textareaId">Textarea Label <span class="text-danger">*</span></label>
+    <textarea id="textareaId" name="textareaName" class="form-control"
+              required minlength="10" maxlength="5000"></textarea>
+    <small class="form-text text-muted">Helper text for textarea</small>
+    <small class="text-muted float-right" id="counter">0/5000</small>
+</div>
+
+<script>
+$('#textareaId').on('input', function() {
+    $('#counter').text(`${$(this).val().length}/5000`);
+});
+</script>
+```
+
+---
+
+## Validation Rules Examples
+
+### Common Rules
+
+```javascript
+rules: {
+    email: {
+        required: true,
+        email: true
+    },
+    title: {
+        required: true,
+        minlength: 5,
+        maxlength: 255
+    },
+    description: {
+        required: true,
+        minlength: 10,
+        maxlength: 5000
+    },
+    company_id: {
+        required: true
+    },
+    category_id: {
+        required: true
+    }
+},
+messages: {
+    email: {
+        required: "El correo es obligatorio",
+        email: "Ingresa un correo válido"
+    },
+    title: {
+        required: "El título es obligatorio",
+        minlength: "El título debe tener al menos 5 caracteres",
+        maxlength: "El título no puede exceder los 255 caracteres"
+    },
+    description: {
+        required: "La descripción es obligatoria",
+        minlength: "La descripción debe tener al menos 10 caracteres",
+        maxlength: "La descripción no puede exceder los 5000 caracteres"
+    },
+    company_id: {
+        required: "Debes seleccionar una compañía"
+    },
+    category_id: {
+        required: "Debes seleccionar una categoría"
+    }
+}
+```
+
+---
+
+## Form Reset Pattern (Complete Cleanup)
+
+**Always clean ALL elements when resetting forms:**
+
+```javascript
+$('#btn-reset').on('click', function() {
+    // 1. Reset native form elements
+    $form[0].reset();
+
+    // 2. Reset Select2 elements
+    $('.select2').val(null).trigger('change');
+
+    // 3. Reset character counters
+    $('.counter').text('0/255');
+
+    // 4. Reset custom file input labels
+    $('.custom-file-label').text('Choose file');
+
+    // 5. Remove validation errors
+    $form.find('.is-invalid').removeClass('is-invalid');
+    $form.find('.invalid-feedback').remove();
+
+    // 6. Show helper text again (if hidden by validation)
+    $form.find('.form-text').show();
+
+    // 7. Clear custom data (arrays, etc.)
+    selectedFiles = [];
+    $('#custom-list').empty();
+});
+```
+
+---
+
+## Plugin Verification Pattern
+
+**Always verify jQuery Validation is loaded:**
+
+```javascript
+console.log('[Component] Verificando jQuery Validation Plugin...');
+if (typeof $.fn.validate === 'undefined') {
+    console.error('[Component] ERROR: jQuery Validation Plugin NO está cargado!');
+    console.log('[Component] Validación inline NO funcionará');
+    // Fallback: usar validación HTML5 nativa
+} else {
+    console.log('[Component] ✓ jQuery Validation Plugin cargado correctamente');
+    // Configurar validación
+    $form.validate({ /* config */ });
+    console.log('[Component] ✓ Validación configurada exitosamente');
+}
+```
+
+---
+
+## Common Mistakes
+
+### ❌ Mistake 1: Missing `name` attribute
+```html
+<!-- WRONG -->
+<input type="text" id="title" class="form-control" required>
+```
+
+**Error:** Validation rules won't apply because jQuery Validation uses `name`, not `id`.
+
+### ❌ Mistake 2: Custom errorPlacement for Select2 (not needed)
+```javascript
+// NOT NEEDED - Official pattern handles all cases
+errorPlacement: function(error, element) {
+    if (element.hasClass('select2')) {
+        error.insertAfter(element.next('.select2-container'));
+    } else {
+        error.insertAfter(element);
+    }
+}
+```
+
+**Better:** Use official pattern that appends to `.form-group` - works for all elements.
+
+### ❌ Mistake 3: Not hiding helper text during validation
+```html
+<!-- Stacks helper text + error -->
+<small class="form-text">Helper text</small>
+<span class="invalid-feedback">Error message</span>
+```
+
+**Fix:** Use `highlight/unhighlight` to hide `.form-text` when error appears.
+
+### ❌ Mistake 4: Incomplete form reset
+```javascript
+// INCOMPLETE
+$form[0].reset();
+// Missing: Select2, counters, custom elements, validation errors
+```
+
+**Fix:** Use complete cleanup pattern above.
+
+---
+
+## CRITICAL: Select2 + jQuery Validation - The Hidden Incompatibility Bug
+
+**Problem:** When using Select2 with jQuery Validation Plugin, validation errors do NOT disappear when you select a value.
+
+**Why it happens:**
+- Select2 wraps the native `<select>` element with custom markup
+- Select2 interferes with native `change` events that jQuery Validation listens for
+- jQuery Validation never detects that the field value changed
+- Error message stays visible forever (user frustration 🔴)
+
+**Comparison:**
+
+```javascript
+// ✅ Regular inputs: Validation auto-clears when user types
+<input type="text" id="title" name="title">
+// When user types → change event fires → jQuery Validation clears error automatically
+
+// ❌ Select2: Validation NEVER auto-clears
+<select id="category" name="category" class="select2">
+// When user selects → Select2 blocks jQuery Validation from detecting change
+// Error message stays visible even though field is filled
+```
+
+### Solution: Manually Trigger Validation Re-check
+
+You MUST force jQuery Validation to re-check Select2 fields whenever they change:
+
+```javascript
+// 1. Get form and select references
+const $form = $('#createTicketForm');
+const $companySelect = $('#createCompany');
+const $categorySelect = $('#createCategory');
+
+// 2. Configure jQuery Validation (normal way)
+$form.validate({
+    rules: {
+        company_id: { required: true },
+        category_id: { required: true }
+    },
+    messages: {
+        company_id: { required: "Debes seleccionar una compañía" },
+        category_id: { required: "Debes seleccionar una categoría" }
+    }
+});
+
+// 3. 🔴 FIX: Manually trigger re-validation on Select2 change
+$companySelect.on('change', function() {
+    // ... your normal change handler code ...
+
+    // Force jQuery Validation to re-validate this field
+    $form.validate().element('#createCompany');
+});
+
+$categorySelect.on('change', function() {
+    // ... your normal change handler code ...
+
+    // Force jQuery Validation to re-validate this field
+    $form.validate().element('#createCategory');
+});
+```
+
+### Key Points:
+
+- ✅ **MUST use `element()` method** with field `id` (not `name`)
+- ✅ **Call it AFTER your Select2 change logic** (loading categories, etc.)
+- ✅ **Add console logs** for debugging when validation clears
+- ✅ **Works with any Select2 configuration** (AJAX, remote data, etc.)
+
+### Why `validate().element()`?
+
+```javascript
+// This tells jQuery Validation to re-check a specific field
+// It validates the field and clears error if valid, shows error if invalid
+$form.validate().element('#fieldId');
+```
+
+### Debugging: What to Watch For
+
+```javascript
+$companySelect.on('change', function() {
+    const companyId = $(this).val();
+    console.log(`[Company] Selected: ${companyId}`);
+
+    // After your logic...
+    $form.validate().element('#createCompany');
+    console.log('[Validation] Re-validating company field');
+
+    // Check if error is still there:
+    const hasError = $(this).hasClass('is-invalid');
+    console.log(`[Validation] Error state: ${hasError ? '❌ Has error' : '✅ Valid'}`);
+});
+```
+
+### Common Mistakes
+
+❌ **DON'T:**
+```javascript
+// This doesn't work - jQuery Validation won't recognize it
+$companySelect.valid(); // ← Wrong method
+$form.valid(); // ← Validates everything, not just this field
+```
+
+✅ **DO:**
+```javascript
+// This works - Forces re-check of specific field
+$form.validate().element('#createCompany'); // ← Correct
+```
+
+---
+
+## Checklist for New Forms
+
+- [ ] All inputs have `name` attribute (not just `id`)
+- [ ] Required fields have `<span class="text-danger">*</span>` in label
+- [ ] Helper text uses `<small class="form-text text-muted">`
+- [ ] Character counters implemented for text fields
+- [ ] jQuery Validation configured with official pattern
+- [ ] `highlight/unhighlight` hide/show `.form-text`
+- [ ] Validation rules match server-side rules
+- [ ] Custom messages in Spanish (or project language)
+- [ ] Reset/Cancel button cleans ALL elements
+- [ ] Plugin verification logs in console
+- [ ] **If using Select2:** Call `$form.validate().element('#fieldId')` on each Select2 change event
+
+---
+
+## Related Files
+
+- See: `.cursor/rules/blade-components-jquery.mdc` for jQuery loading patterns
+- See: `create-ticket.blade.php` for complete working example

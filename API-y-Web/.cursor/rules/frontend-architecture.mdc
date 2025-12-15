@@ -1,0 +1,358 @@
+---
+alwaysApply: false
+---
+
+# Frontend Architecture - Laravel Blade + Alpine.js + Tailwind CSS
+
+## Complete Role-Based Structure
+
+```
+resources/
+├── js/
+│   ├── app.js                      # Main entry point
+│   ├── alpine/
+│   │   └── stores/
+│   │       └── authStore.js        # Global auth state
+│   ├── lib/
+│   │   ├── api/
+│   │   │   └── ApiClient.js        # HTTP client with auth
+│   │   └── auth/
+│   │       ├── TokenManager.js     # JWT lifecycle
+│   │       ├── AuthChannel.js      # Cross-tab sync
+│   │       ├── PersistenceService.js
+│   │       └── HeartbeatService.js
+│   ├── helpers/
+│   │   └── form-helpers.js         # Validation utilities
+│   └── pages/                      # Page-specific logic
+│
+├── views/
+│   ├── layouts/
+│   │   ├── authenticated.blade.php # Main layout
+│   │   ├── guest.blade.php         # Public layout
+│   │   └── public/
+│   │       ├── navbar.blade.php
+│   │       └── footer.blade.php
+│   │
+│   ├── app/
+│   │   ├── agent/                  # Agent role views
+│   │   ├── company-admin/          # Company admin views
+│   │   ├── platform-admin/         # System admin views
+│   │   ├── user/                   # Regular user views
+│   │   └── shared/                 # Reusable components
+│   │       ├── navbar.blade.php
+│   │       ├── sidebar.blade.php
+│   │       └── tickets/
+│   │           ├── components/
+│   │           └── partials/
+│   │
+│   └── public/
+│       ├── welcome.blade.php
+│       └── company-request.blade.php
+│
+└── css/
+    └── app.css                     # AdminLTE + animations
+
+routes/
+├── web.php                         # Web routes
+└── api.php                         # API routes (see backend)
+```
+
+## Core Rules
+
+### Separation of Concerns (CRITICAL)
+- **Services** → Business logic (TokenManager, ApiClient)
+- **Alpine Stores** → Global state (authStore)
+- **Blade Templates** → UI presentation
+- **Alpine Data Functions** → Component state
+- **Helpers** → Pure utility functions
+
+### File Placement
+- Role views → `resources/views/app/[role]/`
+- Shared components → `resources/views/app/shared/`
+- Layouts → `resources/views/layouts/`
+- JS services → `resources/js/lib/`
+- Alpine stores → `resources/js/alpine/stores/`
+
+### Naming Conventions
+- Classes: PascalCase (TokenManager, AuthChannel)
+- Functions: camelCase (getUserFromJWT, apiRequest)
+- Constants: UPPER_SNAKE_CASE (STORAGE_KEYS)
+- Variables: camelCase (isAuthenticated)
+- Blade files: snake_case.blade.php
+- Directories: kebab-case or snake_case
+
+### Technology Stack
+- **Framework**: Alpine.js v3.15.1
+- **Templating**: Laravel Blade
+- **Build**: Vite
+- **CSS**: AdminLTE 3 + jQuery
+- **Language**: JavaScript (ES6+)
+
+## Alpine.js Patterns
+
+### 1. Alpine Store (Global State)
+
+**Definition**:
+```javascript
+// resources/js/alpine/stores/authStore.js
+export default {
+  user: null,
+  isAuthenticated: false,
+  loading: false,
+
+  tokenManager: null,
+  authChannel: null,
+
+  init() {
+    this.tokenManager = new TokenManager();
+    this.authChannel = new AuthChannel();
+  },
+
+  async login(email, password) { },
+  async logout() { }
+};
+```
+
+**Usage**:
+```blade
+<div x-show="$store.auth.isAuthenticated">
+  <p x-text="$store.auth.user.name"></p>
+</div>
+```
+
+### 2. Alpine Data Function (Component State)
+
+**Definition**:
+```blade
+<div x-data="componentName()" x-init="init()">
+  <p x-text="someState"></p>
+  <button @click="someMethod()">Click</button>
+</div>
+
+<script>
+function componentName() {
+  return {
+    someState: 'initial',
+    init() { },
+    someMethod() { }
+  };
+}
+</script>
+```
+
+### 3. Common Directives
+
+- `x-data` - Component scope
+- `x-init` - Initialize
+- `x-show` - Toggle visibility
+- `x-if` - Conditional render
+- `x-for` - Loop arrays
+- `x-model` - Two-way binding
+- `@event` - Event listeners
+- `:attr` - Bind attributes
+
+## API Integration
+
+### ApiClient Usage
+
+```javascript
+import ApiClient from '/resources/js/lib/api/ApiClient.js';
+
+// GET
+const data = await ApiClient.get('/api/tickets');
+
+// POST
+const ticket = await ApiClient.post('/api/tickets', {
+  title: 'Issue',
+  description: 'Details'
+});
+
+// PATCH
+const updated = await ApiClient.patch('/api/tickets/TKT-001', {
+  status: 'RESOLVED'
+});
+```
+
+**Features**:
+- Auto-injects Authorization header
+- Handles 401 with auto-refresh + retry
+- CSRF token from meta tag
+- HttpOnly cookies for refresh tokens
+
+## Authentication System
+
+### JWT Flow
+
+```
+1. LOGIN
+   └─ POST /api/auth/login
+   └─ Store access_token in localStorage
+   └─ Store refresh_token in HttpOnly cookie
+
+2. REQUESTS
+   └─ Authorization: Bearer {accessToken}
+   └─ Auto-refresh at 80% TTL (48 min of 60)
+
+3. LOGOUT
+   └─ POST /api/auth/logout
+   └─ Clear localStorage + cookies
+```
+
+### Security Model
+
+**Access Token** (localStorage):
+- 60-minute TTL
+- JavaScript-accessible
+- Auto-refresh at 48 minutes
+
+**Refresh Token** (HttpOnly Cookie):
+- 14-day TTL
+- JavaScript cannot access (XSS protection)
+- Browser auto-sends
+
+**Multi-Tab Sync**:
+- BroadcastChannel API
+- Events: LOGIN, LOGOUT, TOKEN_REFRESHED
+
+## Form Validation
+
+### Pattern
+
+```blade
+<form x-data="formComponent()" @submit.prevent="submit()">
+  <input
+    type="text"
+    x-model="form.name"
+    @blur="validateField('name')"
+    :class="{ 'is-invalid': errors.name }"
+  >
+  <span x-show="errors.name" x-text="errors.name"></span>
+</form>
+
+<script>
+function formComponent() {
+  return {
+    form: { name: '' },
+    errors: {},
+    loading: false,
+
+    validateField(field) {
+      if (!this.form[field].trim()) {
+        this.errors[field] = 'Campo requerido';
+      }
+    },
+
+    async submit() {
+      this.errors = {};
+      this.validateField('name');
+
+      if (Object.keys(this.errors).length > 0) return;
+
+      this.loading = true;
+      try {
+        const data = await ApiClient.post('/api/resource', this.form);
+        alert('Guardado');
+      } catch (error) {
+        this.errors = error.errors || {};
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+```
+
+## Component Architecture
+
+### Organization
+
+**Shared Components**:
+- navbar.blade.php - Navigation
+- sidebar.blade.php - Side menu
+- tickets/ - Feature components
+
+**Structure**:
+```
+feature/
+├── index.blade.php          # Main view
+├── components/              # UI pieces
+│   └── header.blade.php
+└── partials/                # Page fragments
+    └── form.blade.php
+```
+
+**Usage**:
+```blade
+@include('app.shared.tickets.components.header', [
+  'title' => 'Tickets'
+])
+```
+
+## Styling
+
+### AdminLTE 3 + Custom CSS
+
+**AdminLTE Classes**:
+- `.card` - Card containers
+- `.card-header` - Card headers
+- `.card-body` - Card content
+- `.btn .btn-primary` - Primary buttons
+- `.btn .btn-outline-dark` - Secondary buttons
+- `.form-group` - Form field wrappers
+- `.form-control` - Input styling
+- `.alert .alert-info/success/warning/danger` - Alerts
+
+**Usage**:
+```blade
+<div class="card animate-fadeIn">
+  <div class="card-header">
+    <h2 class="card-title">Title</h2>
+  </div>
+  <div class="card-body">
+    <button class="btn btn-primary">Action</button>
+  </div>
+</div>
+```
+
+## Key Principles
+
+1. **Role-Based Views**: Separate per role
+2. **Server-Side Rendering**: Blade templates
+3. **Progressive Enhancement**: Alpine.js for interactivity
+4. **Service Layer**: Business logic in services
+5. **Global State**: Alpine stores
+6. **Component-Based CSS**: AdminLTE 3
+7. **Secure Auth**: JWT + HttpOnly cookies
+8. **Client + Server Validation**
+
+## Common Mistakes
+
+- ❌ Logic in templates → ✅ Services
+- ❌ Inline handlers → ✅ Alpine methods
+- ❌ Repeated code → ✅ Blade components
+- ❌ Global JS vars → ✅ Alpine stores
+- ❌ Hardcoded URLs → ✅ .env variables
+- ❌ No error handling → ✅ Try-catch
+- ❌ localStorage for tokens → ✅ HttpOnly cookies for refresh
+
+## Quick Reference
+
+- Entry → `resources/js/app.js`
+- Auth store → `resources/js/alpine/stores/authStore.js`
+- API client → `resources/js/lib/api/ApiClient.js`
+- Token mgr → `resources/js/lib/auth/TokenManager.js`
+- Helpers → `resources/js/helpers/form-helpers.js`
+- Auth layout → `resources/views/layouts/authenticated.blade.php`
+- Guest layout → `resources/views/layouts/guest.blade.php`
+- Navbar → `resources/views/app/shared/navbar.blade.php`
+- Sidebar → `resources/views/app/shared/sidebar.blade.php`
+- CSS → `resources/css/app.css`
+
+## Important Notes
+
+- **ALWAYS use Docker** (never PHP Herd)
+- **Language**: Spanish for users, English for code
+- **Build**: `npm run dev` for development
+- **Production**: `npm run build`
+- **Token refresh**: Automatic at 80% TTL

@@ -1,0 +1,986 @@
+<?php
+
+namespace App\Features\CompanyManagement\Database\Seeders;
+
+use App\Features\CompanyManagement\Models\Area;
+use App\Features\CompanyManagement\Models\Company;
+use App\Features\CompanyManagement\Models\CompanyIndustry;
+use App\Features\CompanyManagement\Services\CompanyService;
+use App\Features\UserManagement\Models\User;
+use App\Features\UserManagement\Models\UserRole;
+use App\Shared\Enums\UserStatus;
+use App\Shared\Helpers\CodeGenerator;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
+/**
+ * Large Bolivian Companies Seeder
+ *
+ * Crea 6 empresas bolivianas GRANDES (estatales, multinacionales, líderes absolutos) con:
+ * - company_code FIJO (formato CMP-2025-0000X) → determinístico, no duplica logos
+ * - 1 Company Admin por empresa
+ * - 2 Agentes por empresa
+ * - 7-8 Áreas/Departamentos por empresa (estructura organizacional completa)
+ * - areas_enabled = true (funcionalidad activada)
+ * - Logos copiados automáticamente de resources → storage (idempotente)
+ * - Todos los usuarios con contraseña: mklmklmkl
+ * - industry_id asignado correctamente
+ *
+ * Empresas GRANDES (estatales, multinacionales, líderes absolutos):
+ * 1. PIL Andina (CMP-2025-00001) - Productos Lácteos (7 áreas) - Líder nacional lácteos
+ * 2. YPFB (CMP-2025-00002) - Petróleo y Gas (8 áreas) - Empresa estatal estratégica
+ * 3. Entel (CMP-2025-00003) - Telecomunicaciones (7 áreas) - Empresa estatal líder telecom
+ * 4. Tigo (CMP-2025-00004) - Telecomunicaciones (7 áreas) - Multinacional (Millicom)
+ * 5. CBN (CMP-2025-00005) - Alimentos y Bebidas (13 áreas) - Multinacional (AB InBev)
+ * 6. Banco Mercantil Santa Cruz (CMP-2025-00006) - Servicios Financieros (7 áreas) - Banco más grande
+ *
+ * Estructura de logos (determinística, sin timestamps):
+ * storage/app/public/company-logos/
+ * ├── CMP-2025-00001/pil-andina-logo.png
+ * ├── CMP-2025-00002/ypfb-logo.png
+ * ├── CMP-2025-00003/entel-logo.png
+ * ├── CMP-2025-00004/tigo-logo.png
+ * ├── CMP-2025-00005/cbn-logo.png
+ * └── CMP-2025-00006/mercantil-santa-cruz-logo.png
+ *
+ * Beneficios:
+ * - Idempotente: ejecutar múltiples veces no duplica logos
+ * - Sin manual: logos se copian automáticamente desde resources
+ * - Determinístico: mismo company_code = misma carpeta = misma URL
+ *
+ */
+class LargeBolivianCompaniesSeeder extends Seeder
+{
+    private const PASSWORD = 'mklmklmkl';
+    
+    // Contador para distribuir fechas
+    private int $companyIndex = 0;
+
+    private const COMPANIES = [
+        [
+            'company_code' => 'CMP-2025-00001',
+            'name' => 'PIL Andina S.A.',
+            'legal_name' => 'PIL Andina S.A. - Productora Integral Láctea',
+            'description' => 'Empresa líder en producción y comercialización de productos lácteos de alta calidad en Bolivia',
+            'support_email' => 'soporte@pilandina.com.bo',
+            'phone' => '+59144260164',
+            'city' => 'Cochabamba',
+            'address' => 'Colcapirhua Avenida Blanco Galindo Km. 10.5',
+            'state' => 'Cochabamba',
+            'postal_code' => '00000',
+            'tax_id' => '151099010',
+            'legal_rep' => 'Javier Rodríguez García',
+            'website' => 'https://pilandina.com.bo',
+            'industry_code' => 'food_and_beverage',
+            'primary_color' => '#E31E24',
+            'secondary_color' => '#FFFFFF',
+            'logo_filename' => 'pil-andina-logo.png',
+            'company_admin' => [
+                'first_name' => 'Javier',
+                'last_name' => 'Rodríguez',
+                'email' => 'javier.rodriguez@pilandina.com.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'María',
+                    'last_name' => 'Condori',
+                    'email' => 'maria.condori@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Roberto',
+                    'last_name' => 'Flores',
+                    'email' => 'roberto.flores@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Ana',
+                    'last_name' => 'Mamani',
+                    'email' => 'ana.mamani@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Carlos',
+                    'last_name' => 'Gutiérrez',
+                    'email' => 'carlos.gutierrez@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Lucía',
+                    'last_name' => 'Quispe',
+                    'email' => 'lucia.quispe@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Jorge',
+                    'last_name' => 'Vargas',
+                    'email' => 'jorge.vargas@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Patricia',
+                    'last_name' => 'Rojas',
+                    'email' => 'patricia.rojas@pilandina.com.bo',
+                ],
+                [
+                    'first_name' => 'Fernando',
+                    'last_name' => 'Mendoza',
+                    'email' => 'fernando.mendoza@pilandina.com.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Producción Láctea',
+                    'description' => 'Recepción de leche, pasteurización, procesamiento de productos lácteos',
+                ],
+                [
+                    'name' => 'Líneas de Empaque',
+                    'description' => 'Envasado, etiquetado, empaque y preparación para distribución',
+                ],
+                [
+                    'name' => 'Control de Calidad y Laboratorio',
+                    'description' => 'Pruebas microbiológicas, análisis químicos, cumplimiento de normas ISO',
+                ],
+                [
+                    'name' => 'Logística y Almacenes',
+                    'description' => 'Gestión de inventarios, almacenamiento en frío, distribución de productos',
+                ],
+                [
+                    'name' => 'Ventas y Canales Comerciales',
+                    'description' => 'Gestión de clientes mayoristas, minoristas, negociaciones comerciales',
+                ],
+                [
+                    'name' => 'Recursos Humanos y Desarrollo',
+                    'description' => 'Nómina, selección, capacitación, relaciones laborales',
+                ],
+                [
+                    'name' => 'Administración, Finanzas y Legal',
+                    'description' => 'Contabilidad, tesorería, presupuestos, asuntos legales',
+                ],
+                [
+                    'name' => 'Mantenimiento y Seguridad Industrial',
+                    'description' => 'Mantenimiento preventivo/correctivo, seguridad, medio ambiente',
+                ],
+            ],
+        ],
+        [
+            'company_code' => 'CMP-2025-00002',
+            'name' => 'YPFB Corporación',
+            'legal_name' => 'Yacimientos Petrolíferos Fiscales Bolivianos S.A.',
+            'description' => 'Empresa estatal boliviana encargada de la exploración, explotación, refinación, transporte y comercialización de hidrocarburos',
+            'support_email' => 'contacto@ypfb.gob.bo',
+            'phone' => '+59122106565',
+            'city' => 'La Paz',
+            'address' => 'Calle Bueno Nº 185, Centro',
+            'state' => 'La Paz',
+            'postal_code' => '00000',
+            'tax_id' => '151070001',
+            'legal_rep' => 'Luis Alberto Sánchez Fernández',
+            'website' => 'https://www.ypfb.gob.bo',
+            'industry_code' => 'energy',
+            'primary_color' => '#00529B',
+            'secondary_color' => '#FDB913',
+            'logo_filename' => 'ypfb-logo.png',
+            'company_admin' => [
+                'first_name' => 'Luis',
+                'last_name' => 'Sánchez',
+                'email' => 'luis.sanchez@ypfb.gob.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'Patricia',
+                    'last_name' => 'Alanoca',
+                    'email' => 'patricia.alanoca@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Miguel',
+                    'last_name' => 'Pacheco',
+                    'email' => 'miguel.pacheco@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Carla',
+                    'last_name' => 'Mendoza',
+                    'email' => 'carla.mendoza@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Ricardo',
+                    'last_name' => 'Torres',
+                    'email' => 'ricardo.torres@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Daniela',
+                    'last_name' => 'Villarroel',
+                    'email' => 'daniela.villarroel@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Andrés',
+                    'last_name' => 'Guzmán',
+                    'email' => 'andres.guzman@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Mónica',
+                    'last_name' => 'Ramos',
+                    'email' => 'monica.ramos@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Héctor',
+                    'last_name' => 'Morales',
+                    'email' => 'hector.morales@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Silvia',
+                    'last_name' => 'Camacho',
+                    'email' => 'silvia.camacho@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Rodrigo',
+                    'last_name' => 'Bustamante',
+                    'email' => 'rodrigo.bustamante@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Gabriela',
+                    'last_name' => 'Salazar',
+                    'email' => 'gabriela.salazar@ypfb.gob.bo',
+                ],
+                [
+                    'first_name' => 'Javier',
+                    'last_name' => 'Ortiz',
+                    'email' => 'javier.ortiz@ypfb.gob.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Exploración y Evaluación',
+                    'description' => 'Evaluación de reservas, identificación de prospectos, licenciamiento de bloques',
+                ],
+                [
+                    'name' => 'Explotación y Operaciones de Pozo',
+                    'description' => 'Perforación, completación, producción, levantamiento artificial de crudo y gas',
+                ],
+                [
+                    'name' => 'Refinación y Transformación',
+                    'description' => 'Procesos de destilación, conversión, fraccionamiento de hidrocarburos',
+                ],
+                [
+                    'name' => 'Transporte y Logística de Hidrocarburos',
+                    'description' => 'Operación de oleoductos, gaseoductos, terminales y almacenes estratégicos',
+                ],
+                [
+                    'name' => 'Comercialización y Ventas',
+                    'description' => 'Venta de crudo, gas natural, combustibles y productos derivados',
+                ],
+                [
+                    'name' => 'Seguridad, Salud Ocupacional y Ambiente',
+                    'description' => 'Cumplimiento normativo ambiental, prevención de riesgos, gestión de contingencias',
+                ],
+                [
+                    'name' => 'Ingeniería y Proyectos Estratégicos',
+                    'description' => 'Diseño de instalaciones, ejecución de proyectos, consultoría técnica',
+                ],
+                [
+                    'name' => 'Administración, Finanzas y Recursos Humanos',
+                    'description' => 'Contabilidad, finanzas, nómina, relaciones laborales, asuntos corporativos',
+                ],
+            ],
+        ],
+        [
+            'company_code' => 'CMP-2025-00003',
+            'name' => 'Entel S.A.',
+            'legal_name' => 'Empresa Nacional de Telecomunicaciones S.A.',
+            'description' => 'Empresa estatal líder de telecomunicaciones en Bolivia, ofreciendo servicios de telefonía móvil, internet, datos y televisión con cobertura nacional',
+            'support_email' => 'atencionodeco@entel.bo',
+            'phone' => '+59122141010',
+            'city' => 'La Paz',
+            'address' => 'C. Federico Zuazo N° 1771, Zona Centro',
+            'state' => 'La Paz',
+            'postal_code' => '00000',
+            'tax_id' => '1020703023',
+            'legal_rep' => 'Juan Carlos Rojas Beltrán',
+            'website' => 'https://www.entel.bo',
+            'industry_code' => 'telecommunications',
+            'primary_color' => '#003DA5',
+            'secondary_color' => '#00BCF2',
+            'logo_filename' => 'entel-logo.png',
+            'company_admin' => [
+                'first_name' => 'Juan',
+                'last_name' => 'Rojas',
+                'email' => 'juan.rojas@entel.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'Carmen',
+                    'last_name' => 'Quispe',
+                    'email' => 'carmen.quispe@entel.bo',
+                ],
+                [
+                    'first_name' => 'Diego',
+                    'last_name' => 'Fernández',
+                    'email' => 'diego.fernandez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Lorena',
+                    'last_name' => 'Castro',
+                    'email' => 'lorena.castro@entel.bo',
+                ],
+                [
+                    'first_name' => 'Pablo',
+                    'last_name' => 'Martínez',
+                    'email' => 'pablo.martinez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Verónica',
+                    'last_name' => 'Sánchez',
+                    'email' => 'veronica.sanchez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Sergio',
+                    'last_name' => 'Álvarez',
+                    'email' => 'sergio.alvarez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Andrea',
+                    'last_name' => 'Rodríguez',
+                    'email' => 'andrea.rodriguez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Marcelo',
+                    'last_name' => 'Pérez',
+                    'email' => 'marcelo.perez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Isabel',
+                    'last_name' => 'Gutiérrez',
+                    'email' => 'isabel.gutierrez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Gonzalo',
+                    'last_name' => 'Vargas',
+                    'email' => 'gonzalo.vargas@entel.bo',
+                ],
+                [
+                    'first_name' => 'Natalia',
+                    'last_name' => 'Méndez',
+                    'email' => 'natalia.mendez@entel.bo',
+                ],
+                [
+                    'first_name' => 'Raúl',
+                    'last_name' => 'Jiménez',
+                    'email' => 'raul.jimenez@entel.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Infraestructura de Red Móvil',
+                    'description' => 'Diseño, despliegue y operación de torres, antenas, estaciones base 4G/5G',
+                ],
+                [
+                    'name' => 'Infraestructura de Red Fija',
+                    'description' => 'Fibra óptica, cableado, centrales telefónicas, backbone nacional',
+                ],
+                [
+                    'name' => 'Operaciones de Telecomunicaciones',
+                    'description' => 'Monitoreo de redes, activación de servicios, gestión de tráfico',
+                ],
+                [
+                    'name' => 'Centro de Atención al Cliente',
+                    'description' => 'Call center 24/7, resolución de incidentes, soporte técnico',
+                ],
+                [
+                    'name' => 'Comercial, Ventas y Suscriptores',
+                    'description' => 'Adquisición de clientes, planes corporativos, retención, churn',
+                ],
+                [
+                    'name' => 'Tecnología, Sistemas e Innovación',
+                    'description' => 'Desarrollo de plataformas digitales, banca móvil, sistemas de información',
+                ],
+                [
+                    'name' => 'Facturación, Finanzas y Análisis',
+                    'description' => 'Facturación de servicios, cobranzas, análisis financiero, presupuestos',
+                ],
+                [
+                    'name' => 'Recursos Humanos, Legal y Cumplimiento',
+                    'description' => 'Nómina, compliance regulatorio, asuntos legales, relaciones laborales',
+                ],
+            ],
+        ],
+        [
+            'company_code' => 'CMP-2025-00004',
+            'name' => 'Tigo Bolivia S.A.',
+            'legal_name' => 'Tigo Bolivia S.A. - Telecomunicaciones',
+            'description' => 'Operadora de telecomunicaciones móviles en Bolivia, ofreciendo servicios de telefonía, internet y datos',
+            'support_email' => 'soporte@tigo.com.bo',
+            'phone' => '+5913800175000',
+            'city' => 'La Paz',
+            'address' => 'Av. Ballivián, Edificio Green Tower, Calacoto',
+            'state' => 'La Paz',
+            'postal_code' => '00000',
+            'tax_id' => '151158963',
+            'legal_rep' => 'Ricardo Martínez Huerta',
+            'website' => 'https://www.tigo.com.bo',
+            'industry_code' => 'telecommunications',
+            'primary_color' => '#0033A0',
+            'secondary_color' => '#00BCF2',
+            'logo_filename' => 'tigo-logo.png',
+            'company_admin' => [
+                'first_name' => 'Ricardo',
+                'last_name' => 'Martínez',
+                'email' => 'ricardo.martinez@tigo.com.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'Andrea',
+                    'last_name' => 'Vargas',
+                    'email' => 'andrea.vargas@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'David',
+                    'last_name' => 'Suárez',
+                    'email' => 'david.suarez@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Claudia',
+                    'last_name' => 'Romero',
+                    'email' => 'claudia.romero@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Fabián',
+                    'last_name' => 'Herrera',
+                    'email' => 'fabian.herrera@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Paola',
+                    'last_name' => 'Vega',
+                    'email' => 'paola.vega@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Gustavo',
+                    'last_name' => 'Ramírez',
+                    'email' => 'gustavo.ramirez@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Beatriz',
+                    'last_name' => 'Silva',
+                    'email' => 'beatriz.silva@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Oscar',
+                    'last_name' => 'Luna',
+                    'email' => 'oscar.luna@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Fernanda',
+                    'last_name' => 'Delgado',
+                    'email' => 'fernanda.delgado@tigo.com.bo',
+                ],
+                [
+                    'first_name' => 'Martín',
+                    'last_name' => 'Cortez',
+                    'email' => 'martin.cortez@tigo.com.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Red Móvil y Cobertura',
+                    'description' => 'Infraestructura 3G/4G/LTE, torres, antenas, operación de centrales móviles',
+                ],
+                [
+                    'name' => 'Servicios de Datos e Internet',
+                    'description' => 'Planes de datos, internet móvil, redes privadas virtuales (VPN)',
+                ],
+                [
+                    'name' => 'Operaciones de Red y Monitoreo',
+                    'description' => 'Monitoreo de tráfico, activación de servicios, gestión de incidentes',
+                ],
+                [
+                    'name' => 'Servicio al Cliente y Soporte',
+                    'description' => 'Call center 24/7, resolución de problemas, soporte técnico',
+                ],
+                [
+                    'name' => 'Comercial y Gestión de Suscriptores',
+                    'description' => 'Adquisición de clientes, planes corporativos, retención, campaña de churn',
+                ],
+                [
+                    'name' => 'Sistemas, IT e Innovación Digital',
+                    'description' => 'Aplicaciones móviles, plataformas digitales, transformación tecnológica',
+                ],
+                [
+                    'name' => 'Facturación, Tesorería y Finanzas',
+                    'description' => 'Facturación automática, cobranzas, análisis financiero, presupuestos',
+                ],
+                [
+                    'name' => 'Recursos Humanos, Legal y Administración',
+                    'description' => 'Nómina, compliance regulatorio, asuntos legales, compras corporativas',
+                ],
+            ],
+        ],
+        [
+            'company_code' => 'CMP-2025-00005',
+            'name' => 'Cervecería Boliviana Nacional S.A.',
+            'legal_name' => 'Cervecería Boliviana Nacional S.A. - Bebidas',
+            'description' => 'Principal productora de cerveza en Bolivia con marcas icónicas y presencia nacional en el mercado de bebidas',
+            'support_email' => 'soporte@cbn.bo',
+            'phone' => '+59122455455',
+            'city' => 'La Paz',
+            'address' => 'Av. Montes #400, Zona Sopocachi',
+            'state' => 'La Paz',
+            'postal_code' => '00000',
+            'tax_id' => '151095874',
+            'legal_rep' => 'Alejandro Reyes Montoya',
+            'website' => 'https://www.cbn.bo',
+            'industry_code' => 'food_and_beverage',
+            'primary_color' => '#C8102E',
+            'secondary_color' => '#FFD700',
+            'logo_filename' => 'cbn-logo.png',
+            'company_admin' => [
+                'first_name' => 'Alejandro',
+                'last_name' => 'Reyes',
+                'email' => 'alejandro.reyes@cbn.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'Sofía',
+                    'last_name' => 'Castellanos',
+                    'email' => 'sofia.castellanos@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Juan',
+                    'last_name' => 'Espinoza',
+                    'email' => 'juan.espinoza@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Laura',
+                    'last_name' => 'Molina',
+                    'email' => 'laura.molina@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Pedro',
+                    'last_name' => 'Aguilar',
+                    'email' => 'pedro.aguilar@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Valeria',
+                    'last_name' => 'Navarro',
+                    'email' => 'valeria.navarro@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Sebastián',
+                    'last_name' => 'Ríos',
+                    'email' => 'sebastian.rios@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Carolina',
+                    'last_name' => 'Campos',
+                    'email' => 'carolina.campos@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Ignacio',
+                    'last_name' => 'Paredes',
+                    'email' => 'ignacio.paredes@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Daniela',
+                    'last_name' => 'Núñez',
+                    'email' => 'daniela.nunez@cbn.bo',
+                ],
+                [
+                    'first_name' => 'Esteban',
+                    'last_name' => 'Ibáñez',
+                    'email' => 'esteban.ibanez@cbn.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Producción de Cerveza',
+                    'description' => 'Malteado, fermentación, maduración, procesamiento de bebidas',
+                ],
+                [
+                    'name' => 'Envasado y Embotellado',
+                    'description' => 'Llenado, etiquetado, encajonado y preparación para distribución',
+                ],
+                [
+                    'name' => 'Control de Calidad',
+                    'description' => 'Pruebas de sabor, carbonatación, microbiología, cumplimiento de normas',
+                ],
+                [
+                    'name' => 'Laboratorio',
+                    'description' => 'Análisis químicos, pruebas técnicas, certificaciones',
+                ],
+                [
+                    'name' => 'Logística y Cadena de Frío',
+                    'description' => 'Almacenamiento en frío, distribución nacional, gestión de inventarios',
+                ],
+                [
+                    'name' => 'Ventas y Comercial',
+                    'description' => 'Gestión de clientes mayoristas, minoristas, negociaciones comerciales',
+                ],
+                [
+                    'name' => 'Recursos Humanos',
+                    'description' => 'Nómina, selección, capacitación, relaciones laborales',
+                ],
+                [
+                    'name' => 'Finanzas',
+                    'description' => 'Contabilidad, presupuestos, análisis financiero',
+                ],
+                [
+                    'name' => 'Tesorería',
+                    'description' => 'Gestión de caja, cobranzas, pagos',
+                ],
+                [
+                    'name' => 'Asuntos Legales',
+                    'description' => 'Contratos, litigios, asuntos corporativos',
+                ],
+                [
+                    'name' => 'Cumplimiento y Regulación',
+                    'description' => 'Normativas sanitarias, auditorías, compliance',
+                ],
+                [
+                    'name' => 'Mantenimiento',
+                    'description' => 'Mantenimiento preventivo y correctivo de equipos',
+                ],
+                [
+                    'name' => 'Seguridad Industrial',
+                    'description' => 'Seguridad laboral, salud ocupacional, medio ambiente',
+                ],
+            ],
+        ],
+        [
+            'company_code' => 'CMP-2025-00006',
+            'name' => 'Banco Mercantil Santa Cruz S.A.',
+            'legal_name' => 'Banco Mercantil Santa Cruz S.A.',
+            'description' => 'Banco más grande de Bolivia por activos, ofreciendo servicios bancarios completos con presencia nacional y enfoque en banca corporativa y personal',
+            'support_email' => 'CallCenter@bmsc.com.bo',
+            'phone' => '+59122409040',
+            'city' => 'La Paz',
+            'address' => 'Calle Ayacucho esquina Mercado #295, Zona Central',
+            'state' => 'La Paz',
+            'postal_code' => '00000',
+            'tax_id' => '1020557029',
+            'legal_rep' => 'Pablo Antelo Gutiérrez',
+            'website' => 'https://www.bmsc.com.bo',
+            'industry_code' => 'banking',
+            'primary_color' => '#006341',
+            'secondary_color' => '#FFD700',
+            'logo_filename' => 'mercantil-santa-cruz-logo.png',
+            'company_admin' => [
+                'first_name' => 'Pablo',
+                'last_name' => 'Antelo',
+                'email' => 'pablo.antelo@bmsc.com.bo',
+            ],
+            'agents' => [
+                [
+                    'first_name' => 'Gabriela',
+                    'last_name' => 'Torres',
+                    'email' => 'gabriela.torres@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Rodrigo',
+                    'last_name' => 'Montaño',
+                    'email' => 'rodrigo.montano@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Mariana',
+                    'last_name' => 'Cruz',
+                    'email' => 'mariana.cruz@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Alberto',
+                    'last_name' => 'Bravo',
+                    'email' => 'alberto.bravo@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Cecilia',
+                    'last_name' => 'Moreno',
+                    'email' => 'cecilia.moreno@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Víctor',
+                    'last_name' => 'Quiroga',
+                    'email' => 'victor.quiroga@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Adriana',
+                    'last_name' => 'Soto',
+                    'email' => 'adriana.soto@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Leonardo',
+                    'last_name' => 'Baldivieso',
+                    'email' => 'leonardo.baldivieso@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Viviana',
+                    'last_name' => 'Peña',
+                    'email' => 'viviana.pena@bmsc.com.bo',
+                ],
+                [
+                    'first_name' => 'Álvaro',
+                    'last_name' => 'Velasco',
+                    'email' => 'alvaro.velasco@bmsc.com.bo',
+                ],
+            ],
+            'areas' => [
+                [
+                    'name' => 'Banca Corporativa y Empresarial',
+                    'description' => 'Créditos empresariales, financiamiento de proyectos, productos especializados',
+                ],
+                [
+                    'name' => 'Banca de Personas',
+                    'description' => 'Cuentas corrientes, depósitos, préstamos personales, tarjetas de crédito',
+                ],
+                [
+                    'name' => 'Operaciones Bancarias y Tesorería',
+                    'description' => 'Procesamiento de transacciones, cambio de moneda, clearing interbancario',
+                ],
+                [
+                    'name' => 'Gestión de Riesgos y Cumplimiento',
+                    'description' => 'Riesgo crediticio, operacional, cumplimiento normativo, AML/CFT',
+                ],
+                [
+                    'name' => 'Tecnología e Innovación Bancaria',
+                    'description' => 'Core bancario, banca digital, ciberseguridad, canales electrónicos',
+                ],
+                [
+                    'name' => 'Administración General y Legal',
+                    'description' => 'Asuntos legales, cumplimiento regulatorio, administración corporativa',
+                ],
+                [
+                    'name' => 'Recursos Humanos y Desarrollo',
+                    'description' => 'Nómina, reclutamiento, capacitación, relaciones laborales',
+                ],
+                [
+                    'name' => 'Contabilidad y Finanzas Corporativas',
+                    'description' => 'Contabilidad general, presupuestos, análisis financiero, tesorería',
+                ],
+            ],
+        ],
+    ];
+
+    public function run(): void
+    {
+        $this->command->info('🏢 Creando 6 empresas bolivianas GRANDES con datos profesionales...');
+
+        // [IDEMPOTENCY] Verificar si ya existen todas las empresas grandes
+        $codes = array_column(self::COMPANIES, 'company_code');
+        $existingCount = Company::whereIn('company_code', $codes)->count();
+
+        if ($existingCount >= count(self::COMPANIES)) {
+            $this->command->info('[OK] Todas las empresas grandes ya existen. Saltando ejecución.');
+            return;
+        }
+
+        foreach (self::COMPANIES as $companyData) {
+            try {
+                // [IDEMPOTENCY] Verificar si la empresa ya existe por company_code
+                if (Company::where('company_code', $companyData['company_code'])->exists()) {
+                    $this->command->info("[OK] Empresa {$companyData['company_code']} ya existe, saltando...");
+                    $this->companyIndex++;
+                    continue;
+                }
+
+                // Generar fecha aleatoria para esta empresa (julio - diciembre 2025)
+                $createdAt = $this->getDistributedDate($this->companyIndex, count(self::COMPANIES));
+                $this->command->info("  📅 Fecha de registro: {$createdAt->format('Y-m-d H:i:s')}");
+
+                // 1. Crear Company Admin
+                $admin = $this->createUser(
+                    $companyData['company_admin']['first_name'],
+                    $companyData['company_admin']['last_name'],
+                    $companyData['company_admin']['email'],
+                    $createdAt
+                );
+
+                // 2. Obtener industry_id
+                $industry = CompanyIndustry::where('code', $companyData['industry_code'])->first();
+                if (!$industry) {
+                    $this->command->error("❌ Industria no encontrada: {$companyData['industry_code']}");
+                    continue;
+                }
+
+                // 3. Preparar Logo y URL (ANTES de crear para optimizar queries)
+                $logoUrl = null;
+                if (isset($companyData['logo_filename'])) {
+                    $logoUrl = $this->publishLogoAndGetUrl($companyData['company_code'], $companyData['logo_filename']);
+                }
+
+                // 4. Crear Empresa usando CompanyService (dispara CompanyCreated event → auto-crea categorías)
+                $companyService = app(CompanyService::class);
+                $company = $companyService->create([
+                    'company_code' => $companyData['company_code'],
+                    'name' => $companyData['name'],
+                    'legal_name' => $companyData['legal_name'],
+                    'description' => $companyData['description'],
+                    'support_email' => $companyData['support_email'],
+                    'phone' => $companyData['phone'],
+                    'website' => $companyData['website'],
+                    'contact_address' => $companyData['address'],
+                    'contact_city' => $companyData['city'],
+                    'contact_state' => $companyData['state'],
+                    'contact_country' => 'Bolivia',
+                    'contact_postal_code' => $companyData['postal_code'],
+                    'tax_id' => $companyData['tax_id'],
+                    'legal_representative' => $companyData['legal_rep'],
+                    'primary_color' => $companyData['primary_color'],
+                    'secondary_color' => $companyData['secondary_color'],
+                    'logo_url' => $logoUrl,
+                    'favicon_url' => $logoUrl, // Usamos el mismo logo como favicon por defecto
+                    'business_hours' => [
+                        'monday' => ['open' => '08:30', 'close' => '18:00'],
+                        'tuesday' => ['open' => '08:30', 'close' => '18:00'],
+                        'wednesday' => ['open' => '08:30', 'close' => '18:00'],
+                        'thursday' => ['open' => '08:30', 'close' => '18:00'],
+                        'friday' => ['open' => '08:30', 'close' => '17:00'],
+                        'saturday' => ['open' => '09:00', 'close' => '13:00'],
+                    ],
+                    'timezone' => 'America/La_Paz',
+                    'status' => 'active',
+                    'industry_id' => $industry->id,
+                    'settings' => ['areas_enabled' => true], // Configuración directa (empresas grandes usan áreas)
+                ], $admin);
+
+                // Actualizar created_at de la empresa
+                $company->created_at = $createdAt;
+                $company->updated_at = $createdAt;
+                $company->save();
+
+                $this->command->info("✅ Empresa '{$company->name}' creada con admin: {$admin->email}");
+                $this->companyIndex++;
+
+                // 5. Asignar rol COMPANY_ADMIN
+                UserRole::create([
+                    'user_id' => $admin->id,
+                    'role_code' => 'COMPANY_ADMIN',
+                    'company_id' => $company->id,
+                    'is_active' => true,
+                ]);
+
+                // 6. Crear Agentes (escalonados días/semanas después de la empresa)
+                $agentIndex = 0;
+                foreach ($companyData['agents'] as $agentData) {
+                    // Cada agente se crea entre 3-30 días después de la empresa
+                    $agentCreatedAt = $createdAt->copy()->addDays(rand(3, 30))->addHours(rand(8, 18))->addMinutes(rand(0, 59));
+                    
+                    $agent = $this->createUser(
+                        $agentData['first_name'],
+                        $agentData['last_name'],
+                        $agentData['email'],
+                        $agentCreatedAt
+                    );
+
+                    UserRole::create([
+                        'user_id' => $agent->id,
+                        'role_code' => 'AGENT',
+                        'company_id' => $company->id,
+                        'is_active' => true,
+                    ]);
+
+                    $this->command->info("  └─ Agente creado: {$agent->email} ({$agentCreatedAt->format('Y-m-d')})");
+                    $agentIndex++;
+                }
+
+                // 7. Crear Áreas para la empresa
+                $areasCount = count($companyData['areas']);
+                $this->command->info("  ├─ Creando {$areasCount} áreas para la empresa...");
+                foreach ($companyData['areas'] as $areaData) {
+                    Area::create([
+                        'company_id' => $company->id,
+                        'name' => $areaData['name'],
+                        'description' => $areaData['description'],
+                        'is_active' => true,
+                    ]);
+                    $this->command->info("  │  └─ Área '{$areaData['name']}' creada");
+                }
+
+                if ($logoUrl) {
+                    $this->command->info("  └─ Logo publicado: {$logoUrl}");
+                }
+
+            } catch (\Exception $e) {
+                $this->command->error("❌ Error creando empresa: {$e->getMessage()}");
+            }
+        }
+
+        $this->command->info('✅ Seeder completado con éxito!');
+    }
+
+    /**
+     * Copia el logo y retorna la URL pública.
+     * Se ejecuta ANTES de crear la empresa para incluir la URL en el INSERT inicial.
+     */
+    private function publishLogoAndGetUrl(string $companyCode, string $logoFilename): ?string
+    {
+        $sourcePath = app_path("Features/CompanyManagement/resources/logos/{$logoFilename}");
+
+        if (!file_exists($sourcePath)) {
+            $this->command->warn("  ⚠  Logo no encontrado en resources: {$logoFilename}");
+            return null;
+        }
+
+        try {
+            $storagePath = "company-logos/{$companyCode}";
+
+            if (!Storage::disk('public')->exists($storagePath)) {
+                Storage::disk('public')->makeDirectory($storagePath);
+            }
+
+            $fullPath = "{$storagePath}/{$logoFilename}";
+            $fileContent = file_get_contents($sourcePath);
+            Storage::disk('public')->put($fullPath, $fileContent);
+
+            return asset("storage/{$fullPath}");
+        } catch (\Exception $e) {
+            $this->command->error("  ❌ Error copiando logo: {$e->getMessage()}");
+            return null;
+        }
+    }
+
+    private function createUser(string $firstName, string $lastName, string $email, $createdAt = null): User
+    {
+        $userCode = CodeGenerator::generate('auth.users', CodeGenerator::USER, 'user_code');
+        $timestamp = $createdAt ?? now();
+
+        $user = User::create([
+            'user_code' => $userCode,
+            'email' => $email,
+            'password_hash' => Hash::make(self::PASSWORD),
+            'email_verified' => true,
+            'email_verified_at' => $timestamp,
+            'status' => UserStatus::ACTIVE,
+            'auth_provider' => 'local',
+            'terms_accepted' => true,
+            'terms_accepted_at' => $timestamp,
+            'terms_version' => 'v2.1',
+            'onboarding_completed_at' => $timestamp,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
+        ]);
+
+        $user->profile()->create([
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'phone_number' => null,
+            'theme' => 'light',
+            'language' => 'es',
+            'timezone' => 'America/La_Paz',
+        ]);
+
+        return $user;
+    }
+
+    /**
+     * Genera una fecha aleatoria distribuida entre julio y diciembre 2025
+     * Distribuye uniformemente las empresas a lo largo de 6 meses
+     */
+    private function getDistributedDate(int $index, int $total): \Carbon\Carbon
+    {
+        // Rango: Julio 1, 2025 - Diciembre 10, 2025
+        $startDate = \Carbon\Carbon::create(2025, 7, 1, 0, 0, 0);
+        $endDate = \Carbon\Carbon::create(2025, 12, 10, 23, 59, 59);
+        
+        $totalDays = $startDate->diffInDays($endDate);
+        
+        // Distribuir empresas uniformemente
+        $daysPerCompany = $totalDays / $total;
+        $baseDays = (int)($index * $daysPerCompany);
+        
+        // Agregar aleatoriedad dentro del segmento (±3 días)
+        $randomDays = rand(-3, 3);
+        $finalDays = max(0, min($totalDays, $baseDays + $randomDays));
+        
+        return $startDate->copy()->addDays($finalDays)->addHours(rand(8, 18))->addMinutes(rand(0, 59));
+    }
+}

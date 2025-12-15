@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test - Announcements Modules</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Test de Módulos de Announcements</h1>
+        <p>Abrir consola del navegador para ver resultados</p>
+
+        <div class="alert alert-info">
+            <strong>Instrucciones:</strong>
+            <ol>
+                <li>Abrir DevTools (F12)</li>
+                <li>Ir a la pestaña Console</li>
+                <li>Verificar que no haya errores</li>
+                <li>Ejecutar los tests manualmente</li>
+            </ol>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Test 1:</strong> Verificar Carga de Módulos
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="testModuleLoading()">Ejecutar Test 1</button>
+                <pre id="result1" class="mt-2 bg-light p-2"></pre>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Test 2:</strong> Test de Error Handler - 422 Validation
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="testErrorHandler422()">Ejecutar Test 2</button>
+                <pre id="result2" class="mt-2 bg-light p-2"></pre>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Test 3:</strong> Test de Error Handler - 401 Unauthorized
+            </div>
+            <div class="card-body">
+                <button class="btn btn-warning" onclick="testErrorHandler401()">Ejecutar Test 3</button>
+                <pre id="result3" class="mt-2 bg-light p-2"></pre>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Test 4:</strong> Test Schema Handler - Servicios
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="testSchemaHandler()">Ejecutar Test 4</button>
+                <pre id="result4" class="mt-2 bg-light p-2"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../public/js/announcements-validation.js"></script>
+    <script src="../public/js/announcements-schema-handler.js"></script>
+
+    <script>
+        console.log('=== TESTS DE MÓDULOS ANNOUNCEMENTS ===');
+
+        function testModuleLoading() {
+            const result1 = document.getElementById('result1');
+            let output = '';
+
+            output += '✓ jQuery: ' + (typeof jQuery !== 'undefined' ? 'LOADED' : 'ERROR') + '\n';
+            output += '✓ AnnouncementsErrorHandler: ' + (typeof AnnouncementsErrorHandler !== 'undefined' ? 'LOADED' : 'ERROR') + '\n';
+            output += '✓ AnnouncementsValidator: ' + (typeof AnnouncementsValidator !== 'undefined' ? 'LOADED') + '\n';
+            output += '✓ AnnouncementsSchemaHandler: ' + (typeof AnnouncementsSchemaHandler !== 'undefined' ? 'LOADED' : 'ERROR') + '\n';
+
+            if (typeof AnnouncementsErrorHandler !== 'undefined') {
+                output += '\nMétodos de ErrorHandler:\n';
+                output += '  - handleApiError: ' + (typeof AnnouncementsErrorHandler.handleApiError === 'function' ? 'OK' : 'ERROR') + '\n';
+                output += '  - handle422ValidationError: ' + (typeof AnnouncementsErrorHandler.handle422ValidationError === 'function' ? 'OK' : 'ERROR') + '\n';
+                output += '  - getFieldDisplayName: ' + (typeof AnnouncementsErrorHandler.getFieldDisplayName === 'function' ? 'OK' : 'ERROR') + '\n';
+            }
+
+            if (typeof AnnouncementsSchemaHandler !== 'undefined') {
+                output += '\nMétodos de SchemaHandler:\n';
+                output += '  - loadSchema: ' + (typeof AnnouncementsSchemaHandler.loadSchema === 'function' ? 'OK' : 'ERROR') + '\n';
+                output += '  - generateAffectedServicesField: ' + (typeof AnnouncementsSchemaHandler.generateAffectedServicesField === 'function' ? 'OK' : 'ERROR') + '\n';
+                output += '  - commonServices: ' + (AnnouncementsSchemaHandler.commonServices?.length || 0) + ' servicios\n';
+            }
+
+            result1.textContent = output;
+            console.log(output);
+        }
+
+        function testErrorHandler422() {
+            const result2 = document.getElementById('result2');
+            
+            const mockResponse = {
+                status: 422,
+                ok: false
+            };
+
+            const mockData = {
+                message: "The given data was invalid.",
+                errors: {
+                    "title": ["The title must be at least 5 characters."],
+                    "metadata.urgency": ["The metadata.urgency must be HIGH or CRITICAL."],
+                    "metadata.scheduled_start": ["The scheduled start is required."]
+                }
+            };
+
+            console.log('=== TEST ERROR HANDLER 422 ===');
+            console.log('Mock Response:', mockResponse);
+            console.log('Mock Data:', mockData);
+
+            const result = AnnouncementsErrorHandler.handleApiError(mockResponse, mockData);
+            
+            let output = 'Test de Error 422 ejecutado\n\n';
+            output += 'Errores procesados:\n';
+            if (result && result.errors) {
+                for (const [field, messages] of Object.entries(result.errors)) {
+                    output += `  - ${field}: ${messages.join(', ')}\n`;
+                }
+            }
+
+            result2.textContent = output;
+            console.log(output);
+        }
+
+        function testErrorHandler401() {
+            const result3 = document.getElementById('result3');
+            
+            const mockResponse = {
+                status: 401,
+                ok: false
+            };
+
+            const mockData = {
+                message: "Unauthenticated"
+            };
+
+            console.log('=== TEST ERROR HANDLER 401 ===');
+            console.log('ADVERTENCIA: Este test NO redirigirá a login (es un mock)');
+
+            // Sobrescribir temporalmente showToast
+            const originalShowToast = AnnouncementsErrorHandler.showToast;
+            let toastMessage = '';
+            AnnouncementsErrorHandler.showToast = function(type, message) {
+                toastMessage = `[${type}] ${message}`;
+                console.log('Toast:', toastMessage);
+            };
+
+            const result = AnnouncementsErrorHandler.handleApiError(mockResponse, mockData);
+
+            // Restaurar
+            AnnouncementsErrorHandler.showToast = originalShowToast;
+
+            let output = 'Test de Error 401 ejecutado\n\n';
+            output += 'Mensaje generado:\n';
+            output += toastMessage + '\n\n';
+            output += 'En producción, se redirigiría a /login en 2 segundos.';
+
+            result3.textContent = output;
+            console.log(output);
+        }
+
+        function testSchemaHandler() {
+            const result4 = document.getElementById('result4');
+            
+            console.log('=== TEST SCHEMA HANDLER ===');
+
+            let output = 'Test de Schema Handler ejecutado\n\n';
+
+            // Test de servicios comunes
+            output += 'Servicios Comunes Disponibles (' + AnnouncementsSchemaHandler.commonServices.length + '):\n';
+            AnnouncementsSchemaHandler.commonServices.forEach((service, index) => {
+                output += `  ${index + 1}. ${service.label} (${service.value})\n`;
+            });
+
+            // Test de generación de campo
+            output += '\nGenerando campo de servicios afectados...\n';
+            const fieldHtml = AnnouncementsSchemaHandler.generateAffectedServicesField('test-services', ['api', 'database'], false);
+            output += fieldHtml ? '✓ Campo generado correctamente (ver consola para HTML)\n' : '✗ Error al generar campo\n';
+
+            if (fieldHtml) {
+                console.log('HTML generado:', fieldHtml);
+            }
+
+            // Test de campo de audiencia
+            output += '\nGenerando campo de audiencia objetivo...\n';
+            const audienceHtml = AnnouncementsSchemaHandler.generateTargetAudienceField('test-audience', ['users', 'agents']);
+            output += audienceHtml ? '✓ Campo de audiencia generado correctamente (ver consola)\n' : '✗ Error al generar campo\n';
+
+            if (audienceHtml) {
+                console.log('HTML audiencia:', audienceHtml);
+            }
+
+            result4.textContent = output;
+            console.log(output);
+        }
+
+        // Auto-ejecutar test de carga al iniciar
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                console.log('Auto-ejecutando Test 1...');
+                testModuleLoading();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
