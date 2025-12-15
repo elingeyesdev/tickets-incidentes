@@ -1,0 +1,208 @@
+---
+alwaysApply: false
+---
+# Sistema de Skeleton Loading - Reglas de Uso
+
+## 🎯 Propósito
+Sistema profesional y escalable de skeleton screens (loading states) para React Native + Reanimated + NativeWind.
+Organizado según metodología Atomic Design.
+
+## 📁 Estructura Completa
+
+```
+src/components/Skeleton/
+├── index.ts                  # ✅ Barrel export - SIEMPRE importar desde aquí
+├── README.md                 # Documentación completa del sistema
+├── EXAMPLES.tsx              # Ejemplos prácticos de uso
+│
+├── base/                     # Componente base animado
+│   └── BaseSkeleton.tsx      # Core con animación Reanimated Pulse
+│
+├── atoms/                    # Bloques básicos
+│   ├── SkeletonBox.tsx       # Caja rectangular genérica
+│   ├── SkeletonCircle.tsx    # Círculo (avatares, iconos)
+│   └── SkeletonText.tsx      # Líneas de texto simuladas
+│
+├── molecules/                # Composiciones simples
+│   ├── ListItemSkeleton.tsx  # Item de lista (avatar + texto)
+│   ├── CardSkeleton.tsx      # Tarjeta genérica
+│   └── FormSkeleton.tsx      # Formulario genérico
+│
+└── organisms/                # Pantallas o secciones completas
+    ├── HomeSkeleton.tsx              # Skeleton del Home Screen
+    ├── TicketCardSkeleton.tsx        # Skeleton de tarjeta de ticket
+    ├── TicketDetailSkeleton.tsx      # Skeleton de detalle de ticket
+    ├── AnnouncementCardSkeleton.tsx  # Skeleton de tarjeta de anuncio
+    ├── AnnouncementDetailSkeleton.tsx# Skeleton de detalle de anuncio
+    ├── CategoryGridSkeleton.tsx      # Skeleton de grid de categorías
+    └── ProfileSkeleton.tsx           # Skeleton de perfil de usuario
+```
+
+## 🚀 Importación (OBLIGATORIO)
+
+### ✅ CORRECTO - Importar desde barrel export
+```tsx
+import { 
+  SkeletonBox, 
+  SkeletonText, 
+  TicketCardSkeleton, 
+  HomeSkeleton 
+} from '@/components/Skeleton';
+```
+
+### ❌ INCORRECTO - NO importar directamente
+```tsx
+// ❌ NO HACER ESTO
+import { SkeletonBox } from '@/components/Skeleton/atoms/SkeletonBox';
+import { HomeSkeleton } from '@/components/Skeleton/organisms/HomeSkeleton';
+```
+
+## 📋 Componentes Disponibles
+
+### 1. Atoms (Básicos)
+
+#### `SkeletonBox`
+Caja rectangular simple.
+```tsx
+interface SkeletonBoxProps {
+  width?: number | string;
+  height?: number | string;
+  className?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+// Ejemplos
+<SkeletonBox width={100} height={20} />
+<SkeletonBox className="w-full h-4 rounded-md" />
+```
+
+#### `SkeletonCircle`
+Elemento circular para avatares o iconos.
+```tsx
+interface SkeletonCircleProps {
+  size?: number;
+  className?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+// Ejemplos
+<SkeletonCircle size={40} />
+<SkeletonCircle className="bg-gray-300" size={60} />
+```
+
+#### `SkeletonText`
+Simula párrafos de texto con anchos aleatorios para mayor realismo.
+```tsx
+interface SkeletonTextProps {
+  lines?: number;       // Default: 3
+  lineHeight?: number;  // Default: 20
+  className?: string;
+  style?: StyleProp<ViewStyle>;
+}
+
+// Ejemplos
+<SkeletonText lines={2} />
+<SkeletonText lines={5} lineHeight={24} />
+```
+
+### 2. Molecules (Compuestos)
+
+#### `ListItemSkeleton`
+```tsx
+interface ListItemSkeletonProps {
+  withAvatar?: boolean; // Default: true
+  lines?: number;       // Default: 2
+  className?: string;
+}
+
+// Ejemplo
+<ListItemSkeleton withAvatar={false} lines={3} />
+```
+
+#### `CardSkeleton`
+```tsx
+interface CardSkeletonProps {
+  hasHeader?: boolean;  // Default: true
+  hasFooter?: boolean;  // Default: true
+  className?: string;
+}
+
+// Ejemplo
+<CardSkeleton hasFooter={false} />
+```
+
+#### `FormSkeleton`
+```tsx
+interface FormSkeletonProps {
+  fields?: number;      // Default: 3
+  className?: string;
+}
+
+// Ejemplo
+<FormSkeleton fields={5} />
+```
+
+### 3. Organisms (Específicos de Pantalla)
+
+Estos componentes replican la estructura exacta de las pantallas principales.
+
+- `HomeSkeleton`: Header, Quick Actions, Recent Activity.
+- `TicketCardSkeleton`: Card de ticket con estado, info y footer.
+- `TicketDetailSkeleton`: Detalle completo con tabs simulados.
+- `AnnouncementCardSkeleton`: Card de anuncio con tipo y fecha.
+- `AnnouncementDetailSkeleton`: Detalle de anuncio con markdown simulado.
+- `CategoryGridSkeleton`: Grid de categorías de ayuda.
+- `ProfileSkeleton`: Header de perfil, estadísticas y menú.
+
+## 🎨 Diseño y Animación
+
+### Animación Pulse (Reanimated)
+El sistema utiliza `react-native-reanimated` para una animación de opacidad suave (0.3 <-> 0.7).
+- **Performance**: Ejecutada en el UI thread.
+- **Tema**: Detecta automáticamente Light/Dark mode (colores definidos en `BaseSkeleton`).
+
+### Estilos
+- Usa clases de **Tailwind CSS** (`nativewind`).
+- Colores base: `bg-gray-200` (Light) / `bg-gray-700` (Dark).
+
+## 📐 Patrones de Uso (BEST PRACTICES)
+
+### ✅ Patrón 1: Carga de Pantalla Completa
+```tsx
+const { isLoading } = useStore();
+
+if (isLoading) {
+  return <HomeSkeleton />;
+}
+
+return <HomeScreenContent />;
+```
+
+### ✅ Patrón 2: Carga de Lista
+```tsx
+const { isLoading, items } = useStore();
+
+if (isLoading && items.length === 0) {
+  return (
+    <View className="p-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TicketCardSkeleton key={i} />
+      ))}
+    </View>
+  );
+}
+```
+
+## 🛠️ Creación de Nuevos Skeletons
+
+1.  **Atom**: Si es una forma básica nueva (ej. Triángulo).
+2.  **Molecule**: Si es un componente UI reutilizable (ej. `CommentSkeleton`).
+3.  **Organism**: Si es una pantalla o sección compleja nueva (ej. `SettingsSkeleton`).
+
+### Regla de Oro
+**SIEMPRE** construye nuevos skeletons componiendo `SkeletonBox`, `SkeletonCircle` y `SkeletonText`. No crees animaciones personalizadas desde cero; usa los átomos que ya implementan `BaseSkeleton`.
+
+---
+
+**Sistema implementado el 26 de Noviembre, 2025**
+**Versión**: 1.0.0

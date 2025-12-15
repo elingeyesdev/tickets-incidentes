@@ -1,0 +1,283 @@
+import { View, ScrollView, Text, Alert, TouchableOpacity, Share } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Avatar, Button, Chip, Divider, FAB } from 'react-native-paper';
+import { useTicketStore } from '@/stores/ticketStore';
+import { useEffect, useState } from 'react';
+import { Ticket } from '@/types/ticket';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { TicketConversation } from '@/components/tickets/TicketConversation';
+import { TicketAttachments } from '@/components/tickets/TicketAttachments';
+import { TicketDetailSkeleton } from '@/components/Skeleton';
+import { useDebounceCallback } from '@/hooks/useDebounceCallback';
+import { ScreenContainer } from '@/components/layout/ScreenContainer';
+
+export default function TicketDetailScreen() {
+    const { ticketCode } = useLocalSearchParams();
+    const router = useRouter();
+    const { fetchTicket, currentTicket, isLoading, reopenTicket } = useTicketStore();
+    const [tab, setTabState] = useState<'conversation' | 'info' | 'attachments'>('conversation');
+
+    const setTab = useDebounceCallback((newTab: 'conversation' | 'info' | 'attachments') => {
+        setTabState(newTab);
+    }, 200); // 200ms delay to prevent rapid tab switching
+
+    useEffect(() => {
+        if (typeof ticketCode === 'string') {
+            fetchTicket(ticketCode).catch(() => {
+                Alert.alert('Error', 'No se pudo cargar el ticket');
+                router.back();
+            });
+        }
+    }, [ticketCode]);
+
+    const handleShare = useDebounceCallback(async () => {
+        if (!currentTicket) return;
+        try {
+            await Share.share({
+                message: `Ticket ${currentTicket.ticketCode}: ${currentTicket.title}`,
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }, 500); // 500ms delay to prevent multiple share dialogs
+
+    const handleReopen = useDebounceCallback(async () => {
+        if (!currentTicket) return;
+        try {
+            await reopenTicket(currentTicket.ticketCode);
+            Alert.alert('Ticket Reabierto', 'El ticket ha sido reabierto exitosamente.');
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo reabrir el ticket');
+        }
+    }, 500); // 500ms delay to prevent multiple reopen requests
+
+    if (isLoading || !currentTicket) {
+        return <TicketDetailSkeleton />;
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'open': return 'bg-blue-100 text-blue-800';
+            case 'pending': return 'bg-yellow-100 text-yellow-800';
+            case 'resolved': return 'bg-green-100 text-green-800';
+            case 'closed': return 'bg-gray-100 text-gray-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'open': return 'ABIERTO';
+            case 'pending': return 'PENDIENTE';
+            case 'resolved': return 'RESUELTO';
+            case 'closed': return 'CERRADO';
+            default: return status.toUpperCase();
+        }
+    };
+
+    return (
+        <ScreenContainer backgroundColor="#f9fafb">
+            {/* Header */}
+            <View className="bg-white p-4 border-b border-gray-200 shadow-sm z-10">
+                <View className="flex-row justify-between items-center mb-2">
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <MaterialCommunityIcons name="arrow-left" size={24} color="#374151" />
+                    </TouchableOpacity>
+                    <Text className="text-lg font-bold text-gray-900">{currentTicket.ticketCode}</Text>
+                    <TouchableOpacity onPress={handleShare}>
+                        <MaterialCommunityIcons name="share-variant" size={24} color="#374151" />
+                    </TouchableOpacity>
+                </View>
+
+                <View className="flex-row items-center justify-between mt-2">
+                    <View className={`px-3 py-1 rounded-full ${getStatusColor(currentTicket.status).split(' ')[0]}`}>
+                        <Text className={`font-bold ${getStatusColor(currentTicket.status).split(' ')[1]}`}>
+                            {getStatusLabel(currentTicket.status)}
+                        </Text>
+                    </View>
+                    <Text className="text-gray-500 text-xs">
+                        {format(new Date(currentTicket.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
+                    </Text>
+                </View>
+
+                <Text className="text-xl font-bold text-gray-900 mt-3 leading-tight">
+                    {currentTicket.title}
+                </Text>
+
+                <View className="flex-row items-center mt-3">
+                    {currentTicket.company?.logoUrl ? (
+                        <Avatar.Image size={24} source={{ uri: currentTicket.company.logoUrl }} />
+                    ) : (
+                        <Avatar.Text size={24} label={currentTicket.company?.name?.substring(0, 2) || 'NA'} />
+                    )}
+                    <Text className="text-gray-600 ml-2 font-medium">{currentTicket.company?.name || 'Sin Empresa'}</Text>
+                </View>
+            </View>
+
+            {/* Tabs */}
+            <View className="flex-row bg-white border-b border-gray-200">
+                <TouchableOpacity
+                    className={`flex-1 p-3 items-center border-b-2 ${tab === 'conversation' ? 'border-blue-600' : 'border-transparent'}`}
+                    onPress={() => setTab('conversation')}
+                >
+                    <Text className={`${tab === 'conversation' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>Conversación</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    className={`flex-1 p-3 items-center border-b-2 ${tab === 'info' ? 'border-blue-600' : 'border-transparent'}`}
+                    onPress={() => setTab('info')}
+                >
+                    <Text className={`${tab === 'info' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>Info</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    className={`flex-1 p-3 items-center border-b-2 ${tab === 'attachments' ? 'border-blue-600' : 'border-transparent'}`}
+                    onPress={() => setTab('attachments')}
+                >
+                    <Text className={`${tab === 'attachments' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>Adjuntos</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Content */}
+            <View className="flex-1">
+                {tab === 'conversation' && (
+                    <TicketConversation ticket={currentTicket} />
+                )}
+
+                {tab === 'info' && (
+                    <ScrollView className="p-4">
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-2">Descripción Inicial</Text>
+                            <Text className="text-gray-800 leading-relaxed">{currentTicket.description}</Text>
+                        </View>
+
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Detalles</Text>
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Prioridad</Text>
+                                <View className={`px-2 py-0.5 rounded ${currentTicket.priority === 'high' ? 'bg-red-100' :
+                                    currentTicket.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
+                                    }`}>
+                                    <Text className={`text-xs font-bold ${currentTicket.priority === 'high' ? 'text-red-800' :
+                                        currentTicket.priority === 'medium' ? 'text-yellow-800' : 'text-green-800'
+                                        }`}>
+                                        {currentTicket.priority === 'low' ? 'BAJA' :
+                                            currentTicket.priority === 'medium' ? 'MEDIA' : 'ALTA'}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Categoría</Text>
+                                <Text className="font-medium text-gray-900">{currentTicket.category?.name || 'Sin Categoría'}</Text>
+                            </View>
+
+                            {currentTicket.area && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Área</Text>
+                                    <Text className="font-medium text-gray-900">{currentTicket.area.name}</Text>
+                                </View>
+                            )}
+
+                            <Divider className="my-2" />
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Creado</Text>
+                                <Text className="font-medium text-gray-900">{format(new Date(currentTicket.createdAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                            </View>
+
+                            {currentTicket.updatedAt !== currentTicket.createdAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Actualizado</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.updatedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Solicitante</Text>
+                            <View className="flex-row items-center">
+                                <Avatar.Text size={32} label={currentTicket.createdBy.displayName.substring(0, 2).toUpperCase()} className="bg-blue-100" color="#1e40af" />
+                                <View className="ml-3">
+                                    <Text className="font-bold text-gray-900">{currentTicket.createdBy.displayName}</Text>
+                                    {currentTicket.createdBy.email && (
+                                        <Text className="text-gray-500 text-xs">{currentTicket.createdBy.email}</Text>
+                                    )}
+                                </View>
+                            </View>
+                        </View>
+
+                        {currentTicket.ownerAgent && (
+                            <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                                <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Agente Asignado</Text>
+                                <View className="flex-row items-center">
+                                    {currentTicket.ownerAgent.avatarUrl ? (
+                                        <Avatar.Image size={32} source={{ uri: currentTicket.ownerAgent.avatarUrl }} />
+                                    ) : (
+                                        <Avatar.Icon size={32} icon="account" className="bg-purple-100" color="#6b21a8" />
+                                    )}
+                                    <View className="ml-3">
+                                        <Text className="font-bold text-gray-900">{currentTicket.ownerAgent.displayName}</Text>
+                                        <Text className="text-gray-500 text-xs">Soporte Técnico</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        <View className="bg-white p-4 rounded-xl border border-gray-100 mb-4">
+                            <Text className="text-gray-500 text-xs uppercase font-bold mb-3">Línea de Tiempo</Text>
+
+                            <View className="flex-row justify-between mb-2">
+                                <Text className="text-gray-600">Creado</Text>
+                                <Text className="font-medium text-gray-900">{format(new Date(currentTicket.createdAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                            </View>
+
+                            {currentTicket.timeline?.firstResponseAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Primera Respuesta</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.timeline.firstResponseAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.updatedAt !== currentTicket.createdAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Última Actualización</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.updatedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.resolvedAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Resuelto</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.resolvedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+
+                            {currentTicket.closedAt && (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Cerrado</Text>
+                                    <Text className="font-medium text-gray-900">{format(new Date(currentTicket.closedAt), "d MMM yyyy, HH:mm", { locale: es })}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {currentTicket.status === 'closed' && (
+                            <Button
+                                mode="contained"
+                                onPress={handleReopen}
+                                className="bg-gray-800 mb-6"
+                            >
+                                Reabrir Ticket
+                            </Button>
+                        )}
+                    </ScrollView>
+                )}
+
+                {tab === 'attachments' && (
+                    <TicketAttachments ticket={currentTicket} />
+                )}
+            </View>
+        </ScreenContainer>
+    );
+}
